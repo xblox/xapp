@@ -1,0 +1,15 @@
+[
+    {
+        "_containsChildrenIds": [],
+        "group": "conditionalProcess",
+        "id": "02f10325-cc03-6fd5-c1ce-c47f2d1a0f5a",
+        "method": "test",
+        "declaredClass": "xblox.model.code.CallMethod",
+        "name": "Call Method",
+        "args": "",
+        "serializeMe": true,
+        "enabled": true,
+        "renderBlockIcon": true,
+        "order": 0
+    }
+]

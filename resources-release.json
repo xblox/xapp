@@ -1,0 +1,47 @@
+{
+    "class":"cmx.types.Resources",
+    "distDir":"%XASWEB%/%XLIB%/xbox",
+    "includes":[
+        {
+            "class":"cmx.types.ResourceInclude",
+            "path":"%XLIB%/resourceConfigs/commons-release.json"
+        }
+    ],
+    "items":[
+        {
+            "class":"cmx.types.Resource",
+            "type":"CSS",
+            "url":"%XASWEB%/xbox/xbox/resources/app.css"
+        },
+        {
+            "class":"cmx.types.Resource",
+            "type":"CSS",
+            "url":"%XASWEB%/%XLIB%/dojox/widget/Wizard/Wizard.css"
+        },
+        {
+            "class":"cmx.types.Resource",
+            "type":"CSS",
+            "url":"%XASWEB%/xfile/ext/cm/addon/dialog/dialog.css",
+            "enabled":true
+        },
+        {
+            "class":"cmx.types.Resource",
+            "type":"JS-HEADER-INCLUDE",
+            "url":"%XASWEB%/xfile/ext/cm/addon/dialog/dialog.js",
+            "enabled":true
+        },
+        {
+            "class":"cmx.types.Resource",
+            "type":"JS-HEADER-INCLUDE",
+            "url":"%XASWEB%/xfile/ext/cm/addon/search/searchcursor.js",
+            "enabled":true
+        },
+        {
+            "class":"cmx.types.Resource",
+            "type":"JS-HEADER-INCLUDE",
+            "url":"%XASWEB%/xfile/ext/cm/addon/search/search.js",
+            "enabled":true
+        }
+    ]
+}
+
