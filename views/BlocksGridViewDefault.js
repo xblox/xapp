@@ -91,7 +91,7 @@ define([
                         collection: store,
                         dndConstructor: SharedDndGridSource, // use extension defined above*/
                         columns: [
-                            {renderExpando: true, label: "Name", field:"name", sortable: false/*,editor:BlockGridRowEditor*/}
+                            {renderExpando: true, label: "Name", field:"name", sortable: false,editor:BlockGridRowEditor}
                             /*
                             Tree(editor({
                                 label: " Name",
