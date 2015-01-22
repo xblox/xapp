@@ -8,6 +8,7 @@ define([
     'dstore/QueryResults',//no need
     'xide/data/_Base'
 ], function (declare, Memory, Tree, QueryResults,_Base) {
+
     /**
      *
      */
