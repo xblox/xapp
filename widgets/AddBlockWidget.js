@@ -35,7 +35,7 @@ define([
                     aspect.after(widget, 'onOpen', function(){
                         if(this._popupWrapper && this._popupWrapper){
                             var dst = this._popupWrapper;
-                            domClass.add(dst,'ui-menu ui-widget ui-widget-content');
+                            domClass.add(dst,'ui-widget ui-widget-content');
                         }
                     });
                 },
@@ -164,7 +164,7 @@ define([
                             this._createDefaultItems();
                         }
                         if(this.addJQueryClasses){
-                            domClass.add(this.menu.containerNode,'addBlockMenu ui-menu ui-widget ui-widget-content ui-corner-all');
+                            domClass.add(this.menu.containerNode,'addBlockMenu ui-widget ui-widget-content ui-corner-all');
                         }
                         this.fixButton(this.wButton);
                         this._patchMenu(this.menu);

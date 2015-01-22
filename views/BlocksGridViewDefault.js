@@ -5,7 +5,6 @@ define([
         'xide/grid/_Base',
         'xide/types',
         "dgrid/OnDemandGrid",
-        "dgrid/Selection",
         "dgrid/Editor",
         "dgrid/Tree",
         "dgrid/extensions/DnD",
@@ -16,11 +15,12 @@ define([
         'xide/bean/Grouped'
     ],
     function (declare, lang, BeanView,_Base,types,
-              OnDemandGrid, Selection, Editor, Tree, Dnd, DojoDndMixin, BlocksGridDndSource, BlocksGridView, BlockGridRowEditor,Grouped) {
+              OnDemandGrid, Editor, Tree, Dnd, DojoDndMixin, BlocksGridDndSource, BlocksGridView, BlockGridRowEditor,Grouped) {
 
         return declare("xblox.views.BlocksGridViewDefault", [BeanView, BlocksGridView,Grouped],
             {
                 cssClass: 'basicCommandsGridView',
+
                 beanType:'BLOCK',
                 //////////////////////////////////////////////////////////////////////////////////
                 //
@@ -49,7 +49,6 @@ define([
                 onShow: function () {
 
                     this.setCurrentGroup(this.delegate.blockGroup);
-
                     this.inherited(arguments);
                     this.publish(types.EVENTS.RESIZE);
 
@@ -59,8 +58,6 @@ define([
                 },
                 createWidgets: function (store) {
 
-
-                    var thiz = this;
                     var SharedDndGridSource = declare([BlocksGridDndSource, DojoDndMixin],{
                             blockScope: this.blockScope,
                             delegate: this.delegate,
@@ -76,29 +73,24 @@ define([
                             }
                         });
 
-                    var baseClasses = [OnDemandGrid,Tree,Editor,_Base,Selection, Dnd];
+                    var baseClasses = [OnDemandGrid,_Base,Editor,Tree,Dnd];
+
                     baseClasses = this.getGridBaseClasses(baseClasses,{
                         keyboardNavigation:true,
                         keyboardSelect:false,
                         selection:true
-
                     });
 
                     var _ctorArgs = {
-                        /*sort: "id",*/
                         cellNavigation: false,
                         sort:null,
                         collection: store,
                         dndConstructor: SharedDndGridSource, // use extension defined above*/
+                        shouldHandleKey:function(key){
+                            return !(key == 39 || key == 37);
+                        },
                         columns: [
                             {renderExpando: true, label: "Name", field:"name", sortable: false,editor:BlockGridRowEditor}
-                            /*
-                            Tree(editor({
-                                label: " Name",
-                                field: "name",
-                                sortable: true
-                            }, BlockGridRowEditor))
-                            */
                         ],
                         dndParams: {
                             allowNested: true, // also pick up indirect children w/ dojoDndItem class
@@ -114,13 +106,9 @@ define([
                     }
                     _ctorArgs.deselectOnRefresh = false;
 
-                    //var grid = new (declare([OnDemandGrid,Selection]))(_ctorArgs, this.containerNode);
                     try {
-                        var gridBase = declare(baseClasses,{});
-                        //var grid = new (declare(baseClasses))(_ctorArgs, this.containerNode);
-                        var grid = new gridBase(_ctorArgs, this.containerNode);
-                        //grid.sort("name");
-                        //grid.refresh();
+                        var grid = new (declare(baseClasses))(_ctorArgs, this.containerNode);
+                        grid.refresh();
                         this.grid = grid;
                         this.onGridCreated(grid);
                     }catch(e){
@@ -128,13 +116,10 @@ define([
                     }
                 },
                 startup: function () {
-                    if (this.didLoad)
-                        return;
                     this.inherited(arguments);
                     if (this.store) {
                         this.createWidgets(this.store);
                     }
-                    this.didLoad = true;
                 }
             });
     })
