@@ -5,10 +5,8 @@ define([
     "dojo/_base/declare",
     'dstore/Memory',//basics
     'dstore/Tree',//tree-grid support
-    'dstore/QueryResults',//no need
     'xide/data/_Base'
-], function (declare, Memory, Tree, QueryResults,_Base) {
-
+], function (declare, Memory, Tree, _Base) {
     /**
      *
      */
