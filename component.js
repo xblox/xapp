@@ -20,27 +20,14 @@ define([
         //  Implement base interface
         //
         //////////////////////////////////////////////////////////////////////////////////////////////////////
-        /**
-         * @inheritDoc
-         */
-        getLabel: function () {
-            return 'XIDE Visual Designer';
-        },
-
-        /**
-         * @inheritDoc
-         */
-        load:function(){
-            var _defered = new Deferred();
-            var _re      = require;//hide from gcc
-            _re([
+        getDependencies:function(){
+            return [
                 'xblox/types/Types',
                 'xblox/manager/BlockManager',
                 'xblox/embedded_ui',
                 'xfile/manager/BlockManager',
                 'xfile/views/BlocksFileEditor',
                 'xide/widgets/ExpressionJavaScript',
-
                 'xide/widgets/ImageWidget',
                 'xide/widgets/Expression',
                 'xide/widgets/ArgumentsWidget',
@@ -49,22 +36,19 @@ define([
                 'xide/widgets/ExpressionEditor',
                 'xide/widgets/WidgetReference',
                 'xide/widgets/DomStyleProperties'
-            ],function(XBlockManager,embedded_ui,FBlockManager,BlocksFileEditor,ExpressionJavaScript,
-                       ImageWidget,Expression, ArgumentsWidget, RichTextWidget, JSONEditorWidget, ExpressionEditor, WidgetReference, DomStyleProperties){
-
-                has.add('xblox',function(){return true});
-
-                _defered.resolve();
-            });
-
-            return _defered.promise;
+            ];
         },
-
+        /**
+         * @inheritDoc
+         */
+        getLabel: function () {
+            return 'xblox';
+        },
         /**
          * @inheritDoc
          */
         getBeanType:function(){
-            return this.getLabel();
+            return this.beanType;
         }
     });
 });
