@@ -20,6 +20,10 @@ define([
         //  Implement base interface
         //
         //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        hasEditors:function(){
+            return ['xblox'];
+        },
         getDependencies:function(){
             return [
                 'xblox/types/Types',

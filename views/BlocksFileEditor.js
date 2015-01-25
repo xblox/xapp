@@ -12,10 +12,11 @@ define([
         'xblox/views/GroupedBlockView',
         'xblox/views/BlocksGridViewDefault',
         'xblox/views/VariablesGridView',
-        'xblox/model/variables/Variable'
+        'xblox/model/variables/Variable',
+        'dojo/Deferred'
     ],
     function (declare, lang, BeanView, BeanTreeView, factory, utils, Memory, Observable,
-              _EditorMixin, ContentPane, GroupedBlockView, BlocksGridViewDefault, VariablesGridView, Variable) {
+              _EditorMixin, ContentPane, GroupedBlockView, BlocksGridViewDefault, VariablesGridView, Variable,Deferred) {
 
         return declare("xblox.views.BlocksFileEditor", [BeanView, BeanTreeView, _EditorMixin],
             {
@@ -78,17 +79,24 @@ define([
                  */
                 openItem: function (item) {
 
+                    var dfd = new Deferred();
                     this._item = item;
                     var thiz = this;
+
                     try {
                         var _loaded = function (content) {
                             thiz.initWithContent(content);
-                        }.bind(thiz);
+                            dfd.resolve(thiz);
+                        };
                     } catch (e) {
+
                         console.error('trouble loading xblox file : ', e);
+
                     }
 
                     this.getContent(item, _loaded);
+
+                    return dfd;
 
                 },
                 /**
