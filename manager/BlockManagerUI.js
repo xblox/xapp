@@ -45,8 +45,9 @@ define([
              */
             onSetWidgetPropertyActions:function(evt){
 
-                console.log('onSetWidgetPropertyActions',evt);
+                //console.log('onSetWidgetPropertyActions',evt);
 
+                /*
                 var _handler = function(){
                     console.log('say hello',arguments);
                 }
@@ -54,6 +55,7 @@ define([
                 _action.setVisibility(types.ACTION_VISIBILITY.WIDGET_PROPERTY,{});
 
                 evt.actions.push(_action);
+                */
 
 
             },
