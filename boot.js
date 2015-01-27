@@ -12,9 +12,13 @@ define([
 
             console.log('start xapp');
 
-            var ctx = new xapp.manager.Context();
+            var _require = require;
+            var _ctx=_require('xapp/manager/Context');
+            var ctx = new _ctx;
             ctx.constructManagers();
             ctx.initManagers();
+
+            return ctx;
 
         },
         getDependencies:function(extraDependencies){
