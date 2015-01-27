@@ -6,21 +6,37 @@ define([
 ], function (declare,Deferred,has,require) {
 
 
-    return declare(null,{
+    return declare('xapp/boot',null,{
 
+        start:function(){
+
+            console.log('start xapp');
+
+            var ctx = new xapp.manager.Context();
+            ctx.constructManagers();
+            ctx.initManagers();
+
+        },
         getDependencies:function(extraDependencies){
             var result = [
                 'xide/utils',
                 'xide/types',
                 'xide/types/Types',
-                'xide/utils/StringUtils'
+                'xide/utils/StringUtils',
+                'xide/utils/HTMLUtils',
+                'xide/utils/CIUtils',
+                'xide/utils/StoreUtils',
+                'xide/utils/WidgetUtils',
+                'xide/utils/ObjectUtils',
+                'xide/factory/Objects',
+                'xide/factory/Events',
+                'xapp/manager/Context'
             ];
 
             if(extraDependencies){
                 result = result.concat(extraDependencies);
             }
-
-            return extraDependencies;
+            return result;
         },
         load: function (extraDependencies) {
 
