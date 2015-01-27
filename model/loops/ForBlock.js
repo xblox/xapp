@@ -41,6 +41,8 @@ define([
 
         name:'For',
 
+        sharable:true,
+
         _solve:function(scope,settings){
             var ret=[];
 

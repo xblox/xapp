@@ -34,6 +34,15 @@ define([
         //  enables or disables the block
         enabled:true,
 
+        /**
+         * @member shareTitle {string}
+         */
+        shareTitle:'',
+        /**
+         *
+         */
+        sharable:false,
+
         //items: Array (xblox.model.ModelBase)
         //  This is plain and simple a series of commands to send to the device. The send field however can contain
         //  also variable names, those expressions needs to be evaluated before sending it to the device
@@ -79,7 +88,8 @@ define([
             'ignoreSerialize',
             '_lastRunSettings',
             '_onLoaded',
-            'beanType'
+            'beanType',
+            'sharable'
         ],
 
         //  standard call from interface
@@ -672,13 +682,24 @@ define([
                 );
             }
 
-            fields.push(this.utils.createCI('condition',26,this.description,
-                {
+            fields.push(this.utils.createCI('condition',26,this.description,{
                     group:'Description',
                     title:'Description',
                     dst:'description',
                     useACE:false
-                }));
+            }));
+
+            if(this.sharable){
+
+                fields.push(
+                    this.utils.createCI('enabled',13,this.shareTitle,{
+                        group:'Share',
+                        title:'Title',
+                        dst:'shareTitle',
+                        toolTip:'Enter an unique name to share this block!'
+                    })
+                );
+            }
 
             return fields;
         },

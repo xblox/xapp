@@ -26,6 +26,8 @@ define([
 
         currentIndex:0,
 
+        sharable:true,
+
         //  standard call from interface
         canAdd:function(){
             return [];

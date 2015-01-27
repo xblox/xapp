@@ -50,6 +50,8 @@ define([
          * Debugging
          * @member {function}
          */
+        sharable:true,
+
         onReloaded: function () {
 
 

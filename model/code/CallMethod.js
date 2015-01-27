@@ -19,6 +19,7 @@ define([
         //  block action name
         method:'',
         args:'',
+        sharable:true,
         getContext:function(){
             if(this.scope.context && this.scope.context.instance){
                 return this.scope.context.instance;

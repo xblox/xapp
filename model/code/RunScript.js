@@ -21,6 +21,7 @@ define([
         method:'',
         args:'',
         deferred:false,
+        sharable:true,
         getContext:function(){
 
             if(this.scope.context && this.scope.context.instance){

@@ -44,6 +44,8 @@ define([
          * @member {string}
          */
         defaultServiceMethod: 'run',
+
+        sharable:true,
         /**
          * Callback when user edited the 'method' field. This will pre-populate the arguments field when empty
          * with the known SMD parameters : if possible.

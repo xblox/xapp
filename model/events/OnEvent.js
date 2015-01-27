@@ -30,6 +30,7 @@ define([
 
         references:null,
 
+        sharable:true,
 
         _nativeEvents:[
             "onclick",
