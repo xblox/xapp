@@ -18,7 +18,7 @@ define([
             ctx.constructManagers();
             ctx.initManagers();
 
-            return ctx;
+            return ctx.application.start();
 
         },
         getDependencies:function(extraDependencies){
@@ -34,7 +34,8 @@ define([
                 'xide/utils/ObjectUtils',
                 'xide/factory/Objects',
                 'xide/factory/Events',
-                'xapp/manager/Context'
+                'xapp/manager/Context',
+                'xapp/manager/Application'
             ];
 
             if(extraDependencies){
