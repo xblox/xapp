@@ -5,18 +5,24 @@ define([
     {
 
         lang.mixin(types.EVENTS,{
-            ON_BLOCK_SELECTED:           'onItemSelected',
-            ON_BLOCK_UNSELECTED:         'onBlockUnSelected',
-            ON_BLOCK_EXPRESSION_FAILED:  'onExpressionFailed',
-            ON_BUILD_BLOCK_INFO_LIST:    'onBuildBlockInfoList',
-            ON_BUILD_BLOCK_INFO_LIST_END:'onBuildBlockInfoListEnd',
-            ON_BLOCK_PROPERTY_CHANGED   :'onBlockPropertyChanged',
-            ON_SCOPE_CREATED:            'onScopeCreated',
-            ON_VARIABLE_CHANGED:         'onVariableChanged'
+
+            ON_RUN_BLOCK:                   'onRunBlock',
+            ON_RUN_BLOCK_FAILED:            'onRunBlockFailed',
+            ON_RUN_BLOCK_SUCCESS:           'onRunBlockSuccess',
+            ON_BLOCK_SELECTED:              'onItemSelected',
+            ON_BLOCK_UNSELECTED:            'onBlockUnSelected',
+            ON_BLOCK_EXPRESSION_FAILED:     'onExpressionFailed',
+            ON_BUILD_BLOCK_INFO_LIST:       'onBuildBlockInfoList',
+            ON_BUILD_BLOCK_INFO_LIST_END:   'onBuildBlockInfoListEnd',
+            ON_BLOCK_PROPERTY_CHANGED:      'onBlockPropertyChanged',
+            ON_SCOPE_CREATED:               'onScopeCreated',
+            ON_VARIABLE_CHANGED:            'onVariableChanged'
+
         });
 
 
         types.BlockType = {
+
             AssignmentExpression: 'AssignmentExpression',
             ArrayExpression: 'ArrayExpression',
             BlockStatement: 'BlockStatement',

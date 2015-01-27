@@ -203,13 +203,13 @@ define([
                 this.subscribe([
                     _EVENTS.ON_CI_UPDATE,
                     _EVENTS.ON_ACTION_CONTEXT_CHANGED,
-                    'onSetWidgetPropertyActions' // this event key might be unkown yet
+                    //'onSetWidgetPropertyActions' // this event key might be unkown yet
                 ]);
 
                 var thiz=this;
-                setTimeout(function () {
-                    factory.subscribe(types.EVENTS.ON_BLOCK_SELECTED, thiz.onBlockSelected, thiz);
-                }, 1200);
+                /*setTimeout(function () {*/
+                this.subscribe(_EVENTS.ON_ITEM_SELECTED, this.onBlockSelected);
+                /*}, 1200);*/
             },
 
             onBlockSelected:function(evt){
