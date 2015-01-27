@@ -8,17 +8,19 @@ define([
 
     return declare('xapp/boot',null,{
 
-        start:function(){
+        start:function(settings){
 
             console.log('start xapp');
 
             var _require = require;
+
             var _ctx=_require('xapp/manager/Context');
             var ctx = new _ctx;
+
             ctx.constructManagers();
             ctx.initManagers();
 
-            return ctx.application.start();
+            return ctx.application.start(settings);
 
         },
         getDependencies:function(extraDependencies){
