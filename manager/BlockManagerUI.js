@@ -247,6 +247,18 @@ define([
                     if(!this.targetTop){
                         return;
                     }
+
+                    var mainView = this.ctx.getApplication().mainView;
+                    var layoutRight = mainView.layoutRight;
+                    if(layoutRight && !domClass.contains(layoutRight.domNode,'xbloxPropertyView')){
+                        domClass.add(layoutRight.domNode,'xbloxPropertyView');
+                        mainView.layoutMain.resize();
+                    }
+
+
+
+
+
                     if (this.targetTop.selectedChildWidget) {
                         this.lastSelectedTopTabTitle = this.targetTop.selectedChildWidget.title;
                     }
