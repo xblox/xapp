@@ -6,7 +6,7 @@ define([
     'dstore/Memory',//basics
     'dstore/Tree',//tree-grid support
     'xide/data/_Base'
-], function (declare, Memory, Tree, _Base) {
+], function (declare, Memory, Tree,_Base) {
     /**
      *
      */

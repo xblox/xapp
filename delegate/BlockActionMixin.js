@@ -5,6 +5,7 @@ define([
         "xblox/widgets/AddBlockWidget"
     ],
     function (array, declare, factory, AddBlockWidget) {
+
         return declare("xblox.delegate.BlockActionMixin", null,
             {
                 /**
@@ -327,7 +328,8 @@ define([
                     if (!item) {
                         return;
                     }
-                    var target = item.target;
+                    var target = item.target,
+                        thiz = this;
                     var proto = item.proto;
                     var ctorArgs = item.ctrArgs;
                     var where = null;
@@ -363,10 +365,7 @@ define([
                         if (!ctorArgs.group && this.newRootItemGroup) {
                             ctorArgs.group = this.newRootItemGroup;
                         }
-
-
                         newBlock = factory.createBlock(proto, ctorArgs);//root block
-
                     }
 
                     if (newBlock && newBlock.postCreate) {
@@ -376,11 +375,19 @@ define([
 
                     var store = this.blockScope[this.storeField] || this.blockStore || this.blockScope.blockStore;
 
-                    this.gridView.grid.set("store", store.filter({
+                    /*setTimeout(function(){*/
+
+                    /*
+                    thiz.gridView.grid.set("store", store.filter({
                         group: this.blockGroup
                     }));
+                    */
+                    thiz.gridView.grid.refresh();
 
-                    this.onItemAdded(target, newBlock);
+                    thiz.onItemAdded(target, newBlock);
+                    /*},500);*/
+
+
 
                 },
                 ////////////////////////////////////////////////////////////////
