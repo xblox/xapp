@@ -6,12 +6,20 @@ define([
     'xide/manager/Application',
     'xide/factory',
     'xide/types',
-    'xide/utils'
+    'xide/utils',
+    'dojo/dom-construct',
+    "dojo/query"
 
-], function (declare, lang, has,Deferred,Application,factory, types, utils) {
+], function (declare, lang, has,Deferred,Application,factory, types, utils,domConstruct,query) {
 
     return declare("xapp/manager/Application", [Application],{
 
+        loadScript:function(url){
+
+            domConstruct.create('script', {
+                src:url
+            }, query('head')[0]);
+        },
         start:function(settings){
 
             var def = new Deferred(),
