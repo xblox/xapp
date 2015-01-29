@@ -14,18 +14,21 @@ define([
     return declare("xapp/manager/Context", [ContextBase],
         {
             application:null,
+            getBlockManager:function(){
+                return this.blockManager;
+            },
+            getFileManager:function(){
+                return this.fileManager;
+            },
             initManagers: function () {
 
                 this.pluginManager.init();
                 this.application.init();
-
             },
             constructManagers: function () {
                 this.inherited(arguments);
-
                 this.pluginManager = this.createManager(PluginManager);
                 this.application = this.createManager(Application);
-
             }
         });
 });
