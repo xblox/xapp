@@ -17,13 +17,14 @@ define([
 
         delegate:null,
         settings:null,
-        runBlox:function(path,id,context){
+        runBlox:function(path,id,context,settings){
 
             var parts = utils.parse_url(path);
 
             console.log('run blox : ' + id,parts);
 
             var bm = this.ctx.getBlockManager();
+
             if(this.delegate && this.delegate.ctx.getBlockManager()){
                 bm = this.delegate.ctx.getBlockManager();
             }
@@ -31,7 +32,6 @@ define([
             bm.load(parts.scheme,parts.host).then(function(scope){
 
                 var block = scope.getBlockById(id);
-
                 if(block){
                     block.context = context;
                     return block.solve(block.scope);
