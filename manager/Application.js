@@ -18,22 +18,24 @@ define([
         delegate:null,
         settings:null,
         runBlox:function(path,id,context,settings){
-
             var parts = utils.parse_url(path);
 
-            console.log('run blox : ' + id,parts);
+            console.log('run blox : ' + id + ' with ',settings);
 
             var bm = this.ctx.getBlockManager();
-
             if(this.delegate && this.delegate.ctx.getBlockManager()){
                 bm = this.delegate.ctx.getBlockManager();
             }
-
             bm.load(parts.scheme,parts.host).then(function(scope){
 
                 var block = scope.getBlockById(id);
                 if(block){
                     block.context = context;
+
+                    if(settings) {
+                        block.override = settings;
+                    }
+
                     return block.solve(block.scope);
                 }else{
                     console.error('have no block !');
