@@ -23,9 +23,7 @@ define([
             console.log('run blox : ' + id + ' with ',settings);
 
             var bm = this.ctx.getBlockManager();
-            if(this.delegate && this.delegate.ctx.getBlockManager()){
-                bm = this.delegate.ctx.getBlockManager();
-            }
+
             bm.load(parts.scheme,parts.host).then(function(scope){
 
                 var block = scope.getBlockById(id);
@@ -59,6 +57,15 @@ define([
 
 
         },
+        onReady:function(){
+
+            this.publish(types.EVENTS.ON_APP_READY,{
+                context:this.ctx,
+                application:this,
+                delegate:this.delegate
+            })
+
+        },
         onXBloxReady:function() {
 
             var _re = require,
@@ -66,9 +73,17 @@ define([
 
             _re(['xblox/embedded', 'xblox/manager/BlockManager'], function (embedded, BlockManager) {
 
-                var blockManagerInstance = new BlockManager();
-                blockManagerInstance.ctx = thiz.ctx;
-                thiz.ctx.blockManager = blockManagerInstance;
+                //IDE's block manager
+                if(thiz.delegate && thiz.delegate.ctx.getBlockManager()){
+                    thiz.ctx.blockManager = thiz.delegate.ctx.getBlockManager();
+                }else{
+
+                    var blockManagerInstance = new BlockManager();
+                    blockManagerInstance.ctx = thiz.ctx;
+                    thiz.ctx.blockManager = blockManagerInstance;
+                }
+
+                thiz.onReady();
             });
         },
         /**
