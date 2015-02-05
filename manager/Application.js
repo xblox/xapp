@@ -20,7 +20,12 @@ define([
         runBlox:function(path,id,context,settings){
             var parts = utils.parse_url(path);
 
-            console.log('run blox : ' + id + ' with ',settings);
+            console.log('runsd xsaasfs : ' + id + ' with ',settings);
+
+
+
+
+
 
             var bm = this.ctx.getBlockManager();
 
@@ -33,7 +38,6 @@ define([
                     if(settings) {
                         block.override = settings;
                     }
-
                     return block.solve(block.scope);
                 }else{
                     console.error('have no block !');
