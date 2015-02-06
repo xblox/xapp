@@ -23,6 +23,7 @@ define([
                     }
 
                 }
+
             },
             onModuleUpdated:function(evt){
 
