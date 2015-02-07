@@ -60,7 +60,7 @@ define([
                 context:this.ctx,
                 application:this,
                 delegate:this.delegate
-            })
+            });
 
         },
         onXBloxReady:function() {
