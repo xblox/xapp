@@ -20,13 +20,7 @@ define([
         runBlox:function(path,id,context,settings){
             var parts = utils.parse_url(path);
 
-            console.log('runsd xsaasfs : ' + id + ' with ',settings);
-
-
-
-
-
-
+            console.log('runsd: ' + id + ' with ',settings);
             var bm = this.ctx.getBlockManager();
 
             bm.load(parts.scheme,parts.host).then(function(scope){
@@ -50,7 +44,6 @@ define([
 
         run:function(settings){
 
-            console.log('run with ',settings);
             this.settings = settings;
         },
         loadScript:function(url){
@@ -102,12 +95,7 @@ define([
 
             var def = new Deferred(),
                 thiz = this;
-
-
-            console.log('start xapp',settings);
-
             this.delegate = settings.delegate;
-
             this.ctx.pluginManager.loadComponent('xblox').then(function(){
                 def.resolve(thiz.ctx);
                 thiz.onXBloxReady()
