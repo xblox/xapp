@@ -5,13 +5,14 @@ define([
     'xide/manager/ContextBase',
     'xide/manager/PluginManager',
     'xapp/manager/Application',
+    'xide/mixins/EventedMixin',
     'xide/factory',
     'xide/types',
     'xide/utils'
 
-], function (declare, lang, has,ContextBase,PluginManager,Application,factory, types, utils) {
+], function (declare, lang, has,ContextBase,PluginManager,Application,EventedMixin,factory, types, utils) {
 
-    return declare("xapp/manager/Context", [ContextBase],
+    return declare("xapp/manager/Context", [ContextBase,EventedMixin],
         {
             application:null,
             mergeFunctions: function (target, source) {
