@@ -29,7 +29,8 @@ define([
             onModuleUpdated:function(evt){
 
                 var _obj = dojo.getObject(evt.moduleClass);
-                if(_obj){
+
+                if(_obj && _obj.prototype){
                     this.mergeFunctions(_obj.prototype,evt.moduleProto);
                 }
 
