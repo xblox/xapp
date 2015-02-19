@@ -17,6 +17,22 @@ define([
             var _ctx=_require('xapp/manager/Context');
             var ctx = new _ctx;
 
+            try {
+
+                var _register = _require('delite/register');
+                if(_register){
+
+                    console.log('have delite, start parsing');
+
+                    _require(['deliteful/Button'],function(){
+                        _register.parse();
+                    });
+                }
+            }catch(e){
+
+            }
+
+
             ctx.constructManagers();
             ctx.initManagers();
 
