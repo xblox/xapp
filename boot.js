@@ -22,10 +22,11 @@ define([
                 var _register = _require('delite/register');
                 if(_register){
 
-                    console.log('have delite, start parsing');
+                    //console.log('have delite, start parsing');
 
+                    _register.parse();
                     _require(['deliteful/Button'],function(){
-                        _register.parse();
+
                     });
                 }
             }catch(e){
