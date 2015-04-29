@@ -8,11 +8,12 @@ define([
     'xide/mixins/EventedMixin',
     'xide/factory',
     'xide/types',
-    'xide/utils'
+    'xide/utils',
+    './_WidgetPickerMixin'
 
-], function (declare, lang, has,ContextBase,PluginManager,Application,EventedMixin,factory, types, utils) {
+], function (declare, lang, has,ContextBase,PluginManager,Application,EventedMixin,factory, types, utils,_WidgetPickerMixin) {
 
-    return declare("xapp/manager/Context", [ContextBase,EventedMixin],
+    return declare("xapp/manager/Context", [ContextBase,EventedMixin,_WidgetPickerMixin],
         {
             application:null,
             mergeFunctions: function (target, source) {
