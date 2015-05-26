@@ -96,7 +96,11 @@ define([
             var def = new Deferred(),
                 thiz = this;
             this.delegate = settings.delegate;
+
+            console.log('Checkpoint 5 xapp/manager/Application->start, load xblox');
+
             this.ctx.pluginManager.loadComponent('xblox').then(function(){
+                console.log('   Checkpoint 5.1 xblox component loaded');
                 def.resolve(thiz.ctx);
                 thiz.onXBloxReady()
             });

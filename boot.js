@@ -10,30 +10,23 @@ define([
 
         start:function(settings){
 
-            console.log('start xapp');
-
             var _require = require;
-
             var _ctx=_require('xapp/manager/Context');
             var ctx = new _ctx;
-
             try {
 
                 var _register = _require('delite/register');
                 if(_register){
-
-                    //console.log('have delite, start parsing');
-
+                    console.log('   Checkpoint 3.3 xapp/boot->start : delite/register->parse');
                     _register.parse();
-                    _require(['deliteful/Button'],function(){
 
-                    });
                 }
             }catch(e){
 
             }
 
 
+            console.log('Checkpoint 4.1 xapp/boot->start : construct managers, init managers');
             ctx.constructManagers();
             ctx.initManagers();
 
