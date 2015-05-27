@@ -10,12 +10,11 @@ define([
     'xide/types',
     'xide/utils',
     './_WidgetPickerMixin',
-    'require'
+    'require',
+    'xide/manager/Reloadable'
 
-], function (declare, lang, has,ContextBase,PluginManager,Application,EventedMixin,factory, types, utils,_WidgetPickerMixin,require) {
-
-    return declare("xapp/manager/Context", [ContextBase,EventedMixin,_WidgetPickerMixin],
-        {
+], function (declare, lang, has,ContextBase,PluginManager,Application,EventedMixin,factory, types, utils,_WidgetPickerMixin,require,Reloadable) {
+    return declare("xapp/manager/Context", [ContextBase,EventedMixin,Reloadable,_WidgetPickerMixin],{
             settings:null,
             application:null,
             blockManager:null,
@@ -479,9 +478,12 @@ define([
 
                 this.settings = settings;
 
+
                 console.log('Checkpoint 7. xapp/manager->init(settings)');
 
                 var thiz = this;
+
+                this.loadXIDE();
 
                 /*
                 var nodeServiceManagerProto = require('xnode/manager/NodeServiceManager'),
@@ -497,7 +499,6 @@ define([
                     'xcf/manager/DriverManager',
                     'xcf/manager/DeviceManager',
                     'xcf/manager/BlockManager',
-
                     'xcf/model/ModelBase',
                     'xcf/model/Command',
                     'xcf/model/Variable',

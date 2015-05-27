@@ -9,20 +9,22 @@ define([
     'xide/types',
     'xide/utils',
     'dojo/dom-construct',
-    "dojo/query"
+    "dojo/query",
+    "xapp/test"
 
-], function (declare, lang, has,Deferred,Application,ReloadMixin,factory, types, utils,domConstruct,query) {
+], function (declare, lang, has,Deferred,Application,ReloadMixin,factory, types, utils,domConstruct,query,test) {
 
     return declare("xapp/manager/Application", [Application,ReloadMixin],{
 
         delegate:null,
         settings:null,
         runBlox:function(path,id,context,settings){
+
             var parts = utils.parse_url(path);
 
-            console.log('runsd: ' + id + ' with ',settings);
-            var bm = this.ctx.getBlockManager();
 
+            console.log('run blox: ' + id + ' with ',settings);
+            var bm = this.ctx.getBlockManager();
             bm.load(parts.scheme,parts.host).then(function(scope){
 
                 var block = scope.getBlockById(id);
@@ -39,7 +41,9 @@ define([
             });
         },
         onReloaded:function(){
-            console.log('on reloaded');
+
+            console.log('on reloaded',arguments);
+
         },
 
         run:function(settings){
