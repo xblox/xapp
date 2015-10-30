@@ -19,14 +19,16 @@ define([
                 if(_register){
                     console.log('   Checkpoint 3.3 xapp/boot->start : delite/register->parse');
                     _register.parse();
-
                 }
             }catch(e){
 
+                console.error('error in xapp/boot::start : ' + e,e);
+                debugger;
             }
 
 
             console.log('Checkpoint 4.1 xapp/boot->start : construct managers, init managers');
+
             ctx.constructManagers();
             ctx.initManagers();
 
