@@ -20,9 +20,7 @@ define([
         delegate:null,
         settings:null,
         constructor:function(args){
-
             utils.mixin(this,args);
-
         },
         runBlox:function(path,id,context,settings){
 
