@@ -29,8 +29,16 @@ define([
 
             console.log('Checkpoint 4.1 xapp/boot->start : construct managers, init managers');
 
-            ctx.constructManagers();
-            ctx.initManagers();
+            try {
+                ctx.constructManagers();
+            }catch(e){
+                console.error('error constructing managers ' + e,e);
+            }
+            try {
+                ctx.initManagers();
+            }catch(e){
+                console.error('error init managers ' + e,e);
+            }
 
             return ctx.application.start(settings);
 
