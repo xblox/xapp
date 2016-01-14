@@ -564,8 +564,9 @@ define([
 
             for (var i in source) {
                 var o = source[i];
-                if (lang.isFunction(source[i]) /*&& lang.isFunction(target[i])*/) {
-                    target[i] = source[i];//swap
+                if (_.isFunction(source[i]) /*&& lang.isFunction(target[i])*/) {
+                    console.log('override ' + i);
+                    target[i] = o;
                 }
 
             }
