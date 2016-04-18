@@ -1,4 +1,5 @@
 define([
+    "dcl/dcl",
     'dojo/_base/declare',
     'dojo/_base/lang',
     'xide/manager/ContextBase',
@@ -11,8 +12,9 @@ define([
     'require',
     'xide/manager/Reloadable'
 
-], function (declare, lang, ContextBase, PluginManager, Application, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable) {
-    return declare("xapp/manager/Context", [ContextBase, EventedMixin, Reloadable, _WidgetPickerMixin], {
+], function (dcl,declare, lang, ContextBase, PluginManager, Application, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable) {
+    return dcl([ContextBase, Reloadable, _WidgetPickerMixin], {
+        declaredClass:"xapp/manager/Context",
         settings: null,
         application: null,
         blockManager: null,
@@ -609,7 +611,7 @@ define([
             this.application.init();
         },
         constructManagers: function () {
-            this.inherited(arguments);
+            //this.inherited(arguments);
             this.pluginManager = this.createManager(PluginManager);
             this.application = this.createManager(Application);
         }

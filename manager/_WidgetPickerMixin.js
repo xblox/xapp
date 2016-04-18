@@ -1,11 +1,10 @@
 define([
+    "dcl/dcl",
     'dojo/_base/declare',
     "dojo/dom-class",
     "dojo/dom-construct",
     'xide/utils'
-],
-    function(declare,domClass,domConstruct,utils)
-    {
+],function(dcl,declare,domClass,domConstruct,utils){
 
         var outlineVisible = false;
         var boxModelVisible = false;
@@ -105,9 +104,8 @@ define([
         };
 
 
-        return declare("xide.widgets._WidgetPickerMixin",null,{
-
-
+        return dcl(null,{
+            declaredClass:"xide.widgets._WidgetPickerMixin",
             _inspectFrame:null,
             _isInspecting:false,
             _lastInspecting:0,

@@ -1,9 +1,10 @@
 define([
+    "dcl/dcl",
     'dojo/_base/declare',
     'dojo/_base/lang',
     'dojo/has',
     'dojo/Deferred',
-    'xide/manager/Application',
+    //'xide/manager/Application',
     'xide/mixins/ReloadMixin',
     'xide/mixins/EventedMixin',
     'xide/factory',
@@ -11,12 +12,14 @@ define([
     'xide/utils',
     'dojo/dom-construct',
     "dojo/query",
-    "xapp/test"
+    "xapp/test",
+    "xide/manager/ManagerBase"
 
-], function (declare, lang, has,Deferred,Application,ReloadMixin,EventedMixin,factory, types, utils,domConstruct,query,test) {
+], function (dcl,declare, lang, has,Deferred,ReloadMixin,EventedMixin,factory, types, utils,domConstruct,query,test,ManagerBase) {
+    //Application
+    return dcl([ManagerBase],{
 
-    return declare("xapp/manager/Application", [Application,EventedMixin,ReloadMixin],{
-
+        declaredClass:"xapp/manager/Application",
         delegate:null,
         settings:null,
         constructor:function(args){
