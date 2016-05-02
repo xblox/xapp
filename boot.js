@@ -39,6 +39,8 @@ define([
         },
         getDependencies:function(extraDependencies){
             var result = [
+                'lodash',
+                'xide/lodash',
                 'xide/utils',
                 'xide/types',
                 'xide/types/Types',
