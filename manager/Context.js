@@ -10,9 +10,13 @@ define([
     'xide/utils',
     './_WidgetPickerMixin',
     'require',
-    'xide/manager/Reloadable'
+    'xide/manager/Reloadable',
+    'xdojo/has'
 
-], function (dcl,declare, lang, ContextBase, PluginManager, Application, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable) {
+], function (dcl,declare, lang, ContextBase, PluginManager, Application, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable,has) {
+
+    var isIDE = has('xcf-ui');
+
     return dcl([ContextBase, Reloadable, _WidgetPickerMixin], {
         declaredClass:"xapp/manager/Context",
         settings: null,
@@ -289,8 +293,10 @@ define([
                 if (parts.length == 1) {
                     event = parts[0];
                     widgetId = 'body';
-                    var _body = editorContext.rootWidget;
-                    _body.domNode.runExpression = editorContext.global.runExpression;
+                    if(isIDE) {
+                        var _body = editorContext.rootWidget;
+                        _body.domNode.runExpression = editorContext.global.runExpression;
+                    }
                 }
 
                 if (parts.length == 2) {
@@ -393,7 +399,7 @@ define([
                 try {
                     this.wireScope(scope);
                 } catch (e) {
-                    debugger;
+                    logError(e,'onBlockFilesLoaded')
                 }
             }
         },
@@ -469,6 +475,8 @@ define([
              console.log('file loaded ',content);
              });
              */
+
+            console.info('-app ready',this);
 
         },
         init: function (settings) {
@@ -551,6 +559,7 @@ define([
 
                             thiz.nodeServiceManager.init();
                             thiz.onReady();
+
                         });
                     });
 

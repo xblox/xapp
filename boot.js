@@ -44,6 +44,7 @@ define([
                 'xide/utils',
                 'xide/types',
                 'xide/types/Types',
+                'xcf/types',
                 'xide/utils/StringUtils',
                 'xide/utils/HTMLUtils',
                 'xide/utils/CIUtils',
