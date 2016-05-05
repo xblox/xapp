@@ -555,8 +555,9 @@ define([
                                 serviceUrl: settings.rpcUrl,
                                 singleton: true
                             });
-
-
+                            thiz.nodeServiceManager._on(types.EVENTS.ON_NODE_SERVICE_STORE_READY,function(){
+                                //debugger;
+                            });
                             thiz.nodeServiceManager.init();
                             thiz.onReady();
 
@@ -615,12 +616,10 @@ define([
             return this.nodeServiceManager;
         },
         initManagers: function () {
-
             this.pluginManager.init();
             this.application.init();
         },
         constructManagers: function () {
-            //this.inherited(arguments);
             this.pluginManager = this.createManager(PluginManager);
             this.application = this.createManager(Application);
         }
