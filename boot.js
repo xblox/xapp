@@ -5,7 +5,7 @@ define([
     "require"
 ], function (declare,Deferred,has,require) {
 
-    var debug = false;
+    var debug = true;
     return declare('xapp/boot',null,{
         start:function(settings){
 

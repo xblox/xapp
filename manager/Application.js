@@ -8,8 +8,8 @@ define([
     "xide/manager/ManagerBase"
 ], function (dcl,Deferred,types, utils,domConstruct,query,ManagerBase) {
 
-    var debugBootstrap = false;
-    var debugBlocks = false;
+    var debugBootstrap = true;
+    var debugBlocks = true;
     //Application
     return dcl([ManagerBase],{
         declaredClass:"xapp/manager/Application",
@@ -50,6 +50,9 @@ define([
             }, query('head')[0]);
         },
         onReady:function(){
+
+            debugBootstrap && console.log('   Checkpoint 5.3 managers ready');
+
             this.publish(types.EVENTS.ON_APP_READY,{
                 context:this.ctx,
                 application:this,
@@ -60,10 +63,30 @@ define([
         onXBloxReady:function() {
             var _re = require,
                 thiz = this;
+            debugBootstrap && console.log('   Checkpoint 5.2 xblox component ready');
+
             _re(['xblox/embedded', 'xblox/manager/BlockManager'], function (embedded, BlockManager) {
+
+                debugBootstrap && console.log('   Checkpoint 5.2 setup xblox');
                 //IDE's block manager
-                if(thiz.delegate && thiz.delegate.ctx.getBlockManager()){
-                    thiz.ctx.blockManager = thiz.delegate.ctx.getBlockManager();
+                if(thiz.delegate && thiz.delegate.ctx){
+
+                    var ctx = thiz.delegate.ctx;
+                    if(ctx.getBlockManager()) {
+                        thiz.ctx.blockManager = ctx.getBlockManager();
+                    }
+
+                    if(ctx.getDriverManager()) {
+                        thiz.ctx.driverManager = ctx.getDriverManager();
+                        thiz.ctx.deviceManager = ctx.getDeviceManager();
+                    }
+                    if(ctx.nodeServiceManager) {
+                        thiz.ctx.nodeServiceManager = ctx.nodeServiceManager;
+                    }
+
+                    thiz.onReady();
+
+
                 }else{
 
                     var blockManagerInstance = new BlockManager();

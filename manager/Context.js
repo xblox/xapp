@@ -541,7 +541,8 @@ define([
                 try {
                     thiz.driverManager.ls('system_drivers').then(function () {
 
-                        console.log('drivers loaded');
+
+                        console.log('Checkpoint 7.1 drivers loaded');
 
                         thiz.deviceManager = thiz.createManager(DeviceManager, null, {
                                 serviceUrl: settings.rpcUrl,
