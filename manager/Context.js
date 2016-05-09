@@ -332,6 +332,55 @@ define([
 
                 return null;
             };
+            var _getParams = function (group) {
+                var event = null,
+                    widgetId = null,
+                    parts = group.split('__'),
+                    params = [];
+
+                //no element:
+                if (parts.length == 1) {
+                    event = parts[0];
+                    widgetId = 'body';
+                    if(isIDE) {
+                        var _body = editorContext.rootWidget;
+                        _body.domNode.runExpression = editorContext.global.runExpression;
+                    }
+                }
+
+                if (parts.length == 2) {
+                    event = parts[1];
+                    widgetId = parts[0];
+                }
+
+                if (parts.length == 5) {
+                    event = parts[1];
+                    widgetId = parts[0];
+                    params = [
+                        parts[2],
+                        parts[3],
+                        parts[4]
+                    ]
+
+                }
+
+                if (event && widgetId) {
+
+                    var widget = document.getElementById(widgetId);
+
+                    if (widgetId === 'body') {
+                        //widget = editorContext.rootWidget;
+                    }
+                    return {
+                        event: event,
+                        widgetId: widgetId,
+                        widget: widget,
+                        params: params
+                    }
+                }
+
+                return null;
+            };
 
             var wireBlock = function (block) {
                 block._on(types.EVENTS.ON_ITEM_REMOVED, function (evt) {
@@ -354,9 +403,13 @@ define([
             };
 
             console.log('wire scope : ', allGroups);
+
             for (var i = 0; i < allGroups.length; i++) {
 
                 var group = allGroups[i];
+                if(group==='d-slider_0__change'){
+                    console.error('-slider change');
+                }
                 var params = getParams(group);
 
                 if (params && params.widget) {
