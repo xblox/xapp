@@ -56,9 +56,17 @@ define([
                 rejectFunction = null,
                 onBeforeRun = null;
 
+            if(!widget['__setup']){
+                widget['__setup']={};
+            }
+
+            if(widget['__setup'][block.id]){
+               return;
+            }
+
+            widget['__setup'][block.id]=true;
 
             if (params) {
-
                 if (event === types.EVENTS.ON_DRIVER_VARIABLE_CHANGED) {
 
                     var varParams = params.params;
@@ -106,7 +114,7 @@ define([
                 return;
             }
 
-            if (!lang.isString(event)) {
+            if (!_.isString(event)) {
                 console.error('event not string ', event);
                 return;
             }
@@ -270,7 +278,7 @@ define([
             for (var j = 0; j < blocks.length; j++) {
 
                 var block = blocks[j];
-                console.log('activate block : ' + block.title + ' for ' + event, block);
+                console.log('activate block : ' + block.name + ' for ' + event, block);
                 this.wireNode(widget, event, block, params);
             }
 
