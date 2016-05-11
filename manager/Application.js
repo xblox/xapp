@@ -17,6 +17,7 @@ define([
         settings:null,
         constructor:function(args){
             utils.mixin(this,args);
+            this.id = utils.createUUID();
         },
         runBlox:function(path,id,context,settings){
             var parts = utils.parse_url(path);
@@ -50,9 +51,7 @@ define([
             }, query('head')[0]);
         },
         onReady:function(){
-
             debugBootstrap && console.log('   Checkpoint 5.3 managers ready');
-
             this.publish(types.EVENTS.ON_APP_READY,{
                 context:this.ctx,
                 application:this,
