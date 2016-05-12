@@ -7,7 +7,8 @@ define([
     "dstore/build/dstorer",
     "xide/build/xider",
     "xblox/build/xbloxr",
-    "xwire/build/xwirer"
+    "xwire/build/xwirer",
+    "xcf/build/xcfr"
 ], function (dcl,has,dHas,Deferred) {
     if(typeof logError==='undefined'){
 
@@ -16,8 +17,8 @@ define([
         }
     }
     require([
-        "xblox/build/xbloxr",
-        "xcf/build/xcfr",
+        //"xblox/build/xbloxr",
+        //"xcf/build/xcfr",
         "dpointer/build/dpointerr",
         "decor/build/decorr",
         "xblox/RunScript",
@@ -37,6 +38,10 @@ define([
 
 
 
+        has.add('xaction', function () {
+            return true;
+        });
+
         has.add('use-dcl', function () {
             return true;
         });
@@ -45,6 +50,9 @@ define([
             return true;
         });
         dHas.add('devices', function () {
+            return true;
+        });
+        dHas.add('xaction', function () {
             return true;
         });
 
