@@ -6,8 +6,8 @@ define([
     'xdojo/declare',
     "dstore/build/dstorer",
     "xide/build/xider",
-    "xblox/build/xbloxr",
-    "xwire/build/xwirer",
+    //"xblox/build/xbloxr",
+    //"xwire/build/xwirer",
     "xcf/build/xcfr"
 ], function (dcl,has,dHas,Deferred) {
     if(typeof logError==='undefined'){
@@ -32,8 +32,7 @@ define([
         "deliteful/ToggleButton",
         'dojo/Deferred',
         'xdojo/declare',
-        "require",
-        "xblox/RunScript"
+        "require"
     ],function(){
 
 
