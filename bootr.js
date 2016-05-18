@@ -8,7 +8,9 @@ define([
     "xide/build/xider",
     "xblox/build/xbloxr",
     "xwire/build/xwirer",
-    "xcf/build/xcfr"
+    "xcf/build/xcfr",
+    "dpointer/build/dpointerr",
+    "decor/build/decorr"
 ], function (dcl,has,dHas,Deferred) {
     if(typeof logError==='undefined'){
 
@@ -19,8 +21,6 @@ define([
     require([
         //"xblox/build/xbloxr",
         //"xcf/build/xcfr",
-        "dpointer/build/dpointerr",
-        "decor/build/decorr",
         "xblox/RunScript",
         'dojo/Deferred',
         "delite/register",
