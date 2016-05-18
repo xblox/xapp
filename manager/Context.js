@@ -454,7 +454,7 @@ define([
         },
         onBlockFilesLoaded: function (scopes) {
 
-            console.log('onSceneBlocksLoaded, wire scope!', scopes);
+            console.log('xapp:onSceneBlocksLoaded, wire scope!', scopes);
             for (var i = 0; i < scopes.length; i++) {
                 var scope = scopes[i];
                 try {
