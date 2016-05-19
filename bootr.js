@@ -9,8 +9,8 @@ define([
     "xblox/build/xbloxr",
     "xwire/build/xwirer",
     "xcf/build/xcfr",
-    "dpointer/build/dpointerr",
-    "decor/build/decorr"
+    "decor/build/decorr",
+    "dpointer/build/dpointerr"
 ], function (dcl,has,dHas,Deferred) {
     if(typeof logError==='undefined'){
 

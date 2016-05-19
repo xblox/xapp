@@ -5,7 +5,7 @@ define([
     "require"
 ], function (declare,Deferred,has,require) {
 
-    var debug = true;
+    var debug = false;
     return declare('xapp/boot',null,{
         start:function(settings){
 
@@ -15,7 +15,7 @@ define([
             try {
                 var _register = _require('delite/register');
                 if(_register){
-                    console.log('   Checkpoint 3.3 xapp/boot->start : delite/register->parse');
+                    debug && console.log('   Checkpoint 3.3 xapp/boot->start : delite/register->parse');
                     _register.parse();
                 }
             }catch(e){

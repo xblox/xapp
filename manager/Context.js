@@ -16,6 +16,8 @@ define([
 ], function (dcl,declare, lang, ContextBase, PluginManager, Application, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable,has) {
 
     var isIDE = has('xcf-ui');
+    var debugWire = false;
+    var debugBoot = false;
 
     return dcl([ContextBase, Reloadable, _WidgetPickerMixin], {
         declaredClass:"xapp/manager/Context",
@@ -119,7 +121,7 @@ define([
                 return;
             }
 
-            console.log('wire node : ' + event);
+            debugWire && console.log('wire node : ' + event);
 
 
             /**
@@ -141,7 +143,7 @@ define([
                 }
 
 
-                console.log('run ! ' + event);
+                debugWire && console.log('run ! ' + event);
 
                 if (block._destroyed) {
                     console.log('run failed block invalid');
@@ -165,7 +167,7 @@ define([
                     result = block.solve(block.scope, {
                         highlight: true
                     });
-                    console.log('run ' + block.name + ' for even ' + event, result + ' for ' + this.id);
+                    debugWire && console.log('run ' + block.name + ' for even ' + event, result + ' for ' + this.id);
                 }
             };
 
@@ -273,12 +275,12 @@ define([
 
 
             if (!blocks || !blocks.length) {
-                console.log('have no blocks for group : ' + group);
+                debugWire && console.log('have no blocks for group : ' + group);
             }
             for (var j = 0; j < blocks.length; j++) {
 
                 var block = blocks[j];
-                console.log('activate block : ' + block.name + ' for ' + event, block);
+                debugWire && console.log('activate block : ' + block.name + ' for ' + event, block);
                 this.wireNode(widget, event, block, params);
             }
 
@@ -286,7 +288,7 @@ define([
         wireScope: function (scope) {
 
 
-            console.log('wire scope');
+            debugWire && console.log('wire scope');
 
             var allGroups = scope.allGroups(),
                 thiz = this;
@@ -410,14 +412,12 @@ define([
                 }, this);
             };
 
-            console.log('wire scope : ', allGroups);
+            debugWire && console.log('wire scope : ', allGroups);
 
             for (var i = 0; i < allGroups.length; i++) {
 
                 var group = allGroups[i];
-                if(group==='d-slider_0__change'){
-                    console.error('-slider change');
-                }
+
                 var params = getParams(group);
 
                 if (params && params.widget) {
@@ -429,7 +429,7 @@ define([
                 });
 
                 if (!blocks || !blocks.length) {
-                    console.warn('have no blocks for group : ' + group);
+                    debugWire && console.warn('have no blocks for group : ' + group);
                 }
                 for (var j = 0; j < blocks.length; j++) {
                     var block = blocks[j];
@@ -443,7 +443,7 @@ define([
 
                 var params = getParams(evt.item.group);
                 if (params && params.widget) {
-                    console.log('on item added', arguments);
+                    debugWire && console.log('on item added', arguments);
 
                     thiz.wireNode(params.widget.domNode, params.event, evt.item, editorContext, params);
 
@@ -454,7 +454,7 @@ define([
         },
         onBlockFilesLoaded: function (scopes) {
 
-            console.log('xapp:onSceneBlocksLoaded, wire scope!', scopes);
+            debugBoot && console.log('xapp:onSceneBlocksLoaded, wire scope!', scopes);
             for (var i = 0; i < scopes.length; i++) {
                 var scope = scopes[i];
                 try {
@@ -472,7 +472,7 @@ define([
 
                 thiz.getBlockManager().loadFiles(files).then(function (scopes) {
 
-                    console.log('   Checkpoint 8.1. xapp/manager/context->xblox files loaded');
+                    debugBoot && console.log('   Checkpoint 8.1. xapp/manager/context->xblox files loaded');
 
                     thiz.onBlockFilesLoaded(scopes);
                 })
@@ -513,7 +513,7 @@ define([
          */
         onReady: function () {
 
-            console.log('Checkpoint 8. xapp/manager->onReady');
+            debugBoot && console.log('Checkpoint 8. xapp/manager->onReady');
 
             var fMgr = this.getFileManager();
             var item = this.settings.item;
@@ -529,15 +529,7 @@ define([
                     });
                 }, 1000);
             })
-
-
-            /*
-             fMgr.getContent(item.mount,item.path,function(content){
-             console.log('file loaded ',content);
-             });
-             */
-
-            console.info('-app ready',this);
+            debugBoot && console.info('-app ready',this);
 
         },
         init: function (settings) {
@@ -545,7 +537,7 @@ define([
             this.settings = settings;
 
 
-            console.log('Checkpoint 7. xapp/manager->init(settings)');
+            debugBoot && console.log('Checkpoint 7. xapp/manager->init(settings)');
 
             var thiz = this;
 
@@ -603,7 +595,7 @@ define([
                     thiz.driverManager.ls('system_drivers').then(function () {
 
 
-                        console.log('Checkpoint 7.1 drivers loaded');
+                        debugBoot && console.log('Checkpoint 7.1 drivers loaded');
 
                         thiz.deviceManager = thiz.createManager(DeviceManager, null, {
                                 serviceUrl: settings.rpcUrl,
@@ -639,7 +631,7 @@ define([
             for (var i in source) {
                 var o = source[i];
                 if (_.isFunction(source[i]) /*&& lang.isFunction(target[i])*/) {
-                    console.log('override ' + i);
+                    debugBoot && console.log('override ' + i);
                     target[i] = o;
                 }
 
