@@ -133,6 +133,10 @@ define([
              */
             var run = function (event, value, block, widget) {
 
+                if (thiz.delegate.isDesignMode && thiz.delegate.isDesignMode()) {
+                    return;
+                }
+
                 //filter, custom reject function
                 if (rejectFunction) {
 
@@ -141,10 +145,7 @@ define([
                         return;
                     }
                 }
-
-
                 debugWire && console.log('run ! ' + event);
-
                 if (block._destroyed) {
                     console.log('run failed block invalid');
                 }
@@ -152,10 +153,8 @@ define([
                 if (!block.enabled) {
                     return;
                 }
-                //setup variables
                 var context = widget,
                     result;
-
                 if (block && context) {
                     block.context = context;
                     block._targetReference = context;
@@ -173,7 +172,7 @@ define([
 
             //patch the target
             if (!widget.subscribe) {
-                lang.mixin(widget, EventedMixin.prototype);
+                utils.mixin(widget, EventedMixin.prototype);
             }
 
             var _target = widget.domNode || widget,
@@ -194,7 +193,6 @@ define([
 
             if (_target) {
 
-
                 //plain node
                 if (!_isDelite && (!_hasWidgetCallback || !_isWidget)) {
                     _handle = on(_target, event, function (evt) {
@@ -204,8 +202,6 @@ define([
 
                     _target = widget;
                     var useOn = true;
-
-
                     if (useOn) {
                         if (!_isDelite) {
                             var _e = 'on' + utils.capitalize(_event);
@@ -216,10 +212,7 @@ define([
                                 }
                             }
                         } else {
-
-
                             if (utils.isSystemEvent(event)) {
-
                                 _handle = _target.subscribe(event, function (evt) {
                                     run(event, evt, block, widget);
                                 }.bind(this), widget);
@@ -237,7 +230,6 @@ define([
                         }
 
                     } else {
-
                         widget['on' + utils.capitalize(_event)] = function (val) {
                             if (_target.ignore !== true) {
                                 run(event, val);
@@ -248,17 +240,13 @@ define([
 
                 if (_handle) {
 
-                    /*widget._events.push(_handle);*/
                     if (widget.addHandle) {
                         widget.addHandle(event, _handle);
                     }
-
                     if (!block._widgetHandles) {
                         block._widgetHandles = [];
                     }
-
                     block._widgetHandles.push(_handle);
-
                     if (widget.emit) {
                         widget.emit('load', widget);
                     }
