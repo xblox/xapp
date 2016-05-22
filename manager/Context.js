@@ -147,7 +147,8 @@ define([
                 }
                 debugWire && console.log('run ! ' + event);
                 if (block._destroyed) {
-                    console.log('run failed block invalid');
+                    console.error('run failed block invalid, block has been removed');
+                    return;
                 }
 
                 if (!block.enabled) {
@@ -279,7 +280,8 @@ define([
             debugWire && console.log('wire scope');
 
             var allGroups = scope.allGroups(),
-                thiz = this;
+                thiz = this,
+                delegate = thiz.delegate || {};
 
             var getParams = function (group) {
                 var event = null,
@@ -427,14 +429,21 @@ define([
             }
 
 
+
             scope._on(types.EVENTS.ON_ITEM_ADDED, function (evt) {
 
                 var params = getParams(evt.item.group);
                 if (params && params.widget) {
                     debugWire && console.log('on item added', arguments);
 
-                    thiz.wireNode(params.widget.domNode, params.event, evt.item, editorContext, params);
+                    var item = evt.item;
+                    item._on('destroy',function(e){
+                        console.error('dests');
+                    });
+                    var editorContext = delegate.getEditorContext ? delegate.getEditorContext() : null ;
+                    var widget = params.widget.domNode || params.widget;
 
+                    thiz.wireNode(widget, params.event, evt.item, editorContext, params);
                     wireBlock(evt.item);
                 }
             });
