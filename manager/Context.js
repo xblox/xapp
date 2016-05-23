@@ -13,7 +13,7 @@ define([
     'xide/manager/Reloadable',
     'xdojo/has'
 
-], function (dcl,declare, lang, ContextBase, PluginManager, Application, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable,has) {
+], function (dcl,declare, lang, ContextBase, PluginManager, Application, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable,has,on) {
 
     var isIDE = has('xcf-ui');
     var debugWire = false;
@@ -133,7 +133,14 @@ define([
              */
             var run = function (event, value, block, widget) {
 
-                if (thiz.delegate.isDesignMode && thiz.delegate.isDesignMode()) {
+                if(event==='load' && widget.__didRunLoad){
+                    return;
+                }
+                if(event==='load'){
+                    widget.__didRunLoad=true;
+                }
+
+                if (thiz.delegate && thiz.delegate.isDesignMode && thiz.delegate.isDesignMode()) {
                     return;
                 }
 
@@ -145,7 +152,7 @@ define([
                         return;
                     }
                 }
-                debugWire && console.log('run ! ' + event);
+                console.log('run ! ' + event + ' for block '+block.name + ':' +block.id );
                 if (block._destroyed) {
                     console.error('run failed block invalid, block has been removed');
                     return;
@@ -196,9 +203,15 @@ define([
 
                 //plain node
                 if (!_isDelite && (!_hasWidgetCallback || !_isWidget)) {
-                    _handle = on(_target, event, function (evt) {
+                    _handle = widget.__on(_target, event, function (evt) {
                         run(event, evt, block, widget);
+
                     });
+
+                    //_handle = on(_target, event, function (evt) {
+                        //run(event, evt, block, widget);
+                    //});
+
                 } else {
 
                     _target = widget;
@@ -248,10 +261,9 @@ define([
                         block._widgetHandles = [];
                     }
                     block._widgetHandles.push(_handle);
-                    if (widget.emit) {
-                        widget.emit('load', widget);
-                    }
 
+                }else{
+                    console.error('wire widget: have no handle',widget);
                 }
             }
         },
@@ -281,7 +293,8 @@ define([
 
             var allGroups = scope.allGroups(),
                 thiz = this,
-                delegate = thiz.delegate || {};
+                delegate = thiz.delegate || {},
+                widgets =[];
 
             var getParams = function (group) {
                 var event = null,
@@ -296,7 +309,10 @@ define([
                     if(isIDE) {
                         var _body = editorContext.rootWidget;
                         _body.domNode.runExpression = editorContext.global.runExpression;
+                    }else{
+
                     }
+
                 }
 
                 if (parts.length == 2) {
@@ -319,8 +335,8 @@ define([
 
                     var widget = document.getElementById(widgetId);
 
-                    if (widgetId === 'body') {
-                        //widget = editorContext.rootWidget;
+                    if (!widget && widgetId === 'body') {
+                        widget = document.body;
                     }
                     return {
                         event: event,
@@ -332,56 +348,6 @@ define([
 
                 return null;
             };
-            var _getParams = function (group) {
-                var event = null,
-                    widgetId = null,
-                    parts = group.split('__'),
-                    params = [];
-
-                //no element:
-                if (parts.length == 1) {
-                    event = parts[0];
-                    widgetId = 'body';
-                    if(isIDE) {
-                        var _body = editorContext.rootWidget;
-                        _body.domNode.runExpression = editorContext.global.runExpression;
-                    }
-                }
-
-                if (parts.length == 2) {
-                    event = parts[1];
-                    widgetId = parts[0];
-                }
-
-                if (parts.length == 5) {
-                    event = parts[1];
-                    widgetId = parts[0];
-                    params = [
-                        parts[2],
-                        parts[3],
-                        parts[4]
-                    ]
-
-                }
-
-                if (event && widgetId) {
-
-                    var widget = document.getElementById(widgetId);
-
-                    if (widgetId === 'body') {
-                        //widget = editorContext.rootWidget;
-                    }
-                    return {
-                        event: event,
-                        widgetId: widgetId,
-                        widget: widget,
-                        params: params
-                    }
-                }
-
-                return null;
-            };
-
             var wireBlock = function (block) {
                 block._on(types.EVENTS.ON_ITEM_REMOVED, function (evt) {
                     try {
@@ -402,7 +368,7 @@ define([
                 }, this);
             };
 
-            debugWire && console.log('wire scope : ', allGroups);
+            console.log('wire scope : ', allGroups);
 
             for (var i = 0; i < allGroups.length; i++) {
 
@@ -412,6 +378,8 @@ define([
 
                 if (params && params.widget) {
                     this.wireWidget(scope, params.widget, params.widget.domNode || params.widget, params.event, group, params);
+                }else{
+                    console.error('invalid params');
                 }
 
                 var blocks = scope.getBlocks({
@@ -426,7 +394,26 @@ define([
                     wireBlock(block);
                 }
 
+                widgets.indexOf(params.widget) ==-1 && widgets.push(params.widget);
             }
+
+            for (var i = 0; i < widgets.length; i++) {
+                var widget = widgets[i];
+
+                if(widget.__didEmitLoad){
+                    return;
+                }
+                console.log('emit load',widget);
+                widget.__didEmitLoad=true;
+                if(widget.nodeName==='BODY'){
+                    $(widget.nodeName).trigger('load');
+                }else {
+                    if (widget.emit) {
+                        widget.emit('load', widget);
+                    }
+                }
+            }
+
 
 
 
@@ -437,9 +424,6 @@ define([
                     debugWire && console.log('on item added', arguments);
 
                     var item = evt.item;
-                    item._on('destroy',function(e){
-                        console.error('dests');
-                    });
                     var editorContext = delegate.getEditorContext ? delegate.getEditorContext() : null ;
                     var widget = params.widget.domNode || params.widget;
 
@@ -475,6 +459,7 @@ define([
                 })
             }
 
+            files = [];
             if (files.length == 0) {
 
                 var item = this.settings.item;
@@ -499,7 +484,7 @@ define([
                     });
                 }
             }
-            loadXBLOXFiles();
+            //loadXBLOXFiles();
         },
         /**
          * Called when all managers and minimum dependencies are loaded.
