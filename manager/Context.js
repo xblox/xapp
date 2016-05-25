@@ -1,7 +1,5 @@
 define([
     "dcl/dcl",
-    'dojo/_base/declare',
-    'dojo/_base/lang',
     'xide/manager/ContextBase',
     'xide/manager/PluginManager',
     'xapp/manager/Application',
@@ -13,11 +11,12 @@ define([
     'xide/manager/Reloadable',
     'xdojo/has'
 
-], function (dcl,declare, lang, ContextBase, PluginManager, Application, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable,has,on) {
+], function (dcl, ContextBase, PluginManager, Application, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable,has,on) {
 
     var isIDE = has('xcf-ui');
     var debugWire = false;
     var debugBoot = false;
+    var debugRun =false;
 
     return dcl([ContextBase, Reloadable, _WidgetPickerMixin], {
         declaredClass:"xapp/manager/Context",
@@ -25,7 +24,6 @@ define([
         application: null,
         blockManager: null,
         getVariable: function (deviceId, driverId, variableId) {
-
             var deviceManager = ctx.getDeviceManager();
             var device = deviceManager.getDeviceById(deviceId),
                 result = null;
@@ -152,7 +150,7 @@ define([
                         return;
                     }
                 }
-                console.log('run ! ' + event + ' for block '+block.name + ':' +block.id );
+                debugRun && console.log('run ! ' + event + ' for block '+block.name + ':' +block.id );
                 if (block._destroyed) {
                     console.error('run failed block invalid, block has been removed');
                     return;
@@ -272,9 +270,8 @@ define([
             var blocks = scope.getBlocks({
                 group: group
             });
-            console.log('wire widget : ' + event + ' for group ' + group, blocks);
 
-
+            debugWire && console.log('wire widget : ' + event + ' for group ' + group, blocks);
             if (!blocks || !blocks.length) {
                 debugWire && console.log('have no blocks for group : ' + group);
             }
@@ -348,6 +345,7 @@ define([
 
                 return null;
             };
+
             var wireBlock = function (block) {
                 block._on(types.EVENTS.ON_ITEM_REMOVED, function (evt) {
                     try {
@@ -367,9 +365,6 @@ define([
                     }
                 }, this);
             };
-
-            console.log('wire scope : ', allGroups);
-
             for (var i = 0; i < allGroups.length; i++) {
 
                 var group = allGroups[i];
@@ -389,9 +384,12 @@ define([
                 if (!blocks || !blocks.length) {
                     debugWire && console.warn('have no blocks for group : ' + group);
                 }
-                for (var j = 0; j < blocks.length; j++) {
-                    var block = blocks[j];
-                    wireBlock(block);
+
+                if(isIDE) {
+                    for (var j = 0; j < blocks.length; j++) {
+                        var block = blocks[j];
+                        wireBlock(block);
+                    }
                 }
 
                 widgets.indexOf(params.widget) ==-1 && widgets.push(params.widget);
@@ -403,7 +401,7 @@ define([
                 if(widget.__didEmitLoad){
                     return;
                 }
-                console.log('emit load',widget);
+                debugBoot && console.log('emit load',widget);
                 widget.__didEmitLoad=true;
                 if(widget.nodeName==='BODY'){
                     $(widget.nodeName).trigger('load');
@@ -414,19 +412,14 @@ define([
                 }
             }
 
-
-
-
-            scope._on(types.EVENTS.ON_ITEM_ADDED, function (evt) {
+            isIDE && scope._on(types.EVENTS.ON_ITEM_ADDED, function (evt) {
 
                 var params = getParams(evt.item.group);
                 if (params && params.widget) {
                     debugWire && console.log('on item added', arguments);
-
                     var item = evt.item;
                     var editorContext = delegate.getEditorContext ? delegate.getEditorContext() : null ;
                     var widget = params.widget.domNode || params.widget;
-
                     thiz.wireNode(widget, params.event, evt.item, editorContext, params);
                     wireBlock(evt.item);
                 }
@@ -479,12 +472,11 @@ define([
                         "blocks": [],
                         "variables": []
                     };
-                    var fManager = this.getFileManager().mkfile(mount, path, JSON.stringify(content, null, 2)).then(function () {
+                    this.getFileManager().mkfile(mount, path, JSON.stringify(content, null, 2)).then(function () {
                         loadXBLOXFiles();
                     });
                 }
             }
-            //loadXBLOXFiles();
         },
         /**
          * Called when all managers and minimum dependencies are loaded.
@@ -497,41 +489,24 @@ define([
 
             debugBoot && console.log('Checkpoint 8. xapp/manager->onReady');
 
-            var fMgr = this.getFileManager();
-            var item = this.settings.item;
             var xbloxFiles = this.settings.xbloxScripts;
             this.loadXBloxFiles(xbloxFiles);
             var thiz = this;
-
             this.subscribe(types.EVENTS.ON_DEVICE_DRIVER_INSTANCE_READY, function () {
-                console.log('instance ready!');
                 setTimeout(function () {
                     thiz.publish(types.EVENTS.ON_APP_READY, {
                         context: thiz
                     });
                 }, 1000);
-            })
+            });
             debugBoot && console.info('-app ready',this);
-
         },
         init: function (settings) {
 
             this.settings = settings;
-
-
             debugBoot && console.log('Checkpoint 7. xapp/manager->init(settings)');
-
             var thiz = this;
-
             this.loadXIDE();
-
-            /*
-             var nodeServiceManagerProto = require('xnode/manager/NodeServiceManager'),
-             thiz = this,
-             nodeManager = this.ctx.createManager(nodeServiceManagerProto, null);
-             this.ctx.nodeServiceManager = nodeManager;
-             */
-
             require([
                 'xfile/manager/FileManager',
                 'xide/manager/ResourceManager',
@@ -544,7 +519,6 @@ define([
                 'xcf/model/Variable',
                 'xcf/factory/Blocks'
             ], function (FileManager, ResourceManager, NodeServiceManager, DriverManager, DeviceManager, BlockManager) {
-
                 thiz.blockManager = thiz.createManager(BlockManager);
                 thiz.blockManager.init();
 
@@ -561,24 +535,15 @@ define([
                 });
                 thiz.resourceManager.init();
 
-
-                /**
-                 * xcf
-                 */
                 thiz.driverManager = thiz.createManager(DriverManager, null, {
                         serviceUrl: settings.rpcUrl,
                         singleton: true
                     }
                 );
                 thiz.driverManager.init();
-
-
                 try {
                     thiz.driverManager.ls('system_drivers').then(function () {
-
-
                         debugBoot && console.log('Checkpoint 7.1 drivers loaded');
-
                         thiz.deviceManager = thiz.createManager(DeviceManager, null, {
                                 serviceUrl: settings.rpcUrl,
                                 singleton: true
@@ -586,27 +551,19 @@ define([
                         );
                         thiz.deviceManager.init();
                         thiz.deviceManager.ls('system_devices').then(function () {
-
                             thiz.nodeServiceManager = thiz.createManager(NodeServiceManager, null, {
                                 serviceUrl: settings.rpcUrl,
                                 singleton: true
-                            });
-                            thiz.nodeServiceManager._on(types.EVENTS.ON_NODE_SERVICE_STORE_READY,function(){
-                                //debugger;
                             });
                             thiz.nodeServiceManager.init();
                             thiz.onReady();
 
                         });
                     });
-
                 } catch (e) {
-                    debugger;
+                    logError(e);
                 }
-
-
             });
-
         },
         mergeFunctions: function (target, source) {
 

@@ -3,8 +3,9 @@ define([
     'dojo/_base/declare',
     "dojo/dom-class",
     "dojo/dom-construct",
-    'xide/utils'
-],function(dcl,declare,domClass,domConstruct,utils){
+    'xide/utils',
+    'xide/registry'
+],function(dcl,declare,domClass,domConstruct,utils,registry){
 
         var outlineVisible = false;
         var boxModelVisible = false;
@@ -41,8 +42,7 @@ define([
         var inspectPaddingStyle = inspectStyle + "background: SlateBlue;";
         var inspectContentStyle = inspectStyle + "background: SkyBlue;";
 
-        var createBoxModelInspector = function createBoxModelInspector()
-        {
+        var createBoxModelInspector = function createBoxModelInspector(){
             boxModel = domConstruct.create("div");
             boxModel.id = "fbBoxModel";
             boxModel.firebugIgnore = true;
@@ -75,9 +75,6 @@ define([
 
             offlineFragment.appendChild(boxModel);
         };
-
-
-
         var createOutlineInspector = function createOutlineInspector()
         {
             for (var name in outline)
@@ -110,12 +107,8 @@ define([
             _isInspecting:false,
             _lastInspecting:0,
             inspectorMask:{
-
             },
             shouldShowOutline:function(el){
-
-
-
             },
             getWindowSize: function()
             {
@@ -394,6 +387,7 @@ define([
             },
             drawBoxModel: function(el)
             {
+                console.log('-draw');
                 // avoid error when the element is not attached a document
                 if (!el || !el.parentNode)
                     return;
@@ -446,6 +440,7 @@ define([
             },
             drawOutline: function(el)
             {
+                console.log('-draw outline');
                 var border = 2;
                 var scrollbarSize = 17;
 
@@ -656,6 +651,29 @@ define([
                 offlineFragment = document.createDocumentFragment();
                 createBoxModelInspector();
                 createOutlineInspector();
+            },
+            isPickable: function (node) {
+
+                if (this.allowWidgets) {
+                    var widget = registry.getEnclosingWidget(node);
+                    if (widget) {
+                        if (this.skipWidgetClasses.indexOf(widget.declaredClass) > -1) {
+                            return false;
+                        }
+                        if (node.id && node.id == widget.id) {
+                            return true;
+                        } else {
+                        }
+                    } else {
+                        return false;
+                    }
+
+                } else if (this.allowHTMLNodes) {
+                    return true;
+                }
+
+                return false;
+
             },
             startInspecting: function()
             {
