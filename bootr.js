@@ -22,6 +22,7 @@ define([
         //"xblox/build/xbloxr",
         //"xcf/build/xcfr",
         "xblox/RunScript",
+        "xblox/CSSState",
         'dojo/Deferred',
         "delite/register",
         "deliteful/Button",
