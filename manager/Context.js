@@ -329,9 +329,7 @@ define([
                 }
 
                 if (event && widgetId) {
-
                     var widget = document.getElementById(widgetId);
-
                     if (!widget && widgetId === 'body') {
                         widget = document.body;
                     }
@@ -392,12 +390,12 @@ define([
                     }
                 }
 
-                widgets.indexOf(params.widget) ==-1 && widgets.push(params.widget);
+
+                params.widget && widgets.indexOf(params.widget) ==-1 && widgets.push(params.widget);
             }
 
             for (var i = 0; i < widgets.length; i++) {
                 var widget = widgets[i];
-
                 if(widget.__didEmitLoad){
                     return;
                 }
