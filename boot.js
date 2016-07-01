@@ -1,16 +1,19 @@
 define([
-    "dojo/_base/declare",
+    "dcl/dcl",
     "dojo/_base/Deferred",
     "dojo/has",
     "require"
-], function (declare,Deferred,has,require) {
+    //"xblox/build/xbloxr"
+], function (dcl,Deferred,has,require) {
 
     var debug = false;
-    return declare('xapp/boot',null,{
+    return dcl(null,{
+        declaredClass:'xapp/boot',
         start:function(settings){
 
             var _require = require;
             var _ctx=_require('xapp/manager/Context');
+
             var ctx = new _ctx;
             try {
                 var _register = _require('delite/register');

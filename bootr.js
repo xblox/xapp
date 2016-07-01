@@ -6,7 +6,7 @@ define([
     'xdojo/declare',
     "dstore/build/dstorer",
     "xide/build/xider",
-    //"xblox/build/xbloxr",
+    "xblox/build/xbloxr",
     "xwire/build/xwirer",
     "xcf/build/xcfr",
     "decor/build/decorr",
@@ -36,8 +36,6 @@ define([
         'xdojo/declare',
         "require"
     ],function(){
-
-
 
         has.add('xaction', function () {
             return true;
