@@ -23,6 +23,6 @@ appContext.fileManager = this.ctx.fileManager;
 appContext.resourceManager = this.ctx.resourceManager;
 
 8. xapp/manager/Context:onReady
-8.1 load/construct/init: filemanager,resourcemanager,blockManager
+8.1 load/construct/init: filemanager, resourcemanager, blockManager
 
 

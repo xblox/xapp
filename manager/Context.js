@@ -1,28 +1,57 @@
+/** @module xapp/manager/Context */
 define([
     "dcl/dcl",
     'xide/manager/ContextBase',
     'xide/manager/PluginManager',
     'xapp/manager/Application',
+    'xide/manager/ResourceManager',
     'xide/mixins/EventedMixin',
     'xide/types',
     'xide/utils',
     './_WidgetPickerMixin',
     'require',
     'xide/manager/Reloadable',
+    'xcf/types/Types',
     'xdojo/has'
 
-], function (dcl, ContextBase, PluginManager, Application, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable,has,on) {
+], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable,Types,has,on) {
 
     var isIDE = has('xcf-ui');
-    var debugWire = false;
-    var debugBoot = false;
-    var debugRun =false;
+    var debugWire = true;
+    var debugBoot = true;
+    var debugRun = true;
 
+    /**
+     * Lightweight context for end-user apps
+     * @class module:xapp/manager/Context
+     * @augments module:xide/mixins/EventedMixin
+     * @extends module:xide/manager/ContextBase
+     */
     return dcl([ContextBase, Reloadable, _WidgetPickerMixin], {
         declaredClass:"xapp/manager/Context",
         settings: null,
         application: null,
         blockManager: null,
+        getUserDirectory(){
+            var resourceManager = this.getResourceManager(),
+                userDir =  resourceManager ? resourceManager.getVariable('USER_DIRECTORY') || {} : null;
+
+            return userDir;
+
+        },
+        getResourceManager:function(){
+            return this.resourceManager;
+        },
+        getMount:function(mount){
+
+            var resourceManager = this.getResourceManager(),
+                vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
+
+            if(vfsConfig && vfsConfig[mount]) {
+                return vfsConfig[mount];
+            }
+            return null;
+        },
         getVariable: function (deviceId, driverId, variableId) {
             var deviceManager = ctx.getDeviceManager();
             var device = deviceManager.getDeviceById(deviceId),
@@ -484,27 +513,36 @@ define([
          *
          */
         onReady: function () {
-
             debugBoot && console.log('Checkpoint 8. xapp/manager->onReady');
-
             var xbloxFiles = this.settings.xbloxScripts;
             this.loadXBloxFiles(xbloxFiles);
             var thiz = this;
+            debugBoot && console.info('-app ready',this);
+            this.application.onReady();
+        },
+        init: function (settings) {
+
+            this.settings = settings;
+
+            if(settings && settings.mixins){
+                this.doMixins(settings.mixins);
+            }
+
+            debugBoot && console.log('Checkpoint 7. xapp/manager->init(settings)',settings);
+
+            var thiz = this;
             this.subscribe(types.EVENTS.ON_DEVICE_DRIVER_INSTANCE_READY, function () {
+                debugBoot && console.log('driver instance ready');
                 setTimeout(function () {
                     thiz.publish(types.EVENTS.ON_APP_READY, {
                         context: thiz
                     });
                 }, 1000);
             });
-            debugBoot && console.info('-app ready',this);
-        },
-        init: function (settings) {
+            if(has('debug')) {
+                this.loadXIDE();
+            }
 
-            this.settings = settings;
-            debugBoot && console.log('Checkpoint 7. xapp/manager->init(settings)');
-            var thiz = this;
-            this.loadXIDE();
             require([
                 'xfile/manager/FileManager',
                 'xide/manager/ResourceManager',
@@ -517,6 +555,10 @@ define([
                 'xcf/model/Variable',
                 'xcf/factory/Blocks'
             ], function (FileManager, ResourceManager, NodeServiceManager, DriverManager, DeviceManager, BlockManager) {
+
+                debugBoot && console.log('Checkpoint 7.0 xapp/Context::init');
+
+
                 thiz.blockManager = thiz.createManager(BlockManager);
                 thiz.blockManager.init();
 
@@ -539,29 +581,38 @@ define([
                     }
                 );
                 thiz.driverManager.init();
+
                 try {
                     thiz.driverManager.ls('system_drivers').then(function () {
-                        debugBoot && console.log('Checkpoint 7.1 drivers loaded');
-                        thiz.deviceManager = thiz.createManager(DeviceManager, null, {
-                                serviceUrl: settings.rpcUrl,
-                                singleton: true
-                            }
-                        );
-                        thiz.deviceManager.init();
-                        thiz.deviceManager.ls('system_devices').then(function () {
-                            thiz.nodeServiceManager = thiz.createManager(NodeServiceManager, null, {
-                                serviceUrl: settings.rpcUrl,
-                                singleton: true
-                            });
-                            thiz.nodeServiceManager.init();
-                            thiz.onReady();
+                        thiz.driverManager.ls('user_drivers').then(function () {
+                            debugBoot && console.log('Checkpoint 7.1 drivers loaded');
+                            thiz.deviceManager = thiz.createManager(DeviceManager, null, {
+                                    serviceUrl: settings.rpcUrl,
+                                    singleton: true
+                                }
+                            );
+                            thiz.deviceManager.init();
+                            thiz.deviceManager.ls('system_devices').then(function () {
+                                thiz.deviceManager.ls('user_devices').then(function () {
+                                    debugBoot && console.log('Checkpoint 7.1.1 devices loaded');
+                                    thiz.nodeServiceManager = thiz.createManager(NodeServiceManager, null, {
+                                        serviceUrl: settings.rpcUrl,
+                                        singleton: true,
+                                        services:settings.NODE_SERVICES
+                                    });
+                                    thiz.nodeServiceManager.init();
+                                    thiz.onReady();
+                                });
 
+                            });
                         });
                     });
                 } catch (e) {
                     logError(e);
                 }
             });
+
+
         },
         mergeFunctions: function (target, source) {
 

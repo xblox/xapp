@@ -3,13 +3,13 @@ define([
     'dojo/Deferred',
     'xide/types',
     'xide/utils',
-    'dojo/dom-construct',
-    "dojo/query",
+    //'dojo/dom-construct',
     "xide/manager/ManagerBase"
-], function (dcl,Deferred,types, utils,domConstruct,query,ManagerBase) {
+], function (dcl,Deferred,types, utils,ManagerBase) {
 
-    var debugBootstrap = false;
-    var debugBlocks = false;
+    var debugBootstrap = true;
+    var debugBlocks = true;
+
     //Application
     return dcl([ManagerBase],{
         declaredClass:"xapp/manager/Application",
@@ -46,12 +46,16 @@ define([
             this.settings = settings;
         },
         loadScript:function(url){
+            /*
+            debugger;
             domConstruct.create('script', {
                 src:url
-            }, query('head')[0]);
+            }, query('head')[0]);*/
         },
         onReady:function(){
+            
             debugBootstrap && console.log('   Checkpoint 5.3 managers ready');
+            
             this.publish(types.EVENTS.ON_APP_READY,{
                 context:this.ctx,
                 application:this,
@@ -67,6 +71,7 @@ define([
             _re(['xblox/embedded', 'xblox/manager/BlockManager'], function (embedded, BlockManager) {
 
                 debugBootstrap && console.log('   Checkpoint 5.2 setup xblox');
+                
                 //IDE's block manager
                 if(thiz.delegate && thiz.delegate.ctx){
 
