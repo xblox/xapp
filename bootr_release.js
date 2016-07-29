@@ -1,41 +1,34 @@
 define([
-    "dcl/dcl",
-    "requirejs-dplugins/has",
-    "dojo/has",
-    'dojo/Deferred',
-    //'xdojo/declare',
-    //"dstore/build/dstorer",
-    //"xide/build/xider",
-    //"xblox/build/xbloxr",
-    //"xwire/build/xwirer",
-    //"xcf/build/xcfr",
-    //"decor/build/decorr",
-    //"dpointer/build/dpointerr"
-], function (dcl,has,dHas,Deferred) {
+    "xapp/build/main_build"
+], function () {
 
+    console.log('Checkpoint 1.2 build ready');
+    
     if(typeof logError==='undefined'){
-
         window['logError']=function(e,message){
             console.error('error '+message,e);
         }
     }
     require([
+        "requirejs-dplugins/has",
+        "dcl/dcl",
+        "dojo/has",
+        'dojo/Deferred',
+        'xdojo/has',
         "xblox/RunScript",
         "xblox/CSSState",
         "xblox/StyleState",
-        'dojo/Deferred',
-        "delite/register",
+        'delite/register',
         "deliteful/Button",
         "deliteful/Slider",
         "deliteful/Combobox",
         "deliteful/Checkbox",
         "deliteful/RadioButton",
         "deliteful/ToggleButton",
-        'dojo/Deferred',
-        'xdojo/declare',
         "require"
-    ],function(){
-
+    ],function(has,dcl,dHas,Deferred){
+        
+        
         has.add('xaction', function () {
             return true;
         });
@@ -43,7 +36,7 @@ define([
         has.add('use-dcl', function () {
             return true;
         });
-
+        
         has.add('runDrivers', function () {
             return true;
         });

@@ -76,6 +76,11 @@ define([
                 if(thiz.delegate && thiz.delegate.ctx){
 
                     var ctx = thiz.delegate.ctx;
+                    
+                    if(ctx.nodeServiceManager) {
+                        thiz.ctx.nodeServiceManager = ctx.nodeServiceManager;
+                    }
+                    
                     if(ctx.getBlockManager()) {
                         thiz.ctx.blockManager = ctx.getBlockManager();
                     }
@@ -84,9 +89,7 @@ define([
                         thiz.ctx.driverManager = ctx.getDriverManager();
                         thiz.ctx.deviceManager = ctx.getDeviceManager();
                     }
-                    if(ctx.nodeServiceManager) {
-                        thiz.ctx.nodeServiceManager = ctx.nodeServiceManager;
-                    }
+                    
 
                     thiz.onReady();
 

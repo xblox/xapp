@@ -28406,7 +28406,6 @@ define('xapp/manager/Context',[
                 if (device) {
                     var driverId = deviceManager.getMetaValue(device, types.DEVICE_PROPERTY.CF_DEVICE_DRIVER);
                     driverScope = ctx.getBlockManager().getScope(driverId);
-
                     result = driverScope.getVariableById(driverId + '/' + variableId);
 
                 }
@@ -28910,6 +28909,23 @@ define('xapp/manager/Context',[
                 });
                 thiz.resourceManager.init();
 
+                var nodeServices = settings.NODE_SERVICES;
+                if(nodeServices){
+                    var url = location.href;
+                    var parts = utils.parse_url(url);
+                    nodeServices[0].host = parts.host;
+                    if(nodeServices[0].info){
+                        nodeServices[0].info.host='http://'+parts.host;
+                    }
+                }
+
+                thiz.nodeServiceManager = thiz.createManager(NodeServiceManager, null, {
+                    serviceUrl: settings.rpcUrl,
+                    singleton: true,
+                    services:settings.NODE_SERVICES
+                });
+                thiz.nodeServiceManager.init();
+
                 thiz.driverManager = thiz.createManager(DriverManager, null, {
                         serviceUrl: settings.rpcUrl,
                         singleton: true
@@ -28930,12 +28946,6 @@ define('xapp/manager/Context',[
                             thiz.deviceManager.ls('system_devices').then(function () {
                                 thiz.deviceManager.ls('user_devices').then(function () {
                                     debugBoot && console.log('Checkpoint 7.1.1 devices loaded');
-                                    thiz.nodeServiceManager = thiz.createManager(NodeServiceManager, null, {
-                                        serviceUrl: settings.rpcUrl,
-                                        singleton: true,
-                                        services:settings.NODE_SERVICES
-                                    });
-                                    thiz.nodeServiceManager.init();
                                     thiz.onReady();
                                 });
 
@@ -48168,12 +48178,12 @@ define('xcf/manager/DeviceManager',[
              ObservableStore,Trackable,Device,Deferred,ServerActionBase,Reference,StringUtils,
              LogMixin,
              DeviceManager_UI,Expression,_console,xUtils) {
-    
+  /*  
     var console = typeof window !== 'undefined' ? window.console : console;
     if(_console && _console.error && _console.warn){
         console = _console;
     }
-
+*/
     var bases = [
         ServerActionBase,
         BeanManager,
@@ -48183,9 +48193,9 @@ define('xcf/manager/DeviceManager',[
         LogMixin
     ],
     _debugMQTT = false,
-    _debug = true,
+    _debug = false,
     _debugLogging = false,
-    _debugConnect = true,
+    _debugConnect = false,
     isServer = !has('host-browser'),
     isIDE = has('xcf-ui'),
     DEVICE_PROPERTY = types.DEVICE_PROPERTY,
@@ -48328,6 +48338,7 @@ define('xcf/manager/DeviceManager',[
          * @private
          */
         checkDeviceServerConnection: function () {
+            
             if(!this.ctx.getNodeServiceManager){
                 return true;
             }
@@ -48770,11 +48781,17 @@ define('xcf/manager/DeviceManager',[
          * @private
          */
         connectToAllDevices: function () {
-
-            //console.error('connect to all devices');
+            if(!this.deviceServerClient){
+                this.checkDeviceServerConnection();
+                return;
+            }
 
             var stores = this.getStores(),
                 thiz = this;
+
+            if(!this.getStores().length){
+                return;
+            }
 
             function start(device) {
                 thiz.startDevice(device);
@@ -48785,6 +48802,12 @@ define('xcf/manager/DeviceManager',[
                     console.error('have no device store');
                     return;
                 }
+
+                if(store.connected){
+                    return;
+                }
+
+                store.connected = true;
 
                 var items = utils.queryStore(store, {
                     isDir: false
@@ -48937,7 +48960,7 @@ define('xcf/manager/DeviceManager',[
                     message: 'Lost connection to device server, try reconnecting in 5 seconds',
                     type: 'error',
                     showCloseButton: true,
-                    duration: 3000
+                    duration: 1000
                 });
             }
             this._reconnectServerTimer = setTimeout(function(){
@@ -49041,7 +49064,7 @@ define('xcf/manager/DeviceManager',[
                 */
                 if (this.autoConnectDevices && connect) {
                     setTimeout(function () {
-                        thiz.connectToAllDevices();
+                        //thiz.connectToAllDevices();
                     }, 3000);
                 }
             /*}*/
@@ -49773,6 +49796,9 @@ define('xcf/manager/DeviceManager',[
                     }
                 }
             }
+
+
+            this.connectToAllDevices();
         },
         /**
          *
@@ -49856,6 +49882,13 @@ define('xcf/manager/DeviceManager',[
             }
             this.stores = {};
             this.subscribe(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, this.onVariableChanged);
+            this.subscribe(types.EVENTS.ON_DEVICE_SERVER_CONNECTED,function(){
+
+                var connect = has('drivers') && has('devices');
+                if (thiz.autoConnectDevices && connect) {
+                    thiz.connectToAllDevices();
+                }
+            });
             this.subscribe([
                 EVENTS.ON_NODE_SERVICE_STORE_READY,
                 EVENTS.ON_MODULE_RELOADED,
@@ -49911,10 +49944,16 @@ define('xcf/manager/DeviceManager',[
             if(has('php')) {
                 return this.runDeferred(null, 'ls', [scope]).then(data.bind(this));
             }else{
-                var def = this._getText(require.toUrl(scope).replace('main.js','') + scope + '.json',{
-                    sync: false,
-                    handleAs: 'json'
-                }).then(data.bind(this));
+                if(!isServer) {
+                    var def = this._getText(require.toUrl(scope).replace('main.js', '') + scope + '.json', {
+                        sync: false,
+                        handleAs: 'json'
+                    }).then(data.bind(this));
+                }else{
+                    var def = new Deferred();
+                    def.resolve({items:[]});
+                    return def;
+                }
                 return def;
             }
         },
@@ -54843,7 +54882,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     'dojo/Deferred',
     'xide/mixins/ReloadMixin',
     'xide/mixins/EventedMixin',
-    'require',
+    'require'
     //'xdojo/has!host-node?nxapp/utils/_console'
 ], function (dcl,declare, lang, MD5,
              types, utils, factory, has,
@@ -54857,16 +54896,14 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     if(_console && _console.error && _console.warn){
         console = _console;
     }
-
     //debug mqtt activity
     var _debugMQTT = false;
-
     //debug device - server messages
     var debug = false;
     // debug device server connectivity
-    var debugDevice = true;
+    var debugDevice = false;
     var debugStrangers = false;
-    var debugConnect = true;
+    var debugConnect = false;
     var debugServerCommands = false;
     var debugCreateInstance = false;
     var debugServerMessages = false;
@@ -54991,7 +55028,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 requirePath = driverPrefix + deviceInfo.driver;
             
             requirePath = requirePath.replace('.js', '').trim();
-            
+
             var thiz = this,
                 ctx = thiz.ctx,
                 meta = device['user'],
@@ -55444,28 +55481,46 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
             var deviceMessages = messages;
 
-            driverInstance.onMessageRaw({
+            var _messages = driverInstance.onMessageRaw({
                 device: deviceMessageData.data.device,
                 message:message
             });
 
-            _.each(messages,function(_message){
-                //driver replay as individual message
-                driverInstance.onMessage({
-                    device: deviceMessageData.data.device,
-                    message: _message,
-                    raw:message
+            if(_messages){
+                //console.error('have raw message split');
+            }
+
+            if(_messages){
+                messages = _.isArray(_messages) ? _messages : [_messages];
+            }
+
+            //_message && console.log('replace')
+
+            if(_messages){
+                //console.log('display delimited messages',_messages)
+            }else{
+                //console.log('display normal messages',messages)
+            }
+
+            if(messages && messages.length) {
+                _.each(messages, function (_message) {
+                    //driver replay as individual message
+                    driverInstance.onMessage({
+                        device: deviceMessageData.data.device,
+                        message: _message,
+                        raw: message
+                    });
+
+
+                    //driver replay as broadcast message
+                    driverInstance.onBroadcastMessage({
+                        device: deviceMessageData.data.device,
+                        message: _message,
+                        raw: message
+                    });
+
                 });
-
-
-                //driver replay as broadcast message
-                driverInstance.onBroadcastMessage({
-                    device: deviceMessageData.data.device,
-                    message: _message,
-                    raw:message
-                });
-
-            });
+            }
 
 
             if(state !==types.DEVICE_STATE.READY){
@@ -55504,7 +55559,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 //console replay
                 var hash = deviceInfo.hash,
                     viewId = hash + '-Console',
-                    messages = [],
+                    messagesNew = [],
                     consoleViews = this.consoles[viewId];
 
                 debug && console.log('on_device message '+hash,driverInstance.options);
@@ -55529,45 +55584,51 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 }
                 //var message = deviceMessageData.data.deviceMessage;
 
-                consoleViews && _.each(consoleViews,function(consoleView){
+                if(consoleViews) {
+                    for (var i = 0; i < consoleViews.length; i++) {
+                        var consoleView = consoleViews[i];
+                        if (consoleView) {
 
-                    if (consoleView) {
+                            var split = true;
+                            var hex = false;
 
-                        var split = true;
-                        var hex = false;
-
-                        if(consoleView.console) {
-                            var _consoleEditor = consoleView.console.getTextEditor();
-                            split = _consoleEditor.getAction("Console/Settings/Split").value;
-                            hex = _consoleEditor.getAction("Console/Settings/HEX").value;
-                        }
-
-                        messages = [];
-                        if (_.isString(message)) {
-                            messages = split ? driverInstance.split(message) : [message];
-                        }else if(_.isObject(message)){
-                            clear(message);
-                            messages = [message];
-                        }
-
-                        for (var i = 0; i < messages.length; i++) {
-                            var _message = messages[i];
-                            if (_.isString(_message) && _message.length==0) {
-                                continue;
+                            if (consoleView.console) {
+                                var _consoleEditor = consoleView.console.getTextEditor();
+                                split = _consoleEditor.getAction("Console/Settings/Split").value;
+                                hex = _consoleEditor.getAction("Console/Settings/HEX").value;
                             }
-                            if(hex){
-                                _message = utils.stringToHex(_message);
+
+                            messagesNew = [];
+                            if (_.isString(message)) {
+                                messagesNew = split ? _messages ? _messages : driverInstance.split(message) : [message];
+                            } else if (_.isObject(message)) {
+                                clear(message);
+                                messagesNew = [message];
                             }
-                            consoleView.log(_message,split,true,types.LOG_OUTPUT.RESPONSE);
+
+                            for (var i = 0; i < messagesNew.length; i++) {
+                                var _message = messagesNew[i];
+                                if (_.isString(_message) && _message.length == 0) {
+                                    continue;
+                                }
+                                if (hex) {
+                                    _message = utils.stringToHex(_message);
+                                }
+                                consoleView.log(_message, split, true, types.LOG_OUTPUT.RESPONSE);
+                            }
                         }
                     }
-                });
-                this.publish(types.EVENTS.ON_DEVICE_MESSAGE_EXT, {
-                    device:device,
-                    deviceInfo:deviceInfo,
-                    raw:message,
-                    messages:deviceMessages
-                })
+                    ;
+                }
+
+                if(messages && messages.length) {
+                    this.publish(types.EVENTS.ON_DEVICE_MESSAGE_EXT, {
+                        device: device,
+                        deviceInfo: deviceInfo,
+                        raw: message,
+                        messages: messages
+                    })
+                }
             }
         },
         /**
@@ -55730,6 +55791,14 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                         thiz.onDeviceServerConnected();
                         dfd.resolve();
                         thiz.publish(types.EVENTS.ON_DEVICE_SERVER_CONNECTED);
+
+                        if(isIDE) {
+                            thiz.ctx.getNotificationManager().postMessage({
+                                message: 'Connected to Device Server',
+                                type: 'success',
+                                duration: 3000
+                            });
+                        }
                     },
                     onLostConnection: function(){
                         thiz.onDeviceServerConnectionLost();
@@ -59993,6 +60062,9 @@ define('xide/client/WebSocket',[
                 }
             };
 
+            sock.onerror=function(){
+                console.error('error');
+            }
             sock.onclose = function (e) {
                 if (thiz.autoReconnect) {
                     debug &&  console.log('closed ' + host + ' try re-connect');
@@ -65614,6 +65686,11 @@ define('xapp/manager/Application',[
                 if(thiz.delegate && thiz.delegate.ctx){
 
                     var ctx = thiz.delegate.ctx;
+                    
+                    if(ctx.nodeServiceManager) {
+                        thiz.ctx.nodeServiceManager = ctx.nodeServiceManager;
+                    }
+                    
                     if(ctx.getBlockManager()) {
                         thiz.ctx.blockManager = ctx.getBlockManager();
                     }
@@ -65622,9 +65699,7 @@ define('xapp/manager/Application',[
                         thiz.ctx.driverManager = ctx.getDriverManager();
                         thiz.ctx.deviceManager = ctx.getDeviceManager();
                     }
-                    if(ctx.nodeServiceManager) {
-                        thiz.ctx.nodeServiceManager = ctx.nodeServiceManager;
-                    }
+                    
 
                     thiz.onReady();
 
@@ -65906,7 +65981,7 @@ define('xide/factory/Clients',[
         */
         if(service.status!==types.SERVICE_STATUS.ONLINE){
             debug && console.error('create client with store : failed! Service ' +  serviceName + ' is not online ');
-            return;
+            //return;
         }
 
         var host = 'http://' + service.host,

@@ -71,7 +71,6 @@ define([
                 if (device) {
                     var driverId = deviceManager.getMetaValue(device, types.DEVICE_PROPERTY.CF_DEVICE_DRIVER);
                     driverScope = ctx.getBlockManager().getScope(driverId);
-
                     result = driverScope.getVariableById(driverId + '/' + variableId);
 
                 }
@@ -575,6 +574,23 @@ define([
                 });
                 thiz.resourceManager.init();
 
+                var nodeServices = settings.NODE_SERVICES;
+                if(nodeServices){
+                    var url = location.href;
+                    var parts = utils.parse_url(url);
+                    nodeServices[0].host = parts.host;
+                    if(nodeServices[0].info){
+                        nodeServices[0].info.host='http://'+parts.host;
+                    }
+                }
+
+                thiz.nodeServiceManager = thiz.createManager(NodeServiceManager, null, {
+                    serviceUrl: settings.rpcUrl,
+                    singleton: true,
+                    services:settings.NODE_SERVICES
+                });
+                thiz.nodeServiceManager.init();
+
                 thiz.driverManager = thiz.createManager(DriverManager, null, {
                         serviceUrl: settings.rpcUrl,
                         singleton: true
@@ -595,12 +611,6 @@ define([
                             thiz.deviceManager.ls('system_devices').then(function () {
                                 thiz.deviceManager.ls('user_devices').then(function () {
                                     debugBoot && console.log('Checkpoint 7.1.1 devices loaded');
-                                    thiz.nodeServiceManager = thiz.createManager(NodeServiceManager, null, {
-                                        serviceUrl: settings.rpcUrl,
-                                        singleton: true,
-                                        services:settings.NODE_SERVICES
-                                    });
-                                    thiz.nodeServiceManager.init();
                                     thiz.onReady();
                                 });
 

@@ -14,7 +14,6 @@ define([
         "dcl/dcl",
         "dojo/has",
         'dojo/Deferred',
-        //'xdojo/declare',
         'xdojo/has',
         "xblox/RunScript",
         "xblox/CSSState",

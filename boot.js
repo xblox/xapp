@@ -3,7 +3,6 @@ define([
     "dojo/_base/Deferred",
     "dojo/has",
     "require"
-    //"xblox/build/xbloxr"
 ], function (dcl,Deferred,has,require) {
 
     var debug = false;
