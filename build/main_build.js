@@ -28367,7 +28367,7 @@ define('xapp/manager/Context',[
         settings: null,
         application: null,
         blockManager: null,
-        getUserDirectory(){
+        getUserDirectory:function(){
             var resourceManager = this.getResourceManager(),
                 userDir =  resourceManager ? resourceManager.getVariable('USER_DIRECTORY') || {} : null;
 
@@ -78339,7 +78339,7 @@ define('delite/register',[
 	function observe() {
 		if (!has("document-register-element")) {
 			if (!observer) {
-				if (has("MutationObserver")) {
+				if (has("MutationObserver") /*&& typeof MutationObserver !=='undefined'*/) {
 					observer = new MutationObserver(processMutations);
 				} else {
 					// Fallback for Android < 4.2 and IE < 11.  Partial shim of MutationObserver, except sometimes
