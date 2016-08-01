@@ -1,4 +1,4 @@
-require.config({"config":{"delite/theme":{"layersMap":{"delite/themes/{{theme}}/common.css":"themes/layer_{{theme}}.css","deliteful/list/List/themes/{{theme}}/List.css":"themes/layer_{{theme}}.css","delite/Scrollable/themes/{{theme}}/Scrollable.css":"themes/layer_{{theme}}.css","deliteful/ProgressBar/themes/{{theme}}/ProgressBar.css":"themes/layer_{{theme}}.css","deliteful/StarRating/themes/{{theme}}/StarRating.css":"themes/layer_{{theme}}.css","deliteful/LinearLayout/themes/{{theme}}/LinearLayout.css":"themes/layer_{{theme}}.css","deliteful/SidePane/themes/{{theme}}/SidePane.css":"themes/layer_{{theme}}.css","deliteful/ViewStack/themes/{{theme}}/ViewStack.css":"themes/layer_{{theme}}.css","deliteful/ProgressIndicator/themes/{{theme}}/ProgressIndicator.css":"themes/layer_{{theme}}.css","deliteful/Switch/themes/{{theme}}/Switch.css":"themes/layer_{{theme}}.css","deliteful/ToggleButton/themes/{{theme}}/ToggleButton.css":"themes/layer_{{theme}}.css","deliteful/RadioButton/themes/{{theme}}/RadioButton.css":"themes/layer_{{theme}}.css","deliteful/Checkbox/themes/{{theme}}/Checkbox.css":"themes/layer_{{theme}}.css","deliteful/Combobox/themes/{{theme}}/Combobox.css":"themes/layer_{{theme}}.css","deliteful/Slider/themes/{{theme}}/Slider.css":"themes/layer_{{theme}}.css","deliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css"}}}});require.config({config:{'ecma402/impl/load':{"af":true,"af-NA":true,"am":true,"ar":true,"ar-AE":true,"ar-BH":true,"ar-DZ":true,"ar-EG":true,"ar-IQ":true,"ar-JO":true,"ar-KW":true,"ar-LB":true,"ar-LY":true,"ar-MA":true,"ar-OM":true,"ar-QA":true,"ar-SA":true,"ar-SD":true,"ar-SY":true,"ar-TN":true,"ar-YE":true,"as":true,"az":true,"be":true,"bg":true,"bn":true,"bn-IN":true,"ca":true,"cs":true,"cy":true,"da":true,"de":true,"de-AT":true,"de-LU":true,"de-CH":true,"el":true,"en":true,"en-AU":true,"en-BE":true,"en-CM":true,"en-CA":true,"en-GB":true,"en-GH":true,"en-HK":true,"en-IE":true,"en-IN":true,"en-KE":true,"en-MU":true,"en-NG":true,"en-NZ":true,"en-PH":true,"en-SG":true,"en-TT":true,"en-ZA":true,"en-ZM":true,"es":true,"es-AR":true,"es-BO":true,"es-CL":true,"es-CO":true,"es-CR":true,"es-DO":true,"es-EC":true,"es-GT":true,"es-HN":true,"es-MX":true,"es-NI":true,"es-PA":true,"es-PE":true,"es-PR":true,"es-PY":true,"es-SV":true,"es-US":true,"es-UY":true,"es-VE":true,"eu":true,"fil":true,"fi":true,"fr":true,"fr-BE":true,"fr-CA":true,"fr-CD":true,"fr-CH":true,"fr-CI":true,"fr-CM":true,"fr-DZ":true,"fr-LU":true,"fr-MR":true,"fr-MA":true,"fr-SN":true,"fr-TN":true,"gl":true,"gu":true,"ha":true,"he":true,"hi":true,"hr":true,"hu":true,"hy":true,"id":true,"ig":true,"is":true,"it":true,"it-CH":true,"ja":true,"ka":true,"kk":true,"km":true,"kn":true,"ko":true,"kok":true,"lg":true,"lt":true,"lv":true,"mk":true,"ml":true,"mn":true,"mr":true,"ms":true,"mt":true,"nb":true,"ne":true,"ne-IN":true,"nl":true,"nl-BE":true,"nn":true,"om":true,"or":true,"pa":true,"pl":true,"pt":true,"pt-AO":true,"pt-MZ":true,"pt-PT":true,"ro":true,"root":true,"ru":true,"rw":true,"si":true,"sk":true,"sl":true,"sr":true,"sr-Latn":true,"sq":true,"sv":true,"sw":true,"sw-KE":true,"ta":true,"te":true,"th":true,"tr":true,"uk":true,"ur":true,"ur-IN":true,"uz":true,"uz-Cyrl":true,"vi":true,"yo":true,"zh":true,"zh-Hans":true,"zh-Hans-SG":true,"zh-Hant":true,"zh-Hant-HK":true,"_layerMid":"cldr/main_build"}}});require.config({"config":{"requirejs-dplugins/i18n":{"bundlesMap":{"nls/main_build":["deliteful/StarRating/nls/StarRating","deliteful/Combobox/nls/Combobox"]},"localesMap":{"nls/main_build":["root"]}}}});require.config({"config":{"requirejs-dplugins/css":{"layersMap":{"deliteful/ViewStack/transitions/slide.css":"main_build.css","deliteful/ViewStack/transitions/reveal.css":"main_build.css"}}}});define('xapp/mainr',[
+require.config({"config":{"requirejs-dplugins/i18n":{"bundlesMap":{"nls/main_build":["deliteful/list/List/nls/List","deliteful/StarRating/nls/StarRating","deliteful/Combobox/nls/Combobox"]},"localesMap":{"nls/main_build":["root"]}}}});require.config({"config":{"delite/theme":{"layersMap":{"delite/themes/{{theme}}/common.css":"themes/layer_{{theme}}.css","deliteful/list/List/themes/{{theme}}/List.css":"themes/layer_{{theme}}.css","delite/Scrollable/themes/{{theme}}/Scrollable.css":"themes/layer_{{theme}}.css","deliteful/ProgressBar/themes/{{theme}}/ProgressBar.css":"themes/layer_{{theme}}.css","deliteful/StarRating/themes/{{theme}}/StarRating.css":"themes/layer_{{theme}}.css","deliteful/LinearLayout/themes/{{theme}}/LinearLayout.css":"themes/layer_{{theme}}.css","deliteful/SidePane/themes/{{theme}}/SidePane.css":"themes/layer_{{theme}}.css","deliteful/ViewStack/themes/{{theme}}/ViewStack.css":"themes/layer_{{theme}}.css","deliteful/ProgressIndicator/themes/{{theme}}/ProgressIndicator.css":"themes/layer_{{theme}}.css","deliteful/Switch/themes/{{theme}}/Switch.css":"themes/layer_{{theme}}.css","deliteful/ToggleButton/themes/{{theme}}/ToggleButton.css":"themes/layer_{{theme}}.css","deliteful/RadioButton/themes/{{theme}}/RadioButton.css":"themes/layer_{{theme}}.css","deliteful/Checkbox/themes/{{theme}}/Checkbox.css":"themes/layer_{{theme}}.css","deliteful/Combobox/themes/{{theme}}/Combobox.css":"themes/layer_{{theme}}.css","delite/DialogUnderlay/themes/{{theme}}/DialogUnderlay.css":"themes/layer_{{theme}}.css","deliteful/Slider/themes/{{theme}}/Slider.css":"themes/layer_{{theme}}.css","deliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css"}}}});require.config({config:{'ecma402/impl/load':{"af":true,"af-NA":true,"am":true,"ar":true,"ar-AE":true,"ar-BH":true,"ar-DZ":true,"ar-EG":true,"ar-IQ":true,"ar-JO":true,"ar-KW":true,"ar-LB":true,"ar-LY":true,"ar-MA":true,"ar-OM":true,"ar-QA":true,"ar-SA":true,"ar-SD":true,"ar-SY":true,"ar-TN":true,"ar-YE":true,"as":true,"az":true,"be":true,"bg":true,"bn":true,"bn-IN":true,"ca":true,"cs":true,"cy":true,"da":true,"de":true,"de-AT":true,"de-LU":true,"de-CH":true,"el":true,"en":true,"en-AU":true,"en-BE":true,"en-CM":true,"en-CA":true,"en-GB":true,"en-GH":true,"en-HK":true,"en-IE":true,"en-IN":true,"en-KE":true,"en-MU":true,"en-NG":true,"en-NZ":true,"en-PH":true,"en-SG":true,"en-TT":true,"en-ZA":true,"en-ZM":true,"es":true,"es-AR":true,"es-BO":true,"es-CL":true,"es-CO":true,"es-CR":true,"es-DO":true,"es-EC":true,"es-GT":true,"es-HN":true,"es-MX":true,"es-NI":true,"es-PA":true,"es-PE":true,"es-PR":true,"es-PY":true,"es-SV":true,"es-US":true,"es-UY":true,"es-VE":true,"eu":true,"fil":true,"fi":true,"fr":true,"fr-BE":true,"fr-CA":true,"fr-CD":true,"fr-CH":true,"fr-CI":true,"fr-CM":true,"fr-DZ":true,"fr-LU":true,"fr-MR":true,"fr-MA":true,"fr-SN":true,"fr-TN":true,"gl":true,"gu":true,"ha":true,"he":true,"hi":true,"hr":true,"hu":true,"hy":true,"id":true,"ig":true,"is":true,"it":true,"it-CH":true,"ja":true,"ka":true,"kk":true,"km":true,"kn":true,"ko":true,"kok":true,"lg":true,"lt":true,"lv":true,"mk":true,"ml":true,"mn":true,"mr":true,"ms":true,"mt":true,"nb":true,"ne":true,"ne-IN":true,"nl":true,"nl-BE":true,"nn":true,"om":true,"or":true,"pa":true,"pl":true,"pt":true,"pt-AO":true,"pt-MZ":true,"pt-PT":true,"ro":true,"root":true,"ru":true,"rw":true,"si":true,"sk":true,"sl":true,"sr":true,"sr-Latn":true,"sq":true,"sv":true,"sw":true,"sw-KE":true,"ta":true,"te":true,"th":true,"tr":true,"uk":true,"ur":true,"ur-IN":true,"uz":true,"uz-Cyrl":true,"vi":true,"yo":true,"zh":true,"zh-Hans":true,"zh-Hans-SG":true,"zh-Hant":true,"zh-Hant-HK":true,"_layerMid":"cldr/main_build"}}});require.config({"config":{"requirejs-dplugins/css":{"layersMap":{"deliteful/ViewStack/transitions/slide.css":"main_build.css","deliteful/ViewStack/transitions/reveal.css":"main_build.css"}}}});define('xapp/mainr',[
     "deliteful/Button",
     "xblox/RunScript",
     "delite/Container",
@@ -249,9 +249,13 @@ return {
 };
 });
 ;
+define('delite/handlebars!deliteful/list/List/List.html',["delite/handlebars","deliteful/ProgressIndicator"], function(handlebars){
+	return handlebars.compile("<template>\n\t<div class=\"d-list-container\" attach-point=\"containerNode\" aria-busy=\"{{_busy}}\" role=\"{{type}}\" d-shown=\"{{this._displayedPanel === 'list'}}\" on-click=\"{{handleSelection}}\" tabindex=\"{{tabIndex}}\"></div>\n\t<div class=\"d-list-no-items\" d-shown=\"{{this._displayedPanel === 'no-items'}}\" attach-point=\"noItemsNode\">\n\t\t<div class=\"d-list-no-item-info\">{{noItemsInfo}}</div>\n\t</div>\n\t<div class=\"d-list-loading-panel\" attach-point=\"loadingIndicatorNode\" d-shown=\"{{this._displayedPanel === 'loading-panel'}}\" aria-hidden=\"{{!this._busy}}\" aria-labelledby=\"loadingIndicatorLabel-{{widgetId}}\">\n\t\t<div class=\"d-list-loading-panel-info\">\n\t\t\t<d-progress-indicator active=\"{{_busy}}\"></d-progress-indicator>\n\t\t\t<div class=\"d-list-loading-panel-info-label\" id=\"loadingIndicatorLabel-{{widgetId}}\" attach-point=\"loadingIndicatorLabel\">{{loadingMessage}}</div>\n\t\t</div>\n\t</div>\n</template>");
+});;
 /** @module deliteful/list/List */
 define('deliteful/list/List',[
 	"dcl/dcl",
+	"delite/Widget",
 	"delite/register",
 	"requirejs-dplugins/jquery!attributes/classes",
 	"delite/CustomElement",
@@ -261,10 +265,16 @@ define('deliteful/list/List',[
 	"delite/Scrollable",
 	"./ItemRenderer",
 	"./CategoryRenderer",
-	"./_LoadingPanel",
+	"delite/handlebars!./List/List.html",
+	"requirejs-dplugins/i18n!./List/nls/List",
 	"delite/theme!./List/themes/{{theme}}/List.css"
-], function (dcl, register, $, CustomElement,
-		Selection, KeyNav, StoreMap, Scrollable, ItemRenderer, CategoryRenderer, LoadingPanel) {
+], function (dcl, Widget, register, $, CustomElement,
+		Selection, KeyNav, StoreMap, Scrollable, ItemRenderer, CategoryRenderer, template, messages) {
+
+	// Put tabIndex in mixin class to workaround https://github.com/uhop/dcl/issues/9.
+	var TabbableWidget = register.dcl(Widget, {
+		tabIndex: 0
+	});
 
 	/**
 	 * A widget that renders a scrollable list of items.
@@ -282,7 +292,7 @@ define('deliteful/list/List',[
 	 * @augments module:delite/Scrollable
 	 */
 
-	return register("d-list", [HTMLElement, Selection, KeyNav, StoreMap, Scrollable],
+	return register("d-list", [HTMLElement, Selection, KeyNav, StoreMap, Scrollable, TabbableWidget],
 			/** @lends module:deliteful/list/List# */ {
 
 		/**
@@ -383,24 +393,54 @@ define('deliteful/list/List',[
 		// the SPACE key to (de)select an item.
 		multiCharSearchDuration: 0,
 
-		setAttribute: dcl.superCall(function (sup) {
-			return function (attr, value) {
-				sup.apply(this, arguments);
-				if (attr === "role") {
-					// Only role=grid should have aria-readonly.  It's meaningless for role=listbox or role=menu.
-					if (value === "grid") {
-						this.setAttribute("aria-readonly", "true");
-					} else {
-						this.removeAttribute("aria-readonly");
-					}
+		/**
+		 * If `true` and the list's store is empty, the NoItemContainer element will be shown.
+		 * @member {boolean}
+		 * @default false
+		 */
+		showNoItems: false,
 
-					// Update roles of existing renderers.
-					this.getRenderers().forEach(function (renderer) {
-						renderer.parentRole = value;
-					});
-				}
-			};
-		}),
+		/**
+		 * Message to display when the d-list-no-items node is shown.
+		 * @member {string}
+		 * @default "Nothing to show."
+		 */
+		noItemsInfo: messages["no-items-info"],
+
+		/**
+		 * Flag set to a truthy value once the items initialization starts.
+		 * It is set to false when the initialization ends.
+		 * Furthermore if `true`, a loading panel will be shown.
+		 * @member {boolean}
+		 * @private
+		 */
+		_busy: false,
+
+		/**
+		 * Specifies the role of list. It can be one of `grid`, `menu`, `listbox` or `list`.
+		 * @type {string}
+		 * @default "grid"
+		 */
+		type: "grid",
+
+		/**
+		 * Property responsible for managing the right view of the list. It can be one of
+		 * `loading-panel`, `list`, `no-items`, `none`.
+		 * When it is equal to `loading-panel` (as `busy` is equal to `true`), a `d-list-loading-panel`
+		 * loading panel is shown.
+		 * When it is equal to `list` (as `busy` is equal to `false` and the `containerNode` children length
+		 * is greater than zero), the actual list is shown.
+		 * When it is equal to `no-items` (only if `showNoItems` is set to `true`and the `containerNode`
+		 * children length is equal to zero), a `d-list-no-items` is displayed.
+		 * When it is `none` (as `showNoItems is set to `false` and `busy` not `true` and `containerNode`
+		 * children length is equal to zero, nothing is shown.
+		 * @type {String}
+		 * @default ""
+		 * @private
+		 */
+		_displayedPanel: "",
+
+		template: template,
 
 		/**
 		 * Defines the scroll direction: `"vertical"` for a scrollable List, `"none"` for a non scrollable List.
@@ -420,18 +460,62 @@ define('deliteful/list/List',[
 		},
 
 		/**
-		 * Defines the selection mode: `"none"` (not allowed if `role=listbox`), `"radio"`, `"single"`
-		 *  or `"multiple"`.
+		 * Defines the selection mode: `"none"` (not allowed if `role=listbox` or `role=list`),
+		 * `"radio"`, `"single"` or `"multiple"`.
 		 * @member {string} module:deliteful/list/List#selectionMode
-		 * @default "none", or "single" if `role=listbox`.
+		 * @default "none", or "single" if `role=listbox` or `role=list`.
 		 */
 		_setSelectionModeAttr: dcl.superCall(function (sup) {
 			return function (value) {
-				if (this.getAttribute("role") === "listbox" && value === "none") {
-					throw new TypeError("selectionMode 'none' is invalid for an aria listbox, "
+				if ((this.type === "listbox" || this.type === "list") && value === "none") {
+					throw new TypeError("selectionMode 'none' is invalid for an aria listbox/list, "
 							+ "keeping the previous value of '" + this.selectionMode + "'");
 				} else {
 					sup.apply(this, arguments);
+				}
+			};
+		}),
+
+		////////////////////////////////////////////////////////////////////////////////////////////
+		// Override setAttribute(), getAttribute(), hasAttribute() and removeAttribute to move down to
+		// the containerNode any aria attribute set to the root.
+
+		setAttribute: dcl.superCall(function (sup) {
+			return function (name, value) {
+				if (/^aria-/.test(name) && this.containerNode) {
+					this.containerNode.setAttribute(name, value);
+				} else {
+					sup.call(this, name, value);
+				}
+			};
+		}),
+
+		getAttribute: dcl.superCall(function (sup) {
+			return function (name) {
+				if (/^aria-/.test(name) && this.containerNode) {
+					return this.containerNode.getAttribute(name);
+				} else {
+					return sup.call(this, name);
+				}
+			};
+		}),
+
+		hasAttribute: dcl.superCall(function (sup) {
+			return function (name) {
+				if (/^aria-/.test(name) && this.containerNode) {
+					return this.containerNode.hasAttribute(name);
+				} else {
+					return sup.call(this, name);
+				}
+			};
+		}),
+
+		removeAttribute: dcl.superCall(function (sup) {
+			return function (name) {
+				if (/^aria-/.test(name) && this.containerNode) {
+					this.containerNode.removeAttribute(name);
+				} else {
+					sup.call(this, name);
 				}
 			};
 		}),
@@ -460,24 +544,11 @@ define('deliteful/list/List',[
 		},
 
 		/**
-		 * A panel that hides the content of the widget when shown, and displays a progress indicator
-		 * and an optional message.
-		 * @member {module:deliteful/list/_LoadingPanel} module:deliteful/list/List#_loadingPanel
-		 * @private
-		 */
-
-		/**
-		 * Handle for the selection click event handler
-		 * @member {Function} module:deliteful/list/List#_selectionClickHandle
-		 * @private
-		 */
-
-		/**
 		 * Previous focus child before the list loose focus
 		 * @member {Element} module:deliteful/list/List#_previousFocusedChild
 		 * @private
 		 */
-		
+
 		/**
 		 * Flag set to a truthy value once the items have been loaded from the store
 		 * @member {boolean} module:deliteful/list/List#_dataLoaded
@@ -485,27 +556,16 @@ define('deliteful/list/List',[
 		 */
 
 		createdCallback: function () {
-			this.on("query-error", function () { this._setBusy(false, true); }.bind(this));
-		},
-
-		render: function () {
-			// Aria attributes
-			var currentRole = this.getAttribute("role");
-			if (!currentRole) {
-				this.setAttribute("role", "grid");
-				currentRole = "grid";
-			}
-
-			// role=grid should have aria-disabled, but it's meaningless for role=listbox or role=menu.
-			if (currentRole === "grid") {
-				this.setAttribute("aria-readonly", "true");
-			}
+			this.on("query-error", function () {
+				this._busy = false;
+			}.bind(this));
 		},
 
 		queryStoreAndInitItems: dcl.superCall(function (sup) {
 			return function () {
-				// Display loading icon.  It's removed in initItems(), after the query completes.
-				this._setBusy(true, true);
+				// Setting busy to true and showing the progress indicator.
+				// It's removed in initItems(), after the query completes and busy is set to false.
+				this._busy = true;
 				sup.apply(this, arguments);
 			};
 		}),
@@ -515,13 +575,13 @@ define('deliteful/list/List',[
 			/*jshint maxcomplexity:11*/
 			if ("selectionMode" in props) {
 				// Update aria attributes
-				$(this).removeClass(this._cssClasses.selectable);
-				$(this).removeClass(this._cssClasses.multiselectable);
-				this.removeAttribute("aria-multiselectable");
+				$(this.containerNode).removeClass(this._cssClasses.selectable);
+				$(this.containerNode).removeClass(this._cssClasses.multiselectable);
+				this.containerNode.removeAttribute("aria-multiselectable");
 				if (this.selectionMode === "none") {
 					// update aria-selected attribute on unselected items
-					for (var i = 0; i < this.children.length; i++) {
-						var child = this.children[i];
+					for (var i = 0; i < this.containerNode.children.length; i++) {
+						var child = this.containerNode.children[i];
 						if (child.renderNode // no renderNode for the loading panel child
 							&& child.renderNode.hasAttribute("aria-selected")) {
 							child.renderNode.removeAttribute("aria-selected");
@@ -530,14 +590,14 @@ define('deliteful/list/List',[
 					}
 				} else {
 					if (this.selectionMode === "single" || this.selectionMode === "radio") {
-						$(this).addClass(this._cssClasses.selectable);
+						$(this.containerNode).addClass(this._cssClasses.selectable);
 					} else {
-						$(this).addClass(this._cssClasses.multiselectable);
-						this.setAttribute("aria-multiselectable", "true");
+						$(this.containerNode).addClass(this._cssClasses.multiselectable);
+						this.containerNode.setAttribute("aria-multiselectable", "true");
 					}
 					// update aria-selected attribute on unselected items
-					for (i = 0; i < this.children.length; i++) {
-						child = this.children[i];
+					for (i = 0; i < this.containerNode.children.length; i++) {
+						child = this.containerNode.children[i];
 						if (child.tagName.toLowerCase() === this.itemRenderer.tag
 								&& child.renderNode // no renderNode for the loading panel child
 								&& !child.renderNode.hasAttribute("aria-selected")) {
@@ -547,32 +607,48 @@ define('deliteful/list/List',[
 					}
 				}
 			}
-		},
-		/*jshint maxcomplexity:10*/
 
-		computeProperties: function (props) {
-			//	List attributes have been updated.
-			/*jshint maxcomplexity:12*/
-			if ("selectionMode" in props) {
-				if (this.selectionMode === "none") {
-					if (this._selectionClickHandle) {
-						this._selectionClickHandle.remove();
-						this._selectionClickHandle = null;
+			if ("type" in props) {
+				this.getRenderers().forEach(function (renderer) {
+					renderer.parentRole = this.type;
+					if (renderer.deliver) {
+						renderer.deliver();
 					}
+				}.bind(this));
+				if (this.type === "grid") {
+					this.containerNode.setAttribute("aria-readonly", true);
 				} else {
-					if (!this._selectionClickHandle) {
-						this._selectionClickHandle = this.on("click", this.handleSelection.bind(this));
-					}
+					this.containerNode.removeAttribute("aria-readonly");
 				}
 			}
+		},
+
+		computeProperties: function (props) {
+			/*jshint maxcomplexity:13*/
+			//	List attributes have been updated.
 			if ("itemRenderer" in props
 				|| (this._isCategorized()
 						&& ("categoryAttr" in props || "categoryFunc" in props || "categoryRenderer" in props))) {
 				if (this._dataLoaded) {
-					this._setBusy(true, true);
+					this._busy = true;
 
 					// trigger a reload of the list
 					this.notifyCurrentValue("source");
+				}
+			}
+			if (("renderItems" in props && this.renderItems) || "_busy" in props || "showNoItems" in props) {
+				this._displayedPanel = (this._busy) ? "loading-panel" :
+					(this.containerNode && this.containerNode.children.length > 0) ?
+						"list" : ((this.showNoItems) ? "no-items" : "none");
+			}
+		},
+
+		postRender: function () {
+			// moving down to the containerNode any aria attribute that has been set to the root node.
+			for (var i = 0; i < this.attributes.length; i++) {
+				if (/^aria-/.test(this.attributes[i].name)) {
+					this.containerNode.setAttribute(this.attributes[i].name, this.attributes[i].value);
+					HTMLElement.prototype.removeAttribute.call(this, this.attributes[i].name);
 				}
 			}
 		},
@@ -582,9 +658,8 @@ define('deliteful/list/List',[
 			if (this.source && this.source.list) {
 				this.source.list = null;
 			}
-			this._hideLoadingPanel();
 		},
- 
+
 		deliver: dcl.superCall(function (sup) {
 			return function () {
 				// Deliver pending changes to the list and its renderers
@@ -605,7 +680,7 @@ define('deliteful/list/List',[
 		 * @private
 		 */
 		getRenderers: function () {
-			return [].slice.call(this.childNodes);
+			return [].slice.call(this.containerNode ? this.containerNode.childNodes : []);
 		},
 
 		/**
@@ -614,7 +689,7 @@ define('deliteful/list/List',[
 		 * @private
 		 */
 		getItemAndCategoryRenderers: function () {
-			return Array.prototype.filter.call(this.childNodes, function (node) {
+			return Array.prototype.filter.call(this.containerNode.childNodes, function (node) {
 				return node.tagName.toLowerCase() === this.itemRenderer.tag
 					|| node.tagName.toLowerCase() === this.categoryRenderer.tag;
 			}, this);
@@ -625,7 +700,7 @@ define('deliteful/list/List',[
 		 * @returns {module:deliteful/list/ItemRenderer[]}
 		 */
 		getItemRenderers: function () {
-			return Array.prototype.filter.call(this.childNodes, function (node) {
+			return Array.prototype.filter.call(this.containerNode.childNodes, function (node) {
 				return node.tagName.toLowerCase() === this.itemRenderer.tag;
 			}, this);
 		},
@@ -688,7 +763,7 @@ define('deliteful/list/List',[
 		getEnclosingRenderer: function (node) {
 			var currentNode = node;
 			while (currentNode) {
-				if (currentNode.parentNode && currentNode.parentNode === this) {
+				if (currentNode.parentNode && currentNode.parentNode === this.containerNode) {
 					break;
 				}
 				currentNode = currentNode.parentNode;
@@ -748,53 +823,6 @@ define('deliteful/list/List',[
 		//////////// Private methods ///////////////////////////////////////
 
 		/**
-		 * Sets the "busy" status of the widget.
-		 * @param {boolean} status true if the list is busy loading and rendering its data.
-		 * false otherwise.
-		 * @param {boolean} hideContent true if the list should hide its content when it is busy,
-		 * false otherwise
-		 * @private
-		 */
-		_setBusy: function (status, hideContent) {
-			if (status) {
-				this.setAttribute("aria-busy", "true");
-				if (hideContent) {
-					this._showLoadingPanel();
-				}
-			} else {
-				this.removeAttribute("aria-busy");
-				this._hideLoadingPanel();
-			}
-		},
-
-		/**
-		 * Shows the loading panel
-		 * @private
-		 */
-		_showLoadingPanel: function () {
-			if (!this._loadingPanel) {
-				this._loadingPanel = new LoadingPanel({message: this.loadingMessage});
-				if (this.children[0] !== undefined) {
-					this.insertBefore(this._loadingPanel, this.children[0]);
-				} else {
-					this.appendChild(this._loadingPanel);
-				}
-				this._loadingPanel.attachedCallback();
-			}
-		},
-
-		/**
-		 * Hides the loading panel
-		 * @private
-		 */
-		_hideLoadingPanel: function () {
-			if (this._loadingPanel) {
-				this._loadingPanel.destroy();
-				this._loadingPanel = null;
-			}
-		},
-
-		/**
 		 * Returns whether the list is categorized or not.
 		 * @private
 		 */
@@ -807,12 +835,12 @@ define('deliteful/list/List',[
 		 * @private
 		 */
 		_empty: function () {
-			this.findCustomElements(this).forEach(function (w) {
+			this.findCustomElements(this.containerNode).forEach(function (w) {
 				if (w.destroy) {
 					w.destroy();
 				}
 			});
-			this.innerHTML = "";
+			this.containerNode.innerHTML = "";
 			this._previousFocusedChild = null;
 		},
 
@@ -826,8 +854,8 @@ define('deliteful/list/List',[
 		 * @private
 		 */
 		_renderNewItems: function (/*Array*/ items, /*boolean*/atTheTop) {
-			if (!this.firstElementChild || this.firstElementChild === this._loadingPanel) {
-				this.appendChild(this._createRenderers(items, 0, items.length, null));
+			if (!this.containerNode.firstElementChild) {
+				this.containerNode.appendChild(this._createRenderers(items, 0, items.length, null));
 			} else {
 				if (atTheTop) {
 					if (this._isCategorized()) {
@@ -838,15 +866,15 @@ define('deliteful/list/List',[
 							this._removeRenderer(firstRenderer);
 						}
 					}
-					this.insertBefore(this._createRenderers(items, 0, items.length, null),
-							this.firstElementChild);
+					this.containerNode.insertBefore(this._createRenderers(items, 0, items.length, null),
+							this.containerNode.firstElementChild);
 				} else {
-					this.appendChild(this._createRenderers(items, 0, items.length,
+					this.containerNode.appendChild(this._createRenderers(items, 0, items.length,
 							this._getLastRenderer().item));
 				}
 			}
 			// start renderers
-			this.findCustomElements(this).forEach(function (w) {
+			this.findCustomElements(this.containerNode).forEach(function (w) {
 				w.attachedCallback();
 			});
 		},
@@ -894,18 +922,18 @@ define('deliteful/list/List',[
 		_addItemRenderer: function (renderer, atIndex) {
 			var spec = this._getInsertSpec(renderer, atIndex);
 			if (spec.nodeRef) {
-				this.insertBefore(renderer, spec.nodeRef);
+				this.containerNode.insertBefore(renderer, spec.nodeRef);
 				if (spec.addCategoryAfter) {
 					var categoryRenderer = this._createCategoryRenderer(spec.nodeRef.item);
-					this.insertBefore(categoryRenderer, spec.nodeRef);
+					this.containerNode.insertBefore(categoryRenderer, spec.nodeRef);
 					categoryRenderer.attachedCallback();
 				}
 			} else {
-				this.appendChild(renderer);
+				this.containerNode.appendChild(renderer);
 			}
 			if (spec.addCategoryBefore) {
 				categoryRenderer = this._createCategoryRenderer(renderer.item);
-				this.insertBefore(categoryRenderer, renderer);
+				this.containerNode.insertBefore(categoryRenderer, renderer);
 				categoryRenderer.attachedCallback();
 			}
 			renderer.attachedCallback();
@@ -989,7 +1017,7 @@ define('deliteful/list/List',[
 			if (this._previousFocusedChild && this.getEnclosingRenderer(this._previousFocusedChild) === renderer) {
 				this._previousFocusedChild = null;
 			}
-			this.removeChild(renderer);
+			this.containerNode.removeChild(renderer);
 			renderer.destroy();
 		},
 		/*jshint maxcomplexity:10*/
@@ -1003,7 +1031,7 @@ define('deliteful/list/List',[
 		_createItemRenderer: function (item) {
 			var renderer = new this.itemRenderer({
 				item: item,
-				parentRole: this.getAttribute("role"),
+				parentRole: this.type,
 				tabindex: "-1"
 			});
 			if (this.selectionMode !== "none") {
@@ -1024,7 +1052,7 @@ define('deliteful/list/List',[
 		_createCategoryRenderer: function (item) {
 			var renderer = new this.categoryRenderer({
 				item: item,
-				parentRole: this.getAttribute("role"),
+				parentRole: this.type,
 				tabindex: "-1"
 			});
 			return renderer;
@@ -1092,13 +1120,15 @@ define('deliteful/list/List',[
 		 * @protected
 		 * @fires module:delite/Store#query-success
 		 */
-		initItems: function (items) {
-			this._empty();
-			this._renderNewItems(items, false);
-			this._setBusy(false, true);
-			this._dataLoaded = true;
-			this.emit("query-success", { renderItems: items, cancelable: false, bubbles: true });
-		},
+		initItems: dcl.superCall(function (sup) {
+			return function (items) {
+				this._empty();
+				this._renderNewItems(items, false);
+				this._busy = false;
+				this._dataLoaded = true;
+				return sup.call(this, items);
+			};
+		}),
 
 		/**
 		 * Function to call when an item is removed from the store, to update
@@ -1113,6 +1143,7 @@ define('deliteful/list/List',[
 			if (renderer) {
 				this._removeRenderer(renderer, keepSelection);
 			}
+			this.notifyCurrentValue("renderItems");
 		},
 
 		/**
@@ -1126,6 +1157,7 @@ define('deliteful/list/List',[
 		itemAdded: function (index, renderItem, /*jshint unused:vars*/renderItems) {
 			var newRenderer = this._createItemRenderer(renderItem);
 			this._addItemRenderer(newRenderer, index);
+			this.notifyCurrentValue("renderItems");
 		},
 
 		/**
@@ -1164,7 +1196,7 @@ define('deliteful/list/List',[
 		//////////// delite/Scrollable extension ///////////////////////////////////////
 
 		/**
-		 * Returns the distance between the top of a node and 
+		 * Returns the distance between the top of a node and
 		 * the top of the scrolling container.
 		 * @param {Node} node the node
 		 * @protected
@@ -1194,13 +1226,14 @@ define('deliteful/list/List',[
 		// http://www.w3.org/TR/2013/WD-wai-aria-practices-20130307/#grid
 
 		/**
-		 * Test if the child is navigable.  Skips category renderers when role=listbox or role=menu.
+		 * Test if the child is navigable.  Skips category renderers when role=listbox,
+		 * role=list or role=menu.
 		 * @private
 		 */
 		descendantSelector: function (child) {
 			var enclosingRenderer = this.getEnclosingRenderer(child);
 			return enclosingRenderer &&
-				(this.getAttribute("role") === "grid" || !this.isCategoryRenderer(enclosingRenderer)) &&
+				(this.type === "grid" || !this.isCategoryRenderer(enclosingRenderer)) &&
 				($(child).hasClass(this._cssClasses.cell) || child.hasAttribute("navindex"));
 		},
 
@@ -1214,7 +1247,7 @@ define('deliteful/list/List',[
 				if ((evt.key === "Spacebar" && !this._searchTimer)) {
 					this._spaceKeydownHandler(evt);
 				} else {
-					if (this.getAttribute("role") === "grid") {
+					if (this.type === "grid") {
 						this._gridKeydownHandler(evt);
 					}
 				}
@@ -1254,15 +1287,15 @@ define('deliteful/list/List',[
 
 		/**
 		 * Returns the first cell in the list.
-		 * For role=listbox and role=menu, skips category renderers.
+		 * For role=listbox, role=list and role=menu, skips category renderers.
 		 * However, it doesn't skip navigation renderers ("click to load previous rows ...").
 		 * @private
 		 * @returns {Element}
 		 */
 		_getFirst: function () {
-			var firstRenderer = this.childNodes[0],
+			var firstRenderer = this.containerNode.childNodes[0],
 				firstCell = firstRenderer && firstRenderer.renderNode;
-			if (this.getAttribute("role") !== "grid" && firstRenderer && this.isCategoryRenderer(firstRenderer)) {
+			if (this.type !== "grid" && firstRenderer && this.isCategoryRenderer(firstRenderer)) {
 				firstCell = this.getNext(firstCell, 1);
 			}
 			return firstCell;
@@ -1270,15 +1303,15 @@ define('deliteful/list/List',[
 
 		/**
 		 * Returns the last cell in the list.
-		 * For role=listbox and role=menu, skips category renderers.
+		 * For role=listbox, role=list and role=menu, skips category renderers.
 		 * However, it doesn't skip navigation renderers ("click to load more rows ...").
 		 * @private
 		 * @returns {Element}
 		 */
 		_getLast: function () {
-			var lastRenderer = this.childNodes[this.childNodes.length - 1],
+			var lastRenderer = this.containerNode.childNodes[this.containerNode.childNodes.length - 1],
 				lastCell = lastRenderer && lastRenderer.renderNode;
-			if (this.getAttribute("role") !== "grid" && lastRenderer && this.isCategoryRenderer(lastRenderer)) {
+			if (this.type !== "grid" && lastRenderer && this.isCategoryRenderer(lastRenderer)) {
 				lastCell = this.getNext(lastCell, -1);
 			}
 			return lastCell || null;
@@ -1291,7 +1324,7 @@ define('deliteful/list/List',[
 		 * @returns {Element}
 		 */
 		getNext: function (child, dir) {
-			if (child === this) {
+			if (child === this.containerNode) {
 				return dir > 0 ? this._getFirst() : this._getLast();
 			}
 
@@ -1309,7 +1342,7 @@ define('deliteful/list/List',[
 			var next = null;
 			if (focusedRenderer) {
 				next = focusedRenderer.nextElementSibling;
-				if (next && this.getAttribute("role") !== "grid" && this.isCategoryRenderer(next)) {
+				if (next && this.type !== "grid" && this.isCategoryRenderer(next)) {
 					next = next.nextElementSibling;
 				}
 			}
@@ -1324,7 +1357,7 @@ define('deliteful/list/List',[
 			var next = null;
 			if (focusedRenderer) {
 				next = focusedRenderer.previousElementSibling;
-				if (next && this.getAttribute("role") !== "grid" && this.isCategoryRenderer(next)) {
+				if (next && this.type !== "grid" && this.isCategoryRenderer(next)) {
 					next = next.previousElementSibling;
 				}
 			}
@@ -1425,8 +1458,601 @@ define('deliteful/list/List',[
 		_getFocusedRenderer: function () {
 			return this.navigatedDescendant ? this.getEnclosingRenderer(this.navigatedDescendant) : null;
 		}
-
 	});
+});
+;
+/**
+ * Plugin based on requirejs i18n
+ * see: http://github.com/requirejs/i18n for details
+ */
+define('requirejs-dplugins/i18n',["./i18n/common", "./i18n/build", "module"], function (common, build, module) {
+
+	var localesList,
+		writePluginFile,
+
+		mixin = common.mixin,
+		eachProp = common.eachProp,
+		parseName = common.parseName,
+		getMasterMid = common.getMasterMid,
+
+		normalizeBundlesMap = function (bundlesMap) {
+			var result = {};
+			eachProp(bundlesMap, function (layer, bundleList) {
+				bundleList.forEach(function (bundle) {
+					result[bundle] = layer;
+				});
+			});
+			return result;
+		},
+
+		// Transform a bundle from a language layer to a root bundle.
+		rootify = function (bundle, locale) {
+			var result = {};
+			if (bundle._pseudoRoot) {
+				result[locale] = {};
+				mixin(result, bundle._pseudoRoot);
+				delete bundle._pseudoRoot;
+				mixin(result[locale], bundle);
+				bundle = result;
+			}
+			return bundle;
+		},
+
+		// Construct the best language bundle by merging from most specific locale to less specific locale.
+		resolveAMD = function (name, req, onLoad) {
+			var masterMid = getMasterMid(name);
+
+			//First, fetch the master bundle, it knows what locales are available.
+			req([masterMid], function (master) {
+				var getBundleAndMixin = function (prefix, suffix, locale, value) {
+					var mixBundle = function (bundle) {
+						mixin(value, bundle);
+						locale = common.getParentLocale(locale);
+						if (!bundle._flattened && locale) {
+							getBundleAndMixin(prefix, suffix, locale, value);
+						} else {
+							value._flattened = true;
+							onLoad(value);
+						}
+					};
+
+					if (master[locale] === true || master[locale] === 1) {
+						req([prefix + locale + '/' + suffix], mixBundle);
+					} else {
+						// locale is on the master bundle or locale is unexisting
+						mixBundle(master[locale] || {});
+					}
+				};
+
+				master = rootify(master, name.masterLocale);
+				getBundleAndMixin(name.prefix, name.suffix, name.requestedLocale, {});
+			});
+		},
+
+		getLayer = function (name, layer, moduleConfig, getParentLocale, req, onLoad) {
+			var locale = name.requestedLocale,
+				localesList = moduleConfig.localesMap[layer];
+
+			while (locale && localesList.indexOf(locale) < 0) {
+				locale = getParentLocale(locale);
+			}
+
+			if (locale) {
+				name.masterLocale = locale;
+
+				req([layer + "_" + locale], function () {
+					pickFromLayer(name, moduleConfig, req, onLoad);
+				});
+			} else {
+				console.log("i18n: no relevant layer " + layer + " found for locale " + name.requestedLocale + ".");
+				onLoad();
+			}
+		},
+
+
+		tryLayer = function (name, layer, moduleConfig, getParentLocale, req, onLoad) {
+			var helper = function (locale) {
+				if (locale) {
+					req(["maybe!" + layer + "_" + locale], function (bundle) {
+						if (bundle) {
+							name.masterLocale = locale;
+							pickFromLayer(name, moduleConfig, req, onLoad);
+						} else {
+							helper(getParentLocale(locale));
+						}
+					});
+				} else {
+					console.log("i18n: no relevant layer " + layer + " found for locale " + name.requestedLocale + ".");
+					onLoad();
+				}
+			};
+
+			helper(name.requestedLocale);
+		},
+
+		pickFromLayer = function (name, moduleConfig, req, onLoad) {
+			var masterMid = getMasterMid(name);
+
+			if (name.requestedLocale === name.masterLocale || moduleConfig.layerOnly || !moduleConfig.enhanceLayer) {
+				req([masterMid], function (bundle) {
+					if (bundle.root) {
+						bundle = bundle.root;
+					}
+					onLoad(bundle);
+				});
+			} else {
+				resolveAMD(name, req, onLoad);
+			}
+		};
+
+	return {
+		/* jshint maxcomplexity:15 */
+		load: function (name, req, onLoad, config) {
+			if (!name) {
+				onLoad();
+				return;
+			}
+
+			config = config || {};
+
+			var moduleConfig = {},
+				masterMid,
+				layer;
+
+			// Copy the config
+			mixin(moduleConfig, typeof module.config === "function" ? module.config() || {} : {});
+
+			if (config.isBuild) {
+				localesList = moduleConfig.localesList;
+				onLoad();
+				return;
+			}
+
+			moduleConfig.enhanceLayer = moduleConfig.enhanceLayer === undefined ? true : moduleConfig.enhanceLayer;
+
+			// Parse name and set the locale if a top level bundle is required
+			name = parseName(name);
+			name.requestedLocale = name.requestedLocale || common.getLocale(moduleConfig.locale || config.locale);
+			masterMid = getMasterMid(name);
+
+			// If there is no layer, classic AMD mode
+			if (!moduleConfig.bundlesMap) {
+				resolveAMD(name, req, onLoad);
+				return;
+			}
+
+			// From now on there is at least one layer available
+
+			// Check if requested module is in a layer
+			moduleConfig.bundlesMap = normalizeBundlesMap(moduleConfig.bundlesMap);
+			layer = moduleConfig.bundlesMap[masterMid];
+
+			if (!layer && moduleConfig.layerOnly) {
+				console.log("i18n: module " + masterMid + " not found in layer.");
+				onLoad();
+				return;
+			} else if (!layer) {
+				resolveAMD(name, req, onLoad);
+				return;
+			}
+
+			// The module is in a layer
+
+			if (moduleConfig.languagePack) {
+				// Drop language pack mode, hence need to try every possible layer
+				tryLayer(name, layer, moduleConfig, common.getParentLocale, req, onLoad);
+				return;
+			} else {
+				// There is a locale list for the layer
+				getLayer(name, layer, moduleConfig, common.getParentLocale, req, onLoad);
+				return;
+			}
+		},
+		/* jshint  maxcomplexity:10 */
+
+		write: function (pluginName, moduleName, write) {
+			var name = parseName(moduleName),
+				bundle;
+
+			if (name.requestedLocale) {
+				bundle = build.resolveSync(name.requestedLocale, name);
+				if (name.requestedLocale !== "root") {
+					bundle._pseudoRoot = {};
+					bundle._flattened = true;
+				}
+				write.asModule(pluginName + "!" + moduleName, "define(" + JSON.stringify(bundle) + ")");
+			} else {
+				build.addBundleToNlsLayer(name);
+			}
+		},
+
+		writeFile: function (pluginName, resource, requirejs, writeFile) {
+			writePluginFile = writeFile;
+		},
+
+		onLayerEnd: function (write, data) {
+			if (data.name && data.path) {
+				var layersContent;
+
+				build.setLocalesList(localesList);
+
+				layersContent = build.getLayersContent();
+
+				build.writeLayers(layersContent, data, writePluginFile);
+				build.writeConfig(module.id, data, write);
+			}
+			build.reset();
+		}
+	};
+});
+;
+define('requirejs-dplugins/i18n/build',["./common"], function (common) {
+	var bundlesList = [],
+		localesList,
+		layerMid,
+
+		mixin = common.mixin,
+		eachProp = common.eachProp,
+		getMasterMid = common.getMasterMid,
+
+		getLayerMid = function (data) {
+			var match;
+			if (!layerMid) {
+				match = data.name.match(/^(.*\/)?(.*)$/);
+				layerMid = (match[1] || "") + "nls/" + match[2];
+			}
+			return layerMid;
+		},
+
+		getLayerPath = function (data, loc) {
+			var match = data.path.match(/^(.*\/)?(.*)\.js$/);
+			return (match[1] || "") + "nls/" + match[2] + "_" + loc + ".js";
+		},
+
+		getAllAvailableLocales = function () {
+			localesList = [];
+			bundlesList.forEach(function (name) {
+				var root = require(getMasterMid(name));
+
+				eachProp(root, function (loc) {
+					if (root[loc] && localesList.indexOf(loc) < 0) {
+						localesList.push(loc);
+					}
+				});
+			});
+			return localesList;
+		},
+
+		normalizeRoot = function (bundle, name) {
+			bundle.root = (bundle.root === true || bundle.root === 1) ?
+				require(name.prefix + "root/" + name.suffix) : bundle.root;
+			return bundle;
+		},
+
+		getPseudoRoots = function (root) {
+			var pseudoRoots = {};
+			eachProp(root, function (loc) {
+				var parent = common.getParentLocale(loc);
+				while (parent && parent !== "root") {
+					pseudoRoots[parent] = pseudoRoots[parent] || {};
+					pseudoRoots[parent][loc] = true;
+					parent = common.getParentLocale(parent);
+				}
+			});
+			return pseudoRoots;
+		},
+
+		resolveSync = function (locale, name, root) {
+			var loc = locale,
+				result = {},
+				localizedBundle;
+
+			if (arguments.length === 2) {
+				root = normalizeRoot(require(getMasterMid(name)), name);
+			}
+
+			if (loc !== "root") {
+				while (loc && loc !== "root") {
+					if (root[loc]) {
+						localizedBundle = require(name.prefix + loc + "/" + name.suffix);
+						mixin(result, localizedBundle);
+					}
+					loc = common.getParentLocale(loc);
+				}
+				localizedBundle = root.root;
+				mixin(result, localizedBundle);
+			} else {
+				mixin(result, root);
+			}
+
+			return result;
+		};
+
+	return {
+		addBundleToNlsLayer: function (name) {
+			bundlesList.push(name);
+		},
+
+		setLocalesList: function (locList) {
+			localesList = locList ? locList.slice() : getAllAvailableLocales();
+			if (localesList.indexOf("root") < 0) {
+				localesList.push("root");
+			}
+		},
+
+		reset: function () {
+			bundlesList = [];
+			localesList = undefined;
+			layerMid = undefined;
+		},
+
+		getLayersContent: function () {
+			var layersContent = {};
+
+			bundlesList.forEach(function (name) {
+				var root = normalizeRoot(require(getMasterMid(name)), name),
+					pseudoRoots = getPseudoRoots(root);
+
+				localesList.forEach(function (loc) {
+					var result = resolveSync(loc, name, root);
+
+					layersContent[loc] = layersContent[loc] || "";
+
+					var mid;
+					if (loc !== "root") {
+						mid = name.prefix + loc + "/" + name.suffix;
+						result._flattened = true;
+						result._pseudoRoot = pseudoRoots[loc] || {};
+					} else {
+						mid = name.prefix + name.suffix;
+					}
+
+					layersContent[loc] += 'define("' + mid + '",' + JSON.stringify(result) + ");";
+				});
+			});
+
+			return layersContent;
+		},
+
+		writeLayers: function (layersContent, data, writePluginFile) {
+			eachProp(layersContent, function (loc, content) {
+				content += "define('" + getLayerMid(data) + "_" + loc + "', true);";
+				writePluginFile(getLayerPath(data, loc), content);
+			});
+		},
+
+		writeConfig: function (pluginName, data, write) {
+			var bundles = bundlesList.map(getMasterMid),
+				layerMid = getLayerMid(data),
+				i18nConf = {
+					config: {}
+				};
+			i18nConf.config[pluginName] = {
+				bundlesMap: {},
+				localesMap: {}
+			};
+			i18nConf.config[pluginName].bundlesMap[layerMid] = bundles;
+			i18nConf.config[pluginName].localesMap[layerMid] = localesList;
+
+			// write i18n config on the layer
+			write("require.config(" + JSON.stringify(i18nConf) + ");");
+		},
+
+		resolveSync: resolveSync
+	};
+});
+;
+define('requirejs-dplugins/i18n/common',["./parentLocale"], function (parentLocale) {
+
+	// regexp for reconstructing the master bundle name from parts of the regexp match
+	// "foo/bar/baz/nls/en-ca/foo".match(nlsRegExp) gives:
+	// ["foo/bar/baz/nls/en-ca/foo", "foo/bar/baz/nls/", "en-ca", "foo"]
+	// nlsRegExp.exec("foo/bar/baz/nls/foo") gives:
+	// ["foo/bar/baz/nls/foo", "foo/bar/baz/nls/", "foo", ""]
+	// so, if match[3] is blank, it means this is the top bundle definition.
+	var nlsRegExp = /(^.*(?:^|\/)nls\/)([^\/]*)\/?([^\/]*)$/;
+
+	return {
+		eachProp: function (obj, func) {
+			var prop;
+			for (prop in obj) {
+				if (obj.hasOwnProperty(prop)) {
+					func(prop, obj[prop]);
+				}
+			}
+		},
+
+		getLocale: function (locale) {
+			if (!locale) {
+				locale = typeof navigator === "undefined" ? "root" :
+					(navigator.language ||
+					// IE <= 10
+					navigator.userLanguage ||
+					"root");
+			}
+			// just to be extra-sure
+			return locale.toLowerCase();
+		},
+
+		getParentLocale: function (loc) {
+			if (!loc || loc === "root") {
+				return undefined;
+			}
+			if (parentLocale[loc]) {
+				return parentLocale[loc];
+			}
+
+			var parts = loc.split("-");
+			parts.pop();
+			return (parts.length > 0) ? parts.join("-") : "root";
+		},
+
+
+		// Simple function to mix in properties from source into target,
+		// but only if target does not already have a property of the same name.
+		// This is not robust in IE for transferring methods that match
+		// Object.prototype names, but the uses of mixin here seem unlikely to
+		// trigger a problem related to that.
+		mixin: function mixin(target, source, force) {
+			var prop;
+			for (prop in source) {
+				if (source.hasOwnProperty(prop) && (!target.hasOwnProperty(prop) || force)) {
+					target[prop] = source[prop];
+				} else if (typeof source[prop] === 'object') {
+					if (!target[prop] && source[prop]) {
+						target[prop] = {};
+					}
+					mixin(target[prop], source[prop], force);
+				}
+			}
+		},
+
+		// Parse the resource mid and return a usable object.	
+		parseName: function (name) {
+			var match = name.match(nlsRegExp);
+
+			// If match[3] is blank, it means this is the top bundle definition,
+			// hence suffix is match[2] and locale is null.
+			return {
+				prefix: match[1],
+				masterLocale: "root",
+				requestedLocale: match[3] ? match[2] : null,
+				suffix: match[3] || match[2]
+			};
+		},
+
+
+		getMasterMid: function (name) {
+			return name.masterLocale === "root" ? name.prefix + name.suffix :
+				name.prefix + name.masterLocale + "/" + name.suffix;
+		}
+	};
+});
+;
+define('requirejs-dplugins/i18n/parentLocale',{
+	"en-ag": "en-001",
+	"en-ai": "en-001",
+	"en-bb": "en-001",
+	"en-bm": "en-001",
+	"en-bs": "en-001",
+	"en-bw": "en-001",
+	"en-bz": "en-001",
+	"en-cc": "en-001",
+	"en-ck": "en-001",
+	"en-cm": "en-001",
+	"en-cx": "en-001",
+	"en-dm": "en-001",
+	"en-er": "en-001",
+	"en-fj": "en-001",
+	"en-fm": "en-001",
+	"en-gb": "en-001",
+	"en-gd": "en-001",
+	"en-gh": "en-001",
+	"en-gm": "en-001",
+	"en-gy": "en-001",
+	"en-jm": "en-001",
+	"en-ke": "en-001",
+	"en-ki": "en-001",
+	"en-kn": "en-001",
+	"en-ky": "en-001",
+	"en-lc": "en-001",
+	"en-lr": "en-001",
+	"en-ls": "en-001",
+	"en-mg": "en-001",
+	"en-ms": "en-001",
+	"en-mu": "en-001",
+	"en-mw": "en-001",
+	"en-na": "en-001",
+	"en-nf": "en-001",
+	"en-ng": "en-001",
+	"en-nr": "en-001",
+	"en-nu": "en-001",
+	"en-pg": "en-001",
+	"en-ph": "en-001",
+	"en-pn": "en-001",
+	"en-pw": "en-001",
+	"en-rw": "en-001",
+	"en-sb": "en-001",
+	"en-sc": "en-001",
+	"en-sd": "en-001",
+	"en-sl": "en-001",
+	"en-ss": "en-001",
+	"en-sx": "en-001",
+	"en-sz": "en-001",
+	"en-tc": "en-001",
+	"en-tk": "en-001",
+	"en-to": "en-001",
+	"en-tt": "en-001",
+	"en-tv": "en-001",
+	"en-tz": "en-001",
+	"en-ug": "en-001",
+	"en-vc": "en-001",
+	"en-vu": "en-001",
+	"en-ws": "en-001",
+	"en-za": "en-001",
+	"en-zm": "en-001",
+	"en-zw": "en-001",
+	"en-150": "en-gb",
+	"en-au": "en-gb",
+	"en-be": "en-gb",
+	"en-dg": "en-gb",
+	"en-fk": "en-gb",
+	"en-gg": "en-gb",
+	"en-gi": "en-gb",
+	"en-hk": "en-gb",
+	"en-ie": "en-gb",
+	"en-im": "en-gb",
+	"en-in": "en-gb",
+	"en-io": "en-gb",
+	"en-je": "en-gb",
+	"en-mo": "en-gb",
+	"en-mt": "en-gb",
+	"en-nz": "en-gb",
+	"en-pk": "en-gb",
+	"en-sg": "en-gb",
+	"en-sh": "en-gb",
+	"en-vg": "en-gb",
+	"es-ar": "es-419",
+	"es-bo": "es-419",
+	"es-cl": "es-419",
+	"es-co": "es-419",
+	"es-cr": "es-419",
+	"es-cu": "es-419",
+	"es-do": "es-419",
+	"es-ec": "es-419",
+	"es-gt": "es-419",
+	"es-hn": "es-419",
+	"es-mx": "es-419",
+	"es-ni": "es-419",
+	"es-pa": "es-419",
+	"es-pe": "es-419",
+	"es-pr": "es-419",
+	"es-py": "es-419",
+	"es-sv": "es-419",
+	"es-us": "es-419",
+	"es-uy": "es-419",
+	"es-ve": "es-419",
+	"pt-ao": "pt-pt",
+	"pt-cv": "pt-pt",
+	"pt-gw": "pt-pt",
+	"pt-mo": "pt-pt",
+	"pt-mz": "pt-pt",
+	"pt-st": "pt-pt",
+	"pt-tl": "pt-pt",
+	"az-cyrl": "root",
+	"bs-cyrl": "root",
+	"en-dsrt": "root",
+	"ha-arab": "root",
+	"mn-mong": "root",
+	"ms-arab": "root",
+	"pa-arab": "root",
+	"shi-latn": "root",
+	"sr-latn": "root",
+	"uz-arab": "root",
+	"uz-cyrl": "root",
+	"vai-latn": "root",
+	"zh-hant": "root",
+	"zh-hant-mo": "zh-hant-hk"
 });
 ;
 define( 'jquery/src/attributes/classes',[
@@ -1752,7 +2378,6 @@ var risSimple = /^.[^:#\[\.,]*$/;
 function winnow( elements, qualifier, not ) {
 	if ( jQuery.isFunction( qualifier ) ) {
 		return jQuery.grep( elements, function( elem, i ) {
-			/* jshint -W018 */
 			return !!qualifier.call( elem, i, elem ) !== not;
 		} );
 
@@ -1785,11 +2410,13 @@ jQuery.filter = function( expr, elems, not ) {
 		expr = ":not(" + expr + ")";
 	}
 
-	return elems.length === 1 && elem.nodeType === 1 ?
-		jQuery.find.matchesSelector( elem, expr ) ? [ elem ] : [] :
-		jQuery.find.matches( expr, jQuery.grep( elems, function( elem ) {
-			return elem.nodeType === 1;
-		} ) );
+	if ( elems.length === 1 && elem.nodeType === 1 ) {
+		return jQuery.find.matchesSelector( elem, expr ) ? [ elem ] : [];
+	}
+
+	return jQuery.find.matches( expr, jQuery.grep( elems, function( elem ) {
+		return elem.nodeType === 1;
+	} ) );
 };
 
 jQuery.fn.extend( {
@@ -1838,7 +2465,9 @@ jQuery.fn.extend( {
 
 } );
 ;
-define( 'jquery/src/selector',[ "./selector-sizzle" ], function() {} );
+define( 'jquery/src/selector',[ "./selector-sizzle" ], function() {
+	"use strict";
+} );
 ;
 define( 'jquery/src/selector-sizzle',[
 	"./core",
@@ -4299,7 +4928,6 @@ return function( owner ) {
 	//    - Node.DOCUMENT_NODE
 	//  - Object
 	//    - Any
-	/* jshint -W018 */
 	return owner.nodeType === 1 || owner.nodeType === 9 || !( +owner.nodeType );
 };
 
@@ -4311,6 +4939,10 @@ define( 'jquery/src/var/rnotwhite',[],function() {
 	return ( /\S+/g );
 } );
 ;
+/* global Symbol */
+// Defining this global in .eslintrc would create a danger of using the global
+// unguarded in another place, it seems safer to define global only for this module
+
 define( 'jquery/src/core',[
 	"./var/arr",
 	"./var/document",
@@ -4373,13 +5005,14 @@ jQuery.fn = jQuery.prototype = {
 	// Get the Nth element in the matched element set OR
 	// Get the whole matched element set as a clean array
 	get: function( num ) {
-		return num != null ?
 
-			// Return just the one element from the set
-			( num < 0 ? this[ num + this.length ] : this[ num ] ) :
+		// Return all the elements in a clean array
+		if ( num == null ) {
+			return slice.call( this );
+		}
 
-			// Return all the elements in a clean array
-			slice.call( this );
+		// Return just the one element from the set
+		return num < 0 ? this[ num + this.length ] : this[ num ];
 	},
 
 	// Take an array of elements and push it onto the stack
@@ -4565,7 +5198,11 @@ jQuery.extend( {
 	},
 
 	isEmptyObject: function( obj ) {
+
+		/* eslint-disable no-unused-vars */
+		// See https://github.com/eslint/eslint/issues/6125
 		var name;
+
 		for ( name in obj ) {
 			return false;
 		}
@@ -4755,15 +5392,9 @@ jQuery.extend( {
 	support: support
 } );
 
-// JSHint would error on this code due to the Symbol not being defined in ES5.
-// Defining this global in .jshintrc would create a danger of using the global
-// unguarded in another place, it seems safer to just disable JSHint for these
-// three lines.
-/* jshint ignore: start */
 if ( typeof Symbol === "function" ) {
 	jQuery.fn[ Symbol.iterator ] = arr[ Symbol.iterator ];
 }
-/* jshint ignore: end */
 
 // Populate the class2type map
 jQuery.each( "Boolean Number String Function Array Date RegExp Object Error Symbol".split( " " ),
@@ -4957,36 +5588,6 @@ define('requirejs-dplugins/jquery',[], function () {
 	};
 });
 ;
-define('delite/handlebars!deliteful/list/List/_LoadingPanel.html',["delite/handlebars","deliteful/ProgressIndicator"], function(handlebars){
-	return handlebars.compile("<template class=\"d-list-loading-panel\">\n\t<div class=\"d-list-loading-panel-info\">\n\t\t<d-progress-indicator active=\"true\"></d-progress-indicator>\n\t\t<span>{{message}}</span>\n\t</div>\n</template>");
-});;
-/**
- * @module deliteful/list/_LoadingPanel
- * @private
- */
-define('deliteful/list/_LoadingPanel',[
-	"delite/register",
-	"delite/Widget",
-	"delite/handlebars!./List/_LoadingPanel.html"
-], function (register, Widget, template) {
-
-	/**
-	 * A widget that renders a panel masking a list and displaying a progress indicator and a message.
-	 * @class module:deliteful/list/_LoadingPanel
-	 * @augments module:delite/Widget
-	 * @private
-	 */
-	return register("d-list-loading-panel", [HTMLElement, Widget], /** @lends module:deliteful/list/_LoadingPanel# */{
-		/**
-		 * The message to display
-		 * @member {string}
-		 * @default ""
-		 */
-		message: "",
-
-		template: template
-	});
-});;
 define('delite/handlebars!deliteful/list/List/CategoryRenderer.html',["delite/handlebars"], function(handlebars){
 	return handlebars.compile("<template>\n\t<div attach-point=\"renderNode\">{{item.category}}</div>\n</template>");
 });;
@@ -5213,7 +5814,7 @@ define('deliteful/list/ItemRenderer',[
 
 	/**
 	 * Default item renderer for the {@link module:deliteful/list/List deliteful/list/List widget}.
-	 * 
+	 *
 	 * This renderer renders generic items that can have any of the following attributes (display
 	 * position of the rendering described for LTR direction):
 	 * - `iconclass`: css class to apply to a DIV element on the left side of the list item in order
@@ -5227,8 +5828,8 @@ define('deliteful/list/ItemRenderer',[
 	 * in order to display an icon.
 	 * Rendered with CSS class `d-list-item-right-icon2` + the value of the attribute;
 	 * By default, none of the nodes that renders the attributes are focusable with keyboard navigation
-	 * (no navindex attribute on the nodes). 
-	 * 
+	 * (no navindex attribute on the nodes).
+	 *
 	 * @class module:deliteful/list/ItemRenderer
 	 * @augments module:deliteful/list/Renderer
 	 */
@@ -5254,7 +5855,8 @@ define('deliteful/list/ItemRenderer',[
 					this.removeAttribute("role");		// alternately, set role=presentation
 					this.renderNode.setAttribute("role", {
 						listbox: "option",
-						menu: "menuitem"	// there's also menuitemcheckbox and menuitemradio
+						menu: "menuitem",	// there's also menuitemcheckbox and menuitemradio
+						list: "listitem"
 					}[this.parentRole]);
 				}
 			}
@@ -5521,13 +6123,14 @@ define('delite/Scrollable',[
 define( 'jquery/src/event',[
 	"./core",
 	"./var/document",
+	"./var/documentElement",
 	"./var/rnotwhite",
 	"./var/slice",
 	"./data/var/dataPriv",
 
 	"./core/init",
 	"./selector"
-], function( jQuery, document, rnotwhite, slice, dataPriv ) {
+], function( jQuery, document, documentElement, rnotwhite, slice, dataPriv ) {
 
 "use strict";
 
@@ -5638,6 +6241,12 @@ jQuery.event = {
 			handleObjIn = handler;
 			handler = handleObjIn.handler;
 			selector = handleObjIn.selector;
+		}
+
+		// Ensure that invalid selectors throw exceptions at attach time
+		// Evaluate against documentElement in case elem is a non-element node (e.g., document)
+		if ( selector ) {
+			jQuery.find.matchesSelector( documentElement, selector );
 		}
 
 		// Make sure that the handler has a unique ID, used to find/remove it later
@@ -6040,7 +6649,7 @@ jQuery.Event = function( src, props ) {
 		// Create target properties
 		// Support: Safari <=6 - 7 only
 		// Target should not be a text node (#504, #13143)
-		this.target = ( src.target.nodeType === 3 ) ?
+		this.target = ( src.target && src.target.nodeType === 3 ) ?
 			src.target.parentNode :
 			src.target;
 
@@ -6071,13 +6680,14 @@ jQuery.Event.prototype = {
 	isDefaultPrevented: returnFalse,
 	isPropagationStopped: returnFalse,
 	isImmediatePropagationStopped: returnFalse,
+	isSimulated: false,
 
 	preventDefault: function() {
 		var e = this.originalEvent;
 
 		this.isDefaultPrevented = returnTrue;
 
-		if ( e ) {
+		if ( e && !this.isSimulated ) {
 			e.preventDefault();
 		}
 	},
@@ -6086,7 +6696,7 @@ jQuery.Event.prototype = {
 
 		this.isPropagationStopped = returnTrue;
 
-		if ( e ) {
+		if ( e && !this.isSimulated ) {
 			e.stopPropagation();
 		}
 	},
@@ -6095,7 +6705,7 @@ jQuery.Event.prototype = {
 
 		this.isImmediatePropagationStopped = returnTrue;
 
-		if ( e ) {
+		if ( e && !this.isSimulated ) {
 			e.stopImmediatePropagation();
 		}
 
@@ -6108,10 +6718,13 @@ jQuery.each( {
 	altKey: true,
 	bubbles: true,
 	cancelable: true,
+	changedTouches: true,
 	ctrlKey: true,
 	detail: true,
 	eventPhase: true,
 	metaKey: true,
+	pageX: true,
+	pageY: true,
 	shiftKey: true,
 	view: true,
 	"char": true,
@@ -6124,9 +6737,13 @@ jQuery.each( {
 	clientY: true,
 	offsetX: true,
 	offsetY: true,
+	pointerId: true,
+	pointerType: true,
 	screenX: true,
 	screenY: true,
+	targetTouches: true,
 	toElement: true,
+	touches: true,
 
 	which: function( event ) {
 		var button = event.button;
@@ -6138,44 +6755,22 @@ jQuery.each( {
 
 		// Add which for click: 1 === left; 2 === middle; 3 === right
 		if ( !event.which && button !== undefined && rmouseEvent.test( event.type ) ) {
-			return ( button & 1 ? 1 : ( button & 2 ? 3 : ( button & 4 ? 2 : 0 ) ) );
+			if ( button & 1 ) {
+				return 1;
+			}
+
+			if ( button & 2 ) {
+				return 3;
+			}
+
+			if ( button & 4 ) {
+				return 2;
+			}
+
+			return 0;
 		}
 
 		return event.which;
-	},
-
-	pageX: function( event ) {
-		var eventDoc, doc, body;
-
-		// Calculate pageX if missing and clientX available
-		if ( event.pageX == null && event.clientX != null ) {
-			eventDoc = event.target.ownerDocument || document;
-			doc = eventDoc.documentElement;
-			body = eventDoc.body;
-
-			return event.clientX +
-				( doc && doc.scrollLeft || body && body.scrollLeft || 0 ) -
-				( doc && doc.clientLeft || body && body.clientLeft || 0 );
-		}
-
-		return event.pageX;
-	},
-
-	pageY: function( event ) {
-		var eventDoc, doc, body;
-
-		// Calculate pageY if missing and clientY available
-		if ( event.pageY == null && event.clientY != null ) {
-			eventDoc = event.target.ownerDocument || document;
-			doc = eventDoc.documentElement;
-			body = eventDoc.body;
-
-			return event.clientY +
-				( doc && doc.scrollTop || body && body.scrollTop || 0 ) -
-				( doc && doc.clientTop || body && body.clientTop || 0 );
-		}
-
-		return event.pageY;
 	}
 }, jQuery.event.addProp );
 
@@ -6264,6 +6859,14 @@ jQuery.fn.extend( {
 return jQuery;
 } );
 ;
+define( 'jquery/src/var/documentElement',[
+	"./document"
+], function( document ) {
+	"use strict";
+
+	return document.documentElement;
+} );
+;
 define( 'jquery/src/effects',[
 	"./core",
 	"./var/document",
@@ -6317,7 +6920,7 @@ function genFx( type, includeWidth ) {
 	// If we include width, step value is 1 to do all cssExpand values,
 	// otherwise step value is 2 to skip over Left and Right
 	includeWidth = includeWidth ? 1 : 0;
-	for ( ; i < 4 ; i += 2 - includeWidth ) {
+	for ( ; i < 4; i += 2 - includeWidth ) {
 		which = cssExpand[ i ];
 		attrs[ "margin" + which ] = attrs[ "padding" + which ] = type;
 	}
@@ -6344,7 +6947,6 @@ function createTween( value, prop, animation ) {
 }
 
 function defaultPrefilter( elem, props, opts ) {
-	/* jshint validthis: true */
 	var prop, value, toggle, hooks, oldfire, propTween, restoreDisplay, display,
 		isBox = "width" in props || "height" in props,
 		anim = this,
@@ -6486,8 +7088,11 @@ function defaultPrefilter( elem, props, opts ) {
 				showHide( [ elem ], true );
 			}
 
-			/* jshint -W083 */
+			/* eslint-disable no-loop-func */
+
 			anim.done( function() {
+
+			/* eslint-enable no-loop-func */
 
 				// The final step of a "hide" animation is actually hiding the element
 				if ( !hidden ) {
@@ -6573,7 +7178,7 @@ function Animation( elem, properties, options ) {
 				index = 0,
 				length = animation.tweens.length;
 
-			for ( ; index < length ; index++ ) {
+			for ( ; index < length; index++ ) {
 				animation.tweens[ index ].run( percent );
 			}
 
@@ -6614,7 +7219,7 @@ function Animation( elem, properties, options ) {
 					return this;
 				}
 				stopped = true;
-				for ( ; index < length ; index++ ) {
+				for ( ; index < length; index++ ) {
 					animation.tweens[ index ].run( 1 );
 				}
 
@@ -6632,7 +7237,7 @@ function Animation( elem, properties, options ) {
 
 	propFilter( props, animation.opts.specialEasing );
 
-	for ( ; index < length ; index++ ) {
+	for ( ; index < length; index++ ) {
 		result = Animation.prefilters[ index ].call( animation, elem, props, animation.opts );
 		if ( result ) {
 			if ( jQuery.isFunction( result.stop ) ) {
@@ -6686,7 +7291,7 @@ jQuery.Animation = jQuery.extend( Animation, {
 			index = 0,
 			length = props.length;
 
-		for ( ; index < length ; index++ ) {
+		for ( ; index < length; index++ ) {
 			prop = props[ index ];
 			Animation.tweeners[ prop ] = Animation.tweeners[ prop ] || [];
 			Animation.tweeners[ prop ].unshift( callback );
@@ -6717,9 +7322,14 @@ jQuery.speed = function( speed, easing, fn ) {
 		opt.duration = 0;
 
 	} else {
-		opt.duration = typeof opt.duration === "number" ?
-			opt.duration : opt.duration in jQuery.fx.speeds ?
-				jQuery.fx.speeds[ opt.duration ] : jQuery.fx.speeds._default;
+		if ( typeof opt.duration !== "number" ) {
+			if ( opt.duration in jQuery.fx.speeds ) {
+				opt.duration = jQuery.fx.speeds[ opt.duration ];
+
+			} else {
+				opt.duration = jQuery.fx.speeds._default;
+			}
+		}
 	}
 
 	// Normalize opt.queue - true/undefined/null -> "fx"
@@ -7106,7 +7716,13 @@ define( 'jquery/src/manipulation',[
 "use strict";
 
 var
+
+	/* eslint-disable max-len */
+
+	// See https://github.com/eslint/eslint/issues/3229
 	rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([a-z][^\/\0>\x20\t\r\n\f]*)[^>]*)\/>/gi,
+
+	/* eslint-enable */
 
 	// Support: IE <=10 - 11, Edge 12 - 13
 	// In IE/Edge using regex groups here causes severe slowdowns.
@@ -7738,15 +8354,23 @@ function getAll( context, tag ) {
 
 	// Support: IE <=9 - 11 only
 	// Use typeof to avoid zero-argument method invocation on host objects (#15151)
-	var ret = typeof context.getElementsByTagName !== "undefined" ?
-			context.getElementsByTagName( tag || "*" ) :
-			typeof context.querySelectorAll !== "undefined" ?
-				context.querySelectorAll( tag || "*" ) :
-			[];
+	var ret;
 
-	return tag === undefined || tag && jQuery.nodeName( context, tag ) ?
-		jQuery.merge( [ context ], ret ) :
-		ret;
+	if ( typeof context.getElementsByTagName !== "undefined" ) {
+		ret = context.getElementsByTagName( tag || "*" );
+
+	} else if ( typeof context.querySelectorAll !== "undefined" ) {
+		ret = context.querySelectorAll( tag || "*" );
+
+	} else {
+		ret = [];
+	}
+
+	if ( tag === undefined || tag && jQuery.nodeName( context, tag ) ) {
+		return jQuery.merge( [ context ], ret );
+	}
+
+	return ret;
 }
 
 return getAll;
@@ -7855,13 +8479,16 @@ var access = function( elems, fn, key, value, chainable, emptyGet, raw ) {
 		}
 	}
 
-	return chainable ?
-		elems :
+	if ( chainable ) {
+		return elems;
+	}
 
-		// Gets
-		bulk ?
-			fn.call( elems ) :
-			len ? fn( elems[ 0 ], key ) : emptyGet;
+	// Gets
+	if ( bulk ) {
+		return fn.call( elems );
+	}
+
+	return len ? fn( elems[ 0 ], key ) : emptyGet;
 };
 
 return access;
@@ -8127,7 +8754,7 @@ function adoptValue( value, resolve, reject ) {
 	// For Promises/A+, convert exceptions into rejections
 	// Since jQuery.when doesn't unwrap thenables, we can skip the extra checks appearing in
 	// Deferred#then to conditionally suppress rejection.
-	} catch ( /*jshint -W002 */ value ) {
+	} catch ( value ) {
 
 		// Support: Android 4.0 only
 		// Strict mode functions invoked without .call/.apply get global-object context
@@ -8252,7 +8879,7 @@ jQuery.extend( {
 												resolve( maxDepth, deferred, Identity, special ),
 												resolve( maxDepth, deferred, Thrower, special ),
 												resolve( maxDepth, deferred, Identity,
-													deferred.notify )
+													deferred.notifyWith )
 											);
 										}
 
@@ -8456,16 +9083,21 @@ jQuery.extend( {
 
 		// Single- and empty arguments are adopted like Promise.resolve
 		if ( remaining <= 1 ) {
-			adoptValue( singleValue, master.resolve, master.reject );
+			adoptValue( singleValue, master.done( updateFunc( i ) ).resolve, master.reject );
 
 			// Use .then() to unwrap secondary thenables (cf. gh-3000)
-			return master.then();
+			if ( master.state() === "pending" ||
+				jQuery.isFunction( resolveValues[ i ] && resolveValues[ i ].then ) ) {
+
+				return master.then();
+			}
 		}
 
 		// Multiple arguments are aggregated like Promise.all array elements
 		while ( i-- ) {
 			adoptValue( resolveValues[ i ], updateFunc( i ), master.reject );
 		}
+
 		return master.promise();
 	}
 } );
@@ -8874,7 +9506,7 @@ function getDefaultDisplay( elem ) {
 		return display;
 	}
 
-	temp = doc.body.appendChild( doc.createElement( nodeName ) ),
+	temp = doc.body.appendChild( doc.createElement( nodeName ) );
 	display = jQuery.css( temp, "display" );
 
 	temp.parentNode.removeChild( temp );
@@ -8972,8 +9604,12 @@ function adjustCSS( elem, prop, valueParts, tween ) {
 		scale = 1,
 		maxIterations = 20,
 		currentValue = tween ?
-			function() { return tween.cur(); } :
-			function() { return jQuery.css( elem, prop, "" ); },
+			function() {
+				return tween.cur();
+			} :
+			function() {
+				return jQuery.css( elem, prop, "" );
+			},
 		initial = currentValue(),
 		unit = valueParts && valueParts[ 3 ] || ( jQuery.cssNumber[ prop ] ? "" : "px" ),
 
@@ -9184,15 +9820,17 @@ function setPositiveNumber( elem, value, subtract ) {
 }
 
 function augmentWidthOrHeight( elem, name, extra, isBorderBox, styles ) {
-	var i = extra === ( isBorderBox ? "border" : "content" ) ?
-
-		// If we already have the right measurement, avoid augmentation
-		4 :
-
-		// Otherwise initialize for horizontal or vertical properties
-		name === "width" ? 1 : 0,
-
+	var i,
 		val = 0;
+
+	// If we already have the right measurement, avoid augmentation
+	if ( extra === ( isBorderBox ? "border" : "content" ) ) {
+		i = 4;
+
+	// Otherwise initialize for horizontal or vertical properties
+	} else {
+		i = name === "width" ? 1 : 0;
+	}
 
 	for ( ; i < 4; i += 2 ) {
 
@@ -9540,6 +10178,7 @@ return jQuery;
 define( 'jquery/src/core/ready',[
 	"../core",
 	"../var/document",
+	"../core/readyException",
 	"../deferred"
 ], function( jQuery, document ) {
 
@@ -9550,7 +10189,15 @@ var readyList = jQuery.Deferred();
 
 jQuery.fn.ready = function( fn ) {
 
-	readyList.then( fn );
+	readyList
+		.then( fn )
+
+		// Wrap jQuery.readyException in a function so that the lookup
+		// happens at the time of error handling instead of callback
+		// registration.
+		.catch( function( error ) {
+			jQuery.readyException( error );
+		} );
 
 	return this;
 };
@@ -9621,6 +10268,20 @@ if ( document.readyState === "complete" ||
 	// A fallback to window.onload, that will always work
 	window.addEventListener( "load", completed );
 }
+
+} );
+;
+define( 'jquery/src/core/readyException',[
+	"../core"
+], function( jQuery ) {
+
+"use strict";
+
+jQuery.readyException = function( error ) {
+	window.setTimeout( function() {
+		throw error;
+	} );
+};
 
 } );
 ;
@@ -9712,14 +10373,6 @@ define( 'jquery/src/css/support',[
 
 return support;
 
-} );
-;
-define( 'jquery/src/var/documentElement',[
-	"./document"
-], function( document ) {
-	"use strict";
-
-	return document.documentElement;
 } );
 ;
 define( 'jquery/src/css/addGetHookIf',[],function() {
@@ -10597,6 +11250,18 @@ define('delite/ArrayToStoreAdapter',[
 ], function (dcl, Evented, ObservableArray, Observable, Promise) {
 
 	/**
+	 * Returns a thenable on some static data, but unlike Promise, it executes synchronously.
+	 */
+	function syncThenable(data) {
+		return {
+			then: function (resolve) {
+				var res = resolve(data);
+				return res && res.then ? res : syncThenable(res);
+			}
+		};
+	}
+
+	/**
 	 * An adapter to use an array in the source of delite/Store.js.
 	 * Created to keep a commun interface with the use of dstore/Store instead of an array.
 	 *
@@ -10921,7 +11586,7 @@ define('delite/ArrayToStoreAdapter',[
 		 * Perform the fetch operation on the collection.
 		 */
 		fetch: function () {
-			return Promise.resolve(this.data);
+			return syncThenable(this.data);
 		},
 
 		/**
@@ -10938,7 +11603,7 @@ define('delite/ArrayToStoreAdapter',[
 				this.emit("_new-query-asked", evt);
 				return promise;
 			} else {
-				return Promise.resolve(res);
+				return syncThenable(res);
 			}
 		},
 
@@ -11482,9 +12147,10 @@ define('delite/KeyNav',[
 	"requirejs-dplugins/jquery!attributes/classes",	// addClass(), removeClass()
 	"./features",
 	"./Widget",
-	"./activationTracker"	// delite-deactivated event when focus removed from KeyNav and logical descendants
+	"./activationTracker",	// delite-deactivated event when focus removed from KeyNav and logical descendants
+	"dpointer/events"		// so can just monitor for "pointerdown"
 ], function (dcl, $, has, Widget) {
-	
+
 	/**
 	 * Dispatched after the user has selected a different descendant, by clicking, arrow keys,
 	 * or keyboard search.
@@ -11511,10 +12177,19 @@ define('delite/KeyNav',[
 	}
 
 	/**
+	 * Return true if node is "clickable" via keyboard space / enter key
+	 * @param {Element} node
+	 * @returns {boolean}
+	 */
+	function keyboardClickable(node) {
+		return !node.readOnly && /^(button|a)$/i.test(node.nodeName);
+	}
+
+	/**
 	  * A mixin to allow arrow key and letter key navigation of child Elements.
 	  * It can be used by delite/Container based widgets with a flat list of children,
 	  * or more complex widgets like a Tree.
-	  * 
+	  *
 	  * To use this mixin, the subclass must:
 	  *
 	  * - Implement one method for each keystroke that the subclass wants to handle.
@@ -11596,6 +12271,16 @@ define('delite/KeyNav',[
 		descendantSelector: null,
 
 		/**
+		 * The node to receive the KeyNav behavior.
+		 * Can be set in a template via a `attach-point` assignment.
+		 * If missing, then `this.containerNode` or `this` will be used.
+		 * If set, then subclass must set the tabIndex on this node rather than the root node.
+		 * @member {Element}
+		 * @protected
+		 */
+		keyNavContainerNode: null,
+
+		/**
 		 * Figure out effective target of this event, either a navigable node, or this widget itself.
 		 * Note that for subclasses like a Tree, one navigable node could be a descendant of another.
 		 * @param {Event} evt
@@ -11610,15 +12295,23 @@ define('delite/KeyNav',[
 			return this;
 		},
 
-		createdCallback: function () {
-			this.on("keypress", this._keynavKeyPressHandler.bind(this));
-			this.on("keydown", this._keynavKeyDownHandler.bind(this));
-			this.on("click", function (evt) {
+		postRender: function () {
+			// If keyNavContainerNode unspecified, set to default value.
+			if (!this.keyNavContainerNode) {
+				this.keyNavContainerNode = this.containerNode || this;
+			}
+
+			this.on("keypress", this._keynavKeyPressHandler.bind(this), this.keyNavContainerNode);
+			this.on("keydown", this._keynavKeyDownHandler.bind(this), this.keyNavContainerNode);
+
+			// Navigation occurs on pointerdown, to match behavior of native elements.
+			// Normally this handler isn't needed as it's redundant w/the focusin event.
+			this.on("pointerdown", function (evt) {
 				var target = this._getTargetElement(evt);
 				if (target !== this) {
 					this._descendantNavigateHandler(target, evt);
 				}
-			});
+			}.bind(this), this.keyNavContainerNode);
 
 			this.on("delite-deactivated", function () {
 				if (this.focusDescendants) {
@@ -11635,7 +12328,7 @@ define('delite/KeyNav',[
 						this._descendantNavigateHandler(target, evt);
 					}
 				}
-			}.bind(this));
+			}.bind(this), this.keyNavContainerNode);
 
 			// Setup function to check which child nodes are navigable.
 			if (typeof this.descendantSelector === "string") {
@@ -11652,8 +12345,9 @@ define('delite/KeyNav',[
 
 		attachedCallback: function () {
 			// If the user hasn't specified a tabindex declaratively, then set to default value.
-			if (this.focusDescendants && !this.hasAttribute("tabindex")) {
-				this.tabIndex = "0";
+			var container = this.keyNavContainerNode;
+			if (this.focusDescendants && !container.hasAttribute("tabindex")) {
+				container.tabIndex = "0";
 			}
 		},
 
@@ -11697,7 +12391,7 @@ define('delite/KeyNav',[
 		 * @protected
 		 */
 		navigateToFirst: function (triggerEvent) {
-			this.navigateTo(this.getNext(this, 1), triggerEvent);
+			this.navigateTo(this.getNext(this.keyNavContainerNode, 1), triggerEvent);
 		},
 
 		/**
@@ -11709,7 +12403,7 @@ define('delite/KeyNav',[
 		 * @protected
 		 */
 		navigateToLast: function (triggerEvent) {
-			this.navigateTo(this.getNext(this, -1), false, triggerEvent);
+			this.navigateTo(this.getNext(this.keyNavContainerNode, -1), false, triggerEvent);
 		},
 
 		/**
@@ -11729,7 +12423,7 @@ define('delite/KeyNav',[
 				// For IE focus outline to appear, must set tabIndex before focus.
 				// If this._savedTabIndex is set, use it instead of this.tabIndex, because it means
 				// the container's tabIndex has already been changed to -1.
-				child.tabIndex = "_savedTabIndex" in this ? this._savedTabIndex : this.tabIndex;
+				child.tabIndex = "_savedTabIndex" in this ? this._savedTabIndex : this.keyNavContainerNode.tabIndex;
 				child.focus(last ? "end" : "start");
 
 				// _descendantNavigateHandler() will be called automatically from child's focus event.
@@ -11761,8 +12455,8 @@ define('delite/KeyNav',[
 			// When the container gets focus by being tabbed into, or a descendant gets focus by being clicked,
 			// remove the container's tabIndex so that tab or shift-tab
 			// will go to the fields after/before the container, rather than the container itself
-			this._savedTabIndex = this.tabIndex;
-			this.removeAttribute("tabindex");
+			this._savedTabIndex = this.keyNavContainerNode.tabIndex;
+			this.keyNavContainerNode.removeAttribute("tabindex");
 
 			this.focus();
 		},
@@ -11773,13 +12467,13 @@ define('delite/KeyNav',[
 		 * @private
 		 */
 		_keynavDeactivatedHandler: function () {
-			// then restore the container's tabIndex so that user can tab to it again.
-			// Note that using _onBlur() so that this doesn't happen when focus is shifted
+			// Restore the container's tabIndex so that user can tab to it again.
+			// Note: using _keynavDeactivatedHandler so that doesn't execute when focus is shifted
 			// to one of my child widgets (typically a popup)
 
 			// TODO: Consider changing this to blur whenever the container blurs, to be truthful that there is
 			// no focused child at that time.
-			this.setAttribute("tabindex", this._savedTabIndex);
+			this.keyNavContainerNode.setAttribute("tabindex", this._savedTabIndex);
 			delete this._savedTabIndex;
 			if (this.navigatedDescendant) {
 				this.navigatedDescendant.tabIndex = "-1";
@@ -11805,9 +12499,10 @@ define('delite/KeyNav',[
 					}
 
 					// If container still has tabIndex setting then remove it; instead we'll set tabIndex on child
+					var container = this.keyNavContainerNode;
 					if (!("_savedTabIndex" in this)) {
-						this._savedTabIndex = this.tabIndex;
-						this.removeAttribute("tabindex");
+						this._savedTabIndex = container.tabIndex;
+						container.removeAttribute("tabindex");
 					}
 
 					child.tabIndex = this._savedTabIndex;
@@ -11837,10 +12532,10 @@ define('delite/KeyNav',[
 		 * If multiple characters are typed where each keystroke happens within
 		 * multiCharSearchDuration of the previous keystroke,
 		 * search for nodes matching all the keystrokes.
-		 * 
+		 *
 		 * For example, typing "ab" will search for entries starting with
 		 * "ab" unless the delay between "a" and "b" is greater than `multiCharSearchDuration`.
-		 * 
+		 *
 		 * @member {number} KeyNav#multiCharSearchDuration
 		 * @default 1000
 		 */
@@ -11849,7 +12544,7 @@ define('delite/KeyNav',[
 		/**
 		 * When a key is pressed that matches a child item,
 		 * this method is called so that a widget can take appropriate action if necessary.
-		 * 
+		 *
 		 * @param {Element} item
 		 * @param {Event} evt
 		 * @param {string} searchString
@@ -11868,7 +12563,7 @@ define('delite/KeyNav',[
 		 * - -1: a high priority match  and stop searching
 		 * - 0: not a match
 		 * - 1: a match but keep looking for a higher priority match
-		 * 
+		 *
 		 * @param {Element} item
 		 * @param {string} searchString
 		 * @returns {number}
@@ -11884,18 +12579,33 @@ define('delite/KeyNav',[
 		},
 
 		/**
-		 * When a key is pressed, if it's an arrow key etc. then it's handled here.
+		 * Called when keydown.  Ignores key events inside <input>, <button>, etc.,
+		 * and passes the other events to the _processKeyDown() method.
 		 * @param {Event} evt
 		 * @private
 		 */
 		_keynavKeyDownHandler: function (evt) {
-			// Ignore left, right, home, end, and space on <input> controls
+			// Ignore left, right, home, end, and space on <input> controls.
 			if (takesInput(evt.target) &&
 				(evt.key === "ArrowLeft" || evt.key === "ArrowRight" ||
-					evt.key === "Home" || evt.key === "End" || evt.key === "Spacebar")) {
+				evt.key === "Home" || evt.key === "End" || evt.key === "Spacebar")) {
 				return;
 			}
 
+			// Ignore space and enter on <button> elements.
+			if (keyboardClickable(evt.target) && (evt.key === "Enter" || evt.key === "Spacebar")) {
+				return;
+			}
+
+			this._processKeyDown(evt);
+		},
+
+		/**
+		 * Called when there's a keydown event that should be handled by the KeyNav class.
+		 * @param evt
+		 * @private
+		 */
+		_processKeyDown: function (evt) {
 			if (evt.key === "Spacebar" && this._searchTimer && !(evt.ctrlKey || evt.altKey || evt.metaKey)) {
 				// If the user types some string like "new york", interpret the space as part of the search rather
 				// than to perform some action, even if there is a key handler method defined.
@@ -12029,21 +12739,21 @@ define('delite/KeyNav',[
 		 * @protected
 		 */
 		getNext: function (child, dir) {
-			var root = this, origChild = child;
+			var container = this.keyNavContainerNode, origChild = child;
 			function dfsNext(node) {
 				if (node.firstElementChild) { return node.firstElementChild; }
-				while (node !== root) {
+				while (node !== container) {
 					if (node.nextElementSibling) { return node.nextElementSibling; }
 					node = node.parentNode;
 				}
-				return root;	// loop around, plus corner case when no children
+				return container;	// loop around, plus corner case when no children
 			}
 			function dfsLast(node) {
 				while (node.lastElementChild) { node = node.lastElementChild; }
 				return node;
 			}
 			function dfsPrev(node) {
-				return node === root ? dfsLast(root) : // loop around, plus corner case when no children
+				return node === container ? dfsLast(container) : // loop around, plus corner case when no children
 					(node.previousElementSibling && dfsLast(node.previousElementSibling)) || node.parentNode;
 			}
 			while (true) {
@@ -18212,600 +18922,6 @@ define('deliteful/StarRating',[
 	});
 });
 ;
-/**
- * Plugin based on requirejs i18n
- * see: http://github.com/requirejs/i18n for details
- */
-define('requirejs-dplugins/i18n',["./i18n/common", "./i18n/build", "module"], function (common, build, module) {
-
-	var localesList,
-		writePluginFile,
-
-		mixin = common.mixin,
-		eachProp = common.eachProp,
-		parseName = common.parseName,
-		getMasterMid = common.getMasterMid,
-
-		normalizeBundlesMap = function (bundlesMap) {
-			var result = {};
-			eachProp(bundlesMap, function (layer, bundleList) {
-				bundleList.forEach(function (bundle) {
-					result[bundle] = layer;
-				});
-			});
-			return result;
-		},
-
-		// Transform a bundle from a language layer to a root bundle.
-		rootify = function (bundle, locale) {
-			var result = {};
-			if (bundle._pseudoRoot) {
-				result[locale] = {};
-				mixin(result, bundle._pseudoRoot);
-				delete bundle._pseudoRoot;
-				mixin(result[locale], bundle);
-				bundle = result;
-			}
-			return bundle;
-		},
-
-		// Construct the best language bundle by merging from most specific locale to less specific locale.
-		resolveAMD = function (name, req, onLoad) {
-			var masterMid = getMasterMid(name);
-
-			//First, fetch the master bundle, it knows what locales are available.
-			req([masterMid], function (master) {
-				var getBundleAndMixin = function (prefix, suffix, locale, value) {
-					var mixBundle = function (bundle) {
-						mixin(value, bundle);
-						locale = common.getParentLocale(locale);
-						if (!bundle._flattened && locale) {
-							getBundleAndMixin(prefix, suffix, locale, value);
-						} else {
-							value._flattened = true;
-							onLoad(value);
-						}
-					};
-
-					if (master[locale] === true || master[locale] === 1) {
-						req([prefix + locale + '/' + suffix], mixBundle);
-					} else {
-						// locale is on the master bundle or locale is unexisting
-						mixBundle(master[locale] || {});
-					}
-				};
-
-				master = rootify(master, name.masterLocale);
-				getBundleAndMixin(name.prefix, name.suffix, name.requestedLocale, {});
-			});
-		},
-
-		getLayer = function (name, layer, moduleConfig, getParentLocale, req, onLoad) {
-			var locale = name.requestedLocale,
-				localesList = moduleConfig.localesMap[layer];
-
-			while (locale && localesList.indexOf(locale) < 0) {
-				locale = getParentLocale(locale);
-			}
-
-			if (locale) {
-				name.masterLocale = locale;
-
-				req([layer + "_" + locale], function () {
-					pickFromLayer(name, moduleConfig, req, onLoad);
-				});
-			} else {
-				console.log("i18n: no relevant layer " + layer + " found for locale " + name.requestedLocale + ".");
-				onLoad();
-			}
-		},
-
-
-		tryLayer = function (name, layer, moduleConfig, getParentLocale, req, onLoad) {
-			var helper = function (locale) {
-				if (locale) {
-					req(["maybe!" + layer + "_" + locale], function (bundle) {
-						if (bundle) {
-							name.masterLocale = locale;
-							pickFromLayer(name, moduleConfig, req, onLoad);
-						} else {
-							helper(getParentLocale(locale));
-						}
-					});
-				} else {
-					console.log("i18n: no relevant layer " + layer + " found for locale " + name.requestedLocale + ".");
-					onLoad();
-				}
-			};
-
-			helper(name.requestedLocale);
-		},
-
-		pickFromLayer = function (name, moduleConfig, req, onLoad) {
-			var masterMid = getMasterMid(name);
-
-			if (name.requestedLocale === name.masterLocale || moduleConfig.layerOnly || !moduleConfig.enhanceLayer) {
-				req([masterMid], function (bundle) {
-					if (bundle.root) {
-						bundle = bundle.root;
-					}
-					onLoad(bundle);
-				});
-			} else {
-				resolveAMD(name, req, onLoad);
-			}
-		};
-
-	return {
-		/* jshint maxcomplexity:15 */
-		load: function (name, req, onLoad, config) {
-			if (!name) {
-				onLoad();
-				return;
-			}
-
-			config = config || {};
-
-			var moduleConfig = {},
-				masterMid,
-				layer;
-
-			// Copy the config
-			mixin(moduleConfig, typeof module.config === "function" ? module.config() || {} : {});
-
-			if (config.isBuild) {
-				localesList = moduleConfig.localesList;
-				onLoad();
-				return;
-			}
-
-			moduleConfig.enhanceLayer = moduleConfig.enhanceLayer === undefined ? true : moduleConfig.enhanceLayer;
-
-			// Parse name and set the locale if a top level bundle is required
-			name = parseName(name);
-			name.requestedLocale = name.requestedLocale || common.getLocale(moduleConfig.locale || config.locale);
-			masterMid = getMasterMid(name);
-
-			// If there is no layer, classic AMD mode
-			if (!moduleConfig.bundlesMap) {
-				resolveAMD(name, req, onLoad);
-				return;
-			}
-
-			// From now on there is at least one layer available
-
-			// Check if requested module is in a layer
-			moduleConfig.bundlesMap = normalizeBundlesMap(moduleConfig.bundlesMap);
-			layer = moduleConfig.bundlesMap[masterMid];
-
-			if (!layer && moduleConfig.layerOnly) {
-				console.log("i18n: module " + masterMid + " not found in layer.");
-				onLoad();
-				return;
-			} else if (!layer) {
-				resolveAMD(name, req, onLoad);
-				return;
-			}
-
-			// The module is in a layer
-
-			if (moduleConfig.languagePack) {
-				// Drop language pack mode, hence need to try every possible layer
-				tryLayer(name, layer, moduleConfig, common.getParentLocale, req, onLoad);
-				return;
-			} else {
-				// There is a locale list for the layer
-				getLayer(name, layer, moduleConfig, common.getParentLocale, req, onLoad);
-				return;
-			}
-		},
-		/* jshint  maxcomplexity:10 */
-
-		write: function (pluginName, moduleName, write) {
-			var name = parseName(moduleName),
-				bundle;
-
-			if (name.requestedLocale) {
-				bundle = build.resolveSync(name.requestedLocale, name);
-				if (name.requestedLocale !== "root") {
-					bundle._pseudoRoot = {};
-					bundle._flattened = true;
-				}
-				write.asModule(pluginName + "!" + moduleName, "define(" + JSON.stringify(bundle) + ")");
-			} else {
-				build.addBundleToNlsLayer(name);
-			}
-		},
-
-		writeFile: function (pluginName, resource, requirejs, writeFile) {
-			writePluginFile = writeFile;
-		},
-
-		onLayerEnd: function (write, data) {
-			if (data.name && data.path) {
-				var layersContent;
-
-				build.setLocalesList(localesList);
-
-				layersContent = build.getLayersContent();
-
-				build.writeLayers(layersContent, data, writePluginFile);
-				build.writeConfig(module.id, data, write);
-			}
-			build.reset();
-		}
-	};
-});
-;
-define('requirejs-dplugins/i18n/build',["./common"], function (common) {
-	var bundlesList = [],
-		localesList,
-		layerMid,
-
-		mixin = common.mixin,
-		eachProp = common.eachProp,
-		getMasterMid = common.getMasterMid,
-
-		getLayerMid = function (data) {
-			var match;
-			if (!layerMid) {
-				match = data.name.match(/^(.*\/)?(.*)$/);
-				layerMid = (match[1] || "") + "nls/" + match[2];
-			}
-			return layerMid;
-		},
-
-		getLayerPath = function (data, loc) {
-			var match = data.path.match(/^(.*\/)?(.*)\.js$/);
-			return (match[1] || "") + "nls/" + match[2] + "_" + loc + ".js";
-		},
-
-		getAllAvailableLocales = function () {
-			localesList = [];
-			bundlesList.forEach(function (name) {
-				var root = require(getMasterMid(name));
-
-				eachProp(root, function (loc) {
-					if (root[loc] && localesList.indexOf(loc) < 0) {
-						localesList.push(loc);
-					}
-				});
-			});
-			return localesList;
-		},
-
-		normalizeRoot = function (bundle, name) {
-			bundle.root = (bundle.root === true || bundle.root === 1) ?
-				require(name.prefix + "root/" + name.suffix) : bundle.root;
-			return bundle;
-		},
-
-		getPseudoRoots = function (root) {
-			var pseudoRoots = {};
-			eachProp(root, function (loc) {
-				var parent = common.getParentLocale(loc);
-				while (parent && parent !== "root") {
-					pseudoRoots[parent] = pseudoRoots[parent] || {};
-					pseudoRoots[parent][loc] = true;
-					parent = common.getParentLocale(parent);
-				}
-			});
-			return pseudoRoots;
-		},
-
-		resolveSync = function (locale, name, root) {
-			var loc = locale,
-				result = {},
-				localizedBundle;
-
-			if (arguments.length === 2) {
-				root = normalizeRoot(require(getMasterMid(name)), name);
-			}
-
-			if (loc !== "root") {
-				while (loc && loc !== "root") {
-					if (root[loc]) {
-						localizedBundle = require(name.prefix + loc + "/" + name.suffix);
-						mixin(result, localizedBundle);
-					}
-					loc = common.getParentLocale(loc);
-				}
-				localizedBundle = root.root;
-				mixin(result, localizedBundle);
-			} else {
-				mixin(result, root);
-			}
-
-			return result;
-		};
-
-	return {
-		addBundleToNlsLayer: function (name) {
-			bundlesList.push(name);
-		},
-
-		setLocalesList: function (locList) {
-			localesList = locList ? locList.slice() : getAllAvailableLocales();
-			if (localesList.indexOf("root") < 0) {
-				localesList.push("root");
-			}
-		},
-
-		reset: function () {
-			bundlesList = [];
-			localesList = undefined;
-			layerMid = undefined;
-		},
-
-		getLayersContent: function () {
-			var layersContent = {};
-
-			bundlesList.forEach(function (name) {
-				var root = normalizeRoot(require(getMasterMid(name)), name),
-					pseudoRoots = getPseudoRoots(root);
-
-				localesList.forEach(function (loc) {
-					var result = resolveSync(loc, name, root);
-
-					layersContent[loc] = layersContent[loc] || "";
-
-					var mid;
-					if (loc !== "root") {
-						mid = name.prefix + loc + "/" + name.suffix;
-						result._flattened = true;
-						result._pseudoRoot = pseudoRoots[loc] || {};
-					} else {
-						mid = name.prefix + name.suffix;
-					}
-
-					layersContent[loc] += 'define("' + mid + '",' + JSON.stringify(result) + ");";
-				});
-			});
-
-			return layersContent;
-		},
-
-		writeLayers: function (layersContent, data, writePluginFile) {
-			eachProp(layersContent, function (loc, content) {
-				content += "define('" + getLayerMid(data) + "_" + loc + "', true);";
-				writePluginFile(getLayerPath(data, loc), content);
-			});
-		},
-
-		writeConfig: function (pluginName, data, write) {
-			var bundles = bundlesList.map(getMasterMid),
-				layerMid = getLayerMid(data),
-				i18nConf = {
-					config: {}
-				};
-			i18nConf.config[pluginName] = {
-				bundlesMap: {},
-				localesMap: {}
-			};
-			i18nConf.config[pluginName].bundlesMap[layerMid] = bundles;
-			i18nConf.config[pluginName].localesMap[layerMid] = localesList;
-
-			// write i18n config on the layer
-			write("require.config(" + JSON.stringify(i18nConf) + ");");
-		},
-
-		resolveSync: resolveSync
-	};
-});
-;
-define('requirejs-dplugins/i18n/common',["./parentLocale"], function (parentLocale) {
-
-	// regexp for reconstructing the master bundle name from parts of the regexp match
-	// "foo/bar/baz/nls/en-ca/foo".match(nlsRegExp) gives:
-	// ["foo/bar/baz/nls/en-ca/foo", "foo/bar/baz/nls/", "en-ca", "foo"]
-	// nlsRegExp.exec("foo/bar/baz/nls/foo") gives:
-	// ["foo/bar/baz/nls/foo", "foo/bar/baz/nls/", "foo", ""]
-	// so, if match[3] is blank, it means this is the top bundle definition.
-	var nlsRegExp = /(^.*(?:^|\/)nls\/)([^\/]*)\/?([^\/]*)$/;
-
-	return {
-		eachProp: function (obj, func) {
-			var prop;
-			for (prop in obj) {
-				if (obj.hasOwnProperty(prop)) {
-					func(prop, obj[prop]);
-				}
-			}
-		},
-
-		getLocale: function (locale) {
-			if (!locale) {
-				locale = typeof navigator === "undefined" ? "root" :
-					(navigator.language ||
-					// IE <= 10
-					navigator.userLanguage ||
-					"root");
-			}
-			// just to be extra-sure
-			return locale.toLowerCase();
-		},
-
-		getParentLocale: function (loc) {
-			if (!loc || loc === "root") {
-				return undefined;
-			}
-			if (parentLocale[loc]) {
-				return parentLocale[loc];
-			}
-
-			var parts = loc.split("-");
-			parts.pop();
-			return (parts.length > 0) ? parts.join("-") : "root";
-		},
-
-
-		// Simple function to mix in properties from source into target,
-		// but only if target does not already have a property of the same name.
-		// This is not robust in IE for transferring methods that match
-		// Object.prototype names, but the uses of mixin here seem unlikely to
-		// trigger a problem related to that.
-		mixin: function mixin(target, source, force) {
-			var prop;
-			for (prop in source) {
-				if (source.hasOwnProperty(prop) && (!target.hasOwnProperty(prop) || force)) {
-					target[prop] = source[prop];
-				} else if (typeof source[prop] === 'object') {
-					if (!target[prop] && source[prop]) {
-						target[prop] = {};
-					}
-					mixin(target[prop], source[prop], force);
-				}
-			}
-		},
-
-		// Parse the resource mid and return a usable object.	
-		parseName: function (name) {
-			var match = name.match(nlsRegExp);
-
-			// If match[3] is blank, it means this is the top bundle definition,
-			// hence suffix is match[2] and locale is null.
-			return {
-				prefix: match[1],
-				masterLocale: "root",
-				requestedLocale: match[3] ? match[2] : null,
-				suffix: match[3] || match[2]
-			};
-		},
-
-
-		getMasterMid: function (name) {
-			return name.masterLocale === "root" ? name.prefix + name.suffix :
-				name.prefix + name.masterLocale + "/" + name.suffix;
-		}
-	};
-});
-;
-define('requirejs-dplugins/i18n/parentLocale',{
-	"en-ag": "en-001",
-	"en-ai": "en-001",
-	"en-bb": "en-001",
-	"en-bm": "en-001",
-	"en-bs": "en-001",
-	"en-bw": "en-001",
-	"en-bz": "en-001",
-	"en-cc": "en-001",
-	"en-ck": "en-001",
-	"en-cm": "en-001",
-	"en-cx": "en-001",
-	"en-dm": "en-001",
-	"en-er": "en-001",
-	"en-fj": "en-001",
-	"en-fm": "en-001",
-	"en-gb": "en-001",
-	"en-gd": "en-001",
-	"en-gh": "en-001",
-	"en-gm": "en-001",
-	"en-gy": "en-001",
-	"en-jm": "en-001",
-	"en-ke": "en-001",
-	"en-ki": "en-001",
-	"en-kn": "en-001",
-	"en-ky": "en-001",
-	"en-lc": "en-001",
-	"en-lr": "en-001",
-	"en-ls": "en-001",
-	"en-mg": "en-001",
-	"en-ms": "en-001",
-	"en-mu": "en-001",
-	"en-mw": "en-001",
-	"en-na": "en-001",
-	"en-nf": "en-001",
-	"en-ng": "en-001",
-	"en-nr": "en-001",
-	"en-nu": "en-001",
-	"en-pg": "en-001",
-	"en-ph": "en-001",
-	"en-pn": "en-001",
-	"en-pw": "en-001",
-	"en-rw": "en-001",
-	"en-sb": "en-001",
-	"en-sc": "en-001",
-	"en-sd": "en-001",
-	"en-sl": "en-001",
-	"en-ss": "en-001",
-	"en-sx": "en-001",
-	"en-sz": "en-001",
-	"en-tc": "en-001",
-	"en-tk": "en-001",
-	"en-to": "en-001",
-	"en-tt": "en-001",
-	"en-tv": "en-001",
-	"en-tz": "en-001",
-	"en-ug": "en-001",
-	"en-vc": "en-001",
-	"en-vu": "en-001",
-	"en-ws": "en-001",
-	"en-za": "en-001",
-	"en-zm": "en-001",
-	"en-zw": "en-001",
-	"en-150": "en-gb",
-	"en-au": "en-gb",
-	"en-be": "en-gb",
-	"en-dg": "en-gb",
-	"en-fk": "en-gb",
-	"en-gg": "en-gb",
-	"en-gi": "en-gb",
-	"en-hk": "en-gb",
-	"en-ie": "en-gb",
-	"en-im": "en-gb",
-	"en-in": "en-gb",
-	"en-io": "en-gb",
-	"en-je": "en-gb",
-	"en-mo": "en-gb",
-	"en-mt": "en-gb",
-	"en-nz": "en-gb",
-	"en-pk": "en-gb",
-	"en-sg": "en-gb",
-	"en-sh": "en-gb",
-	"en-vg": "en-gb",
-	"es-ar": "es-419",
-	"es-bo": "es-419",
-	"es-cl": "es-419",
-	"es-co": "es-419",
-	"es-cr": "es-419",
-	"es-cu": "es-419",
-	"es-do": "es-419",
-	"es-ec": "es-419",
-	"es-gt": "es-419",
-	"es-hn": "es-419",
-	"es-mx": "es-419",
-	"es-ni": "es-419",
-	"es-pa": "es-419",
-	"es-pe": "es-419",
-	"es-pr": "es-419",
-	"es-py": "es-419",
-	"es-sv": "es-419",
-	"es-us": "es-419",
-	"es-uy": "es-419",
-	"es-ve": "es-419",
-	"pt-ao": "pt-pt",
-	"pt-cv": "pt-pt",
-	"pt-gw": "pt-pt",
-	"pt-mo": "pt-pt",
-	"pt-mz": "pt-pt",
-	"pt-st": "pt-pt",
-	"pt-tl": "pt-pt",
-	"az-cyrl": "root",
-	"bs-cyrl": "root",
-	"en-dsrt": "root",
-	"ha-arab": "root",
-	"mn-mong": "root",
-	"ms-arab": "root",
-	"pa-arab": "root",
-	"shi-latn": "root",
-	"sr-latn": "root",
-	"uz-arab": "root",
-	"uz-cyrl": "root",
-	"vai-latn": "root",
-	"zh-hant": "root",
-	"zh-hant-mo": "zh-hant-hk"
-});
-;
 /** @module delite/FormValueWidget */
 define('delite/FormValueWidget',[
 	"dcl/dcl",
@@ -19028,6 +19144,14 @@ define('delite/FormWidget',[
 		disabled: false,
 
 		/**
+		 * Sets the `required` property of the focus nodes, or their `aria-required` attribute if they do not support
+		 * the `required` property.
+		 * @member {boolean}
+		 * @default false
+		 */
+		required: false,
+
+		/**
 		 * For widgets with a single tab stop, the Element within the widget, often an `<input>`,
 		 * that gets the focus.  Widgets with multiple tab stops, such as a range slider, should set `tabStops`
 		 * rather than setting `focusNode`.
@@ -19070,8 +19194,10 @@ define('delite/FormWidget',[
 		}),
 
 		refreshRendering: function (oldValues) {
-			// Handle disabled and tabIndex, across the tabStops and root node.
-			// No special processing is needed for tabStops other than just to refresh disabled and tabIndex.
+			/* jshint maxcomplexity:14 */
+
+			// Handle disabled, required and tabIndex, across the tabStops and root node.
+			// No special processing is needed for tabStops other than just to refresh disabled, required and tabIndex.
 
 			// If the tab stops have changed then start by removing the tabIndex from all the old tab stops.
 			if ("tabStops" in oldValues) {
@@ -19084,7 +19210,14 @@ define('delite/FormWidget',[
 
 			// Set tabIndex etc. for all tabbable nodes.
 			// To keep things simple, if anything has changed then reapply all the properties.
-			if ("tabStops" in oldValues || "tabIndex" in oldValues || "disabled" in oldValues || "alt" in oldValues) {
+			if ("tabStops" in oldValues || "tabIndex" in oldValues || "disabled" in oldValues
+				|| "alt" in oldValues || "required" in oldValues || "id" in oldValues) {
+				var inputIdUnset = true;
+				var inputId;
+				if ("id" in oldValues && this.id) {
+					inputId = this.id + "-input";
+				}
+
 				this.forEachFocusNode(function (node) {
 					if (this.disabled) {
 						node.tabIndex = "-1";				// backup plan in case next line of code ineffective
@@ -19098,10 +19231,20 @@ define('delite/FormWidget',[
 					// disabled property.  Note that on IE every element has a disabled property, so it's hard to
 					// test if it's real or not.
 					node.disabled = this.disabled;
+					node.required = this.required;
 
-					// Set aria-disabled attribute if necessary, but try to avoid setting it redundantly.
+					// Set aria-disabled and required but try to avoid setting it redundantly.
 					if (!(/^(button|input|select|textarea|optgroup|option|fieldset)$/i.test(node.tagName))) {
 						node.setAttribute("aria-disabled", "" + this.disabled);
+						node.setAttribute("aria-required", "" + this.required);
+					}
+
+					// Set the focus node's id.
+					if (/^(input|textarea|select|button|keygen)$/i.test(node.tagName) && inputId && inputIdUnset) {
+						inputIdUnset = false;
+						if (!node.id) {
+							node.id = inputId;
+						}
 					}
 				});
 			}
@@ -19117,6 +19260,9 @@ define('delite/FormWidget',[
 				}
 				if ("name" in oldValues) {
 					valueNode.name = this.name;
+				}
+				if ("required" in oldValues) {
+					valueNode.required = this.required;
 				}
 			}
 		},
@@ -21169,7 +21315,7 @@ define('deliteful/Switch/bidi/Switch',[
 });
 ;
 define('delite/handlebars!deliteful/ToggleButton/ToggleButton.html',["delite/handlebars"], function(handlebars){
-	return handlebars.compile("<template aria-pressed=\"{{checked}}\" attach-point=\"focusNode\" on-click=\"{{toggle}}\">\n\t<span attach-point=\"iconNode\" class=\"d-icon {{this.checked &amp;&amp; this.checkedIconClass ? this.checkedIconClass : (this.iconClass ? this.iconClass : 'd-hidden')}}\"></span><span attach-point=\"labelNode\" d-hidden=\"{{!this.checkedLabel &amp;&amp; !this.label}}\">{{this.checked &amp;&amp; this.checkedLabel ? this.checkedLabel : this.label}}</span>\n</template>");
+	return handlebars.compile("<template role=\"button\" attach-point=\"focusNode\" aria-pressed=\"{{this.checked ? 'true' : 'false'}}\" on-click=\"{{toggle}}\">\n    <span attach-point=\"iconNode\" aria-hidden=\"true\" class=\"d-icon {{this.checked &amp;&amp; this.checkedIconClass ? this.checkedIconClass : (this.iconClass ? this.iconClass : 'd-hidden')}}\"></span><span attach-point=\"labelNode\" d-shown=\"{{this.showLabel}}\">{{this.checked &amp;&amp; this.checkedLabel ? this.checkedLabel : this.label}}</span>\n</template>");
 });;
 /** @module deliteful/ToggleButton */
 define('deliteful/ToggleButton',[
@@ -21194,6 +21340,10 @@ define('deliteful/ToggleButton',[
 	 * Similarly, a toggle button can display a different icon depending on its state. By default, the css class
 	 * specified by the 'iconClass' property is applied whatever the state is. However, a css class specific to the
 	 * checked state can be specified via the 'checkedIconClass' property.
+	 *
+	 * Moreover, a toggle button can show an icon only with no visible text, independently of
+	 * the toggle button's state, checked or unchecked. To accomplish that,
+	 * set the `showLabel` property (inherited from the `deliteful/Button` class). to `false`.
 	 *
 	 * @example <caption>Creating a checked toggle button</caption>
 	 * <button is="d-toggle-button" checked="true">Foo</button>
@@ -21236,7 +21386,16 @@ define('deliteful/ToggleButton',[
 		 */
 		checkedIconClass: "",
 
-		template: template
+		template: template,
+
+		refreshRendering: function (props) {
+			/* jshint maxcomplexity: 11 */
+			if (("label" in props || "checkedLabel" in props || "showLabel" in props || "checked" in props) &&
+				(!this.title || this.title === ("label" in props ? props.label : this.label)
+					|| this.title === ("checkedLabel" in props ? props.checkedLabel : this.checkedLabel))) {
+				this.title = this.showLabel ? "" : (this.checked ? this.checkedLabel : this.label);
+			}
+		}
 	});
 
 	return register("d-toggle-button",  has("bidi") ? [HTMLButtonElement, ToggleButton, BidiToggleButton] :
@@ -21463,8 +21622,6 @@ define('deliteful/Checkbox',[
 	"delite/theme!./Checkbox/themes/{{theme}}/Checkbox.css"
 ], function (dcl, register, FormWidget, Toggle, template) {
 
-	var labelClickHandler;
-
 	/**
 	 * A 2-state checkbox widget similar to an HTML5 input type="checkbox" element.
 	 * @example
@@ -21492,26 +21649,6 @@ define('deliteful/Checkbox',[
 
 		_inputClickHandler: function () {
 			this.checked = this.focusNode.checked;
-		},
-
-		attachedCallback: function () {
-			// The fact that deliteful/Checkbox is not an HTMLInputElement seems not being compatible with the default
-			// "<label for" behavior of the browser. So it needs to explicitly listen to click on associated
-			// <label for=...> elements.
-			if (!labelClickHandler) {
-				// set a global listener that listens to click events on label elt
-				labelClickHandler = function (e) {
-					var forId;
-					if (/label/i.test(e.target.tagName) && (forId = e.target.getAttribute("for"))) {
-						var elt = document.getElementById(forId);
-						if (elt && elt.render && elt._lbl4 !== undefined) { //_lbl4: to check it's a checkbox
-							// call click() on the input instead of this.toggle() to get the 'change' event for free
-							elt.focusNode.click();
-						}
-					}
-				};
-				this.ownerDocument.addEventListener("click", labelClickHandler);
-			}
 		}
 	});
 });;
@@ -21555,54 +21692,57 @@ define('deliteful/Combobox',[
 	/**
 	 * A form-aware and store-aware multichannel widget leveraging the `deliteful/list/List`
 	 * widget for rendering the options.
-	 * 
+	 *
 	 * The corresponding custom tag is `<d-combobox>`.
-	 * 
+	 *
 	 * The property `list` allows to specify the List instance used by the widget.
 	 * The customization of the mapping of data item attributes into render item
 	 * attributes can be done on the `List` instance using the mapping API of `List`
 	 * inherited from its superclass `delite/StoreMap`.
-	 * 
+	 *
 	 * The property `selectionMode` allows to choose between single and multiple
 	 * choice modes.
-	 *  
+	 *
 	 * In single selection mode, if the property `autoFilter` is set to `true`
 	 * (default is `false`) the widget allows to type one or more characters which
 	 * are used for filtering the shown list items. By default, the filtering is
 	 * case-insensitive, and an item is shown if its label contains the entered
-	 * string. The default filtering policy can be customized thanks to the 
+	 * string. The default filtering policy can be customized thanks to the
 	 * `filterMode` and `ignoreCase` properties.
-	 * 
+	 *
 	 * The widget provides multichannel rendering. Depending on the required channel, which
 	 * is determined by the value of the channel flags of `deliteful/features`, the
 	 * widget displays the popup containing the options in a different manner:
-	 * * if `has("desktop-like-channel")` is `true`: in a popup below or above the root node.
-	 * * otherwise (that is for `"phone-like-channel"` and `"tablet-like-channel"`): in an
+	 *
+	 * - if `has("desktop-like-channel")` is `true`: in a popup below or above the root node.
+	 * - otherwise (that is for `"phone-like-channel"` and `"tablet-like-channel"`): in an
 	 * overlay centered on the screen, filled with an instance of `deliteful/Combobox/ComboPopup`.
-	 * 
+	 *
 	 * The channel flags are set by `deliteful/features` using CSS media queries depending on
 	 * the screen size. See the `deliteful/features` documentation for information about the
 	 * channel flags and about how to configure them statically and how to customize the values
 	 * of the screen size breakpoints used by the media queries.
-	 * 
+	 *
 	 * The `value` property of the widget contains:
+	 *
 	 * - Single selection mode: the value of the selected list items. By default, the
 	 * value of the first item is selected.
 	 * - Multiple selection mode: an array containing the values of the selected items.
 	 * Defaults to `[]`.
-	 * 
+	 *
 	 * If the widget is used in an HTML form, the submitted value contains:
-	 *  * - Single selection mode: the same as widget's `value` property.
+	 *
+	 * - Single selection mode: the same as widget's `value` property.
 	 * - Multiple selection mode: a string containing a comma-separated list of the values
 	 * of the selected items. Defaults to `""`.
-	 * 
+	 *
 	 * By default, the `label` field of the list render item is used as item value.
 	 * A different field can be specified by using attribute mapping for `value` on the
 	 * List instance.
-	 * 
+	 *
 	 * Remark: the option items must be added, removed or updated exclusively using
 	 * List's store API. Direct operations using the DOM API are not supported.
-	 * 
+	 *
 	 * @example <caption>Markup</caption>
 	 * JS:
 	 * require(["deliteful/Combobox", "requirejs-domready/domReady!"],
@@ -21621,7 +21761,7 @@ define('deliteful/Combobox',[
 	 *   { "label": "Japan", "sales": 900, "profit": 100, "region": "Asia" }
 	 *   </d-list>
 	 * </d-combobox>
-	 * 
+	 *
 	 * @example <caption>Programmatic</caption>
 	 * JS:
 	 * require(["deliteful/List",
@@ -21632,14 +21772,14 @@ define('deliteful/Combobox',[
 	 *     var combobox = new Combobox({list: list, selectionMode: "multiple"}).
 	 *       placeAt(...);
 	 *   });
-	 * 
+	 *
 	 * @class module:deliteful/Combobox
 	 * @augments module:delite/HasDropDown
 	 * @augments module:delite/FormValueWidget
 	 */
 	return register("d-combobox", [HTMLElement, HasDropDown, FormValueWidget, CssState],
 		/** @lends module:deliteful/Combobox# */ {
-		
+
 		// TODO: handle the situation the list has a null/undefined store.
 		// Would be nice to have a global policy for all subclasses of
 		// delite/Store (in terms of error feedback).
@@ -21649,13 +21789,13 @@ define('deliteful/Combobox',[
 		// requires changes in List).
 		// TODO: improve API doc.
 		// TODO: add (optional) placeholder?
-		
+
 		// Note: the property `disabled` is inherited from delite/FormWidget.
-		
+
 		baseClass: "d-combobox",
-		
+
 		template: template,
-		
+
 		/**
 		 * If `true`, the list of options can be filtered thanks to an editable
 		 * input element. Only used if `selectionMode` is "single".
@@ -21663,7 +21803,7 @@ define('deliteful/Combobox',[
 		 * @default false
 		 */
 		autoFilter: false,
-		
+
 		/**
 		 * The chosen filter mode. Only used if `autoFilter` is `true` and
 		 * `selectionMode` is `"single"`.
@@ -21678,7 +21818,7 @@ define('deliteful/Combobox',[
 		 * @default "startsWith"
 		 */
 		filterMode: "startsWith",
-		
+
 		/**
 		 * If `true`, the filtering of list items ignores case when matching possible items.
 		 * Only used if `autoFilter` is `true` and `selectionMode` is `"single"`.
@@ -21686,7 +21826,7 @@ define('deliteful/Combobox',[
 		 * @default true
 		 */
 		ignoreCase: true,
-		
+
 		/**
 		 * The chosen selection mode.
 		 *
@@ -21699,8 +21839,8 @@ define('deliteful/Combobox',[
 		 * property of the List instance used by this widget for displaying the options:
 		 * * The value "single" is mapped to "radio".
 		 * * The value "multiple" is mapped to "multiple".
-		 * 
-		 * Note that, regardless of the selection mode, it is always possible to set 
+		 *
+		 * Note that, regardless of the selection mode, it is always possible to set
 		 * several selected items using the `selectedItem` or `selectedItems` properties
 		 * of the List instance.
 		 * The mode will be enforced only when using `setSelected()` and/or
@@ -21710,7 +21850,7 @@ define('deliteful/Combobox',[
 		 * @default "single"
 		 */
 		selectionMode: "single",
-		
+
 		/**
 		 * The `deliteful/list/List` element which provides and renders the options
 		 * shown by the popup of the Combobox.
@@ -21720,10 +21860,10 @@ define('deliteful/Combobox',[
 		 * @default instance of deliteful/list/List
 		 */
 		list: null,
-		
+
 		// Flag used for binding the readonly attribute of the input element in the template
 		_inputReadOnly: true,
-		
+
 		/**
 		 * The value of the placeholder attribute of the input element used
 		 * for filtering the list of options. The default value is provided by the
@@ -21732,7 +21872,7 @@ define('deliteful/Combobox',[
 		 * @default "Search"
 		 */
 		searchPlaceHolder: messages["search-placeholder"],
-		
+
 		/**
 		 * The text displayed in the input element when more than one option is
 		 * selected. The default value is provided by the "search-placeholder" key of
@@ -21741,7 +21881,7 @@ define('deliteful/Combobox',[
 		 * @default "Search"
 		 */
 		multipleChoiceMsg: messages["multiple-choice"],
-		
+
 		/**
 		 * The text displayed in the input element when no option is selected.
 		 * The default value is provided by the "multiple-choice-no-selection" key of
@@ -21750,7 +21890,7 @@ define('deliteful/Combobox',[
 		 * @default "Select option(s)"
 		 */
 		multipleChoiceNoSelectionMsg: messages["multiple-choice-no-selection"],
-		
+
 		/**
 		 * The text displayed in the OK button when the combobox popup contains such a button.
 		 * The default value is provided by the "ok-button-label" key of
@@ -21759,7 +21899,7 @@ define('deliteful/Combobox',[
 		 * @default "OK"
 		 */
 		okMsg: messages["ok-button-label"],
-		
+
 		/**
 		 * The text displayed in the Cancel button when the combobox popup contains such a button.
 		 * The default value is provided by the "cancel-button-label" key of
@@ -21768,7 +21908,7 @@ define('deliteful/Combobox',[
 		 * @default "Cancel"
 		 */
 		cancelMsg: messages["cancel-button-label"],
-		
+
 		createdCallback: function () {
 			// Declarative case (list specified declaratively inside the declarative Combobox)
 			var list = this.querySelector("d-list");
@@ -21810,11 +21950,11 @@ define('deliteful/Combobox',[
 				this._setSelectable(this.inputNode, !this.inputNode.readOnly);
 			}
 		},
-		
+
 		/**
 		 * Updates the value of the private property on which the Combobox template
 		 * binds the `readonly` attribute of the input element.
-		 * @private 
+		 * @private
 		 */
 		_updateInputReadOnly: function () {
 			var oldValue = this._inputReadOnly;
@@ -21831,7 +21971,7 @@ define('deliteful/Combobox',[
 				this.notifyCurrentValue("_inputReadOnly");
 			} // else no need to notify "by hand", rely on automatic notification
 		},
-		
+
 		/**
 		 * Configures inputNode such that the text is selectable or unselectable.
 		 * @private
@@ -21879,36 +22019,15 @@ define('deliteful/Combobox',[
 
 			// The role=listbox is required for the list part of a combobox by the
 			// aria spec of role=combobox
-			this.list.setAttribute("role", "listbox");
-
-			// Avoid that List gives focus to list items when navigating, which would
-			// blur the input field used for entering the filtering criteria.
-			this.list.focusDescendants = false;
+			this.list.type = "listbox";
 
 			this.list.selectionMode = this.selectionMode === "single" ?
 				"radio" : "multiple";
 
-			var dropDown = this._createDropDown();
-
-			// Since the dropdown is not a child of the Combobox, it will not inherit
-			// its dir attribute. Hence:
-			var dir = this.getAttribute("dir");
-			if (dir) {
-				dropDown.setAttribute("dir", dir);
-			}
-
-			this.dropDown = dropDown; // delite/HasDropDown's property
-
-			// Focus stays on the input element
-			this.dropDown.focusOnOpen = false;
-
-			// (temporary?) Workaround for delite #373
-			this.dropDown.focus = null;
-
 			this._initHandlers();
 			this._initValue();
 		},
-		
+
 		_initHandlers: function () {
 			this.list.on("keynav-child-navigated", function (evt) {
 				var navigatedChild = evt.newValue; // never null
@@ -21921,9 +22040,9 @@ define('deliteful/Combobox',[
 					(evt.triggerEvent.type === "keydown" || evt.triggerEvent.type === "keypress")) {
 					this._updateScroll(item, true);
 				}
-				this._setActiveDescendant();
+				this._setActiveDescendant(navigatedChild);
 			}.bind(this));
-			
+
 			this.list.on("click", function (evt) {
 				if (this.selectionMode === "single") {
 					var rend = this.list.getEnclosingRenderer(evt.target);
@@ -21936,7 +22055,7 @@ define('deliteful/Combobox',[
 					}
 				}
 			}.bind(this));
-			
+
 			// React to interactive changes of selected items
 			this.list.on("selection-change", function () {
 				if (this.selectionMode === "single") {
@@ -21944,7 +22063,7 @@ define('deliteful/Combobox',[
 				}
 				this.handleOnInput(this.value); // emit "input" event
 			}.bind(this));
-			
+
 			// React to programmatic changes of selected items
 			this.list.observe(function (oldValues) {
 				if ("selectedItems" in oldValues) {
@@ -21956,14 +22075,14 @@ define('deliteful/Combobox',[
 					}
 				}
 			}.bind(this));
-			
+
 			this._prepareInput(this.inputNode);
 		},
-		
+
 		/**
 		 * Sets the initial value of the widget. If the widget is inside a form,
 		 * also called when reseting the form.
-		 * @private 
+		 * @private
 		 */
 		_initValue: function () {
 			if (this.selectionMode === "single") {
@@ -21994,7 +22113,7 @@ define('deliteful/Combobox',[
 					}
 					return done;
 				}.bind(this);
-				
+
 				if (!initValueSingleMode()) {
 					// List not ready, wait.
 					// TODO: handle case when List is initialized but has no items yet, from "new List()".
@@ -22017,41 +22136,41 @@ define('deliteful/Combobox',[
 				this.valueNode.value = "";
 			}
 		},
-		
+
 		/**
 		 * Returns the label of a List item renderer.
-		 * @private 
+		 * @private
 		 */
 		_getItemRendererLabel: function (itemRenderer) {
 			return this._getItemLabel(itemRenderer.item);
 		},
-		
+
 		/**
 		 * Returns the value of a List item renderer. Defaults to its label
-		 * if the underlying data item has no value. 
-		 * @private 
+		 * if the underlying data item has no value.
+		 * @private
 		 */
 		_getItemRendererValue: function (itemRenderer) {
 			return this._getItemValue(itemRenderer.item);
 		},
-		
+
 		/**
 		 * Returns the label of a List render item.
-		 * @private 
+		 * @private
 		 */
 		_getItemLabel: function (item) {
 			return item.label;
 		},
-		
+
 		/**
 		 * Returns the value of a List render item. Defaults to its label
-		 * if the underlying data item has no value. 
-		 * @private 
+		 * if the underlying data item has no value.
+		 * @private
 		 */
 		_getItemValue: function (item) {
 			return "value" in item ? item.value : item.label;
 		},
-		
+
 		/**
 		 * Returns `true` if the dropdown should be centered, and returns
 		 * `false` if it should be displayed below/above the widget.
@@ -22063,22 +22182,31 @@ define('deliteful/Combobox',[
 		_useCenteredDropDown: function () {
 			return !!ComboPopup;
 		},
-		
-		_createDropDown: function () {
+
+		loadDropDown: function () {
 			this._updateInputReadOnly();
-			
+
 			var centeredDropDown = this._useCenteredDropDown();
 			var dropDown = centeredDropDown ?
 				this.createCenteredDropDown() :
 				this.createAboveBelowDropDown();
-			
+
 			this.dropDownPosition = centeredDropDown ?
 				["center"] :
 				["below", "above"]; // this is the default
-			
+
+			// Since the dropdown is not a child of the Combobox, it will not inherit
+			// its dir attribute. Hence:
+			var dir = this.getAttribute("dir");
+			if (dir) {
+				dropDown.setAttribute("dir", dir);
+			}
+
+			this.dropDown = dropDown; // delite/HasDropDown's property
+
 			return dropDown;
 		},
-		
+
 		/**
 		 * Factory method which creates the widget used inside above/below drop-down.
 		 * The default implementation simply returns `this.list`.
@@ -22091,7 +22219,7 @@ define('deliteful/Combobox',[
 			// issue #382). Hence the List is not wrapped anymore inside a LinearLayout.
 			return this.list;
 		},
-		
+
 		/**
 		 * Factory method which creates the widget used inside centered drop-down.
 		 * The default implementation returns a new instance of deliteful/Combobox/ComboPopup
@@ -22103,7 +22231,14 @@ define('deliteful/Combobox',[
 		createCenteredDropDown: function () {
 			return new ComboPopup({combobox: this});
 		},
-		
+
+		/**
+		 * Indicates if a filtering operation is in progress. If so, closeDropDown will perform differently than usual.
+		 * @member {boolean}
+		 * @default false
+		 */
+		filteringInProgress: false,
+
 		_prepareInput: function (inputElement) {
 			this.on("input", function (evt) {
 				// Would be nice to also have an "incrementalFilter" boolean property.
@@ -22111,8 +22246,19 @@ define('deliteful/Combobox',[
 				// events, triggered when pressing ENTER. This would also fit for Chrome/Android,
 				// where pressing the search key of the virtual keyboard also triggers a
 				// change event. But there's no equivalent on Safari / iOS...
+				if (this.opened && !this.filteringInProgress) {
+					this.filteringInProgress = true;
+					this.closeDropDown();
+				}
+				// this.filter() call will fire a query-success event. After that, the popup can be opened again.
+				this.own(this.list.on("query-success", function () {
+					if (this.filteringInProgress) {
+						this.filteringInProgress = false;
+						this.openDropDown();
+					}
+				}.bind(this)));
+
 				this.filter(inputElement.value);
-				this.openDropDown(); // reopen if closed
 				// Stop the spurious "input" events emitted while the user types
 				// such that only the "input" events emitted via FormValueWidget.handleOnInput()
 				// bubble to widget's root node.
@@ -22162,7 +22308,7 @@ define('deliteful/Combobox',[
 				}
 			}.bind(this), inputElement);
 		},
-		
+
 		_validateSingle: function () {
 			var selectedItem = this.list.selectedItem;
 			// selectedItem non-null because List in radio selection mode, but
@@ -22170,7 +22316,7 @@ define('deliteful/Combobox',[
 			this.inputNode.value = selectedItem ? this._getItemLabel(selectedItem) : "";
 			this.value = selectedItem ? this._getItemValue(selectedItem) : "";
 		},
-		
+
 		_validateMultiple: function (inputElement) {
 			var selectedItems = this.list.selectedItems;
 			var n = selectedItems ? selectedItems.length : 0;
@@ -22193,7 +22339,7 @@ define('deliteful/Combobox',[
 			this.valueNode.value = value;
 			this.handleOnInput(this.value); // emit "input" event
 		},
-		
+
 		/**
 		 * Filters the embedded List to only show the items matching `filterTxt`.
 		 * If `autoFilter` is `true` and `selectionMode` is `"single"`, the method
@@ -22211,72 +22357,80 @@ define('deliteful/Combobox',[
 			} else if (this.filterMode === "is") {
 				filterTxt = "^" + filterTxt + "$";
 			} // nothing to add for "contains"
-			
-			// TODO: might be nice that, if no item matches the query thus the list is empty,
-			// the popup shows some specific graphic feedback.
+
 			var rexExp = new RegExp(filterTxt, this.ignoreCase ? "i" : "");
 			this.list.query = (new Filter()).match(this.list.labelAttr, rexExp);
 		},
-		
+
 		openDropDown: dcl.superCall(function (sup) {
 			return function () {
 				// Store the current selection, to be able to restore when pressing the
 				// cancel button. Used by ComboPopup. (Could spare it in situations when
 				// there is no cancel button, but not really worth.)
 				this._selectedItems = this.list.selectedItems;
-				
+
 				if (!this.opened) {
-					// Temporary workaround for issue with bad pairing in List of the
-					// busy on/off state. The issue appears to go away if List.attachedCallback
-					// wouldn't break the automatic chaining (hence the workaround wouldn't
-					// be necessary if List gets this change), but this requires further
-					// investigation (TODO).
-					this.defer(function () {
-						this.list._hideLoadingPanel();
-						// Avoid loosing focus when clicking the arrow (instead of the input element):
-						this.focusNode.focus();
-					}.bind(this), 300);
+					var mobile = this._useCenteredDropDown();
+
+					// On desktop, leave focus in the original <input>.  But on mobile, focus the popup dialog.
+					this.focusOnPointerOpen = this.focusOnKeyboardOpen = mobile;
+
+					if (!mobile) {
+						this.defer(function () {
+							// Avoid losing focus when clicking the arrow (instead of the input element):
+							// TODO: isn't this already handled by delite/HasDropDown#_dropDownPointerUpHandler() ?
+							this.focusNode.focus();
+						}.bind(this), 300);
+					}
 				}
 
 				var promise = sup.apply(this, arguments);
-				
+
 				return promise.then(function () {
+					// Avoid that List gives focus to list items when navigating, which would
+					// blur the input field used for entering the filtering criteria.
+					this.dropDown.focusDescendants = false;
+
 					this._updateScroll(undefined, true);	// sets this.list.navigatedDescendant
-					this._setActiveDescendant();
+					this._setActiveDescendant(this.list.navigatedDescendant);
 				}.bind(this));
 			};
 		}),
-		
+
 		closeDropDown: dcl.superCall(function (sup) {
 			return function () {
-				// cleanup
-				this._selectedItems = null;
 
-				var input = this._popupInput || this.inputNode;
-				input.removeAttribute("aria-activedescendant");
-				
-				if (this.opened) {
-					// Using the flag `opened` (managed by delite/HasDropDown), avoid
-					// emitting a new change event if closeDropDown is closed more than once
-					// for a closed dropdown.
-					
-					// Closing the dropdown represents a commit interaction
-					this.handleOnChange(this.value); // emit "change" event
-				
-					// Reinit the query. Necessary such that after closing the dropdown
-					// in autoFilter mode with a text in the input field not matching
-					// any item, when the dropdown will be reopen it shows all items
-					// instead of being empty 
-					this.list.query = {};
-				
-					if (this.selectionMode === "single" && this.autoFilter) {
-						// In autoFilter mode, reset the content of the inputNode when
-						// closing the dropdown, such that next time the dropdown is opened
-						// it doesn't show the text the user may have entered for filtering
-						var selItem = this.list.selectedItem;
-						if (selItem) {
-							(this._popupInput || this.inputNode).value =
-								this._getItemLabel(this.list.selectedItem);
+				// if a filtering operation is not in progress
+				if (!this.filteringInProgress) {
+					// cleanup
+					this._selectedItems = null;
+
+					var input = this._popupInput || this.inputNode;
+					input.removeAttribute("aria-activedescendant");
+
+					if (this.opened) {
+						// Using the flag `opened` (managed by delite/HasDropDown), avoid
+						// emitting a new change event if closeDropDown is closed more than once
+						// for a closed dropdown.
+
+						// Closing the dropdown represents a commit interaction
+						this.handleOnChange(this.value); // emit "change" event
+
+						// Reinit the query. Necessary such that after closing the dropdown
+						// in autoFilter mode with a text in the input field not matching
+						// any item, when the dropdown will be reopen it shows all items
+						// instead of being empty
+						this.list.query = {};
+
+						if (this.selectionMode === "single" && this.autoFilter) {
+							// In autoFilter mode, reset the content of the inputNode when
+							// closing the dropdown, such that next time the dropdown is opened
+							// it doesn't show the text the user may have entered for filtering
+							var selItem = this.list.selectedItem;
+							if (selItem) {
+								(this._popupInput || this.inputNode).value =
+									this._getItemLabel(this.list.selectedItem);
+							}
 						}
 					}
 				}
@@ -22284,11 +22438,11 @@ define('deliteful/Combobox',[
 				sup.apply(this, arguments);
 			};
 		}),
-		
+
 		/**
 		 * Scrolls the list inside the popup such that the specified item, or
 		 * the first selected item if no item is specified, is visible.
-		 * @private 
+		 * @private
 		 */
 		_updateScroll: function (item, navigate) {
 			// Since List is in focus-less mode, it does not give focus to
@@ -22316,8 +22470,7 @@ define('deliteful/Combobox',[
 			}
 		},
 
-		_setActiveDescendant: function () {
-			var nd = this.list.navigatedDescendant;
+		_setActiveDescendant: function (nd) {
 			if (nd) {
 				if (!nd.id) {
 					nd.id = "d-combobox-item-" + idCounter++;
@@ -22331,31 +22484,30 @@ define('deliteful/Combobox',[
 });
 ;
 define('delite/handlebars!deliteful/Combobox/ComboPopup.html',["delite/handlebars","deliteful/LinearLayout","deliteful/Button"], function(handlebars){
-	return handlebars.compile("<template role=\"presentation\">\n\t<d-linear-layout style=\"height: 100%\">\n\t\t<input d-hidden=\"{{!(this.combobox.autoFilter &amp;&amp; this.combobox.selectionMode !== 'multiple')}}\" attach-point=\"inputNode\" class=\"d-combobox-input\" role=\"combobox\" autocomplete=\"off\" autocapitalize=\"none\" autocorrect=\"off\" aria-autocomplete=\"list\" type=\"text\" placeholder=\"{{combobox.searchPlaceHolder}}\">\n\t\t<div attach-point=\"listNode\"></div>\n\t\t<d-linear-layout d-hidden=\"{{combobox.selectionMode !== 'multiple'}}\" vertical=\"false\">\n\t\t\t<button is=\"d-button\" class=\"fill d-combo-cancel-button\" label=\"{{combobox.cancelMsg}}\" on-click=\"{{cancelHandler}}\"></button>\n\t\t\t<button is=\"d-button\" class=\"fill d-combo-ok-button\" label=\"{{combobox.okMsg}}\" on-click=\"{{okHandler}}\"></button>\n\t\t</d-linear-layout>\n\t</d-linear-layout>\n</template>");
+	return handlebars.compile("<template role=\"presentation\">\n\t<d-linear-layout style=\"height: 100%\">\n        <div class=\"d-combo-popup-header\">{{header}}</div>\n\t\t<input d-hidden=\"{{!(this.combobox.autoFilter &amp;&amp; this.combobox.selectionMode !== 'multiple')}}\" attach-point=\"inputNode\" class=\"d-combobox-input\" role=\"combobox\" autocomplete=\"off\" autocapitalize=\"none\" autocorrect=\"off\" aria-autocomplete=\"list\" type=\"text\" placeholder=\"{{combobox.searchPlaceHolder}}\">\n\t\t<div attach-point=\"listNode\"></div>\n\t\t<d-linear-layout d-hidden=\"{{combobox.selectionMode !== 'multiple'}}\" vertical=\"false\">\n\t\t\t<button is=\"d-button\" class=\"fill d-combo-cancel-button\" label=\"{{combobox.cancelMsg}}\" on-click=\"{{cancelHandler}}\"></button>\n\t\t\t<button is=\"d-button\" class=\"fill d-combo-ok-button\" label=\"{{combobox.okMsg}}\" on-click=\"{{okHandler}}\"></button>\n\t\t</d-linear-layout>\n\t</d-linear-layout>\n</template>");
 });;
 /** @module deliteful/Combobox/ComboPopup */
 define('deliteful/Combobox/ComboPopup',[
 	"delite/register",
 	"requirejs-dplugins/jquery!attributes/classes",	// addClass()
-	"delite/Widget",
+	"delite/Dialog",
 	"delite/handlebars!./ComboPopup.html"
-], function (register, $, Widget, template) {
+], function (register, $, Dialog, template) {
 	/**
 	 * Auxiliary widget used in some cases by deliteful/Combobox for displaying
 	 * a popup containing conditionally a search field and OK/Cancel buttons.
-	 * This widget is intended for being instanciated only by deliteful/Combobox;
-	 * it should not be instanciated directly. If needed, its template
+	 * This widget is intended for being instantiated only by deliteful/Combobox;
+	 * it should not be instantiated directly.  If needed, its template
 	 * (deliteful/Combobox/ComboPopup.html) can be customized.
 	 * @class module:deliteful/Combobox/ComboPopup
 	 * @augments module:delite/Widget
 	 */
-	return register("d-combo-popup", [HTMLElement, Widget],
-		/** @lends module:deliteful/Combobox/ComboPopup# */ {
-		
+	return register("d-combo-popup", [HTMLElement, Dialog], /** @lends module:deliteful/Combobox/ComboPopup# */ {
+
 		baseClass: "d-combo-popup",
-		
+
 		template: template,
-		
+
 		/**
 		 * The instance of `deliteful/Combobox` for which this widget is used.
 		 * This property is set by Combobox when creating the popup, and it
@@ -22366,7 +22518,24 @@ define('deliteful/Combobox/ComboPopup',[
 		 * @protected
 		 */
 		combobox: null,
-		
+
+		/**
+		 * Popup's header, to remind user what the popup is for (since it likely covers up the original label).
+		 */
+		header: "",
+
+		computeProperties: function (oldValues) {
+			if ("combobox" in oldValues) {
+				// Find Combobox's label and use it as my header.
+				var combobox = this.combobox;
+				var headerNode = (combobox.focusNode.id &&
+					this.ownerDocument.querySelector("label[for=" + combobox.focusNode.id + "]")) ||
+					(combobox.hasAttribute("aria-labelledby") &&
+					this.ownerDocument.getElementById(combobox.getAttribute("aria-labelledby")));
+				this.header = headerNode ? headerNode.textContent.trim() : (combobox.getAttribute("aria-label") || "");
+			}
+		},
+
 		refreshRendering: function (oldValues) {
 			if ("combobox" in oldValues) {
 				if (this.combobox) {
@@ -22379,7 +22548,7 @@ define('deliteful/Combobox/ComboPopup',[
 				}
 			}
 		},
-		
+
 		/**
 		 * Called when clicking the OK button of the popup.
 		 * @protected
@@ -22388,7 +22557,7 @@ define('deliteful/Combobox/ComboPopup',[
 			this.combobox._validateMultiple(this.combobox.inputNode);
 			this.combobox.closeDropDown();
 		},
-		
+
 		/**
 		 * Called when clicking the Cancel button of the popup.
 		 * @protected
@@ -22396,8 +22565,271 @@ define('deliteful/Combobox/ComboPopup',[
 		cancelHandler: function () {
 			this.combobox.list.selectedItems = this.combobox._selectedItems;
 			this.combobox.closeDropDown();
+		},
+
+		/**
+		 * Called by HasDropDown in order to get the focus on the widget's list.
+		 * @protected
+		 */
+		focus: function () {
+			if (this.combobox.list && this.combobox.list.containerNode.children.length > 0) {
+				var id = this.combobox.list.getIdentity(
+					this.combobox.list.selectedItems.length > 0 ? this.combobox.list.selectedItems[0] : "");
+				var renderer = (id && id !== -1) ? this.combobox.list.getRendererByItemId(id) :
+					this.combobox.list.getRenderers()[0];
+				this.combobox.list.navigateTo(renderer);
+			}
+
 		}
 	});
+});
+;
+/** @module delite/Dialog */
+define('delite/Dialog',[
+	"dcl/dcl",
+	"./a11y",
+	"./Widget"
+], function (dcl, a11y, Widget) {
+	/**
+	 * Base class for modal dialogs, where tabbing from the last element loops to the first, and vice-versa.
+	 * @mixin module:delite/Dialog
+	 * @augments module:delite/Widget
+	 */
+	return dcl(Widget, /** @lends module:delite/Dialog# */ {
+		createdCallback: function () {
+			this.on("keydown", this._dialogKeyDownHandler.bind(this));
+		},
+
+		/**
+		 * Finds focusable items in dialog,
+		 * and sets `this._firstFocusItem` and `this._lastFocusItem`.
+		 *
+		 * @protected
+		 */
+		_getFocusItems: function () {
+			var elems = a11y._getTabNavigable(this);
+			this._firstFocusItem = elems.lowest || elems.first || this.closeButtonNode || this;
+			this._lastFocusItem = elems.last || elems.highest || this._firstFocusItem;
+		},
+
+		_dialogKeyDownHandler: function (/*Event*/ evt) {
+			if (evt.key === "Tab") {
+				this._getFocusItems(this);
+				var node = evt.target;
+				if (this._firstFocusItem === this._lastFocusItem) {
+					// don't move focus anywhere, but don't allow browser to move focus off of dialog either
+					evt.preventDefault();
+				} else if (node === this._firstFocusItem && evt.shiftKey) {
+					// if we are shift-tabbing from first focusable item in dialog, send focus to last item
+					this._lastFocusItem.focus();
+					evt.preventDefault();
+				} else if (node === this._lastFocusItem && !evt.shiftKey) {
+					// if we are tabbing from last focusable item in dialog, send focus to first item
+					this._firstFocusItem.focus();
+					evt.preventDefault();
+				}
+
+				// In any case, call stopPropagation() so the popup.js doesn't see the TAB and close the Dialog.
+				evt.stopPropagation();
+			}
+		}
+	});
+});
+;
+/**
+ * Accessibility utility functions (keyboard, tab stops, etc.).
+ * @module delite/a11y
+ * */
+define('delite/a11y',[], function () {
+
+	var a11y = /** @lends module:delite/a11y */ {
+		/**
+		 * Returns true if Element is visible.
+		 * @param {Element} elem - The Element.
+		 * @returns {boolean}
+		 * @private
+		 */
+		_isElementShown: function (elem) {
+			var s = getComputedStyle(elem);
+			return s.visibility !== "hidden"
+				&& s.visibility !== "collapsed"
+				&& s.display !== "none"
+				&& elem.type !== "hidden";
+		},
+
+		/**
+		 * Tests if element is tab-navigable even without an explicit tabIndex setting
+		 * @param {Element} elem - The Element.
+		 * @returns {boolean}
+		 */
+		hasDefaultTabStop: function (elem) {
+			/* jshint maxcomplexity:11 */
+
+			// No explicit tabIndex setting, need to investigate node type
+			switch (elem.nodeName.toLowerCase()) {
+			case "a":
+				// An <a> w/out a tabindex is only navigable if it has an href
+				return elem.hasAttribute("href");
+			case "area":
+			case "button":
+			case "input":
+			case "object":
+			case "select":
+			case "textarea":
+				// These are navigable by default
+				return true;
+			case "iframe":
+				// If it's an editor <iframe> then it's tab navigable.
+				var contentDocument = elem.contentDocument;
+				if ("designMode" in contentDocument && contentDocument.designMode === "on") {
+					return true;
+				}
+				var body = contentDocument.body;
+				return body && (body.contentEditable === "true" ||
+					(body.firstChild && body.firstChild.contentEditable === "true"));
+			default:
+				return elem.contentEditable === "true";
+			}
+		},
+
+		/**
+		 * Returns effective tabIndex of an element, either a number, or undefined if element isn't focusable.
+		 * @param {Element} elem - The Element.
+		 * @returns {number|undefined}
+		 */
+		effectiveTabIndex: function (elem) {
+			if (elem.disabled) {
+				return undefined;
+			} else if (elem.hasAttribute("tabIndex")) {
+				// Explicit tab index setting
+				return +elem.getAttribute("tabIndex");// + to convert string --> number
+			} else {
+				// No explicit tabIndex setting, so depends on node type
+				return a11y.hasDefaultTabStop(elem) ? 0 : undefined;
+			}
+		},
+
+		/**
+		 * Tests if an element is tab-navigable.
+		 * @param {Element} elem - The Element.
+		 * @returns {boolean}
+		 */
+		isTabNavigable: function (elem) {
+			return a11y.effectiveTabIndex(elem) >= 0;
+		},
+
+		/**
+		 * Tests if an element is focusable by tabbing to it, or clicking it with the mouse.
+		 * @param {Element} elem - The Element.
+		 * @returns {boolean}
+		 */
+		isFocusable: function (elem) {
+			return a11y.effectiveTabIndex(elem) >= -1;
+		},
+
+		/**
+		 * Finds descendants of the specified root node.
+		 *
+		 * The following descendants of the specified root node are returned:
+		 *
+		 * - the first tab-navigable element in document order without a tabIndex or with tabIndex="0"
+		 * - the last tab-navigable element in document order without a tabIndex or with tabIndex="0"
+		 * - the first element in document order with the lowest positive tabIndex value
+		 * - the last element in document order with the highest positive tabIndex value
+		 *
+		 * @param Element root - The Element.
+		 * @returns {Object} Hash of the format `{first: Element, last: Element, lowest: Element, highest: Element}`.
+		 * @private
+		 */
+		_getTabNavigable: function (root) {
+			var first, last, lowest, lowestTabindex, highest, highestTabindex, radioSelected = {};
+
+			function radioName(node) {
+				// If this element is part of a radio button group, return the name for that group.
+				return node && node.tagName.toLowerCase() === "input" &&
+					node.type && node.type.toLowerCase() === "radio" &&
+					node.name && node.name.toLowerCase();
+			}
+
+			var shown = a11y._isElementShown, effectiveTabIndex = a11y.effectiveTabIndex;
+
+			function walkTree(/*Element*/ parent) {
+				/* jshint maxcomplexity:14 */
+				for (var child = parent.firstChild; child; child = child.nextSibling) {
+					// Skip text elements, hidden elements
+					if (child.nodeType !== 1 || !shown(child)) {
+						continue;
+					}
+
+					var tabindex = effectiveTabIndex(child);
+					if (tabindex >= 0) {
+						if (tabindex === 0) {
+							if (!first) {
+								first = child;
+							}
+							last = child;
+						} else if (tabindex > 0) {
+							if (!lowest || tabindex < lowestTabindex) {
+								lowestTabindex = tabindex;
+								lowest = child;
+							}
+							if (!highest || tabindex >= highestTabindex) {
+								highestTabindex = tabindex;
+								highest = child;
+							}
+						}
+						var rn = radioName(child);
+						if (child.checked && rn) {
+							radioSelected[rn] = child;
+						}
+					}
+					if (child.nodeName.toUpperCase() !== "SELECT") {
+						walkTree(child);
+					}
+				}
+			}
+
+			if (shown(root)) {
+				walkTree(root);
+			}
+			function rs(node) {
+				// substitute checked radio button for unchecked one, if there is a checked one with the same name.
+				return radioSelected[radioName(node)] || node;
+			}
+
+			return { first: rs(first), last: rs(last), lowest: rs(lowest), highest: rs(highest) };
+		},
+
+		/**
+		 * Finds the descendant of the specified root node that is first in the tabbing order.
+		 * @param {string|Element} root
+		 * @param {Document} [doc]
+		 * @returns {Element}
+		 */
+		getFirstInTabbingOrder: function (root, doc) {
+			if (typeof root === "string") {
+				root = (doc || document).getElementById(root);
+			}
+			var elems = a11y._getTabNavigable(root);
+			return elems.lowest ? elems.lowest : elems.first;
+		},
+
+		/**
+		 * Finds the descendant of the specified root node that is last in the tabbing order.
+		 * @param {string|Element} root
+		 * @param {Document} [doc]
+		 * @returns {Element}
+		 */
+		getLastInTabbingOrder: function (root, doc) {
+			if (typeof root === "string") {
+				root = (doc || document).getElementById(root);
+			}
+			var elems = a11y._getTabNavigable(root);
+			return elems.last ? elems.last : elems.highest;
+		}
+	};
+
+	return a11y;
 });
 ;
 /** @module delite/HasDropDown */
@@ -22461,14 +22893,14 @@ define('delite/HasDropDown',[
 		/**
 		 * The button/icon/node to click to display the drop down.
 		 * Can be set in a template via a `attach-point` assignment.
-		 * If missing, then either `this.focusNode` or `this.domNode` (if `focusNode` is also missing) will be used.
+		 * If missing, then either `this.focusNode` or `this` (if `focusNode` is also missing) will be used.
 		 * @member {Element}
 		 * @protected
 		 */
 		buttonNode: null,
 
 		/**
-		 * The node to set the `aria-expanded` class on.
+		 * The node to set the `aria-owns` etc. on.
 		 * Can be set in a template via a `attach-point` assignment.
 		 * If missing, then `this.focusNode` or `this.buttonNode` (if `focusNode` is missing) will be used.
 		 * @member {Element}
@@ -22479,7 +22911,7 @@ define('delite/HasDropDown',[
 		/**
 		 * The node to display the popup around.
 		 * Can be set in a template via a `attach-point` assignment.
-		 * If missing, then `this.domNode` will be used.
+		 * If missing, then `this` will be used.
 		 * @member {Element}
 		 * @protected
 		 */
@@ -22704,8 +23136,6 @@ define('delite/HasDropDown',[
 			this.buttonNode = this.buttonNode || this.focusNode || this;
 			this.popupStateNode = this.popupStateNode || this.focusNode || this.buttonNode;
 
-			this.popupStateNode.setAttribute("aria-expanded", "false");
-
 			this._HasDropDownListeners = [
 				// basic listeners
 				this.on("pointerdown", this._dropDownPointerDownHandler.bind(this), this.buttonNode),
@@ -22769,14 +23199,26 @@ define('delite/HasDropDown',[
 		 * @private
 		 */
 		_dropDownKeyDownHandler: function (e) {
-			/* jshint maxcomplexity:14 */
+			/* jshint maxcomplexity:18 */
 
 			if (this.disabled || this.readOnly) {
 				return;
 			}
 			var dropDown = this._currentDropDown, target = e.target;
 			if (dropDown && this.opened) {
-				if (dropDown.emit("keydown", e) === false) {
+				// Forward the keystroke to the dropdown widget.
+				// Can't use dropDown.emit() though because deliteful/List (the dropdown for deliteful/Combobox)
+				// listens for events on List#containerNode rather than the List root node.
+				var eventCopy = this.ownerDocument.createEvent("HTMLEvents");
+				eventCopy.initEvent("keydown", true, true);
+				for (var i in e) {
+					if (!(i in eventCopy)) {
+						eventCopy[i] = e[i];
+					}
+				}
+
+				var forwardNode = dropDown.keyNavContainerNode || dropDown.containerNode || dropDown;
+				if (forwardNode.dispatchEvent(eventCopy) === false) {
 					/* false return code means that the drop down handled the key */
 					e.stopPropagation();
 					e.preventDefault();
@@ -22959,7 +23401,6 @@ define('delite/HasDropDown',[
 				$(this._popupStateNode).addClass("d-drop-down-open");
 				this.opened = true;
 
-				this.popupStateNode.setAttribute("aria-expanded", "true");
 				this.popupStateNode.setAttribute("aria-owns", dropDown.id);
 
 				// Set aria-labelledby on dropdown if it's not already set to something more meaningful
@@ -23010,7 +23451,6 @@ define('delite/HasDropDown',[
 			}
 
 			if (this.opened) {
-				this.popupStateNode.setAttribute("aria-expanded", "false");
 				if (focus && this.focus) {
 					this.focus();
 				}
@@ -23031,6 +23471,9 @@ define('delite/HasDropDown',[
 				});
 			}
 
+			// Avoid complaint about aria-owns pointing to hidden element.
+			this.popupStateNode.removeAttribute("aria-owns");
+
 			this._previousDropDown = this._currentDropDown;
 			delete this._currentDropDown;
 		}
@@ -23045,11 +23488,12 @@ define('delite/popup',[
 	"dcl/advise",
 	"dcl/dcl",
 	"./BackgroundIframe",
+	"./DialogUnderlay",
 	"./features", // has("config-bgIframe")
 	"./place",
 	"./Viewport",
 	"./theme!" // d-popup class
-], function (advise, dcl, BackgroundIframe, has, place, Viewport) {
+], function (advise, dcl, BackgroundIframe, DialogUnderlay, has, place, Viewport) {
 
 	function isDocLtr(doc) {
 		return !(/^rtl$/i).test(doc.body.dir || doc.documentElement.dir);
@@ -23482,6 +23926,7 @@ define('delite/popup',[
 			// position the wrapper node
 			if (orient[0] === "center") {
 				place.center(wrapper);
+				DialogUnderlay.showFor(wrapper);
 			} else {
 				var layoutFunc = widget.orient ? widget.orient.bind(widget) : null;
 				return around ?
@@ -23524,6 +23969,7 @@ define('delite/popup',[
 
 				// Hide the widget and its wrapper unless it has already been destroyed in above onClose() etc.
 				this.hide(widget);
+				DialogUnderlay.hideFor(widget._popupWrapper);
 
 				if (onClose) {
 					onClose();
@@ -23675,6 +24121,186 @@ define('delite/Viewport',[
 	poll();
 
 	return Viewport;
+});
+;
+/** @module delite/DialogUnderlay */
+define('delite/DialogUnderlay',[
+	"./register",
+	"./Widget",
+	"./BackgroundIframe",
+	"./Viewport",
+	"./theme!./DialogUnderlay/themes/{{theme}}/DialogUnderlay.css"
+], function (register, Widget, BackgroundIframe, Viewport) {
+
+	// TODO: having show() methods on the instance and also on the module is confusing,
+	// at least when looking at the API doc page.  Should one be renamed?
+
+	/**
+	 * A component used to block input behind a Dialog widget.
+	 *
+	 * Normally this widget should not be instantiated directly, but rather shown and hidden via
+	 * `DialogUnderlay.show()` and `DialogUnderlay.hide()`.  And usually the module is not accessed directly
+	 * at all, since the underlay is shown and hidden by `delite/popup`.
+	 *
+	 * @class module:delite/DialogUnderlay
+	 */
+	var DialogUnderlay = register("d-dialog-underlay", [HTMLElement, Widget],
+			/** @lends module:delite/DialogUnderlay# */ {
+
+		baseClass: "d-dialog-underlay",
+
+		createdCallback: register.after(function () {
+			// Automatically append the underlay to <body> on creation.
+			this.ownerDocument.body.appendChild(this);
+			this.attachedCallback();
+		}),
+
+		attachedCallback: function () {
+			this._resizeListener = Viewport.on("resize", function () {
+				if (this._open) {
+					this.layout();
+				}
+			}.bind(this));
+		},
+
+		detachedCallback: function () {
+			this._resizeListener.remove();
+		},
+
+		/**
+		 * Sets the background to the size of the viewport (rather than the size
+		 * of the document) since we need to cover the whole browser window, even
+		 * if the document is only a few lines long.
+		 * @private
+		 */
+		layout: function () {
+			var s = this.style;
+
+			// hide the background temporarily, so that the background itself isn't
+			// causing scrollbars to appear (might happen when user shrinks browser
+			// window and then we are called to resize)
+			s.display = "none";
+
+			// then resize and show
+			// could alternately use $(window).scrollTop() and $(window).height(), etc.
+			var html = this.ownerDocument.documentElement;
+			s.width = html.clientWidth + "px";
+			s.height = html.clientHeight + "px";
+
+			s.display = "";
+		},
+
+		/**
+		 * Show the dialog underlay (instance method).
+		 */
+		show: function () {
+			if (!this._open) {
+				this.style.display = "block";
+				this._open = true;
+				this.layout();
+				this.bgIframe = new BackgroundIframe(this);
+			}
+		},
+
+		/**
+		 * Hide the dialog underlay (instance method).
+		 */
+		hide: function () {
+			if (this._open) {
+				this.bgIframe.destroy();
+				delete this.bgIframe;
+				this.style.display = "none";
+				this._open = false;
+			}
+		}
+	});
+
+	/**
+	 * Static method to display the underlay with the given attributes set.  If the underlay is already displayed,
+	 * then adjust its attributes as specified.
+	 * @memberof module:delite/DialogUnderlay
+	 * @param {Object} attrs - The parameters to create DialogUnderlay with.
+	 * @param {number} zIndex - z-index of the underlay.
+	 */
+	DialogUnderlay.show = function (attrs, zIndex) {
+		var underlay = DialogUnderlay._singleton;
+		if (!underlay || underlay._destroyed) {
+			underlay = DialogUnderlay._singleton = new DialogUnderlay(attrs);
+		} else {
+			if (attrs) {
+				underlay.mix(attrs);
+			}
+		}
+		underlay.style.zIndex = zIndex;
+		underlay.show();
+	};
+
+	/**
+	 * Static method to hide the underlay.
+	 * @memberof module:delite/DialogUnderlay
+	 */
+	DialogUnderlay.hide = function () {
+		// Guard code in case the underlay widget has already been destroyed
+		// because we are being called during page unload (when all widgets are destroyed)
+		var underlay = DialogUnderlay._singleton;
+		if (underlay && !underlay._destroyed) {
+			underlay.hide();
+		}
+	};
+
+	// Stack representing the currently displayed dialogs with underlays.
+	var ds = [];
+
+	/**
+	 * Call when new dialog (that needs an underlay) is shown.
+	 * Displays the underlay, or if already displayed then adjusts it for this new dialog.
+	 * @param dialog
+	 * @memberof module:delite/DialogUnderlay
+	 */
+	DialogUnderlay.showFor = function (dialog) {
+		if (ds.indexOf(dialog) >= 0) {
+			return;
+		}
+		var zIndex = +getComputedStyle(dialog).zIndex;
+		DialogUnderlay.show(null, zIndex - 1);
+		ds.push(dialog);
+	};
+
+	/**
+	 * Call when a dialog with an underlay is hidden.
+	 * Hides the underlay, or if there are remaining dialogs on the page,
+	 * then adjusts underlay for the new top dialog.
+	 * @param dialog
+	 * @memberof module:delite/DialogUnderlay
+	 */
+	DialogUnderlay.hideFor = function (dialog) {
+		if (ds[ds.length - 1] === dialog) {
+			// Removing the top (or only) dialog in the stack.
+
+			ds.pop();
+
+			var pd = ds[ds.length - 1];	// the new active dialog
+
+			// Adjust underlay
+			if (pd) {
+				// Popping back to previous dialog, adjust underlay.
+				var zIndex = +getComputedStyle(pd).zIndex;
+				DialogUnderlay.show(null, zIndex - 1);
+			} else {
+				// Returning to original page.  Hide the underlay.
+				DialogUnderlay.hide();
+			}
+		} else {
+			// Removing a dialog out of order (#9944, #10705).
+			// Don't need to mess with underlay or z-index or anything.
+			var idx = ds.indexOf(dialog);
+			if (idx !== -1) {
+				ds.splice(idx, 1);
+			}
+		}
+	};
+
+	return DialogUnderlay;
 });
 ;
 /** @module delite/BackgroundIframe */
@@ -25126,7 +25752,7 @@ define('delite/handlebars',[
 			var attributes = {}, connects = {}, attachPoints;
 			var i = 0, item, attrs = templateNode.attributes;
 			while ((item = attrs[i++])) {
-				var name = item.name, value = item.value;
+				var name = item.name.replace("template-", ""), value = item.value;
 				if (value || typeof elem[name.toLowerCase()] === "boolean") {
 					switch (name) {
 					case "xmlns":
@@ -25256,6 +25882,10 @@ define('delite/handlebars',[
 				/<template-(area|base|br|col|command|embed|hr|img|input|keygen|link|meta|param|source|track|wbr)([^>]*?)\/?>/g,
 				"<template-$1$2></template-$1>");
 
+			// Also rename style attribute, because IE will drop style="..." if the ... is an illegal value
+			// like "height: {{foo}}px".
+			templateText = templateText.replace(/style=/g, "template-style=");
+
 			return templateText;
 		},
 
@@ -25282,10 +25912,9 @@ define('delite/handlebars',[
 				}
 			} else {
 				// Use innerHTML because Safari doesn't support DOMParser.parseFromString(str, "text/html")
-				var container = typeof document !=='undefined' ? document.createElement("div"):null;
+				var container = document.createElement("div");
 				container.innerHTML = templateText;
 				root = container.firstElementChild; // use .firstElementChild to skip possible top level comment
-				
 			}
 
 			return root;
@@ -25354,8 +25983,7 @@ define('delite/handlebars',[
 
 	if (has("builder")) {
 		var fs = require.nodeRequire("fs"),
-			jsdom = require.nodeRequire(require.getNodePath(require.toUrl(module.id).replace(/[^\/]*$/,
-				"node_modules/jsdom"))).jsdom;
+			jsdom = require.nodeRequire("jsdom").jsdom;
 
 		// Info about the MID being currently processed
 		var templateText, templateRequires;
@@ -25389,7 +26017,8 @@ define('delite/handlebars',[
 	}
 
 	return handlebars;
-});;
+});
+;
 /** @module delite/Widget */
 define('delite/Widget',[
 	"dcl/dcl",
@@ -50057,18 +50686,22 @@ define('xide/utils/StringUtils',[
         else { result += 'dec2char error: Code point out of range: '+dec2hex(n); }
         return result;
     }
+    utils.dec2char = dec2char;
     function dec2hex ( textString ) {
         return (textString+0).toString(16).toUpperCase();
     }
+    utils.dec2hex = dec2hex;
     function dec2hex2 ( textString ) {
         var hexequiv = new Array ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F");
         return hexequiv[(textString >> 4) & 0xF] + hexequiv[textString & 0xF];
     }
+    utils.dec2hex2 = dec2hex2;
     function dec2hex4 ( textString ) {
         var hexequiv = new Array ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F");
         return hexequiv[(textString >> 12) & 0xF] + hexequiv[(textString >> 8) & 0xF]
             + hexequiv[(textString >> 4) & 0xF] + hexequiv[textString & 0xF];
     }
+    utils.dec2hex4 = dec2hex4;
     function convertChar2CP ( textString ) {
         var haut = 0;
         var n = 0;
@@ -50154,17 +50787,6 @@ define('xide/utils/StringUtils',[
 
         return str;
     }
-
-
-
-    /*
-    console.clear();
-    var result = removeWhitespacesFromHexSequence(text);
-    var result2 = convertAllEscapes(text,'none');
-    console.log('test '+result + ' - l=' + result.length);
-    console.log('test '+result2 + ' - l=' + result2.length);
-    //debugger;
-    */
 
 
     function convertUnicode2Char ( str ) {
@@ -50365,6 +50987,35 @@ define('xide/utils/StringUtils',[
         }
         return str;
     }
+
+    /**
+     *
+     * @param bufferString {String} The serialized buffer formatted as 00,02 (decimal values)
+     * @returns {String} The hex version of the buffer string
+     */
+    utils.bufferToHexString=function(bufferString){
+        var bytesArray = bufferString.indexOf(',')!==-1 ? bufferString.split(',') : [bufferString];
+        var tmp = [];
+        for (var i = 0; i < bytesArray.length; i++) {
+            var dec = bytesArray[i];
+            tmp.push(utils.dec2hex2(dec))
+        }
+        return tmp.join(" ");
+    }
+
+    /**
+     *
+     * @param bufferString {String} The serialized buffer formatted as 00,02 (decimal values)
+     * @returns {Array[integer]} The integer array
+     */
+    utils.bufferFromDecString=function(bufferString){
+        var bytesArray = bufferString.indexOf(',')!==-1 ? bufferString.split(',') : [bufferString];
+        for (var i = 0; i < bytesArray.length; i++) {
+            bytesArray[i] = parseInt(bytesArray[i]);
+        }
+        return bytesArray;
+    }
+
     function convertUTF82Char ( str ) {
         // converts to characters a sequence of space-separated hex numbers representing bytes in utf8
         // str: string, the sequence to be converted
@@ -51079,6 +51730,34 @@ define('xide/utils/StringUtils',[
         return str;
     }
 
+    utils.stringToBufferStr=function(tmp) {
+
+        var str = '',
+            i = 0,
+            tmp_len = tmp.length,
+            c;
+
+        var arr = [];
+        for (; i < tmp_len; i += 1) {
+            c = tmp.charCodeAt(i);
+            arr.push(c);
+        }
+        return arr.join(',');
+    }
+    utils.stringToBuffer=function(tmp) {
+
+        var str = '',
+            i = 0,
+            tmp_len = tmp.length,
+            c;
+        var arr = [];
+        for (; i < tmp_len; i += 1) {
+            c = tmp.charCodeAt(i);
+            arr.push(c);
+        }
+        return arr;
+    }
+
     utils.stringToHex2=function(tmp) {
         var str = '',
             i = 0,
@@ -51105,6 +51784,9 @@ define('xide/utils/StringUtils',[
 
         return str;
     }
+
+    
+    utils.hexToString = hexToString;
 
     var zero = function (n, max) {
         n = n.toString(16).toUpperCase();
@@ -54882,20 +55564,24 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     'dojo/Deferred',
     'xide/mixins/ReloadMixin',
     'xide/mixins/EventedMixin',
-    'require'
+    'require',
+    "xcf/model/Variable"
     //'xdojo/has!host-node?nxapp/utils/_console'
 ], function (dcl,declare, lang, MD5,
              types, utils, factory, has,
-             Deferred,ReloadMixin,EventedMixin,require,_console) {
+             Deferred,ReloadMixin,EventedMixin,require,Variable,_console) {
 
 
     var isServer = has('host-node'),
-        isIDE = has('xcf-ui');
+        isIDE = has('xcf-ui'),
+        runDrivers = has('runDrivers');
 
+    /*
     var console = typeof window !== 'undefined' ? window.console : console;
     if(_console && _console.error && _console.warn){
-        console = _console;
+        //console = _console;
     }
+    */
     //debug mqtt activity
     var _debugMQTT = false;
     //debug device - server messages
@@ -54903,10 +55589,11 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     // debug device server connectivity
     var debugDevice = false;
     var debugStrangers = false;
-    var debugConnect = false;
+    var debugConnect = true;
     var debugServerCommands = false;
     var debugCreateInstance = false;
     var debugServerMessages = false;
+    var debugByteMessages = false;
     /***
      *
      * 1. startDevice
@@ -55318,24 +56005,29 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
                     return true;
                 }
-                if (deviceStoreItem) {
-                    var thiz = this;
 
-                    if(deviceStoreItem.reconnect){
-                        return;
-                    }
-                    deviceStoreItem.reconnect = setTimeout(function(){
-                        deviceStoreItem.reconnect=null;
-                        if(deviceStoreItem.shouldReconnect()) {
-                            if(info) {
-                                deviceStoreItem.setState(types.DEVICE_STATE.CONNECTING);
-                                debugConnect && console.info('trying to reconnect to ' + info.toString());
-                            }
+                var serverSide = info.serverSide;
 
-                            //thiz.connectDevice(deviceStoreItem);
-                            thiz.startDevice(deviceStoreItem);
+                if( (isServer && serverSide) || (!serverSide && !isServer)) {
+                    if (deviceStoreItem) {
+                        var thiz = this;
+
+                        if (deviceStoreItem.reconnectTimer) {
+                            return;
                         }
-                    },thiz.reconnectDevice);
+                        deviceStoreItem.reconnectTimer = setTimeout(function () {
+                            deviceStoreItem.reconnectTimer = null;
+                            if (deviceStoreItem.shouldReconnect()) {
+                                if (info) {
+                                    deviceStoreItem.setState(types.DEVICE_STATE.CONNECTING);
+                                    debugConnect && console.info('trying to reconnect to ' + info.toString());
+                                }
+
+                                //thiz.connectDevice(deviceStoreItem);
+                                thiz.startDevice(deviceStoreItem);
+                            }
+                        }, thiz.reconnectDevice);
+                    }
                 }
             }
         },
@@ -55363,7 +56055,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 variables:out
             });
         },
-
         onCommandFinish:function(deviceData,message){
             var driverInstance = this.getDriverInstance(deviceData, true);
             if (!driverInstance) {
@@ -55411,11 +56102,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             var deviceMessageData = null;
             if (_.isString(dataIn) && dataIn.indexOf('{') !=-1){
                 try {
-                    /*if (! /^[\[|\{](\s|.*|\w)*[\]|\}]$/.test(dataIn)) {*/
                     deviceMessageData = dojo.fromJson(dataIn);
-                    /*}else{*/
-                    //console.warn('received non json data...'+dataIn);
-                    /*}*/
                 } catch (e) {
                     console.error('error parsing device message', evt);
                     return;
@@ -55425,13 +56112,11 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 debug && console.error('bad device message : ',deviceMessageData);
                 return;
             }
-
             var deviceInfo  = deviceMessageData.data.device;
             if(!deviceInfo){
                 debug && console.error('onDeviceServerMessage: cant get device info');
                 return;
             }
-
             if(isServer && !deviceInfo.serverSide){
                 return;
             }
@@ -55456,6 +56141,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             deviceInfo = device.info;
 
             var state = device.get('state');
+            var serverSide = deviceInfo.serverSide;
 
             function clear(message){
                 delete message['resposeSettings'];
@@ -55483,32 +56169,23 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
             var _messages = driverInstance.onMessageRaw({
                 device: deviceMessageData.data.device,
-                message:message
+                message:message,
+                bytes:deviceMessageData.data.bytes
             });
-
-            if(_messages){
-                //console.error('have raw message split');
-            }
 
             if(_messages){
                 messages = _.isArray(_messages) ? _messages : [_messages];
             }
 
-            //_message && console.log('replace')
-
-            if(_messages){
-                //console.log('display delimited messages',_messages)
-            }else{
-                //console.log('display normal messages',messages)
-            }
-
+            //replay on driver code instance
             if(messages && messages.length) {
                 _.each(messages, function (_message) {
                     //driver replay as individual message
                     driverInstance.onMessage({
                         device: deviceMessageData.data.device,
                         message: _message,
-                        raw: message
+                        raw: message,
+                        bytes:deviceMessageData.data.bytes
                     });
 
 
@@ -55516,7 +56193,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     driverInstance.onBroadcastMessage({
                         device: deviceMessageData.data.device,
                         message: _message,
-                        raw: message
+                        raw: message,
+                        bytes:deviceMessageData.data.bytes
                     });
 
                 });
@@ -55553,6 +56231,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 //
                 this.publish(deviceMessageData.event, deviceMessageData.data);
             }
+
 
             if(has('xcf-ui')) {
 
@@ -55598,6 +56277,13 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                                 hex = _consoleEditor.getAction("Console/Settings/HEX").value;
                             }
 
+                            if(!split && hex){
+
+                                var hexStr = utils.bufferToHexString(deviceMessageData.data.bytes);
+                                consoleView.log(hexStr, split, false, types.LOG_OUTPUT.RESPONSE);
+                                continue;
+                            }
+
                             messagesNew = [];
                             if (_.isString(message)) {
                                 messagesNew = split ? _messages ? _messages : driverInstance.split(message) : [message];
@@ -55626,10 +56312,142 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                         device: device,
                         deviceInfo: deviceInfo,
                         raw: message,
-                        messages: messages
+                        messages: messages,
+                        bytes:deviceMessageData.data.bytes
                     })
                 }
             }
+
+
+            /****************   Forward to xblox    ******************/
+
+            if (messages.length > 0) {
+
+                var scope = driverInstance.blockScope;
+
+                var responseBlocks = scope.getBlocks({
+                    group: types.BLOCK_GROUPS.CF_DRIVER_RESPONSE_BLOCKS
+                });
+
+                var responseVariables = scope.getVariables({
+                    group: types.BLOCK_GROUPS.CF_DRIVER_RESPONSE_VARIABLES
+                });
+
+                var responseVariable = scope.getVariable('value');
+                if (responseVariable) {
+
+                } else {
+
+                    responseVariable = new Variable({
+                        id: utils.createUUID(),
+                        name: 'value',
+                        value: '',
+                        scope: scope,
+                        type: 13,
+                        group: 'processVariables',
+                        gui: false,
+                        cmd: false
+                    });
+                    scope.blockStore.putSync(responseVariable);
+                }
+                for (var i = 0; i < messages.length; i++) {
+
+                    if (messages[i].length == 0) {
+                        continue;
+                    }
+
+                    responseVariable.value = messages[i];
+
+
+                    this.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, {
+                        item: responseVariable,
+                        scope: scope,
+                        owner: this,
+                        save: false,                         //dont save it
+                        source: types.MESSAGE_SOURCE.DEVICE  //for prioritizing
+                    });
+                    var runVariables = false;
+                    var runBlocks = false;
+
+                    //now run each top-variabl block in 'conditional process'
+                    for (var j = 0; j < responseVariables.length; j++) {
+
+                        var _var = responseVariables[j];
+                        if (responseVariables[j].title == 'value') {
+                            continue;
+                        }
+
+                        var _varResult = null;
+                        var _cValue = responseVariable.value;
+
+
+                        if (!(typeof _cValue == "number")) {
+                            _cValue = '' + _cValue;
+                            _cValue = "'" + _cValue + "'";
+                        }
+
+
+                        var prefix = "var value = " + _cValue + ";";
+
+                        _varResult = _cValue;
+                        if (_var.target && _var.target != 'None' && _varResult != null && _varResult != 'null' && _varResult != "'null'") {
+                            var targetVariable = scope.getVariable(_var.target);
+                            if (targetVariable) {
+                                targetVariable.value = _varResult;
+                                this.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, {
+                                    item: targetVariable,
+                                    scope: scope,
+                                    owner: this,
+                                    save: false,
+                                    source: types.MESSAGE_SOURCE.BLOX  //for prioritizing
+                                });
+                            }
+                        }
+                    }
+
+                    if( (isServer && serverSide) || (!serverSide && !isServer)) {
+
+                        for (var j = 0; j < messages.length; j++) {
+                            var __message = messages[j];
+                            if(_.isObject(__message)) {
+                                if (__message.src) {
+
+                                    var block = scope.getBlockById(__message.src);
+                                    if(block && block.onData){
+                                        block.onData(__message);
+                                    }
+                                }
+                            }
+                        }
+
+
+                        if(!runDrivers){
+                            return;
+                        }
+                        //now run each top-level block in 'conditional process'
+                        for (var j = 0; j < responseBlocks.length; j++) {
+
+                            var block = responseBlocks[j];
+
+                            if (block.enabled == false) {
+                                continue;
+                            }
+                            block.override = {
+                                args: _var ? [_var.value] : null
+                            };
+                            try {
+                                scope.solveBlock(responseBlocks[j], {
+                                    highlight: isServer ? false : true
+                                });
+                            } catch (e) {
+                                logError(e,'----solving response block crashed ')
+                                debug && console.trace();
+                            }
+                        }
+                    }
+                }
+            }
+
         },
         /**
          * Device Server managment interface
@@ -55676,7 +56494,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 }
             });
 
-            debug && console.log("Device.Manager.Send.Message : " + dataOut.command.substr(0,30), dataOut);//sending device message
+            debug && console.log("Device.Manager.Send.Message : " + dataOut.command.substr(0,30) + ' = hex = ' + utils.stringToHex(dataOut.command) + ' l = ' + dataOut.command.length, dataOut);//sending device message
             
             var device = this.getDevice(options.id);
             if(device.isDebug()) {
@@ -56582,27 +57400,12 @@ define('xcf/manager/DriverManager',[
     ],
     debug = false,
     isServer = !has('host-browser'),
-    runDrivers = has('runDrivers');
+    runDrivers = has('runDrivers'),
+    debugDeviceMessages = true;
 
     has('xcf-ui') && bases.push(DriverManager_UI);
-/*
-    var url = "command://deviceScope=system_devices&device=e5a06e24-6aa4-c8c5-3ffc-9d84d8528a91&driver=235eb680-cb87-11e3-9c1a-0800200c9a66&driverScope=system_drivers&block=53a10527-709b-4c7d-7a90-37f58f17c8db";
-    var parts = utils.parse_url(url);//strip scheme
-
-    parts = utils.urlArgs(parts.host);//go on with query string
-
-    //console.error(parts);
-    var driverId = parts.driver.value;
 
 
-    var driverManager = sctx.getDriverManager();
-    var _driver = driverManager.getItemById(driverId);
-    var block  = null;
-    if(_driver && _driver.blockScope){
-        block = _driver.blockScope.getBlockById(parts.block.value);
-    }
-    console.error(block);
-    */
 
 
     return dcl(bases, {
@@ -56871,6 +57674,7 @@ define('xcf/manager/DriverManager',[
         onDeviceMessage: function (evt) {
 
 
+            return;
             if (!evt || !evt.device || !evt.driverInstance) {
                 return;
             }
@@ -56886,12 +57690,28 @@ define('xcf/manager/DriverManager',[
             }
 
             var serverSide = _driverOptions.serverSide;
+            var deviceMessage  = evt.deviceMessage;
 
+            debugDeviceMessages && console.log('device message',evt);
 
             //split string into messages, using the driver's delimiter
-            var messages = [evt.deviceMessage];
-            if (_.isString(evt.deviceMessage)) {
-                messages = _driverInstance.split(evt.deviceMessage);
+            var messages = [deviceMessage];
+            if (_.isString(deviceMessage)) {
+                messages = _driverInstance.split(deviceMessage);
+            }
+
+            var _messages = [];
+            /*
+            var _messages = _driverInstance.onMessageRaw({
+                device: evt.device,
+                message:deviceMessage,
+                bytes:evt.bytes
+            });
+            */
+
+            if(_messages){
+                messages = _.isArray(_messages) ? _messages : [_messages];
+                console.log(' : have ' +messages.length + ' messages');
             }
 
             /***
@@ -56902,6 +57722,7 @@ define('xcf/manager/DriverManager',[
                 //return;
             }
 
+            debugDeviceMessages && console.log('Driver Manager : onDeviceMessage ',evt);
 
             //forward to blox
             if (messages.length > 0) {
@@ -56938,12 +57759,15 @@ define('xcf/manager/DriverManager',[
                 }
 
 
+
                 for (var i = 0; i < messages.length; i++) {
 
                    if (messages[i].length == 0) {
                         continue;
                     }
+
                     responseVariable.value = messages[i];
+
 
                     this.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, {
                         item: responseVariable,
@@ -57397,6 +58221,8 @@ define('xcf/manager/DriverManager_Server',[
     'xide/utils'
 ], function(dcl,lang,declare,types,utils){
 
+    var debugDeviceMessages = false;
+
     function isItemPath(startNeedle,path){
 
         var _start = startNeedle;
@@ -57528,6 +58354,9 @@ define('xcf/manager/DriverManager_Server',[
         onDeviceMessage:function(evt){
 
             if(evt && evt['device'] && evt['driverInstance']){
+
+                debugDeviceMessages && console.log('device message ',evt);
+
                 var _deviceInfo=evt['device'];
                 var _driverInstance=evt['driverInstance'];
                 var _driverOptions =_driverInstance['options'];
@@ -57535,7 +58364,8 @@ define('xcf/manager/DriverManager_Server',[
 
                 //split message;
                 var messages=[evt.deviceMessage];
-                if( lang.isString(evt.deviceMessage) &&
+
+                if( _.isString(evt.deviceMessage) &&
                     evt.deviceMessage.indexOf(_driverInstance.lineBreak)!=-1){
                     messages=[];
                     messages=evt.deviceMessage.split(_driverInstance.lineBreak);
@@ -57583,7 +58413,9 @@ define('xcf/manager/DriverManager_Server',[
 
                         //update system variable 'value'
                         responseVariable.value=messages[i];
+                        
                         console.log('update process value '+responseVariable.value + ' for ' + _deviceInfo.host);
+                        
                         this.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED,{
                             item:responseVariable,
                             scope:scope,
@@ -65017,27 +65849,12 @@ define('xide/mixins/EventedMixin',[
                 _.each(_remove,function(handler){
                     handler.remove();
                 });
-
-                /*
-                if (!list.some(function(l, i){
-                    if ((l.listener || l) == listener) {
-                        list.splice(i, 1);
-                        return true;
-                    }
-                    }));
-                return this;
-                */
                 if (list.length === 0) {
                     delete this.__events[type];
                 }
             }else if ((this.__events[type].listener || this.__events[type]) === listener) {
                 delete this.__events[type];
             }
-
-            //if (type != "removeListener") {
-            //    this.emit('removeListener', type, listener);
-            //}
-
             return this;
         },
         /**
@@ -77920,8 +78737,7 @@ define('delite/register',[
 ], function (module, advise, dcl, schedule, domReady, has) {
 	"use strict";
 
-	var doc = has("builder") ? require.nodeRequire(require.getNodePath(require.toUrl(module.id).replace(/[^\/]*$/,
-		"node_modules/jsdom"))).jsdom("") : typeof document !=='undefined' ? document :null ;
+	var doc = has("builder") ? require.nodeRequire("jsdom").jsdom("") : document;
 
 	// Set to true after the page finishes loading and the parser runs.  Any widgets declared after initialParseComplete
 	// instantiated in a separate code path.
@@ -78339,7 +79155,7 @@ define('delite/register',[
 	function observe() {
 		if (!has("document-register-element")) {
 			if (!observer) {
-				if (has("MutationObserver") /*&& typeof MutationObserver !=='undefined'*/) {
+				if (has("MutationObserver")) {
 					observer = new MutationObserver(processMutations);
 				} else {
 					// Fallback for Android < 4.2 and IE < 11.  Partial shim of MutationObserver, except sometimes
@@ -79418,7 +80234,7 @@ define('xblox/RunScript',[
     return register("d-xscript", [HTMLElement, CustomElement, _class]);
 });;
 define('delite/handlebars!deliteful/Button/Button.html',["delite/handlebars"], function(handlebars){
-	return handlebars.compile("<template attach-point=\"focusNode\">\n\t<span attach-point=\"iconNode\" class=\"d-icon {{this.iconClass ? this.iconClass : 'd-hidden'}}\" aria-hidden=\"true\"></span><span attach-point=\"labelNode\" d-hidden=\"{{!this.label}}\">{{label}}</span>\n</template>");
+	return handlebars.compile("<template attach-point=\"focusNode\">\n\t<span attach-point=\"iconNode\" class=\"d-icon {{this.iconClass ? this.iconClass : 'd-hidden'}}\" aria-hidden=\"true\"></span><span attach-point=\"labelNode\" d-shown=\"{{this.showLabel}}\">{{this.label}}</span>\n</template>");
 });;
 /** @module deliteful/Button */
 define('deliteful/Button',[
@@ -79426,11 +80242,10 @@ define('deliteful/Button',[
 	"requirejs-dplugins/has",
 	"delite/register",
 	"delite/Widget",
-	"delite/Container",
 	"requirejs-dplugins/has!bidi?./Button/bidi/Button",
 	"delite/handlebars!./Button/Button.html",
 	"delite/theme!./Button/themes/{{theme}}/Button.css"
-], function (dcl, has, register, Widget,Container, BidiButton, template) {
+], function (dcl, has, register, Widget, BidiButton, template) {
 
 	/**
 	 * A Non-templated form-aware button widget.
@@ -79448,7 +80263,7 @@ define('deliteful/Button',[
 	 * @class module:deliteful/Button
 	 * @augments module:delite/Widget
 	 */
-	var Button = dcl(Container, /** @lends module:deliteful/Button# */ {
+	var Button = dcl(Widget, /** @lends module:deliteful/Button# */ {
 
 		/**
 		 * The text to display in the button.
@@ -79471,19 +80286,27 @@ define('deliteful/Button',[
 		 */
 		baseClass: "d-button",
 
+		/**
+		 * If `true`, the button's label will be shown.
+		 * @member {boolean}
+		 * @default true
+		 */
+		showLabel: true,
+
 		template: template,
 
 		createdCallback: function () {
 			// Get label from innerHTML, and then clear it since we are to put the label in a <span>
 			if (!this.label) {
 				this.label = this.textContent.trim();
-				//this.innerHTML = "";
+				this.innerHTML = "";
 			}
 		},
 
-		computeProperties: function (props) {
-			if ("title" in props || "label" in props) {
-				this.title = this.title || this.label || "";
+		refreshRendering: function (props) {
+			if (("label" in props || "showLabel" in props) &&
+				(!this.title || this.title === ("label" in props ? props.label : this.label))) {
+				this.title = this.showLabel ? "" : this.label;
 			}
 		}
 	});
