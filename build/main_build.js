@@ -28981,9 +28981,9 @@ define('xapp/manager/Context',[
 ], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable,Types,has,on) {
 
     var isIDE = has('xcf-ui');
-    var debugWire = true;
-    var debugBoot = true;
-    var debugRun = true;
+    var debugWire = false;
+    var debugBoot = false;
+    var debugRun = false;
 
     /**
      * Lightweight context for end-user apps
@@ -30400,6 +30400,7 @@ define('xblox/model/Block',[
             '_deferredObject',
             '_return',
             'parent',
+            '__started',
             'ignoreSerialize',
             '_lastRunSettings',
             '_onLoaded',
@@ -30417,7 +30418,10 @@ define('xblox/model/Block',[
             'hasInlineEdits',
             '_loop',
             'help',
-            'owner'
+            'owner',
+            'allowActionOverride',
+            'canDelete',
+            'isCommand'
         ],
 
         //  standard call from interface
@@ -32910,7 +32914,7 @@ define('xblox/model/mqtt/Subscribe',[
                         value = utils.getAt(message,path,message);
                     }
 
-                    console.error('path=' + path + ' @ ' + message.topic,value);
+                    //console.error('path=' + path + ' @ ' + message.topic,value);
 
 
                     for(var n = 0; n < this.items.length ; n++)
@@ -38409,7 +38413,11 @@ define('xblox/model/code/RunScript',[
 
             //console.error('parse '+expression);
 
-            var _function = new Function("{" + expression + "}");
+            var _function = scope.expressionModel.expressionCache[expression];
+            if(!_function){
+                _function = scope.expressionModel.expressionCache[expression] = new Function("{" + expression + "}");
+            }
+
             //var _function = new Function(_script);
             var _args = thiz.getArgs(settings) || [];
             try {
@@ -39447,6 +39455,8 @@ define('xcf/model/Command',[
 
         _runningDfd:null,
 
+        __started:false,
+
         /**
          * onCommandFinish will be excecuted which a driver did run a command
          * @param msg {object}
@@ -39814,7 +39824,6 @@ define('xcf/model/Command',[
             this.inherited(arguments);
         },
         destroy:function () {
-            console.error('-destroy');
             this.reset();
         }
     });
@@ -45573,13 +45582,14 @@ define('xblox/model/Expression',[
             var parsed = this;
 
             try{
-                expression = this.replaceAll("''","'",expression);//weird!
-
+                expression = this.replaceAll("''","'",expression);
                 var _function = this.expressionCache[expression];
                 if(!_function){
                     _debug && console.log('create function ' + expression);
                     _function = new Function("{" +expression+"; }");
                     this.expressionCache[expression] = _function;
+                }else{
+
                 }
                 //parsed = (new Function("{" +expression+"; }")).call(this.context||{});
                 parsed = _function.call(expressionContext,args);
@@ -49240,7 +49250,6 @@ define('xcf/manager/DeviceManager',[
 
                 try {
                     _.each(initBlocks, function (block) {
-                        //console.error('start block '+block.id);
                         if (block.enabled !== false && block.__started!== true) {
                             block.solve(blockScope);
                             block.__started = true;
@@ -49255,9 +49264,10 @@ define('xcf/manager/DeviceManager',[
                 }));
 
                 for (var i = 0; i < autoBlocks.length; i++) {
-                    if(autoBlocks[i].enabled && autoBlocks[i].start && autoBlocks[i].__started!==true){
-                        autoBlocks[i].start();
-                        autoBlocks[i].__started=true;
+                    var block = autoBlocks[i];
+                    if(block.enabled && block.start &&  block.startup && block.__started!==true){
+                        block.start();
+                        block.__started=true;
                     }
                 }
             }
@@ -50638,71 +50648,87 @@ define('xcf/mixins/LogMixin',[
 
     return Module;
 });;
+/** @module xide/utils/StringUtils
+ *  @description All string related functions
+ */
 define('xide/utils/StringUtils',[
     'dojo/_base/lang',
     'xide/utils',
     'xide/types',
     'dojo/json',
     'xide/lodash'
-], function (lang, utils, types, json,_) {
+], function (lang, utils, types, json, _) {
 
     "use strict";
 
-    function getParameters (node) {
-        var par = ''
-        var checkboxes = node.querySelectorAll('input[type=checkbox]')
-        for (var c=0;c<checkboxes.length;c++) {
-            if (c>0) par += ';'
-            if (checkboxes[c].checked) par += checkboxes[c].dataset.fn
-            else par += ''
-        }
-
-        return par
-    }
-    function hex2char ( hex ) {
-        // converts a single hex number to a character
-        // note that no checking is performed to ensure that this is just a hex number, eg. no spaces etc
-        // hex: string, the hex codepoint to be converted
+    /**
+     * Converts a single hex number to a character. note that no checking is performed to ensure that this is just a hex
+     * number, eg. no spaces etc.
+     * @param hex {string} the hex codepoint to be converted.
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function hex2char(hex) {
         var result = '';
         var n = parseInt(hex, 16);
-        if (n <= 0xFFFF) { result += String.fromCharCode(n); }
+        if (n <= 0xFFFF) {
+            result += String.fromCharCode(n);
+        }
         else if (n <= 0x10FFFF) {
-            n -= 0x10000
+            n -= 0x10000;
             result += String.fromCharCode(0xD800 | (n >> 10)) + String.fromCharCode(0xDC00 | (n & 0x3FF));
         }
-        else { result += 'hex2Char error: Code point out of range: '+dec2hex(n); }
+        else {
+            result += 'hex2Char error: Code point out of range: ' + dec2hex(n);
+        }
         return result;
     }
-    function dec2char ( n ) {
-        // converts a single string representing a decimal number to a character
-        // note that no checking is performed to ensure that this is just a hex number, eg. no spaces etc
-        // dec: string, the dec codepoint to be converted
+
+    /**
+     * Converts a single string representing a decimal number to a character. Note that no checking is performed to
+     * ensure that this is just a hex number, eg. no spaces etc.
+     * @param n {string} dec: string, the dec codepoint to be converted
+     * @returns {string}
+     */
+    function dec2char(n) {
         var result = '';
-        if (n <= 0xFFFF) { result += String.fromCharCode(n); }
+        if (n <= 0xFFFF) {
+            result += String.fromCharCode(n);
+        }
         else if (n <= 0x10FFFF) {
-            n -= 0x10000
+            n -= 0x10000;
             result += String.fromCharCode(0xD800 | (n >> 10)) + String.fromCharCode(0xDC00 | (n & 0x3FF));
         }
-        else { result += 'dec2char error: Code point out of range: '+dec2hex(n); }
+        else {
+            result += 'dec2char error: Code point out of range: ' + dec2hex(n);
+        }
         return result;
     }
-    utils.dec2char = dec2char;
-    function dec2hex ( textString ) {
-        return (textString+0).toString(16).toUpperCase();
+
+    function dec2hex(textString) {
+        return (textString + 0).toString(16).toUpperCase();
     }
-    utils.dec2hex = dec2hex;
-    function dec2hex2 ( textString ) {
-        var hexequiv = new Array ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F");
+
+    var hexequiv = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"];
+
+    function dec2hex2(textString) {
         return hexequiv[(textString >> 4) & 0xF] + hexequiv[textString & 0xF];
     }
-    utils.dec2hex2 = dec2hex2;
-    function dec2hex4 ( textString ) {
-        var hexequiv = new Array ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F");
+
+
+
+    function dec2hex4(textString) {
         return hexequiv[(textString >> 12) & 0xF] + hexequiv[(textString >> 8) & 0xF]
             + hexequiv[(textString >> 4) & 0xF] + hexequiv[textString & 0xF];
     }
-    utils.dec2hex4 = dec2hex4;
-    function convertChar2CP ( textString ) {
+
+    /**
+     *
+     * @param textString {string}
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertChar2CP(textString) {
         var haut = 0;
         var n = 0;
         var CPstring = '';
@@ -50729,150 +50755,143 @@ define('xide/utils/StringUtils',[
                 CPstring += dec2hex(b) + ' ';
             }
         }
-        return CPstring.substring(0, CPstring.length-1);
+        return CPstring.substring(0, CPstring.length - 1);
     }
 
-    var text =  "ESC/VP.net 0x10 0x03 0x00 0x00 0x00 0x00";
-
-    //var text =  "0x20 0x20";
-
-
-    function removeWhitespacesFromHexSequence( str ) {
-        // converts a string containing &#x...; escapes to a string of characters
-        // str: string, the input
-
+    /**
+     * Converts a string containing &#x...; escapes to a string of characters.
+     * @param str {string}
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function removeWhitespacesFromHexSequence(str) {
         // convert up to 6 digit escapes to characters
-
         str = str.replace(/0x([A-Fa-f0-9]{1,4})(\s)?/g,
-            function(matchstr, parens) {
+            function (matchstr, parens) {
                 var result = hex2char(parens);
-                //console.log('match : ' + matchstr + ' _ ' + parens + ' = ' + result);
                 return hex2char(parens);
             }
         );
-        /*
-        str = str.replace(/&#x([A-Fa-f0-9]{1,6});/g,
-            function(matchstr, parens) {
-                return hex2char(parens);
-            }
-        );
-        */
         return str;
     }
 
-
-// ========================== Converting to characters ==============================================
-    function convertAllEscapes (str, numbers) {
-        // converts all escapes in the text str to characters, and can interpret numbers as escapes too
-        // str: string, the text to be converted
-        // numbers: string enum [none, hex, dec, utf8, utf16], what to treat numbers as
-
+    utils.dec2hex4 = dec2hex4;
+    utils.dec2hex = dec2hex;
+    utils.dec2char = dec2char;
+    utils.dec2hex2 = dec2hex2;
+    // ========================== Converting to characters ==============================================
+    /**
+     * Converts all escapes in the text str to characters, and can interpret numbers as escapes too.
+     * @param str {string} the text to be converted.
+     * @param numbers {string} enum [none, hex, dec, utf8, utf16], what to treat numbers as.
+     * @returns {string|*}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertAllEscapes(str, numbers) {
         var sle = false;
         str = convertUnicode2Char(str);
         str = removeWhitespacesFromHexSequence(str);
 
         str = convertZeroX2Char(str);
-        str = convertHexNCR2Char(str); 
-        str = convertDecNCR2Char(str); 
-        if (sle) { 
-            str = convertjEsc2Char(str, true); 
+        str = convertHexNCR2Char(str);
+        str = convertDecNCR2Char(str);
+        if (sle) {
+            str = convertjEsc2Char(str, true);
         }
-        else { 
-            str = convertjEsc2Char(str, false); 
-            str = convertCSS2Char(str, false); 
-        } 
-        str = convertpEnc2Char(str);  
-        str = convertEntities2Char(str); 
-        str = convertNumbers2Char(str, numbers); 
+        else {
+            str = convertjEsc2Char(str, false);
+            str = convertCSS2Char(str, false);
+        }
+        str = convertpEnc2Char(str);
+        str = convertEntities2Char(str);
+        str = convertNumbers2Char(str, numbers);
 
         return str;
     }
 
-
-    function convertUnicode2Char ( str ) {
-        // converts a string containing U+... escapes to a string of characters
-        // str: string, the input
-
+    /**
+     * Converts a string containing U+... escapes to a string of characters.
+     * @param str {string} the input
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertUnicode2Char(str) {
         // first convert the 6 digit escapes to characters
         str = str.replace(/[Uu]\+10([A-Fa-f0-9]{4})/g,
-            function(matchstr, parens) {
-                return hex2char('10'+parens);
+            function (matchstr, parens) {
+                return hex2char('10' + parens);
             }
         );
         // next convert up to 5 digit escapes to characters
         str = str.replace(/[Uu]\+([A-Fa-f0-9]{1,5})/g,
-            function(matchstr, parens) {
+            function (matchstr, parens) {
                 return hex2char(parens);
             }
         );
         return str;
     }
 
-    utils.convertUnicode2Char = convertUnicode2Char;
-    
-    function oldconvertUnicode2Char ( str ) {
-        // converts a string containing U+... escapes to a string of characters
-        // str: string, the input
-
-        // first convert the 6 digit escapes to characters
-        str = str.replace(/U\+10([A-Fa-f0-9]{4})/g,
-            function(matchstr, parens) {
-                return hex2char('10'+parens);
-            }
-        );
-        // next convert up to 5 digit escapes to characters
-        str = str.replace(/U\+([A-Fa-f0-9]{1,5})/g,
-            function(matchstr, parens) {
-                return hex2char(parens);
-            }
-        );
-        return str;
-    }
-    function convertHexNCR2Char ( str ) {
-        // converts a string containing &#x...; escapes to a string of characters
-        // str: string, the input
-
+    /**
+     * Converts a string containing &#x...; escapes to a string of characters
+     * @param str
+     * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertHexNCR2Char(str) {
         // convert up to 6 digit escapes to characters
         str = str.replace(/&#x([A-Fa-f0-9]{1,6});/g,
-            function(matchstr, parens) {
+            function (matchstr, parens) {
                 return hex2char(parens);
             }
         );
         return str;
     }
-    function convertDecNCR2Char ( str ) {
-        // converts a string containing &#...; escapes to a string of characters
-        // str: string, the input
+
+    /**
+     * Converts a string containing &#...; escapes to a string of characters
+     * @param str
+     * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertDecNCR2Char(str) {
 
         // convert up to 6 digit escapes to characters
         str = str.replace(/&#([0-9]{1,7});/g,
-            function(matchstr, parens) {
+            function (matchstr, parens) {
                 return dec2char(parens);
             }
         );
         return str;
     }
-    function convertZeroX2Char ( str ) {
-        // converts a string containing 0x... escapes to a string of characters
-        // str: string, the input
 
-        // convert up to 6 digit escapes to characters
+    /**
+     * Converts a string containing 0x... escapes to a string of characters, up to 6 digit escapes to characters.
+     * @param str
+     * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertZeroX2Char(str) {
+        //
         str = str.replace(/0x([A-Fa-f0-9]{1,6})/g,
-            function(matchstr, parens) {
+            function (matchstr, parens) {
                 return hex2char(parens);
             }
         );
         return str;
     }
-    function convertCSS2Char ( str, convertbackslash ) {
-        // converts a string containing CSS escapes to a string of characters
-        // str: string, the input
-        // convertbackslash: boolean, true if you want \x etc to become x or \a to be treated as 0xA
 
-        // convert up to 6 digit escapes to characters & throw away any following whitespace
+    /**
+     * Converts a string containing CSS escapes to a string of characters, up to 6 digit escapes to characters & throw
+     * away any following whitespace.
+     * @param str {string} str: string, the input
+     * @param convertbackslash {boolean} true if you want \x etc to become x or \a to be treated as 0xA
+     * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertCSS2Char(str, convertbackslash) {
         if (convertbackslash) {
             str = str.replace(/\\([A-Fa-f0-9]{1,6})(\s)?/g,
-                function(matchstr, parens) {
+                function (matchstr, parens) {
                     return hex2char(parens);
                 }
             );
@@ -50880,39 +50899,42 @@ define('xide/utils/StringUtils',[
         }
         else {
             str = str.replace(/\\([A-Fa-f0-9]{2,6})(\s)?/g,
-                function(matchstr, parens) {
+                function (matchstr, parens) {
                     return hex2char(parens);
                 }
             );
         }
         return str;
     }
-    function convertjEsc2Char ( str, shortEscapes ) {
-        // converts a string containing JavaScript or Java escapes to a string of characters
-        // str: string, the input
-        // shortEscapes: boolean, if true the function will convert \b etc to characters
 
+    /**
+     * Converts a string containing JavaScript or Java escapes to a string of characters
+     * @param str {string} str: string, the input
+     * @param shortEscapes {boolean} if true the function will convert \b etc to characters
+     * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertjEsc2Char(str, shortEscapes) {
         // convert ES6 escapes to characters
         str = str.replace(/\\u\{([A-Fa-f0-9]{1,})\}/g,
-            function(matchstr, parens) {
+            function (matchstr, parens) {
                 return hex2char(parens);
             }
         );
         // convert \U and 6 digit escapes to characters
         str = str.replace(/\\U([A-Fa-f0-9]{8})/g,
-            function(matchstr, parens) {
+            function (matchstr, parens) {
                 return hex2char(parens);
             }
         );
         // convert \u and 6 digit escapes to characters
         str = str.replace(/\\u([A-Fa-f0-9]{4})/g,
-            function(matchstr, parens) {
+            function (matchstr, parens) {
                 return hex2char(parens);
             }
         );
         // convert \b etc to characters, if flag set
         if (shortEscapes) {
-            //str = str.replace(/\\0/g, '\0');
             str = str.replace(/\\b/g, '\b');
             str = str.replace(/\\t/g, '\t');
             str = str.replace(/\\n/g, '\n');
@@ -50925,62 +50947,76 @@ define('xide/utils/StringUtils',[
         }
         return str;
     }
-    function convertpEnc2Char ( str ) {
-        // converts a string containing precent encoded escapes to a string of characters
-        // str: string, the input
 
+    /**
+     * Converts a string containing precent encoded escapes to a string of characters
+     * @param str {string} the input
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertpEnc2Char(str) {
         // find runs of hex numbers separated by % and send them for conversion
         str = str.replace(/((%[A-Fa-f0-9]{2})+)/g,
-            function(matchstr, parens) {
+            function (matchstr, parens) {
                 //return convertpEsc2Char(parens.replace(/%/g,' '));
                 return convertpEsc2Char(parens);
             }
         );
         return str;
     }
-    function convertEntities2Char ( str ) {
-        // converts a string containing HTML/XML character entities to a string of characters
-        // str: string, the input
 
+    /**
+     * converts a string containing HTML/XML character entities to a string of characters
+     * @param str {string} the input
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertEntities2Char(str) {
         str = str.replace(/&([A-Za-z0-9]+);/g,
-            function(matchstr, parens) { //alert(parens);
-                if (parens in entities) { //alert(entities[parens]);
+            function (matchstr, parens) {
+                if (parens in entities) {
                     return entities[parens];
                 }
-                else { return matchstr; }						}
+                else {
+                    return matchstr;
+                }
+            }
         );
         return str;
     }
-    function convertNumbers2Char ( str, type ) {
-        // converts a string containing HTML/XML character entities to a string of characters
-        // str: string, the input
-        // type: string enum [none, hex, dec, utf8, utf16], what to treat numbers as
 
+    /**
+     * Converts a string containing HTML/XML character entities to a string of characters
+     * @param str {string} the input
+     * @param type {string} none, hex, dec, utf8, utf16. what to treat numbers as
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertNumbers2Char(str, type) {
         if (type == 'hex') {
             str = str.replace(/(\b[A-Fa-f0-9]{2,6}\b)/g,
-                function(matchstr, parens) {
+                function (matchstr, parens) {
                     return hex2char(parens);
                 }
             );
         }
         else if (type == 'dec') {
             str = str.replace(/(\b[0-9]+\b)/g,
-                function(matchstr, parens) {
+                function (matchstr, parens) {
                     return dec2char(parens);
                 }
             );
         }
         else if (type == 'utf8') {
             str = str.replace(/(( [A-Fa-f0-9]{2})+)/g,
-                //str = str.replace(/((\b[A-Fa-f0-9]{2}\b)+)/g,
-                function(matchstr, parens) {
+                function (matchstr, parens) {
                     return convertUTF82Char(parens);
                 }
             );
         }
         else if (type == 'utf16') {
             str = str.replace(/(( [A-Fa-f0-9]{1,6})+)/g,
-                function(matchstr, parens) {
+                function (matchstr, parens) {
                     return convertUTF162Char(parens);
                 }
             );
@@ -50989,62 +51025,44 @@ define('xide/utils/StringUtils',[
     }
 
     /**
-     *
-     * @param bufferString {String} The serialized buffer formatted as 00,02 (decimal values)
-     * @returns {String} The hex version of the buffer string
+     * Converts to characters a sequence of space-separated hex numbers representing bytes in utf8.
+     * @param str {string} the input
+     * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
      */
-    utils.bufferToHexString=function(bufferString){
-        var bytesArray = bufferString.indexOf(',')!==-1 ? bufferString.split(',') : [bufferString];
-        var tmp = [];
-        for (var i = 0; i < bytesArray.length; i++) {
-            var dec = bytesArray[i];
-            tmp.push(utils.dec2hex2(dec))
-        }
-        return tmp.join(" ");
-    }
-
-    /**
-     *
-     * @param bufferString {String} The serialized buffer formatted as 00,02 (decimal values)
-     * @returns {Array[integer]} The integer array
-     */
-    utils.bufferFromDecString=function(bufferString){
-        var bytesArray = bufferString.indexOf(',')!==-1 ? bufferString.split(',') : [bufferString];
-        for (var i = 0; i < bytesArray.length; i++) {
-            bytesArray[i] = parseInt(bytesArray[i]);
-        }
-        return bytesArray;
-    }
-
-    function convertUTF82Char ( str ) {
-        // converts to characters a sequence of space-separated hex numbers representing bytes in utf8
-        // str: string, the sequence to be converted
+    function convertUTF82Char(str) {
         var outputString = "";
         var counter = 0;
         var n = 0;
 
         // remove leading and trailing spaces
         str = str.replace(/^\s+/, '');
-        str = str.replace(/\s+$/,'');
-        if (str.length == 0) { return ""; }
+        str = str.replace(/\s+$/, '');
+        if (str.length == 0) {
+            return "";
+        }
         str = str.replace(/\s+/g, ' ');
 
         var listArray = str.split(' ');
-        for ( var i = 0; i < listArray.length; i++ ) {
+        for (var i = 0; i < listArray.length; i++) {
             var b = parseInt(listArray[i], 16);  // alert('b:'+dec2hex(b));
             switch (counter) {
                 case 0:
                     if (0 <= b && b <= 0x7F) {  // 0xxxxxxx
-                        outputString += dec2char(b); }
+                        outputString += dec2char(b);
+                    }
                     else if (0xC0 <= b && b <= 0xDF) {  // 110xxxxx
                         counter = 1;
-                        n = b & 0x1F; }
+                        n = b & 0x1F;
+                    }
                     else if (0xE0 <= b && b <= 0xEF) {  // 1110xxxx
                         counter = 2;
-                        n = b & 0xF; }
+                        n = b & 0xF;
+                    }
                     else if (0xF0 <= b && b <= 0xF7) {  // 11110xxx
                         counter = 3;
-                        n = b & 0x7; }
+                        n = b & 0x7;
+                    }
                     else {
                         outputString += 'convertUTF82Char: error1 ' + dec2hex(b) + '! ';
                     }
@@ -51054,37 +51072,43 @@ define('xide/utils/StringUtils',[
                         outputString += 'convertUTF82Char: error2 ' + dec2hex(b) + '! ';
                     }
                     counter--;
-                    outputString += dec2char((n << 6) | (b-0x80));
+                    outputString += dec2char((n << 6) | (b - 0x80));
                     n = 0;
                     break;
-                case 2: case 3:
-                if (b < 0x80 || b > 0xBF) {
-                    outputString += 'convertUTF82Char: error3 ' + dec2hex(b) + '! ';
-                }
-                n = (n << 6) | (b-0x80);
-                counter--;
-                break;
+                case 2:
+                case 3:
+                    if (b < 0x80 || b > 0xBF) {
+                        outputString += 'convertUTF82Char: error3 ' + dec2hex(b) + '! ';
+                    }
+                    n = (n << 6) | (b - 0x80);
+                    counter--;
+                    break;
             }
         }
         return outputString.replace(/ $/, '');
     }
-    function convertUTF162Char ( str ) {
-        // Converts a string of UTF-16 code units to characters
-        // str: sequence of UTF16 code units, separated by spaces
+
+    /**
+     * Converts a string of UTF-16 code units to characters
+     * @param str {string} the input, the equence of UTF16 code units, separated by spaces.
+     * @returns {string|null}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertUTF162Char(str) {
         var highsurrogate = 0;
-        var suppCP;
-        var n = 0;
         var outputString = '';
 
         // remove leading and multiple spaces
-        str = str.replace(/^\s+/,'');
-        str = str.replace(/\s+$/,'');
-        if (str.length == 0){ return; }
-        str = str.replace(/\s+/g,' ');
+        str = str.replace(/^\s+/, '');
+        str = str.replace(/\s+$/, '');
+        if (str.length == 0) {
+            return null;
+        }
+        str = str.replace(/\s+/g, ' ');
 
         var listArray = str.split(' ');
         for (var i = 0; i < listArray.length; i++) {
-            var b = parseInt(listArray[i], 16); //alert(listArray[i]+'='+b);
+            var b = parseInt(listArray[i], 16);
             if (b < 0 || b > 0xFFFF) {
                 outputString += '!Error in convertUTF162Char: unexpected value, b=' + dec2hex(b) + '!';
             }
@@ -51108,30 +51132,38 @@ define('xide/utils/StringUtils',[
         }
         return outputString;
     }
-    function convertpEsc2Char ( str ) {
-        // converts to characters a sequence of %-separated hex numbers representing bytes in utf8
-        // str: string, the sequence to be converted
 
+    /**
+     * Converts to characters a sequence of %-separated hex numbers representing bytes in utf8.
+     * @param str {string} the input
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertpEsc2Char(str) {
         var outputString = "";
         var counter = 0;
         var n = 0;
 
         var listArray = str.split('%');
-        for ( var i = 1; i < listArray.length; i++ ) {
-            var b = parseInt(listArray[i], 16);  // alert('b:'+dec2hex(b));
+        for (var i = 1; i < listArray.length; i++) {
+            var b = parseInt(listArray[i], 16);
             switch (counter) {
                 case 0:
-                    if (0 <= b && b <= 0x7F) {  // 0xxxxxxx
-                        outputString += dec2char(b); }
+                    if (0 <= b && b <= 0x7F) { // 0xxxxxxx
+                        outputString += dec2char(b);
+                    }
                     else if (0xC0 <= b && b <= 0xDF) {  // 110xxxxx
                         counter = 1;
-                        n = b & 0x1F; }
+                        n = b & 0x1F;
+                    }
                     else if (0xE0 <= b && b <= 0xEF) {  // 1110xxxx
                         counter = 2;
-                        n = b & 0xF; }
+                        n = b & 0xF;
+                    }
                     else if (0xF0 <= b && b <= 0xF7) {  // 11110xxx
                         counter = 3;
-                        n = b & 0x7; }
+                        n = b & 0x7;
+                    }
                     else {
                         outputString += 'convertpEsc2Char: error ' + dec2hex(b) + '! ';
                     }
@@ -51141,107 +51173,116 @@ define('xide/utils/StringUtils',[
                         outputString += 'convertpEsc2Char: error ' + dec2hex(b) + '! ';
                     }
                     counter--;
-                    outputString += dec2char((n << 6) | (b-0x80));
+                    outputString += dec2char((n << 6) | (b - 0x80));
                     n = 0;
                     break;
-                case 2: case 3:
-                if (b < 0x80 || b > 0xBF) {
-                    outputString += 'convertpEsc2Char: error ' + dec2hex(b) + '! ';
-                }
-                n = (n << 6) | (b-0x80);
-                counter--;
-                break;
+                case 2:
+                case 3:
+                    if (b < 0x80 || b > 0xBF) {
+                        outputString += 'convertpEsc2Char: error ' + dec2hex(b) + '! ';
+                    }
+                    n = (n << 6) | (b - 0x80);
+                    counter--;
+                    break;
             }
         }
         return outputString;
     }
-    function convertXML2Char (str) {
-        // converts XML or HTML text to characters by removing all character entities and ncrs
-        // str: string, the sequence to be converted
 
+    /**
+     * Converts XML or HTML text to characters by removing all character entities and ncrs.
+     * @param str {string} the input
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertXML2Char(str) {
         // remove various escaped forms
         str = convertHexNCR2Char(str);
         str = convertDecNCR2Char(str);
         str = convertEntities2Char(str);
-
         return str;
     }
-    
+
     utils.convertUTF82Char = convertUTF82Char;
     utils.convertUTF162Char = convertUTF162Char;
-    
-// ============================== Convert to escapes ===============================================
+    utils.convertUnicode2Char = convertUnicode2Char;
 
-    function convertCharStr2XML ( str, parameters ) {
-        // replaces xml/html syntax-sensitive characters in a string with entities
-        // also replaces invisible and ambiguous characters with escapes (list to be extended)
-        // str: string, the input string
-        // convertinvisibles: boolean, if true, invisible characters are converted to NCRs
+    // ============================== Convert to escapes ===============================================
+
+    /**
+     * replaces xml/html syntax-sensitive characters in a string with entities
+     * also replaces invisible and ambiguous characters with escapes (list to be extended).
+     * @param str
+     * @param parameters {boolean] if true, invisible characters are converted to NCRs
+     * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertCharStr2XML(str, parameters) {
         // bidimarkup: boolean, if true, bidi rle/lre/pdf/rli/lri/fsi/pdi characters are converted to markup
-        str = str.replace(/&/g, '&amp;')
-        str = str.replace(/"/g, '&quot;')
-        str = str.replace(/</g, '&lt;')
-        str = str.replace(/>/g, '&gt;')
+        str = str.replace(/&/g, '&amp;');
+        str = str.replace(/"/g, '&quot;');
+        str = str.replace(/</g, '&lt;');
+        str = str.replace(/>/g, '&gt;');
 
         // replace invisible and ambiguous characters
         if (parameters.match(/convertinvisibles/)) {
-            str = str.replace(/\u2066/g, '&#x2066;')  // lri
-            str = str.replace(/\u2067/g, '&#x2067;')  // rli
-            str = str.replace(/\u2068/g, '&#x2068;')  // fsi
-            str = str.replace(/\u2069/g, '&#x2069;')  // pdi
+            str = str.replace(/\u2066/g, '&#x2066;');  // lri
+            str = str.replace(/\u2067/g, '&#x2067;');  // rli
+            str = str.replace(/\u2068/g, '&#x2068;');  // fsi
+            str = str.replace(/\u2069/g, '&#x2069;');  // pdi
 
-            str = str.replace(/\u202A/g, '&#x202A;') // lre
-            str = str.replace(/\u202B/g, '&#x202B;') // rle
-            str = str.replace(/\u202D/g, '&#x202D;') // lro
-            str = str.replace(/\u202E/g, '&#x202E;') // rlo
-            str = str.replace(/\u202C/g, '&#x202C;') // pdf
-            str = str.replace(/\u200E/g, '&#x200E;') // lrm
-            str = str.replace(/\u200F/g, '&#x200F;') // rlm
+            str = str.replace(/\u202A/g, '&#x202A;'); // lre
+            str = str.replace(/\u202B/g, '&#x202B;'); // rle
+            str = str.replace(/\u202D/g, '&#x202D;'); // lro
+            str = str.replace(/\u202E/g, '&#x202E;'); // rlo
+            str = str.replace(/\u202C/g, '&#x202C;'); // pdf
+            str = str.replace(/\u200E/g, '&#x200E;'); // lrm
+            str = str.replace(/\u200F/g, '&#x200F;'); // rlm
 
-            str = str.replace(/\u2000/g, '&#x2000;') // en quad
-            str = str.replace(/\u2001/g, '&#x2001;') // em quad
-            str = str.replace(/\u2002/g, '&#x2002;') // en space
-            str = str.replace(/\u2003/g, '&#x2003;') // em space
-            str = str.replace(/\u2004/g, '&#x2004;') // 3 per em space
-            str = str.replace(/\u2005/g, '&#x2005;') // 4 per em space
-            str = str.replace(/\u2006/g, '&#x2006;') // 6 per em space
-            str = str.replace(/\u2007/g, '&#x2007;') // figure space
-            str = str.replace(/\u2008/g, '&#x2008;') // punctuation space
-            str = str.replace(/\u2009/g, '&#x2009;') // thin space
-            str = str.replace(/\u200A/g, '&#x200A;') // hair space
-            str = str.replace(/\u200B/g, '&#x200B;') // zwsp
-            str = str.replace(/\u205F/g, '&#x205F;') // mmsp
-            str = str.replace(/\uA0/g, '&#xA0;') // nbsp
-            str = str.replace(/\u3000/g, '&#x3000;') // ideographic sp
-            str = str.replace(/\u202F/g, '&#x202F;') // nnbsp
+            str = str.replace(/\u2000/g, '&#x2000;'); // en quad
+            str = str.replace(/\u2001/g, '&#x2001;'); // em quad
+            str = str.replace(/\u2002/g, '&#x2002;'); // en space
+            str = str.replace(/\u2003/g, '&#x2003;'); // em space
+            str = str.replace(/\u2004/g, '&#x2004;'); // 3 per em space
+            str = str.replace(/\u2005/g, '&#x2005;'); // 4 per em space
+            str = str.replace(/\u2006/g, '&#x2006;'); // 6 per em space
+            str = str.replace(/\u2007/g, '&#x2007;'); // figure space
+            str = str.replace(/\u2008/g, '&#x2008;'); // punctuation space
+            str = str.replace(/\u2009/g, '&#x2009;'); // thin space
+            str = str.replace(/\u200A/g, '&#x200A;'); // hair space
+            str = str.replace(/\u200B/g, '&#x200B;'); // zwsp
+            str = str.replace(/\u205F/g, '&#x205F;'); // mmsp
+            //str = str.replace(/\uA0/g, '&#xA0;') // nbsp
+            str = str.replace(/\u3000/g, '&#x3000;'); // ideographic sp
+            str = str.replace(/\u202F/g, '&#x202F;'); // nnbsp
 
-            str = str.replace(/\u180B/g, '&#x180B;') // mfvs1
-            str = str.replace(/\u180C/g, '&#x180C;') // mfvs2
-            str = str.replace(/\u180D/g, '&#x180D;') // mfvs3
+            str = str.replace(/\u180B/g, '&#x180B;'); // mfvs1
+            str = str.replace(/\u180C/g, '&#x180C;'); // mfvs2
+            str = str.replace(/\u180D/g, '&#x180D;'); // mfvs3
 
-            str = str.replace(/\u200C/g, '&#x200C;') // zwnj
-            str = str.replace(/\u200D/g, '&#x200D;') // zwj
-            str = str.replace(/\u2028/g, '&#x2028;') // line sep
-            str = str.replace(/\u206A/g, '&#x206A;') // iss
-            str = str.replace(/\u206B/g, '&#x206B;') // ass
-            str = str.replace(/\u206C/g, '&#x206C;') // iafs
-            str = str.replace(/\u206D/g, '&#x206D;') // aafs
-            str = str.replace(/\u206E/g, '&#x206E;') // nads
-            str = str.replace(/\u206F/g, '&#x206F;') // nods
+            str = str.replace(/\u200C/g, '&#x200C;'); // zwnj
+            str = str.replace(/\u200D/g, '&#x200D;'); // zwj
+            str = str.replace(/\u2028/g, '&#x2028;'); // line sep
+            str = str.replace(/\u206A/g, '&#x206A;'); // iss
+            str = str.replace(/\u206B/g, '&#x206B;'); // ass
+            str = str.replace(/\u206C/g, '&#x206C;'); // iafs
+            str = str.replace(/\u206D/g, '&#x206D;'); // aafs
+            str = str.replace(/\u206E/g, '&#x206E;'); // nads
+            str = str.replace(/\u206F/g, '&#x206F;'); // nods
         }
 
         // convert lre/rle/pdf/rli/lri/fsi/pdi to markup
         if (parameters.match(/bidimarkup/)) {
-            str = str.replace(/\u2066/g, '&lt;span dir=&quot;ltr&quot;&gt;') // lri
-            str = str.replace(/\u2067/g, '&lt;span dir=&quot;rtl&quot;&gt;') // rli
-            str = str.replace(/\u2068/g, '&lt;span dir=&quot;auto&quot;&gt;') // fsi
-            str = str.replace(/\u2069/g, '&lt;/span&gt;') // pdi
+            str = str.replace(/\u2066/g, '&lt;span dir=&quot;ltr&quot;&gt;'); // lri
+            str = str.replace(/\u2067/g, '&lt;span dir=&quot;rtl&quot;&gt;'); // rli
+            str = str.replace(/\u2068/g, '&lt;span dir=&quot;auto&quot;&gt;'); // fsi
+            str = str.replace(/\u2069/g, '&lt;/span&gt;'); // pdi
 
-            str = str.replace(/\u202A/g, '&lt;span dir=&quot;ltr&quot;&gt;') //
-            str = str.replace(/\u202B/g, '&lt;span dir=&quot;rtl&quot;&gt;')
-            str = str.replace(/\u202C/g, '&lt;/span&gt;')
-            str = str.replace(/&#x202A;/g, '&lt;span dir=&quot;ltr&quot;&gt;')
-            str = str.replace(/&#x202B;/g, '&lt;span dir=&quot;rtl&quot;&gt;')
+            str = str.replace(/\u202A/g, '&lt;span dir=&quot;ltr&quot;&gt;'); //
+            str = str.replace(/\u202B/g, '&lt;span dir=&quot;rtl&quot;&gt;');
+            str = str.replace(/\u202C/g, '&lt;/span&gt;');
+            str = str.replace(/&#x202A;/g, '&lt;span dir=&quot;ltr&quot;&gt;');
+            str = str.replace(/&#x202B;/g, '&lt;span dir=&quot;rtl&quot;&gt;');
             //str = str.replace(/\u202D/g, '&lt;bdo dir=&quot;ltr&quot;&gt;')
             //str = str.replace(/\u202E/g, '&lt;bdo dir=&quot;rtl&quot;&gt;')
             str = str.replace(/&#x202C;/g, '&lt;/span&gt;')
@@ -51249,16 +51290,22 @@ define('xide/utils/StringUtils',[
 
         return str;
     }
-    function convertCharStr2SelectiveCPs ( str, parameters, pad, before, after, base ) {
-        // converts a string of characters to code points or code point based escapes
-        // str: string, the string to convert
-        // parameters: string enum [ascii, latin1], a set of characters to not convert
-        // pad: boolean, if true, hex numbers lower than 1000 are padded with zeros
-        // before: string, any characters to include before a code point (eg. &#x for NCRs)
-        // after: string, any characters to include after (eg. ; for NCRs)
-        // base: string enum [hex, dec], hex or decimal output
+
+    /**
+     * Converts a string of characters to code points or code point based escapes.
+     * @param str {string} the input
+     * @param parameters {string} enum [ascii, latin1], a set of characters to not convert.
+     * @param pad {boolean} if true, hex numbers lower than 1000 are padded with zeros.
+     * @param before {string} any characters to include before a code point (eg. &#x for NCRs).
+     * @param after {string} any characters to include after (eg. ; for NCRs).
+     * @param base {string] enum [hex, dec], hex or decimal output.
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertCharStr2SelectiveCPs(str, parameters, pad, before, after, base) {
         var haut = 0;
-        var n = 0; var cp;
+        var n = 0;
+        var cp;
         var CPstring = '';
         for (var i = 0; i < str.length; i++) {
             var b = str.charCodeAt(i);
@@ -51270,7 +51317,8 @@ define('xide/utils/StringUtils',[
                     if (base == 'hex') {
                         CPstring += before + dec2hex(0x10000 + ((haut - 0xD800) << 10) + (b - 0xDC00)) + after;
                     }
-                    else { cp = 0x10000 + ((haut - 0xD800) << 10) + (b - 0xDC00);
+                    else {
+                        cp = 0x10000 + ((haut - 0xD800) << 10) + (b - 0xDC00);
                         CPstring += before + cp + after;
                     }
                     haut = 0;
@@ -51294,53 +51342,99 @@ define('xide/utils/StringUtils',[
                 else {
                     if (base == 'hex') {
                         cp = dec2hex(b);
-                        if (pad) { while (cp.length < 4) { cp = '0'+cp; } }
+                        if (pad) {
+                            while (cp.length < 4) {
+                                cp = '0' + cp;
+                            }
+                        }
                     }
-                    else { cp = b; }
+                    else {
+                        cp = b;
+                    }
                     CPstring += before + cp + after;
                 }
             }
         }
         return CPstring;
     }
-    function convertCharStr2HexNCR ( textString ) {
+
+    /**
+     * 
+     * @param textString
+     * @returns {string}
+     */
+    function convertCharStr2HexNCR(textString) {
         var outputString = "";
         textString = textString.replace(/^\s+/, '');
-        if (textString.length == 0) { return ""; }
+        if (textString.length == 0) {
+            return "";
+        }
         textString = textString.replace(/\s+/g, ' ');
         var listArray = textString.split(' ');
-        for ( var i = 0; i < listArray.length; i++ ) {
+        for (var i = 0; i < listArray.length; i++) {
             var n = parseInt(listArray[i], 16);
             outputString += '&#x' + dec2hex(n) + ';';
         }
-        return( outputString );
+        return ( outputString );
     }
-    function convertCharStr2pEsc ( str ) {
-        // str: sequence of Unicode characters
+
+    /**
+     * 
+     * @param str {string] sequence of Unicode characters
+     * @returns {string}
+     */
+    function convertCharStr2pEsc(str) {
         var outputString = "";
         var CPstring = convertChar2CP(str);
-        if (str.length == 0) { return ""; }
+        if (str.length == 0) {
+            return "";
+        }
         // process each codepoint
         var listArray = CPstring.split(' ');
-        for ( var i = 0; i < listArray.length; i++ ) {
+        for (var i = 0; i < listArray.length; i++) {
             var n = parseInt(listArray[i], 16);
             //if (i > 0) { outputString += ' ';}
-            if (n == 0x20) { outputString += '%20'; }
-            else if (n >= 0x41 && n <= 0x5A) { outputString += String.fromCharCode(n); } // alpha
-            else if (n >= 0x61 && n <= 0x7A) { outputString += String.fromCharCode(n); } // alpha
-            else if (n >= 0x30 && n <= 0x39) { outputString += String.fromCharCode(n); } // digits
-            else if (n == 0x2D || n == 0x2E || n == 0x5F || n == 0x7E) { outputString += String.fromCharCode(n); } // - . _ ~
-            else if (n <= 0x7F) { outputString += '%'+dec2hex2(n); }
-            else if (n <= 0x7FF) { outputString += '%'+dec2hex2(0xC0 | ((n>>6) & 0x1F)) + '%' + dec2hex2(0x80 | (n & 0x3F)); }
-            else if (n <= 0xFFFF) { outputString += '%'+dec2hex2(0xE0 | ((n>>12) & 0x0F)) + '%' + dec2hex2(0x80 | ((n>>6) & 0x3F)) + '%' + dec2hex2(0x80 | (n & 0x3F)); }
-            else if (n <= 0x10FFFF) {outputString += '%'+dec2hex2(0xF0 | ((n>>18) & 0x07)) + '%' + dec2hex2(0x80 | ((n>>12) & 0x3F)) + '%' + dec2hex2(0x80 | ((n>>6) & 0x3F)) + '%' + dec2hex2(0x80 | (n & 0x3F)); }
-            else { outputString += '!Error ' + dec2hex(n) +'!'; }
+            if (n == 0x20) {
+                outputString += '%20';
+            }
+            else if (n >= 0x41 && n <= 0x5A) {
+                outputString += String.fromCharCode(n);
+            } // alpha
+            else if (n >= 0x61 && n <= 0x7A) {
+                outputString += String.fromCharCode(n);
+            } // alpha
+            else if (n >= 0x30 && n <= 0x39) {
+                outputString += String.fromCharCode(n);
+            } // digits
+            else if (n == 0x2D || n == 0x2E || n == 0x5F || n == 0x7E) {
+                outputString += String.fromCharCode(n);
+            } // - . _ ~
+            else if (n <= 0x7F) {
+                outputString += '%' + dec2hex2(n);
+            }
+            else if (n <= 0x7FF) {
+                outputString += '%' + dec2hex2(0xC0 | ((n >> 6) & 0x1F)) + '%' + dec2hex2(0x80 | (n & 0x3F));
+            }
+            else if (n <= 0xFFFF) {
+                outputString += '%' + dec2hex2(0xE0 | ((n >> 12) & 0x0F)) + '%' + dec2hex2(0x80 | ((n >> 6) & 0x3F)) + '%' + dec2hex2(0x80 | (n & 0x3F));
+            }
+            else if (n <= 0x10FFFF) {
+                outputString += '%' + dec2hex2(0xF0 | ((n >> 18) & 0x07)) + '%' + dec2hex2(0x80 | ((n >> 12) & 0x3F)) + '%' + dec2hex2(0x80 | ((n >> 6) & 0x3F)) + '%' + dec2hex2(0x80 | (n & 0x3F));
+            }
+            else {
+                outputString += '!Error ' + dec2hex(n) + '!';
+            }
         }
-        return( outputString );
+        return ( outputString );
     }
-    function convertCharStr2UTF8 ( str ) {
-        // Converts a string of characters to UTF-8 byte codes, separated by spaces
-        // str: sequence of Unicode characters
+
+    /**
+     * Converts a string of characters to UTF-8 byte codes, separated by spaces.
+     * @param str {string} sequence of Unicode characters.
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertCharStr2UTF8(str) {
         var highsurrogate = 0;
         var suppCP; // decimal code point value for a supp char
         var n = 0;
@@ -51353,7 +51447,7 @@ define('xide/utils/StringUtils',[
             if (highsurrogate != 0) {
                 if (0xDC00 <= cc && cc <= 0xDFFF) {
                     suppCP = 0x10000 + ((highsurrogate - 0xD800) << 10) + (cc - 0xDC00);
-                    outputString += ' '+dec2hex2(0xF0 | ((suppCP>>18) & 0x07)) + ' ' + dec2hex2(0x80 | ((suppCP>>12) & 0x3F)) + ' ' + dec2hex2(0x80 | ((suppCP>>6) & 0x3F)) + ' ' + dec2hex2(0x80 | (suppCP & 0x3F));
+                    outputString += ' ' + dec2hex2(0xF0 | ((suppCP >> 18) & 0x07)) + ' ' + dec2hex2(0x80 | ((suppCP >> 12) & 0x3F)) + ' ' + dec2hex2(0x80 | ((suppCP >> 6) & 0x3F)) + ' ' + dec2hex2(0x80 | (suppCP & 0x3F));
                     highsurrogate = 0;
                     continue;
                 }
@@ -51366,16 +51460,27 @@ define('xide/utils/StringUtils',[
                 highsurrogate = cc;
             }
             else {
-                if (cc <= 0x7F) { outputString += ' '+dec2hex2(cc); }
-                else if (cc <= 0x7FF) { outputString += ' '+dec2hex2(0xC0 | ((cc>>6) & 0x1F)) + ' ' + dec2hex2(0x80 | (cc & 0x3F)); }
-                else if (cc <= 0xFFFF) { outputString += ' '+dec2hex2(0xE0 | ((cc>>12) & 0x0F)) + ' ' + dec2hex2(0x80 | ((cc>>6) & 0x3F)) + ' ' + dec2hex2(0x80 | (cc & 0x3F)); }
+                if (cc <= 0x7F) {
+                    outputString += ' ' + dec2hex2(cc);
+                }
+                else if (cc <= 0x7FF) {
+                    outputString += ' ' + dec2hex2(0xC0 | ((cc >> 6) & 0x1F)) + ' ' + dec2hex2(0x80 | (cc & 0x3F));
+                }
+                else if (cc <= 0xFFFF) {
+                    outputString += ' ' + dec2hex2(0xE0 | ((cc >> 12) & 0x0F)) + ' ' + dec2hex2(0x80 | ((cc >> 6) & 0x3F)) + ' ' + dec2hex2(0x80 | (cc & 0x3F));
+                }
             }
         }
         return outputString.substring(1);
     }
-    function convertCharStr2UTF16 ( str ) {
-        // Converts a string of characters to UTF-16 code units, separated by spaces
-        // str: sequence of Unicode characters
+
+    /**
+     * Converts a string of characters to UTF-16 code units, separated by spaces.
+     * @param str {string} sequence of Unicode characters.
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertCharStr2UTF16(str) {
         var highsurrogate = 0;
         var suppCP;
         var n = 0;
@@ -51388,7 +51493,8 @@ define('xide/utils/StringUtils',[
             if (highsurrogate != 0) {
                 if (0xDC00 <= cc && cc <= 0xDFFF) {
                     suppCP = 0x10000 + ((highsurrogate - 0xD800) << 10) + (cc - 0xDC00);
-                    suppCP -= 0x10000; outputString += dec2hex4(0xD800 | (suppCP >> 10)) + ' ' + dec2hex4(0xDC00 | (suppCP & 0x3FF)) + ' ';
+                    suppCP -= 0x10000;
+                    outputString += dec2hex4(0xD800 | (suppCP >> 10)) + ' ' + dec2hex4(0xDC00 | (suppCP & 0x3FF)) + ' ';
                     highsurrogate = 0;
                     continue;
                 }
@@ -51401,22 +51507,27 @@ define('xide/utils/StringUtils',[
                 highsurrogate = cc;
             }
             else {
-                result = dec2hex(cc)
-                while (result.length < 4) result = '0' + result
+                result = dec2hex(cc);
+                while (result.length < 4) result = '0' + result;
                 outputString += result + ' '
             }
         }
-        return outputString.substring(0, outputString.length-1);
+        return outputString.substring(0, outputString.length - 1);
     }
-    function convertCharStr2jEsc ( str, parameters ) {
-        // Converts a string of characters to JavaScript escapes
-        // str: sequence of Unicode characters
-        // parameters: a semicolon separated string showing ids for checkboxes that are turned on
+
+    /**
+     * Converts a string of characters to JavaScript escapes.
+     * @param str {string} sequence of Unicode characters.
+     * @param parameters {string} a semicolon separated string showing ids for checkboxes that are turned on.
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertCharStr2jEsc(str, parameters) {
         var highsurrogate = 0;
         var suppCP;
         var pad;
         var n = 0;
-        var pars = parameters.split(';')
+        var pars = parameters.split(';');
         var outputString = '';
         for (var i = 0; i < str.length; i++) {
             var cc = str.charCodeAt(i);
@@ -51428,16 +51539,18 @@ define('xide/utils/StringUtils',[
                     suppCP = 0x10000 + ((highsurrogate - 0xD800) << 10) + (cc - 0xDC00);
                     if (parameters.match(/cstyleSC/)) {
                         pad = suppCP.toString(16);
-                        while (pad.length < 8) { pad = '0'+pad; }
-                        outputString += '\\U'+pad;
+                        while (pad.length < 8) {
+                            pad = '0' + pad;
+                        }
+                        outputString += '\\U' + pad;
                     }
                     else if (parameters.match(/es6styleSC/)) {
-                        pad = suppCP.toString(16)
-                        outputString += '\\u{'+pad+'}'
+                        pad = suppCP.toString(16);
+                        outputString += '\\u{' + pad + '}'
                     }
                     else {
                         suppCP -= 0x10000;
-                        outputString += '\\u'+ dec2hex4(0xD800 | (suppCP >> 10)) +'\\u'+ dec2hex4(0xDC00 | (suppCP & 0x3FF));
+                        outputString += '\\u' + dec2hex4(0xD800 | (suppCP >> 10)) + '\\u' + dec2hex4(0xDC00 | (suppCP & 0x3FF));
                     }
                     highsurrogate = 0;
                     continue;
@@ -51453,31 +51566,87 @@ define('xide/utils/StringUtils',[
             else { // this is a BMP character
                 //outputString += dec2hex(cc) + ' ';
                 switch (cc) {
-                    case 0: outputString += '\\0'; break;
-                    case 8: outputString += '\\b'; break;
-                    case 9: if (parameters.match(/noCR/)) {outputString += '\\t';} else {outputString += '\t'}; break;
-                    case 10: if (parameters.match(/noCR/)) {outputString += '\\n';} else {outputString += '\n'}; break;
-                    case 13: if (parameters.match(/noCR/)) {outputString += '\\r';} else {outputString += '\r'}; break;
-                    case 11: outputString += '\\v'; break;
-                    case 12: outputString += '\\f'; break;
-                    case 34: if (parameters.match(/noCR/)) {outputString += '\\\"';} else {outputString += '"'}; break;
-                    case 39: if (parameters.match(/noCR/)) {outputString += "\\\'";} else {outputString += '\''}; break;
-                    case 92: outputString += '\\\\'; break;
+                    case 0:
+                        outputString += '\\0';
+                        break;
+                    case 8:
+                        outputString += '\\b';
+                        break;
+                    case 9:
+                        if (parameters.match(/noCR/)) {
+                            outputString += '\\t';
+                        } else {
+                            outputString += '\t'
+                        }
+                        ;
+                        break;
+                    case 10:
+                        if (parameters.match(/noCR/)) {
+                            outputString += '\\n';
+                        } else {
+                            outputString += '\n'
+                        }
+                        ;
+                        break;
+                    case 13:
+                        if (parameters.match(/noCR/)) {
+                            outputString += '\\r';
+                        } else {
+                            outputString += '\r'
+                        }
+                        ;
+                        break;
+                    case 11:
+                        outputString += '\\v';
+                        break;
+                    case 12:
+                        outputString += '\\f';
+                        break;
+                    case 34:
+                        if (parameters.match(/noCR/)) {
+                            outputString += '\\\"';
+                        } else {
+                            outputString += '"'
+                        }
+                        ;
+                        break;
+                    case 39:
+                        if (parameters.match(/noCR/)) {
+                            outputString += "\\\'";
+                        } else {
+                            outputString += '\''
+                        }
+                        ;
+                        break;
+                    case 92:
+                        outputString += '\\\\';
+                        break;
                     default:
-                        if (cc > 0x1f && cc < 0x7F) { outputString += String.fromCharCode(cc); }
+                        if (cc > 0x1f && cc < 0x7F) {
+                            outputString += String.fromCharCode(cc);
+                        }
                         else {
                             pad = cc.toString(16).toUpperCase();
-                            while (pad.length < 4) { pad = '0'+pad; }
-                            outputString += '\\u'+pad;
+                            while (pad.length < 4) {
+                                pad = '0' + pad;
+                            }
+                            outputString += '\\u' + pad;
                         }
                 }
             }
         }
         return outputString;
     }
-    function convertCharStr2CSS ( str ) {
-        // Converts a string of characters to CSS escapes
-        // str: sequence of Unicode characters
+
+    /**
+     * Converts a string of characters to CSS escapes.
+     * @param str {string} sequence of Unicode characters.
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertCharStr2CSS(str) {
+        // 
+        // 
         var highsurrogate = 0;
         var suppCP;
         var pad;
@@ -51491,9 +51660,17 @@ define('xide/utils/StringUtils',[
                 if (0xDC00 <= cc && cc <= 0xDFFF) {
                     suppCP = 0x10000 + ((highsurrogate - 0xD800) << 10) + (cc - 0xDC00);
                     pad = suppCP.toString(16).toUpperCase();
-                    if (suppCP < 0x10000) { while (pad.length < 4) { pad = '0'+pad; } }
-                    else { while (pad.length < 6) { pad = '0'+pad; } }
-                    outputString += '\\'+pad+' ';
+                    if (suppCP < 0x10000) {
+                        while (pad.length < 4) {
+                            pad = '0' + pad;
+                        }
+                    }
+                    else {
+                        while (pad.length < 6) {
+                            pad = '0' + pad;
+                        }
+                    }
+                    outputString += '\\' + pad + ' ';
                     highsurrogate = 0;
                     continue;
                 }
@@ -51506,24 +51683,37 @@ define('xide/utils/StringUtils',[
                 highsurrogate = cc;
             }
             else { // this is a BMP character
-                if (cc == 0x5C) { outputString += '\\\\'; }
-                else if (cc > 0x1f && cc < 0x7F) { outputString += String.fromCharCode(cc); }
-                else if (cc == 0x9 || cc == 0xA || cc == 0xD) { outputString += String.fromCharCode(cc); }
+                if (cc == 0x5C) {
+                    outputString += '\\\\';
+                }
+                else if (cc > 0x1f && cc < 0x7F) {
+                    outputString += String.fromCharCode(cc);
+                }
+                else if (cc == 0x9 || cc == 0xA || cc == 0xD) {
+                    outputString += String.fromCharCode(cc);
+                }
                 else /* if (cc > 0x7E) */ {
                     pad = cc.toString(16).toUpperCase();
-                    while (pad.length < 4) { pad = '0'+pad; }
-                    outputString += '\\'+pad+' ';
+                    while (pad.length < 4) {
+                        pad = '0' + pad;
+                    }
+                    outputString += '\\' + pad + ' ';
                 }
             }
         }
         return outputString;
     }
-    function convertCharStr2CP ( textString, parameters, pad, type ) {
-        // converts a string of characters to code points, separated by space
-        // textString: string, the string to convert
-        // parameters: string enum [ascii, latin1], a set of characters to not convert
-        // pad: boolean, if true, hex numbers lower than 1000 are padded with zeros
-        // type: string enum[hex, dec, unicode, zerox], whether output should be in hex or dec or unicode U+ form
+
+    /**
+     * Converts a string of characters to code points, separated by space.
+     * @param textString {string} the input 
+     * @param parameters {string} enum [ascii, latin1], a set of characters to not convert.
+     * @param pad {boolean} if true, hex numbers lower than 1000 are padded with zeros.
+     * @param type {string} enum[hex, dec, unicode, zerox], whether output should be in hex or dec or unicode U+ form.
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertCharStr2CP(textString, parameters, pad, type) {
         var haut = 0;
         var n = 0;
         var CPstring = '';
@@ -51535,15 +51725,17 @@ define('xide/utils/StringUtils',[
             }
             if (haut != 0) {
                 if (0xDC00 <= b && b <= 0xDFFF) {
-                    if (afterEscape) { CPstring += ' '; }
+                    if (afterEscape) {
+                        CPstring += ' ';
+                    }
                     if (type == 'hex') {
                         CPstring += dec2hex(0x10000 + ((haut - 0xD800) << 10) + (b - 0xDC00));
                     }
                     else if (type == 'unicode') {
-                        CPstring += 'U+'+dec2hex(0x10000 + ((haut - 0xD800) << 10) + (b - 0xDC00));
+                        CPstring += 'U+' + dec2hex(0x10000 + ((haut - 0xD800) << 10) + (b - 0xDC00));
                     }
                     else if (type == 'zerox') {
-                        CPstring += '0x'+dec2hex(0x10000 + ((haut - 0xD800) << 10) + (b - 0xDC00));
+                        CPstring += '0x' + dec2hex(0x10000 + ((haut - 0xD800) << 10) + (b - 0xDC00));
                     }
                     else {
                         CPstring += 0x10000 + ((haut - 0xD800) << 10) + (b - 0xDC00);
@@ -51570,19 +51762,33 @@ define('xide/utils/StringUtils',[
                     afterEscape = false;
                 }
                 else {
-                    if (afterEscape) { CPstring += ' '; }
+                    if (afterEscape) {
+                        CPstring += ' ';
+                    }
                     if (type == 'hex') {
                         cp = dec2hex(b);
-                        if (pad) { while (cp.length < 4) { cp = '0'+cp; } }
+                        if (pad) {
+                            while (cp.length < 4) {
+                                cp = '0' + cp;
+                            }
+                        }
                     }
                     else if (type == 'unicode') {
                         cp = dec2hex(b);
-                        if (pad) { while (cp.length < 4) { cp = '0'+cp; } }
+                        if (pad) {
+                            while (cp.length < 4) {
+                                cp = '0' + cp;
+                            }
+                        }
                         CPstring += 'U+';
                     }
                     else if (type == 'zerox') {
                         cp = dec2hex(b);
-                        if (pad) { while (cp.length < 4) { cp = '0'+cp; } }
+                        if (pad) {
+                            while (cp.length < 4) {
+                                cp = '0' + cp;
+                            }
+                        }
                         CPstring += '0x';
                     }
                     else {
@@ -51595,14 +51801,21 @@ define('xide/utils/StringUtils',[
         }
         return CPstring;
     }
-    function convertCharStr2Unicode ( textString, preserve, pad ) { alert('here');
-        // converts a string of characters to U+... notation, separated by space
-        // textString: string, the string to convert
-        // preserve: string enum [ascii, latin1], a set of characters to not convert
-        // pad: boolean, if true, hex numbers lower than 1000 are padded with zeros
+
+    /**
+     * Converts a string of characters to U+... notation, separated by space.
+     * @param textString {string} the input
+     * @param preserve {string} enum [ascii, latin1], a set of characters to not convert.
+     * @param pad {boolean} if true, hex numbers lower than 1000 are padded with zeros.
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    function convertCharStr2Unicode(textString, preserve, pad) {
+        // pad: 
         var haut = 0;
         var n = 0;
-        var CPstring = ''; pad=false;
+        var CPstring = '';
+        pad = false;
         for (var i = 0; i < textString.length; i++) {
             var b = textString.charCodeAt(i);
             if (b < 0 || b > 0xFFFF) {
@@ -51624,31 +51837,35 @@ define('xide/utils/StringUtils',[
             }
             else {
                 if (b <= 127 && preserve == 'ascii') {
-                    CPstring += textString.charAt(i)+' ';
+                    CPstring += textString.charAt(i) + ' ';
                 }
                 else if (b <= 255 && preserve == 'latin1') {
-                    CPstring += textString.charAt(i)+' ';
+                    CPstring += textString.charAt(i) + ' ';
                 }
                 else {
                     cp = dec2hex(b);
-                    if (pad) { while (cp.length < 4) { cp = '0'+cp; } }
+                    if (pad) {
+                        while (cp.length < 4) {
+                            cp = '0' + cp;
+                        }
+                    }
                     CPstring += 'U+' + cp + ' ';
                 }
             }
         }
-        return CPstring.substring(0, CPstring.length-1);
+        return CPstring.substring(0, CPstring.length - 1);
     }
 
 
-    utils.convertCharStr2pEsc=convertCharStr2pEsc;
-    
+    utils.convertCharStr2pEsc = convertCharStr2pEsc;
+
     utils.convertAllEscapes = convertAllEscapes;
 
     function stringify(obj, replacer, spaces, cycleReplacer) {
         return JSON.stringify(obj, serializer(replacer, cycleReplacer), spaces)
     }
 
-    var digit_array=new Array('0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f');
+    var digit_array = new Array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f');
 
     /**
      * Takes a number and returns a rounded fixed digit string.
@@ -51658,33 +51875,34 @@ define('xide/utils/StringUtils',[
      * @param {number} num the number
      * @param {number} [digits=3] digit count
      * @param {boolean} [trailing=false] keep trailing zeros
+     * @memberOf module:xide/utils/StringUtils
      *
      * @example
      *
-         test(fsuxx(-6.8999999999999995), '-6.9');
-         test(fsuxx(0.020000000000000004), '0.02');
-         test(fsuxx(0.199000000000000004), '0.199');
-         test(fsuxx(0.199000000000000004, 2), '0.2');
-         test(fsuxx(0.199000000000000004, 1), '0.2');
-         test(fsuxx(0.199000000000000004, 2, true), '0.20');
-         test(fsuxx('muh'), '');
-         test(fsuxx(false), '');
-         test(fsuxx(null), '');
-         test(fsuxx(), '');
-         test(fsuxx(NaN), '');
-         test(fsuxx(Infinity), '');
-         test(fsuxx({bla: 'blub'}), '');
-         test(fsuxx([1,2,3]), '');
-         test(fsuxx(6.8999999999999995), '6.9');
-         test(fsuxx(0.199000000000000004), '0.199');
-         test(fsuxx(0.199000000000000004, 2), '0.2');
-         test(fsuxx(0.199000000000000004, 2, true), '0.20');
+     test(fsuxx(-6.8999999999999995), '-6.9');
+     test(fsuxx(0.020000000000000004), '0.02');
+     test(fsuxx(0.199000000000000004), '0.199');
+     test(fsuxx(0.199000000000000004, 2), '0.2');
+     test(fsuxx(0.199000000000000004, 1), '0.2');
+     test(fsuxx(0.199000000000000004, 2, true), '0.20');
+     test(fsuxx('muh'), '');
+     test(fsuxx(false), '');
+     test(fsuxx(null), '');
+     test(fsuxx(), '');
+     test(fsuxx(NaN), '');
+     test(fsuxx(Infinity), '');
+     test(fsuxx({bla: 'blub'}), '');
+     test(fsuxx([1,2,3]), '');
+     test(fsuxx(6.8999999999999995), '6.9');
+     test(fsuxx(0.199000000000000004), '0.199');
+     test(fsuxx(0.199000000000000004, 2), '0.2');
+     test(fsuxx(0.199000000000000004, 2, true), '0.20');
      *
      *
      * @returns {string}
      *
      */
-    utils.round=function(num, digits, trailing) {
+    utils.round = function (num, digits, trailing) {
 
         if (typeof num !== 'number' || isNaN(num) || num === Infinity || num === -Infinity) return '';
 
@@ -51697,96 +51915,21 @@ define('xide/utils/StringUtils',[
         if (!trailing) res = '' + (+res);
 
         return res;
-    }
-
-
-    utils.replaceHex = function(str) {
-        if(_.isString(str)) {
+    };
+    /**
+     * Unescape hex sequences like 'x0d' to chars
+     * @param str {string}
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    utils.replaceHex = function (str) {
+        if (_.isString(str)) {
             return str.replace(/x([0-9A-Fa-f]{2})/gmi, function () {
-                //console.log('match ',arguments);
                 return String.fromCharCode(parseInt(arguments[1], 16));
             });
         }
         return str;
     };
-
-    function d2h(d) {
-        return d.toString(16);
-    }
-    function h2d (h) {
-        return parseInt(h, 16);
-    }
-
-    utils.stringToHex=function(tmp) {
-        var str = '',
-            i = 0,
-            tmp_len = tmp.length,
-            c;
-
-        for (; i < tmp_len; i += 1) {
-            c = tmp.charCodeAt(i);
-            str += zero(d2h(c),2) + ' ';
-        }
-        return str;
-    }
-
-    utils.stringToBufferStr=function(tmp) {
-
-        var str = '',
-            i = 0,
-            tmp_len = tmp.length,
-            c;
-
-        var arr = [];
-        for (; i < tmp_len; i += 1) {
-            c = tmp.charCodeAt(i);
-            arr.push(c);
-        }
-        return arr.join(',');
-    }
-    utils.stringToBuffer=function(tmp) {
-
-        var str = '',
-            i = 0,
-            tmp_len = tmp.length,
-            c;
-        var arr = [];
-        for (; i < tmp_len; i += 1) {
-            c = tmp.charCodeAt(i);
-            arr.push(c);
-        }
-        return arr;
-    }
-
-    utils.stringToHex2=function(tmp) {
-        var str = '',
-            i = 0,
-            tmp_len = tmp.length,
-            c;
-
-        for (; i < tmp_len; i += 1) {
-            c = tmp.charCodeAt(i);
-            str += zero(d2h(c),2) + ' ';
-        }
-        return str;
-    }
-    function hexToString (tmp) {
-        var arr = tmp.split(' '),
-            str = '',
-            i = 0,
-            arr_len = arr.length,
-            c;
-
-        for (; i < arr_len; i += 1) {
-            c = String.fromCharCode( h2d( arr[i] ) );
-            str += c;
-        }
-
-        return str;
-    }
-
-    
-    utils.hexToString = hexToString;
 
     var zero = function (n, max) {
         n = n.toString(16).toUpperCase();
@@ -51796,6 +51939,164 @@ define('xide/utils/StringUtils',[
         return n;
     };
 
+    function d2h(d) {
+        return d.toString(16);
+    }
+
+    function h2d(h) {
+        return parseInt(h, 16);
+    }
+
+    /**
+     * Convert a string into hex values
+     * @memberOf module:xide/utils/StringUtils
+     * @param string {string}
+     * @returns {string}
+     */
+    utils.stringToHex = function (string) {
+        var str = '',
+            i = 0,
+            tmp_len = string.length,
+            c;
+
+        for (; i < tmp_len; i += 1) {
+            c = string.charCodeAt(i);
+            str += zero(d2h(c), 2) + ' ';
+        }
+        return str;
+    };
+
+    /**
+     * Returns buffer compatible string
+     * @param string
+     * @example
+
+     utils.stringToHex("a b") returns "61 20 62"
+
+     * @memberOf module:xide/utils/StringUtils
+     * @returns {string}
+     */
+    utils.stringToBufferStr = function (string) {
+
+        var i = 0,
+            tmp_len = string.length,
+            c;
+
+        var arr = [];
+        for (; i < tmp_len; i += 1) {
+            c = string.charCodeAt(i);
+            arr.push(c);
+        }
+        return arr.join(',');
+    };
+
+    /**
+     * Return an integer array (as Buffer) for a string
+     * @param string
+     * @returns {Array}
+     */
+    utils.stringToBuffer = function (string) {
+        var i = 0,
+            tmp_len = string.length,
+            c;
+        var arr = [];
+        for (; i < tmp_len; i += 1) {
+            c = string.charCodeAt(i);
+            arr.push(c);
+        }
+        return arr;
+    };
+
+    /**
+     *
+     * @param bufferString {String} The serialized buffer formatted as 00,02 (decimal values)
+     * @memberOf module:xide/utils/StringUtils
+     * @returns {String} The hex version of the buffer string
+     */
+    utils.bufferToHexString = function (bufferString) {
+        var bytesArray = bufferString.indexOf(',') !== -1 ? bufferString.split(',') : [bufferString];
+        var tmp = [];
+        for (var i = 0; i < bytesArray.length; i++) {
+            var dec = bytesArray[i];
+            tmp.push(utils.dec2hex2(dec))
+        }
+        return tmp.join(" ");
+    };
+
+    /**
+     *
+     * @param bufferString {String} The serialized buffer formatted as 00,02 (decimal values)
+     * @memberOf module:xide/utils/StringUtils
+     * @returns {integer} The integer array
+     */
+    utils.bufferFromDecString = function (bufferString) {
+        var bytesArray = bufferString.indexOf(',') !== -1 ? bufferString.split(',') : [bufferString];
+        for (var i = 0; i < bytesArray.length; i++) {
+            bytesArray[i] = parseInt(bytesArray[i]);
+        }
+        return bytesArray;
+    };
+
+
+    /**
+     * Return a buffer like formatted string "0a 12"
+     * @param string
+     * @memberOf module:xide/utils/StringUtils
+     * @returns {string}
+     */
+    utils.stringFromDecString = function (string) {
+        var buffer = utils.bufferFromDecString(string);
+        var result = "";
+        for (var i = 0; i < buffer.length; i++) {
+            result += String.fromCharCode(buffer[i], 16);
+        }
+        return result;
+    };
+
+    /**
+     *
+     * @param string
+     * @returns {string}
+     */
+    utils.stringToHex2 = function (string) {
+        var str = '',
+            i = 0,
+            tmp_len = string.length,
+            c;
+
+        for (; i < tmp_len; i += 1) {
+            c = string.charCodeAt(i);
+            str += zero(d2h(c), 2) + ' ';
+        }
+        return str;
+    };
+
+    /**
+     *
+     * @param string {string}
+     * @returns {string}
+     */
+    function hexToString(string) {
+        var arr = string.split(' '),
+            str = '',
+            i = 0,
+            arr_len = arr.length,
+            c;
+
+        for (; i < arr_len; i += 1) {
+            c = String.fromCharCode(h2d(arr[i]));
+            str += c;
+        }
+        return str;
+    }
+
+    utils.hexToString = hexToString;
+
+    /**
+     *
+     * @param buffer
+     * @returns {string}
+     */
     utils.prettyHex = function (buffer) {
         var rows = Math.ceil(buffer.length / 16);
         var last = buffer.length % 16 || 16;
@@ -51845,29 +52146,38 @@ define('xide/utils/StringUtils',[
                 str += (v > 31 && v < 127) || v > 159 ? String.fromCharCode(v) : '.';
                 b++;
             }
-
             str += '\n';
         }
-
-        //process.stdout.write(str);
-        //console.log(str);
         return str;
     };
 
-
-    utils.hexEncode = function(str,prefix){
+    /**
+     *
+     * @param str
+     * @param prefix
+     * @returns {string}
+     */
+    utils.hexEncode = function (str, prefix) {
         var hex, i;
 
         var result = "";
-        for (i=0; i<str.length; i++) {
+        for (i = 0; i < str.length; i++) {
             hex = str.charCodeAt(i).toString(16);
-            result += ((prefix!==null ? prefix : "000")+hex).slice(-4);
+            result += ((prefix !== null ? prefix : "000") + hex).slice(-4);
         }
 
         return result
-    }
-    utils.markHex=function(str,prefix,suffix,sign){
-        //var myString = "test \x7f asd \n \t  dsf \r";
+    };
+
+    /**
+     *
+     * @param str
+     * @param prefix
+     * @param suffix
+     * @param sign
+     * @returns {string}
+     */
+    utils.markHex = function (str, prefix, suffix, sign) {
         prefix = prefix || "";
         suffix = suffix || "";
         var myString = "" + str;
@@ -51876,132 +52186,156 @@ define('xide/utils/StringUtils',[
         var matches = myString.match(pattern);
         var newString = "" + myString;
 
-        myString.replace(pattern, function(a,b){
-            var _raw = utils.hexEncode(a,'$');
-            if(_raw.length==2){
-                _raw = _raw.replace("$","$0")
+        myString.replace(pattern, function (a, b) {
+            var _raw = utils.hexEncode(a, '$');
+            if (_raw.length == 2) {
+                _raw = _raw.replace("$", "$0")
             }
             //myString = myString.toUpperCase();
             _raw = _raw.toUpperCase();
-            myString = myString.replace(a,prefix +  _raw + suffix);
+            myString = myString.replace(a, prefix + _raw + suffix);
         });
-        //console.log(myString);
-        //console.log(myString.toUpperCase());
         return myString;
-    }
+    };
     /**
      *
      * @param n
      * @returns {string}
      */
-    utils.to_hex=function(n){
-        var hex_result=''
-        var the_start=true;
-        for(var i=32;i>0;){
-            i-=4;
-            var one_digit=(n>>i)&0xf;
-            if(!the_start||one_digit!=0){
-                the_start=false;
-                hex_result+=digit_array[one_digit];
+    utils.to_hex = function (n) {
+        var hex_result = '';
+        var the_start = true;
+        for (var i = 32; i > 0;) {
+            i -= 4;
+            var one_digit = (n >> i) & 0xf;
+            if (!the_start || one_digit != 0) {
+                the_start = false;
+                hex_result += digit_array[one_digit];
             }
         }
-        return '0x'+(hex_result==''?'0':hex_result);
-    }
+        return '0x' + (hex_result == '' ? '0' : hex_result);
+    };
 
 
+    /**
+     *
+     * @param replacer
+     * @param cycleReplacer
+     * @returns {Function}
+     */
     function serializer(replacer, cycleReplacer) {
-        var stack = [], keys = []
+        var stack = [], keys = [];
 
-        if (cycleReplacer == null) cycleReplacer = function(key, value) {
-            if (stack[0] === value) return "[Circular ~]"
+        if (cycleReplacer == null) cycleReplacer = function (key, value) {
+            if (stack[0] === value) return "[Circular ~]";
             return "[Circular ~." + keys.slice(0, stack.indexOf(value)).join(".") + "]"
-        }
+        };
 
-        return function(key, value) {
+        return function (key, value) {
             if (stack.length > 0) {
-                var thisPos = stack.indexOf(this)
-                ~thisPos ? stack.splice(thisPos + 1) : stack.push(this)
-                ~thisPos ? keys.splice(thisPos, Infinity, key) : keys.push(key)
+                var thisPos = stack.indexOf(this);
+                ~thisPos ? stack.splice(thisPos + 1) : stack.push(this);
+                ~thisPos ? keys.splice(thisPos, Infinity, key) : keys.push(key);
                 if (~stack.indexOf(value)) value = cycleReplacer.call(this, key, value)
             }
-            else stack.push(value)
+            else stack.push(value);
 
             return replacer == null ? value : replacer.call(this, key, value)
         }
     }
 
-    utils.stringify=function(obj){
+    /**
+     *
+     * @param obj
+     * @returns {*}
+     */
+    utils.stringify = function (obj) {
         return JSON.stringify(obj, serializer(), 2);
-    }
-    utils.humanFileSize=function(bytes, si) {
+    };
+    /**
+     *
+     * @param bytes
+     * @param si
+     * @returns {string}
+     */
+    utils.humanFileSize = function (bytes, si) {
         var thresh = si ? 1000 : 1024;
-        if(Math.abs(bytes) < thresh) {
+        if (Math.abs(bytes) < thresh) {
             return bytes + ' B';
         }
         var units = si
-            ? ['kB','MB','GB','TB','PB','EB','ZB','YB']
-            : ['KiB','MiB','GiB','TiB','PiB','EiB','ZiB','YiB'];
+            ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+            : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
         var u = -1;
         do {
             bytes /= thresh;
             ++u;
-        } while(Math.abs(bytes) >= thresh && u < units.length - 1);
-        return bytes.toFixed(1)+' '+units[u];
-    }
+        } while (Math.abs(bytes) >= thresh && u < units.length - 1);
+        return bytes.toFixed(1) + ' ' + units[u];
+    };
 
     if (typeof String.prototype.startsWith != 'function') {
         // see below for better implementation!
-        String.prototype.startsWith = function (str){
+        String.prototype.startsWith = function (str) {
             return this.indexOf(str) === 0;
         };
     }
 
-    utils.isNativeEvent=function(str){
-        var _foo=null,//just for having an optimized object map for a native event lookup below
+    /**
+     *
+     * @param str
+     * @returns {boolean}
+     */
+    utils.isNativeEvent = function (str) {
+        var _foo = null,//just for having an optimized object map for a native event lookup below
             _nativeEvents = {
                 "onclick": _foo,
-                "ondblclick":_foo,
-                "onmousedown":_foo,
-                "onmouseup":_foo,
-                "onmouseover":_foo,
-                "onmousemove":_foo,
-                "onmouseout":_foo,
-                "onkeypress":_foo,
-                "onkeydown":_foo,
-                "onkeyup":_foo,
-                "onfocus":_foo,
-                "onblur":_foo,
-                "onchange":_foo
+                "ondblclick": _foo,
+                "onmousedown": _foo,
+                "onmouseup": _foo,
+                "onmouseover": _foo,
+                "onmousemove": _foo,
+                "onmouseout": _foo,
+                "onkeypress": _foo,
+                "onkeydown": _foo,
+                "onkeyup": _foo,
+                "onfocus": _foo,
+                "onblur": _foo,
+                "onchange": _foo
             };
 
-        if(str in _nativeEvents){
+        if (str in _nativeEvents) {
             return true;
-        };
-
-
+        }
         _nativeEvents = {
             "click": _foo,
-            "dblclick":_foo,
-            "mousedown":_foo,
-            "mouseup":_foo,
-            "mouseover":_foo,
-            "mousemove":_foo,
-            "mouseout":_foo,
-            "keypress":_foo,
-            "keydown":_foo,
-            "keyup":_foo,
-            "focus":_foo,
-            "blur":_foo,
-            "change":_foo
+            "dblclick": _foo,
+            "mousedown": _foo,
+            "mouseup": _foo,
+            "mouseover": _foo,
+            "mousemove": _foo,
+            "mouseout": _foo,
+            "keypress": _foo,
+            "keydown": _foo,
+            "keyup": _foo,
+            "focus": _foo,
+            "blur": _foo,
+            "change": _foo
         };
 
         return str in _nativeEvents;
 
     };
-    utils.isSystemEvent=function(str){
-
-        for(var t in types.EVENTS){
-            if(types.EVENTS[t]===str){
+    /**
+     *
+     * @param str
+     * @returns {boolean}
+     *
+     * @memberOf module:xide/utils/StringUtils
+     */
+    utils.isSystemEvent = function (str) {
+        for (var t in types.EVENTS) {
+            if (types.EVENTS[t] === str) {
                 return true;
             }
         }
@@ -52013,6 +52347,7 @@ define('xide/utils/StringUtils',[
      * @param arr
      * @param val
      * @returns {number}
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.contains = function (arr, val) {
         for (var i = 0; i < arr.length; i++) {
@@ -52027,6 +52362,7 @@ define('xide/utils/StringUtils',[
      * @param obj
      * @param val
      * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.getObjectKeyByValue = function (obj, val) {
         if (obj && val) {
@@ -52045,6 +52381,7 @@ define('xide/utils/StringUtils',[
      * @param url
      * @param parameter
      * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.removeURLParameter = function (url, parameter) {
         //prefer to use l.search if you have a location/link object
@@ -52069,9 +52406,17 @@ define('xide/utils/StringUtils',[
         }
     };
 
+    /**
+     *
+     * @param url
+     * @param paramName
+     * @param paramValue
+     * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
+     */
     utils.replaceUrlParam = function (url, paramName, paramValue) {
-        if(url.indexOf(paramName)==-1){
-            url +=(url.indexOf('?') > 0 ? '&' : '?') + paramName +'=' +paramValue;
+        if (url.indexOf(paramName) == -1) {
+            url += (url.indexOf('?') > 0 ? '&' : '?') + paramName + '=' + paramValue;
             return url;
         }
         var pattern = new RegExp('(' + paramName + '=).*?(&|$)');
@@ -52088,6 +52433,7 @@ define('xide/utils/StringUtils',[
      * @param path
      * @param encode
      * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.buildPath = function (mount, path, encode) {
 
@@ -52108,6 +52454,8 @@ define('xide/utils/StringUtils',[
      *
      * @param string
      * @returns {boolean}
+     * @memberOf module:xide/utils/StringUtils
+     *
      */
     utils.isImage = function (string) {
         return string.toLowerCase().match(/\.(jpeg|jpg|gif|png)$/) != null;
@@ -52118,21 +52466,34 @@ define('xide/utils/StringUtils',[
      * @param field
      * @param enumValue
      * @returns {boolean}
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.hasFlag3 = function (field, enumValue) {
-        var _enumUp = 1 << enumValue;
-        var _res = _enumUp & field;
-        return ((1 << enumValue) & field) ? true : false;
-    };
-    utils.hasFlag = function (field, enumValue) {
-        var _enumUp = 1 << enumValue;
-        var _res = _enumUp & field;
+        //noinspection JSBitwiseOperatorUsage,JSBitwiseOperatorUsage,JSBitwiseOperatorUsage,JSBitwiseOperatorUsage,JSBitwiseOperatorUsage,JSBitwiseOperatorUsage,JSBitwiseOperatorUsage,JSBitwiseOperatorUsage
         return ((1 << enumValue) & field) ? true : false;
     };
 
-    utils.disableFlag=function(enumValue,field)
-    {
-        enumValue &=~(1<<field);
+    /**
+     *
+     * @param field
+     * @param enumValue
+     * @returns {boolean}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    utils.hasFlag = function (field, enumValue) {
+        //noinspection JSBitwiseOperatorUsage,JSBitwiseOperatorUsage
+        return ((1 << enumValue) & field) ? true : false;
+    };
+
+    /**
+     *
+     * @param enumValue
+     * @param field
+     * @returns {int|*}
+     * @memberOf module:xide/utils/StringUtils
+     */
+    utils.disableFlag = function (enumValue, field) {
+        enumValue &= ~(1 << field);
         return enumValue;
     };
     /**
@@ -52142,7 +52503,6 @@ define('xide/utils/StringUtils',[
      */
     utils.cleanUrl = function (string) {
         if (string) {
-            //subject.replace(/(?<!(?:ht|f)tps?:)\/*\//g, "/");
             string = string.replace('//', '/');
             string = string.replace('./', '/');
             string = string.replace('http:/', 'http://');
@@ -52157,9 +52517,11 @@ define('xide/utils/StringUtils',[
      * Return data from JSON
      * @param inData
      * @param validOnly
+     * @param imit
+     * @memberOf module:xide/utils/StringUtils
      * @returns {*}
      */
-    utils.getJson = function (inData, validOnly,ommit) {
+    utils.getJson = function (inData, validOnly, ommit) {
         try {
             return _.isString(inData) ? json.parse(inData, false) : validOnly === true ? null : inData;
         } catch (e) {
@@ -52172,26 +52534,24 @@ define('xide/utils/StringUtils',[
      * Hard Dojo override to catch malformed JSON.
      * @param js
      * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.fromJson = function (js) {
-
-        if(!lang.isString(js)){
+        if (!_.isString(js)) {
             return js;
         }
         var res = null;
         var didFail = false;
         try {
-            res = eval("(" + js + ")",{});
+            res = eval("(" + js + ")", {});
         } catch (e) {
             didFail = true;
-
         }
         if (didFail) {
             js = js.substring(js.indexOf('{'), js.lastIndexOf('}') + 1);
             try {
-                res = eval("(" + js + ")",{});
+                res = eval("(" + js + ")", {});
             } catch (e) {
-                //console.error('error in json parsing! ' + js);
                 throw new Error(js);
             }
         }
@@ -52204,28 +52564,29 @@ define('xide/utils/StringUtils',[
      * @param replace
      * @param str
      * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.replaceAll = function (find, replace, str) {
-        //return str.replace(new RegExp(find, 'g'), replace);\
-        if (!str) {
-            //debugger;
-        }
-        return str ? str.split(find).join(replace) : '';//faster!
+        return str ? str.split(find).join(replace) : '';
     };
 
     /**
      * CI compatible string check for null and length>0
      * @param input
      * @returns {boolean}
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.isValidString = function (input) {
-        // summary:
-        //		Validates a string against null, phantom objects and a length of 0
-        // input:
-        //		The value to test
         return input != null && input.length != null && input.length > 0 && input != "undefined"; //Boolean
     };
 
+    /**
+     * Dojo style template replacer
+     * @param template
+     * @param obj
+     * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
+     */
     utils.substituteString = function (template, obj) {
         return template.replace(/\$\{([^\s\:\}]+)(?:\:([^\s\:\}]+))?\}/g, function (match, key) {
             return obj[key];
@@ -52238,22 +52599,14 @@ define('xide/utils/StringUtils',[
      * @param delimiters
      * @returns {*}
      * @private
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.findOcurrences = function (expression, delimiters) {
-
-        // prepare delimiters for the regular expression
         var d = {
             begin: utils.escapeRegExp(delimiters.begin),
             end: utils.escapeRegExp(delimiters.end)
         };
-
-        // regular expression for [<content>]
-        var allExceptEnd = "[^" + d.end + "]*";
-
-        // final regular expression = find all [variables]
-        var patt = d.begin + "(" + allExceptEnd + ")" + d.end;
-
-        return expression.match(new RegExp(patt, 'g'));
+        return expression.match(new RegExp(d.begin + "([^" + d.end + "]*)" + d.end, 'g'));
     };
 
     /**
@@ -52261,44 +52614,22 @@ define('xide/utils/StringUtils',[
      * @param string
      * @returns {*}
      * @private
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.escapeRegExp = function (string) {
-
-        var special = ["[", "]", "(", ")", "{", "}", "*", "+", ".","|","||"];
+        var special = ["[", "]", "(", ")", "{", "}", "*", "+", ".", "|", "||"];
         for (var n = 0; n < special.length; n++) {
             string = string.replace(special[n], "\\" + special[n]);
         }
 
         return string;
     };
-
-    /**
-     * Tokenizes by begin & end pattern
-     * @param expression
-     * @param delimiters
-     * @returns {string}
-     */
-    utils.findOcurrences = function (expression, delimiters) {
-        // prepare delimiters for the regular expression
-        var d = {
-            begin: utils.escapeRegExp(delimiters.begin),
-            end: utils.escapeRegExp(delimiters.end)
-        };
-
-        // regular expression for [<content>]
-        var allExceptEnd = "[^" + d.end + "]*";
-
-        // final regular expression = find all [variables]
-        var patt = d.begin + "(" + allExceptEnd + ")" + d.end;
-
-        return expression.match(new RegExp(patt, 'g'));
-    };
-
     /**
      *
-     * @param str {string} hackstack
+     * @param str {string} haystack
      * @param hash {Object}
      * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.multipleReplace = function (str, hash) {
         //to array
@@ -52349,10 +52680,8 @@ define('xide/utils/StringUtils',[
         if (!str) {
             return '';
         }
-        if (what && lang.isObject(what) || lang.isArray(what)) {
-
+        if (what && _.isObject(what) || _.isArray(what)) {
             if (delimiters) {
-
                 var ocurr = utils.findOcurrences(str, delimiters),
                     replaceAll = utils.replaceAll;
                 if (ocurr) {
@@ -52378,38 +52707,35 @@ define('xide/utils/StringUtils',[
         return utils.replaceAll(needle, what, str);
     };
 
+    /**
+     * Capitalize
+     * @param word
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
     utils.capitalize = function (word) {
         return word.substring(0, 1).toUpperCase() + word.substring(1);
     };
 
+    /**
+     * vsprintf impl. of PHP
+     * @param format
+     * @param args
+     * @example
+     // example 1: vsprintf('%04d-%02d-%02d', [1988, 8, 1]);
+     // returns 1: '1988-08-01'
+     * @memberOf module:xide/utils/StringUtils
+     */
     utils.vsprintf = function (format, args) {
-        // http://kevin.vanzonneveld.net
-        // +   original by: ejsanders
-        // -    depends on: sprintf
-        // *     example 1: vsprintf('%04d-%02d-%02d', [1988, 8, 1]);
-        // *     returns 1: '1988-08-01'
         return utils.sprintf.apply(this, [format].concat(args));
     };
+    /**
+     * PHP.js version of sprintf
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     * @link http://kevin.vanzonneveld.net
+     */
     utils.sprintf = function () {
-        // http://kevin.vanzonneveld.net
-        // +   original by: Ash Searle (http://hexmen.com/blog/)
-        // + namespaced by: Michael White (http://getsprink.com)
-        // +    tweaked by: Jack
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +      input by: Paulo Freitas
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +      input by: Brett Zamir (http://brett-zamir.me)
-        // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // +   improved by: Dj
-        // +   improved by: Allidylls
-        // *     example 1: sprintf("%01.2f", 123.1);
-        // *     returns 1: 123.10
-        // *     example 2: sprintf("[%10s]", 'monkey');
-        // *     returns 2: '[    monkey]'
-        // *     example 3: sprintf("[%'#10s]", 'monkey');
-        // *     returns 3: '[####monkey]'
-        // *     example 4: sprintf("%d", 123456789012345);
-        // *     returns 4: '123456789012345'
         var regex = /%%|%(\d+\$)?([-+\'#0 ]*)(\*\d+\$|\*|\d+)?(\.(\*\d+\$|\*|\d+))?([scboxXuideEfFgG])/g;
         var a = arguments,
             i = 0,
@@ -52442,10 +52768,10 @@ define('xide/utils/StringUtils',[
             // Note: casts negative numbers to positive ones
             var number = value >>> 0;
             prefix = prefix && number && {
-                '2': '0b',
-                '8': '0',
-                '16': '0x'
-            }[base] || '';
+                    '2': '0b',
+                    '8': '0',
+                    '16': '0x'
+                }[base] || '';
             value = prefix + pad(number.toString(base), precision || 0, '0', false);
             return justify(value, prefix, leftJustify, minWidth, zeroPad);
         };
@@ -52579,10 +52905,10 @@ define('xide/utils/StringUtils',[
     /***
      *
      * @param str
-     * @returns {*}
+     * @returns {string | null}
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.cleanString = function (str) {
-
         if (!str) {
             return null;
         }
@@ -52591,18 +52917,14 @@ define('xide/utils/StringUtils',[
             .replace(/[\f]/g, '')
             .replace(/[\n]/g, '')
             .replace(/\\/g, '');
-
-        //str = str.leftTrim();//defined in Commons boot strap
-        //str = str.rightTrim();
         return str;
     };
     /***
      *
-     * @param str
-     * @returns {*}
+     * @param str {string}
+     * @returns {string | null}
      */
     utils.normalizePath = function (str) {
-
         if (!str) {
             return null;
         }
@@ -52613,29 +52935,37 @@ define('xide/utils/StringUtils',[
         return str;
     };
 
-    types.PATH_PARTS={
-        'DIRNAME'       : 1,
-        'BASENAME'      : 2,
-        'EXTENSION'     : 4,
-        'FILENAME'      : 8,
-        'PATHINFO_ALL'  : 0
-    }
-    utils.basename=function(path, suffix) {
-        //  discuss at: http://phpjs.org/functions/basename/
-        // original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // improved by: Ash Searle (http://hexmen.com/blog/)
-        // improved by: Lincoln Ramsay
-        // improved by: djmix
-        // improved by: Dmitry Gorelenkov
-        //   example 1: basename('/www/site/home.htm', '.htm');
-        //   returns 1: 'home'
-        //   example 2: basename('ecra.php?p=1');
-        //   returns 2: 'ecra.php?p=1'
-        //   example 3: basename('/some/path/');
-        //   returns 3: 'path'
-        //   example 4: basename('/some/path_ext.ext/','.ext');
-        //   returns 4: 'path_ext'
-
+    /**
+     *
+     * @enum
+     * @global
+     * @memberOf module:xide/types
+     */
+    types.PATH_PARTS = {
+        'DIRNAME': 1,
+        'BASENAME': 2,
+        'EXTENSION': 4,
+        'FILENAME': 8,
+        'PATHINFO_ALL': 0
+    };
+    /**
+     * PHP.js version of basename
+     * @param path {string}
+     * @param suffix {string}
+     * @example
+     //   example 1: basename('/www/site/home.htm', '.htm');
+     //   returns 1: 'home'
+     //   example 2: basename('ecra.php?p=1');
+     //   returns 2: 'ecra.php?p=1'
+     //   example 3: basename('/some/path/');
+     //   returns 3: 'path'
+     //   example 4: basename('/some/path_ext.ext/','.ext');
+     //   returns 4: 'path_ext'
+     * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
+     * @link http://phpjs.org/functions/basename/
+     */
+    utils.basename = function (path, suffix) {
         var b = path;
         var lastChar = b.charAt(b.length - 1);
 
@@ -52648,19 +52978,34 @@ define('xide/utils/StringUtils',[
         if (typeof suffix === 'string' && b.substr(b.length - suffix.length) == suffix) {
             b = b.substr(0, b.length - suffix.length);
         }
-
         return b;
-    }
+    };
 
     /**
      *
      * @param path
      * @param options
-     * @returns {*}
+     * @example
+     //   example 1: pathinfo('/www/htdocs/index.html', 1);
+     //   returns 1: '/www/htdocs'
+     //   example 2: pathinfo('/www/htdocs/index.html', 'PATHINFO_BASENAME');
+     //   returns 2: 'index.html'
+     //   example 3: pathinfo('/www/htdocs/index.html', 'PATHINFO_EXTENSION');
+     //   returns 3: 'html'
+     //   example 4: pathinfo('/www/htdocs/index.html', 'PATHINFO_FILENAME');
+     //   returns 4: 'index'
+     //   example 5: pathinfo('/www/htdocs/index.html', 2 | 4);
+     //   returns 5: {basename: 'index.html', extension: 'html'}
+     //   example 6: pathinfo('/www/htdocs/index.html', 'PATHINFO_ALL');
+     //   returns 6: {dirname: '/www/htdocs', basename: 'index.html', extension: 'html', filename: 'index'}
+     //   example 7: pathinfo('/www/htdocs/index.html');
+     //   returns 7: {dirname: '/www/htdocs', basename: 'index.html', extension: 'html', filename: 'index'}
+     * @returns {object}
+     * @link http://phpjs.org/functions/pathinfo/
+     * @memberOf module:xide/utils/StringUtils
      */
-    utils.pathinfo=function(path, options)
-    {
-        //  discuss at: http://phpjs.org/functions/pathinfo/
+    utils.pathinfo = function (path, options) {
+        //  discuss at:
         // original by: Nate
         //  revised by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
         // improved by: Brett Zamir (http://brett-zamir.me)
@@ -52676,21 +53021,6 @@ define('xide/utils/StringUtils',[
         //        note: yourself, and then you can use: pathinfo('/www/index.html', PATHINFO_BASENAME | PATHINFO_EXTENSION);
         //        note: which makes it fully compliant with PHP syntax.
         //  depends on: basename
-        //   example 1: pathinfo('/www/htdocs/index.html', 1);
-        //   returns 1: '/www/htdocs'
-        //   example 2: pathinfo('/www/htdocs/index.html', 'PATHINFO_BASENAME');
-        //   returns 2: 'index.html'
-        //   example 3: pathinfo('/www/htdocs/index.html', 'PATHINFO_EXTENSION');
-        //   returns 3: 'html'
-        //   example 4: pathinfo('/www/htdocs/index.html', 'PATHINFO_FILENAME');
-        //   returns 4: 'index'
-        //   example 5: pathinfo('/www/htdocs/index.html', 2 | 4);
-        //   returns 5: {basename: 'index.html', extension: 'html'}
-        //   example 6: pathinfo('/www/htdocs/index.html', 'PATHINFO_ALL');
-        //   returns 6: {dirname: '/www/htdocs', basename: 'index.html', extension: 'html', filename: 'index'}
-        //   example 7: pathinfo('/www/htdocs/index.html');
-        //   returns 7: {dirname: '/www/htdocs', basename: 'index.html', extension: 'html', filename: 'index'}
-
         var opt = '',
             real_opt = '',
             optName = '',
@@ -52713,11 +53043,11 @@ define('xide/utils/StringUtils',[
         // Initialize binary arguments. Both the string & integer (constant) input is
         // allowed
         var OPTS = {
-            'PATHINFO_DIRNAME'   : 1,
-            'PATHINFO_BASENAME'  : 2,
-            'PATHINFO_EXTENSION' : 4,
-            'PATHINFO_FILENAME'  : 8,
-            'PATHINFO_ALL'       : 0
+            'PATHINFO_DIRNAME': 1,
+            'PATHINFO_BASENAME': 2,
+            'PATHINFO_EXTENSION': 4,
+            'PATHINFO_FILENAME': 8,
+            'PATHINFO_ALL': 0
         };
         // PATHINFO_ALL sums up all previously defined PATHINFOs (could just pre-calculate)
         for (optName in OPTS) {
@@ -52738,19 +53068,21 @@ define('xide/utils/StringUtils',[
         }
 
         // Internal Functions
-        var __getExt = function(path) {
+        var __getExt = function (path) {
             var str = path + '';
             var dotP = str.lastIndexOf('.') + 1;
             return !dotP ? false : dotP !== str.length ? str.substr(dotP) : '';
         };
 
         // Gather path infos
+        //noinspection JSBitwiseOperatorUsage,JSBitwiseOperatorUsage
         if (options & OPTS.PATHINFO_DIRNAME) {
             var dirName = path.replace(/\\/g, '/')
                 .replace(/\/[^\/]*\/?$/, ''); // dirname
             tmp_arr.dirname = dirName === path ? '.' : dirName;
         }
 
+        //noinspection JSBitwiseOperatorUsage,JSBitwiseOperatorUsage
         if (options & OPTS.PATHINFO_BASENAME) {
             if (false === have_basename) {
                 have_basename = utils.basename(path);
@@ -52758,6 +53090,7 @@ define('xide/utils/StringUtils',[
             tmp_arr.basename = have_basename;
         }
 
+        //noinspection JSBitwiseOperatorUsage,JSBitwiseOperatorUsage
         if (options & OPTS.PATHINFO_EXTENSION) {
             if (false === have_basename) {
                 have_basename = utils.basename(path);
@@ -52770,6 +53103,7 @@ define('xide/utils/StringUtils',[
             }
         }
 
+        //noinspection JSBitwiseOperatorUsage,JSBitwiseOperatorUsage
         if (options & OPTS.PATHINFO_FILENAME) {
             if (false === have_basename) {
                 have_basename = utils.basename(path);
@@ -52799,14 +53133,17 @@ define('xide/utils/StringUtils',[
 
         // Return full-blown array
         return tmp_arr;
-    }
+    };
 
+    /**
+     * PHP.js version of parse_url
+     * @param str {string}
+     * @param component {string} enum
+     * @returns {object}
+     * @memberOf module:xide/utils/StringUtils
+     */
     utils.parse_url = function (str, component) {
         //       discuss at: http://phpjs.org/functions/parse_url/
-        //      original by: Steven Levithan (http://blog.stevenlevithan.com)
-        // reimplemented by: Brett Zamir (http://brett-zamir.me)
-        //         input by: Lorenzo Pisani
-        //         input by: Tony
         //      improved by: Brett Zamir (http://brett-zamir.me)
         //             note: original by http://stevenlevithan.com/demo/parseuri/js/assets/parseuri.js
         //             note: blog post at http://blog.stevenlevithan.com/archives/parseuri
@@ -52817,7 +53154,6 @@ define('xide/utils/StringUtils',[
         //             note: an extra slash after the scheme/protocol (to allow file:/// as in PHP)
         //        example 1: parse_url('http://username:password@hostname/path?arg=value#anchor');
         //        returns 1: {scheme: 'http', host: 'hostname', user: 'username', pass: 'password', path: '/path', query: 'arg=value', fragment: 'anchor'}
-
         var query, key = ['source', 'scheme', 'authority', 'userInfo', 'user', 'pass', 'host', 'port',
                 'relative', 'path', 'directory', 'file', 'query', 'fragment'
             ],
@@ -52857,79 +53193,20 @@ define('xide/utils/StringUtils',[
         }
         delete uri.source;
         return uri;
-    }
-    /***
-     *
-     * @returns {{mid: string, txt: string, sql: string, js: string, gif: string, jpg: string, html: string, htm: string, rar: string, gz: string, tgz: string, z: string, ra: string, ram: string, rm: string, pl: string, zip: string, wav: string, php: string, php3: string, phtml: string, exe: string, bmp: string, png: string, css: string, mp3: string, m4a: string, aac: string, xls: string, xlsx: string, ods: string, sxc: string, csv: string, tsv: string, doc: string, docx: string, odt: string, swx: string, rtf: string, ppt: string, pps: string, odp: string, sxi: string, pdf: string, mov: string, avi: string, mpg: string, mpeg: string, mp4: string, m4v: string, ogv: string, webm: string, wmv: string, swf: string, flv: string, tiff: string, tif: string, svg: string, psd: string, ers: string}}
-     */
-    utils.getMimeTable = function () {
-        return {
-            "mid": "midi.png",
-            "txt": "txt2.png",
-            "sql": "txt2.png",
-            "js": "javascript.png",
-            "gif": "image.png",
-            "jpg": "image.png",
-            "html": "html.png",
-            "htm": "html.png",
-            "rar": "archive.png",
-            "gz": "zip.png",
-            "tgz": "archive.png",
-            "z": "archive.png",
-            "ra": "video.png",
-            "ram": "video.png",
-            "rm": "video.png",
-            "pl": "source_pl.png",
-            "zip": "zip.png",
-            "wav": "sound.png",
-            "php": "php.png",
-            "php3": "php.png",
-            "phtml": "php.png",
-            "exe": "exe.png",
-            "bmp": "image.png",
-            "png": "image.png",
-            "css": "css.png",
-            "mp3": "sound.png",
-            "m4a": "sound.png",
-            "aac": "sound.png",
-            "xls": "spreadsheet.png",
-            "xlsx": "spreadsheet.png",
-            "ods": "spreadsheet.png",
-            "sxc": "spreadsheet.png",
-            "csv": "spreadsheet.png",
-            "tsv": "spreadsheet.png",
-            "doc": "word.png",
-            "docx": "word.png",
-            "odt": "word.png",
-            "swx": "word.png",
-            "rtf": "word.png",
-            "ppt": "presentation.png",
-            "pps": "presentation.png",
-            "odp": "presentation.png",
-            "sxi": "presentation.png",
-            "pdf": "pdf.png",
-            "mov": "video.png",
-            "avi": "video.png",
-            "mpg": "video.png",
-            "mpeg": "video.png",
-            "mp4": "video.png",
-            "m4v": "video.png",
-            "ogv": "video.png",
-            "webm": "video.png",
-            "wmv": "video.png",
-            "swf": "flash.png",
-            "flv": "flash.png",
-            "tiff": "image.png",
-            "tif": "image.png",
-            "svg": "image.png",
-            "psd": "image.png",
-            "ers": "horo.png"
-        };
     };
 
     /***
      *
-     * @returns {{mid: string, txt: string, sql: string, js: string, gif: string, jpg: string, html: string, htm: string, rar: string, gz: string, tgz: string, z: string, ra: string, ram: string, rm: string, pl: string, zip: string, wav: string, php: string, php3: string, phtml: string, exe: string, bmp: string, png: string, css: string, mp3: string, m4a: string, aac: string, xls: string, xlsx: string, ods: string, sxc: string, csv: string, tsv: string, doc: string, docx: string, odt: string, swx: string, rtf: string, ppt: string, pps: string, odp: string, sxi: string, pdf: string, mov: string, avi: string, mpg: string, mpeg: string, mp4: string, m4v: string, ogv: string, webm: string, wmv: string, swf: string, flv: string, tiff: string, tif: string, svg: string, psd: string, ers: string}}
+     * @deprecated
+     */
+    utils.getMimeTable = function () {
+        return {};
+    };
+
+    /***
+     * @deprecated
+     * @returns {object}
+     * @memberOf module:xide/utils/StringUtils
      */
     utils.getMimeTable2 = function () {
         return {
@@ -52997,74 +53274,23 @@ define('xide/utils/StringUtils',[
     };
     /***
      *
-     * @returns {{mid: string, txt: string, sql: string, js: string, gif: string, jpg: string, html: string, htm: string, rar: string, gz: string, tgz: string, z: string, ra: string, ram: string, rm: string, pl: string, zip: string, wav: string, php: string, php3: string, phtml: string, exe: string, bmp: string, png: string, css: string, mp3: string, m4a: string, aac: string, xls: string, xlsx: string, ods: string, sxc: string, csv: string, tsv: string, doc: string, docx: string, odt: string, swx: string, rtf: string, ppt: string, pps: string, odp: string, sxi: string, pdf: string, mov: string, avi: string, mpg: string, mpeg: string, mp4: string, m4v: string, ogv: string, webm: string, wmv: string, swf: string, flv: string, tiff: string, tif: string, svg: string, psd: string, ers: string}}
+     * @deprecated
+     * @memberOf module:xide/utils/StringUtils
+     * @returns {object}
      */
     utils.getIconTable = function () {
-        return {
-            "mid": "midi.png",
-            "txt": "txt2.png",
-            "sql": "txt2.png",
-            "js": "javascript.png",
-            "gif": "image.png",
-            "jpg": "image.png",
-            "html": "html.png",
-            "htm": "html.png",
-            "rar": "archive.png",
-            "gz": "zip.png",
-            "tgz": "archive.png",
-            "z": "archive.png",
-            "ra": "video.png",
-            "ram": "video.png",
-            "rm": "video.png",
-            "pl": "source_pl.png",
-            "zip": "zip.png",
-            "wav": "sound.png",
-            "php": "php.png",
-            "php3": "php.png",
-            "phtml": "php.png",
-            "exe": "exe.png",
-            "bmp": "image.png",
-            "png": "image.png",
-            "css": "css.png",
-            "mp3": "sound.png",
-            "m4a": "sound.png",
-            "aac": "sound.png",
-            "xls": "spreadsheet.png",
-            "xlsx": "spreadsheet.png",
-            "ods": "spreadsheet.png",
-            "sxc": "spreadsheet.png",
-            "csv": "spreadsheet.png",
-            "tsv": "spreadsheet.png",
-            "doc": "word.png",
-            "docx": "word.png",
-            "odt": "word.png",
-            "swx": "word.png",
-            "rtf": "word.png",
-            "ppt": "presentation.png",
-            "pps": "presentation.png",
-            "odp": "presentation.png",
-            "sxi": "presentation.png",
-            "pdf": "pdf.png",
-            "mov": "video.png",
-            "avi": "video.png",
-            "mpg": "video.png",
-            "mpeg": "video.png",
-            "mp4": "video.png",
-            "m4v": "video.png",
-            "ogv": "video.png",
-            "webm": "video.png",
-            "wmv": "video.png",
-            "swf": "flash.png",
-            "flv": "flash.png",
-            "tiff": "image.png",
-            "tif": "image.png",
-            "svg": "image.png",
-            "psd": "image.png",
-            "ers": "horo.png"
-        };
+        return {};
     };
 
 
+    /**
+     *
+     * @param string
+     * @param overwrite
+     * @returns {object}
+     * @memberOf module:xide/utils/StringUtils
+     * @deprecated
+     */
     utils.urlDecode = function (string, overwrite) {
         if (!string || !string.length) {
             return {}
@@ -53098,8 +53324,14 @@ define('xide/utils/StringUtils',[
         }
         return obj;
     };
+    /**
+     *
+     * @param string {string}
+     * @returns {object}
+     * @deprecated
+     * @memberOf module:xide/utils/StringUtils
+     */
     utils.getUrlArgs = function (string) {
-
         var args = {};
         if (string && (string.indexOf('?') != -1 || string.indexOf('&') != -1)) {
 
@@ -53118,28 +53350,26 @@ define('xide/utils/StringUtils',[
 
     /**
      *
-     * @param url
-     * @returns {{}}
+     * @param url {string}
+     * @returns {object}
+     * @deprecated
      */
-    utils.urlArgs = function(url){
-
+    utils.urlArgs = function (url) {
         var query = utils.getUrlArgs(url);
-
         var map = {};
-        for(var param in query){
-
+        for (var param in query) {
             var value = query[param],
-                options = utils.findOcurrences(value,{
-                    begin:"|",
-                    end:"|"
+                options = utils.findOcurrences(value, {
+                    begin: "|",
+                    end: "|"
                 }),
                 parameterOptions = null;
 
-            if(options && options.length){
+            if (options && options.length) {
                 //clean value:
-                value = value.replace(options[0],'');
+                value = value.replace(options[0], '');
                 //parse options
-                var optionString = options[0].substr(1,options[0].length-2),
+                var optionString = options[0].substr(1, options[0].length - 2),
                     optionSplit = optionString.split(','),
                     optionsData = {};
 
@@ -53148,12 +53378,12 @@ define('xide/utils/StringUtils',[
                     var keyValue = optionSplit[i],
                         pair = keyValue.split(':');
 
-                    optionsData[pair[0]]=pair[1];
+                    optionsData[pair[0]] = pair[1];
                 }
                 parameterOptions = optionsData;
             }
 
-            if(value && value.length) {
+            if (value && value.length) {
                 map[param] = {
                     value: value,
                     options: parameterOptions
@@ -53163,6 +53393,13 @@ define('xide/utils/StringUtils',[
         return map;
     };
 
+    /**
+     *
+     * @param fileName {string}
+     * @returns {string}
+     * @deprecated
+     * @memberOf module:xide/utils/StringUtils
+     */
     utils.getIcon = function (fileName) {
         if (!fileName) {
             return 'txt2.png';
@@ -53176,6 +53413,13 @@ define('xide/utils/StringUtils',[
         }
         return 'txt2.png';
     };
+    /**
+     *
+     * @param fileName
+     * @returns {string}
+     * @deprecated
+     * @memberOf module:xide/utils/StringUtils
+     */
     utils.getIconClass = function (fileName) {
         if (!fileName) {
             return 'fa-file-o';
@@ -53192,74 +53436,108 @@ define('xide/utils/StringUtils',[
         }
         return 'fa-file-o';
     };
+    /**
+     * File extension
+     * @deprecated
+     * @param fileName {string}
+     * @returns {string}
+     */
     utils.getFileExtension = function (fileName) {
         if (!fileName || fileName == "") return "";
         var split = utils.getBaseName(fileName).split('.');
         if (split.length > 1) return split[split.length - 1].toLowerCase();
-
         return '';
     };
-    utils.getBaseName = function (fileName) {
-        if (fileName == null) return null;
-        var separator = "/";
-        if (fileName.indexOf("\\") != -1)
-            separator = "\\";
-        return fileName.substr(fileName.lastIndexOf(separator) + 1, fileName.length);
-    };
+    /**
+     * Create a basic UUID via with Math.Random
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     */
     utils.createUUID = function () {
-        // summary:
-        //		Create a basic UUID
-        // description:
-        //		The UUID is created with Math.Random
         var S4 = function () {
             return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
         };
         return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4()); //String
     };
     /**
-     * 
-     * @param path
-     * @param suffix
-     * @returns {*}
+     * Basename
+     * @param fileName {string}
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
      */
-    utils.basename =function basename (path, suffix) {
+    utils.getBaseName = function (fileName) {
+        if (fileName == null) return null;
+        var separator = "/";
+        if (fileName.indexOf("\\") !==-1)
+            separator = "\\";
+        return fileName.substr(fileName.lastIndexOf(separator) + 1, fileName.length);
+    };
+    /**
+     * PHP.js version of basename
+     * @param path {string}
+     * @param suffix
+     * @returns {string}
+     * @memberOf module:xide/utils/StringUtils
+     * @example
+
+     //   example 1: basename('/www/site/home.htm', '.htm')
+     //   returns 1: 'home'
+     //   example 2: basename('ecra.php?p=1')
+     //   returns 2: 'ecra.php?p=1'
+     //   example 3: basename('/some/path/')
+     //   returns 3: 'path'
+     //   example 4: basename('/some/path_ext.ext/','.ext')
+     //   returns 4: 'path_ext'
+
+     * @memberOf module:xide/utils/StringUtils
+     */
+    utils.basename = function basename(path, suffix) {
         //  discuss at: http://locutus.io/php/basename/
         // original by: Kevin van Zonneveld (http://kvz.io)
         // improved by: Ash Searle (http://hexmen.com/blog/)
         // improved by: Lincoln Ramsay
         // improved by: djmix
         // improved by: Dmitry Gorelenkov
-        //   example 1: basename('/www/site/home.htm', '.htm')
-        //   returns 1: 'home'
-        //   example 2: basename('ecra.php?p=1')
-        //   returns 2: 'ecra.php?p=1'
-        //   example 3: basename('/some/path/')
-        //   returns 3: 'path'
-        //   example 4: basename('/some/path_ext.ext/','.ext')
-        //   returns 4: 'path_ext'
-
-        var b = path
-        var lastChar = b.charAt(b.length - 1)
+        var b = path;
+        var lastChar = b.charAt(b.length - 1);
 
         if (lastChar === '/' || lastChar === '\\') {
             b = b.slice(0, -1)
         }
 
-        b = b.replace(/^.*[\/\\]/g, '')
+        b = b.replace(/^.*[\/\\]/g, '');
 
         if (typeof suffix === 'string' && b.substr(b.length - suffix.length) === suffix) {
             b = b.substr(0, b.length - suffix.length)
         }
 
         return b
-    }
+    };
     /**
      *
-     * @param path
+     * @param path {string}
      * @param options
-     * @returns {*}
+     * @memberOf module:xide/utils/StringUtils
+     * @returns {object}
+     *
+     * @example
+     *
+     //   example 1: pathinfo('/www/htdocs/index.html', 1)
+     //   returns 1: '/www/htdocs'
+     //   example 2: pathinfo('/www/htdocs/index.html', 'PATHINFO_BASENAME')
+     //   returns 2: 'index.html'
+     //   example 3: pathinfo('/www/htdocs/index.html', 'PATHINFO_EXTENSION')
+     //   returns 3: 'html'
+     //   example 4: pathinfo('/www/htdocs/index.html', 'PATHINFO_FILENAME')
+     //   returns 4: 'index'
+     //   example 5: pathinfo('/www/htdocs/index.html', 2 | 4)
+     //   returns 5: {basename: 'index.html', extension: 'html'}
+     //   example 6: pathinfo('/www/htdocs/index.html', 'PATHINFO_ALL')
+     //   returns 6: {dirname: '/www/htdocs', basename: 'index.html', extension: 'html', filename: 'index'}
+     //   example 7: pathinfo('/www/htdocs/index.html')
+     //   returns 7: {dirname: '/www/htdocs', basename: 'index.html', extension: 'html', filename: 'index'}
      */
-    utils.pathinfo=function(path, options) {
+    utils.pathinfo = function (path, options) {
         //  discuss at: http://locutus.io/php/pathinfo/
         // original by: Nate
         //  revised by: Kevin van Zonneveld (http://kvz.io)
@@ -53279,32 +53557,19 @@ define('xide/utils/StringUtils',[
         //      note 1: yourself, and then you can use:
         //      note 1: pathinfo('/www/index.html', PATHINFO_BASENAME | PATHINFO_EXTENSION);
         //      note 1: which makes it fully compliant with PHP syntax.
-        //   example 1: pathinfo('/www/htdocs/index.html', 1)
-        //   returns 1: '/www/htdocs'
-        //   example 2: pathinfo('/www/htdocs/index.html', 'PATHINFO_BASENAME')
-        //   returns 2: 'index.html'
-        //   example 3: pathinfo('/www/htdocs/index.html', 'PATHINFO_EXTENSION')
-        //   returns 3: 'html'
-        //   example 4: pathinfo('/www/htdocs/index.html', 'PATHINFO_FILENAME')
-        //   returns 4: 'index'
-        //   example 5: pathinfo('/www/htdocs/index.html', 2 | 4)
-        //   returns 5: {basename: 'index.html', extension: 'html'}
-        //   example 6: pathinfo('/www/htdocs/index.html', 'PATHINFO_ALL')
-        //   returns 6: {dirname: '/www/htdocs', basename: 'index.html', extension: 'html', filename: 'index'}
-        //   example 7: pathinfo('/www/htdocs/index.html')
-        //   returns 7: {dirname: '/www/htdocs', basename: 'index.html', extension: 'html', filename: 'index'}
+
 
         var basename = utils.basename;
-        var opt = ''
-        var realOpt = ''
-        var optName = ''
-        var optTemp = 0
-        var tmpArr = {}
-        var cnt = 0
-        var i = 0
-        var haveBasename = false
-        var haveExtension = false
-        var haveFilename = false
+        var opt = '';
+        var realOpt = '';
+        var optName = '';
+        var optTemp = 0;
+        var tmpArr = {};
+        var cnt = 0;
+        var i = 0;
+        var haveBasename = false;
+        var haveExtension = false;
+        var haveFilename = false;
 
         // Input defaulting & sanitation
         if (!path) {
@@ -53322,7 +53587,7 @@ define('xide/utils/StringUtils',[
             'PATHINFO_EXTENSION': 4,
             'PATHINFO_FILENAME': 8,
             'PATHINFO_ALL': 0
-        }
+        };
         // PATHINFO_ALL sums up all previously defined PATHINFOs (could just pre-calculate)
         for (optName in OPTS) {
             if (OPTS.hasOwnProperty(optName)) {
@@ -53331,7 +53596,7 @@ define('xide/utils/StringUtils',[
         }
         if (typeof options !== 'number') {
             // Allow for a single string or an array of string flags
-            options = [].concat(options)
+            options = [].concat(options);
             for (i = 0; i < options.length; i++) {
                 // Resolve string input to bitwise e.g. 'PATHINFO_EXTENSION' becomes 4
                 if (OPTS[options[i]]) {
@@ -53343,19 +53608,21 @@ define('xide/utils/StringUtils',[
 
         // Internal Functions
         var _getExt = function (path) {
-            var str = path + ''
-            var dotP = str.lastIndexOf('.') + 1
+            var str = path + '';
+            var dotP = str.lastIndexOf('.') + 1;
             return !dotP ? false : dotP !== str.length ? str.substr(dotP) : ''
-        }
+        };
 
         // Gather path infos
+        //noinspection JSBitwiseOperatorUsage,JSBitwiseOperatorUsage
         if (options & OPTS.PATHINFO_DIRNAME) {
             var dirName = path
                 .replace(/\\/g, '/')
-                .replace(/\/[^\/]*\/?$/, '') // dirname
+                .replace(/\/[^\/]*\/?$/, ''); // dirname
             tmpArr.dirname = dirName === path ? '.' : dirName
         }
 
+        //noinspection JSBitwiseOperatorUsage,JSBitwiseOperatorUsage
         if (options & OPTS.PATHINFO_BASENAME) {
             if (haveBasename === false) {
                 haveBasename = basename(path)
@@ -53363,6 +53630,7 @@ define('xide/utils/StringUtils',[
             tmpArr.basename = haveBasename
         }
 
+        //noinspection JSBitwiseOperatorUsage,JSBitwiseOperatorUsage
         if (options & OPTS.PATHINFO_EXTENSION) {
             if (haveBasename === false) {
                 haveBasename = basename(path)
@@ -53375,6 +53643,7 @@ define('xide/utils/StringUtils',[
             }
         }
 
+        //noinspection JSBitwiseOperatorUsage,JSBitwiseOperatorUsage
         if (options & OPTS.PATHINFO_FILENAME) {
             if (haveBasename === false) {
                 haveBasename = basename(path)
@@ -53396,10 +53665,10 @@ define('xide/utils/StringUtils',[
         }
 
         // If array contains only 1 element: return string
-        cnt = 0
+        cnt = 0;
         for (opt in tmpArr) {
             if (tmpArr.hasOwnProperty(opt)) {
-                cnt++
+                cnt++;
                 realOpt = opt
             }
         }
@@ -53409,42 +53678,31 @@ define('xide/utils/StringUtils',[
 
         // Return full-blown array
         return tmpArr
-    }
+    };
 
+    /**
+     *
+     * @param input {string}
+     * @param allowed {string}
+     * @example
+     //   example 1: strip_tags('<p>Kevin</p> <br /><b>van</b> <i>Zonneveld</i>', '<i><b>');
+     //   returns 1: 'Kevin <b>van</b> <i>Zonneveld</i>'
+     //   example 2: strip_tags('<p>Kevin <img src="someimage.png" onmouseover="someFunction()">van <i>Zonneveld</i></p>', '<p>');
+     //   returns 2: '<p>Kevin van Zonneveld</p>'
+     //   example 3: strip_tags("<a href='http://kevin.vanzonneveld.net'>Kevin van Zonneveld</a>", "<a>");
+     //   returns 3: "<a href='http://kevin.vanzonneveld.net'>Kevin van Zonneveld</a>"
+     //   example 4: strip_tags('1 < 5 5 > 1');
+     //   returns 4: '1 < 5 5 > 1'
+     //   example 5: strip_tags('1 <br/> 1');
+     //   returns 5: '1  1'
+     //   example 6: strip_tags('1 <br/> 1', '<br>');
+     //   returns 6: '1 <br/> 1'
+     //   example 7: strip_tags('1 <br/> 1', '<br><br/>');
+     //   returns 7: '1 <br/> 1'
+     * @returns {string}
+     */
     utils.strip_tags = function (input, allowed) {
         //  discuss at: http://phpjs.org/functions/strip_tags/
-        // original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // improved by: Luke Godfrey
-        // improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        //    input by: Pul
-        //    input by: Alex
-        //    input by: Marc Palau
-        //    input by: Brett Zamir (http://brett-zamir.me)
-        //    input by: Bobby Drake
-        //    input by: Evertjan Garretsen
-        // bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // bugfixed by: Onno Marsman
-        // bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // bugfixed by: Eric Nagel
-        // bugfixed by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-        // bugfixed by: Tomasz Wesolowski
-        //  revised by: Rafał Kukawski (http://blog.kukawski.pl/)
-        //   example 1: strip_tags('<p>Kevin</p> <br /><b>van</b> <i>Zonneveld</i>', '<i><b>');
-        //   returns 1: 'Kevin <b>van</b> <i>Zonneveld</i>'
-        //   example 2: strip_tags('<p>Kevin <img src="someimage.png" onmouseover="someFunction()">van <i>Zonneveld</i></p>', '<p>');
-        //   returns 2: '<p>Kevin van Zonneveld</p>'
-        //   example 3: strip_tags("<a href='http://kevin.vanzonneveld.net'>Kevin van Zonneveld</a>", "<a>");
-        //   returns 3: "<a href='http://kevin.vanzonneveld.net'>Kevin van Zonneveld</a>"
-        //   example 4: strip_tags('1 < 5 5 > 1');
-        //   returns 4: '1 < 5 5 > 1'
-        //   example 5: strip_tags('1 <br/> 1');
-        //   returns 5: '1  1'
-        //   example 6: strip_tags('1 <br/> 1', '<br>');
-        //   returns 6: '1 <br/> 1'
-        //   example 7: strip_tags('1 <br/> 1', '<br><br/>');
-        //   returns 7: '1 <br/> 1'
-
         allowed = (((allowed || '') + '')
             .toLowerCase()
             .match(/<[a-z][a-z0-9]*>/g) || [])
@@ -55576,6 +55834,27 @@ define('xcf/manager/DeviceManager_DeviceServer',[
         isIDE = has('xcf-ui'),
         runDrivers = has('runDrivers');
 
+    if(!String.prototype.setBytes) {
+        String.prototype.setBytes = function (bytes) {
+            this.bytes = bytes;
+        }
+    }
+    if(!String.prototype.getBytes){
+        String.prototype.getBytes = function() {
+            if(this.bytes){
+                return this.bytes;
+            }else{
+                return utils.stringToBuffer(this);
+            }
+        }
+    }
+
+    if(!String.prototype.hexString){
+        String.prototype.hexString= function() {
+            var bytes = this.getBytes();
+            return utils.bufferToHexString(bytes);
+        }
+    }
     /*
     var console = typeof window !== 'undefined' ? window.console : console;
     if(_console && _console.error && _console.warn){
@@ -56173,19 +56452,34 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 bytes:deviceMessageData.data.bytes
             });
 
+            var bytes = [];
+
+            for (var i = 0; i < messages.length; i++) {
+                bytes.push(utils.stringToBuffer(messages[i]));
+            }
+
             if(_messages){
-                messages = _.isArray(_messages) ? _messages : [_messages];
+                messages = [];
+                bytes = [];
+                for (var i = 0; i < _messages.length; i++) {
+                    var msg = _messages[i];
+                    messages.push(msg.string);
+                    bytes.push(msg.bytes);
+                }
             }
 
             //replay on driver code instance
             if(messages && messages.length) {
-                _.each(messages, function (_message) {
+                for (var i = 0; i < messages.length; i++) {
+
+                    var _message = messages[i];
+
                     //driver replay as individual message
                     driverInstance.onMessage({
                         device: deviceMessageData.data.device,
                         message: _message,
                         raw: message,
-                        bytes:deviceMessageData.data.bytes
+                        bytes:bytes[i]
                     });
 
 
@@ -56194,10 +56488,10 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                         device: deviceMessageData.data.device,
                         message: _message,
                         raw: message,
-                        bytes:deviceMessageData.data.bytes
+                        bytes:bytes[i]
                     });
 
-                });
+                };
             }
 
 
@@ -56337,7 +56631,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 if (responseVariable) {
 
                 } else {
-
                     responseVariable = new Variable({
                         id: utils.createUUID(),
                         name: 'value',
@@ -56350,14 +56643,19 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     });
                     scope.blockStore.putSync(responseVariable);
                 }
+
+                //console.log('on device message');
+
                 for (var i = 0; i < messages.length; i++) {
 
                     if (messages[i].length == 0) {
                         continue;
                     }
 
-                    responseVariable.value = messages[i];
+                    responseVariable.value = new String(messages[i]);
+                    responseVariable.value.setBytes(bytes[i]);
 
+                    //console.log('responseVariable.value : ', responseVariable.value.getBytes());
 
                     this.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, {
                         item: responseVariable,
@@ -56394,6 +56692,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                             var targetVariable = scope.getVariable(_var.target);
                             if (targetVariable) {
                                 targetVariable.value = _varResult;
+
                                 this.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, {
                                     item: targetVariable,
                                     scope: scope,
@@ -56521,12 +56820,15 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 console.error(' Send Device Command ' + data +'failed, have no  device Server client');
             }
             var command = driverInstance.blockScope.getBlockById(src);
+            
             this.publish(types.EVENTS.ON_DEVICE_COMMAND,{
                 device:device,
-                command:data,
+                command:utils.stringFromDecString(data),
                 deviceInfo:this.toDeviceControlInfo(device),
                 name:command ? command.name : ""
             })
+
+            //console.log('str : ' + data + ' = ' + utils.stringFromDecString(data));
         },
         /***
          *
@@ -58824,7 +59126,7 @@ define('xide/utils/ObjectUtils',[
     //  Loader utils
     //
     //////////////////////////////////////////////////////////////////////////////////////////////
-    utils.debounce = function(who,methodName,_function,delay,options,now){
+    utils.debounce = function(who,methodName,_function,delay,options,now,args){
         var _place = who[methodName+'_debounced'];
         if(!_place){
             _place = who[methodName+'_debounced'] =  _.debounce(_function, delay,options);
@@ -58832,7 +59134,7 @@ define('xide/utils/ObjectUtils',[
         if(now==true){
             if(!who[methodName+'_debouncedFirst']){
                 who[methodName+'_debouncedFirst']=true;
-                _function.apply(who);
+                _function.apply(who,args);
             }
         }
         return _place();
@@ -66434,8 +66736,8 @@ define('xapp/manager/Application',[
     "xide/manager/ManagerBase"
 ], function (dcl,Deferred,types, utils,ManagerBase) {
 
-    var debugBootstrap = true;
-    var debugBlocks = true;
+    var debugBootstrap = false;
+    var debugBlocks = false;
 
     //Application
     return dcl([ManagerBase],{
@@ -79543,14 +79845,11 @@ define('xblox/RunScript',[
 ], function (lang, on, dcl,register, CustomElement, Events, utils, Types, Referenced, EventedMixin, ReloadMixin, Binding, EventSource, WidgetTarget,registry) {
 
     var debugWidgets = false;
-    var debugApp = true;
+    var debugApp = false;
     var debugAttach = false;
     var debugCreated = false;
-    var debugBinding = true;
-    var debugRun = true;
-
-
-    console.error('---run script')
+    var debugBinding = false;
+    var debugRun = false;
     /**
      * Proxy widget to run a selected blox script on the parent widget/node.
      *
