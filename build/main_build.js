@@ -68236,8 +68236,7 @@ define('xfile/types',[
     'dojo/_base/lang',
     'xide/types',
     'xide/types/Types'
-],function(lang,types)
-    {
+],function(lang,types){
         /**
          * Public mime registry setter
          * @param type
@@ -68246,6 +68245,41 @@ define('xfile/types',[
         types.registerCustomMimeIconExtension = function (type, map) {
             types['customMimeIcons'][type] = map;
         };
+
+        var ACTION = types.ACTION;
+
+        var DEFAULT_PERMISSIONS = [
+            ACTION.EDIT,
+            ACTION.COPY,
+            ACTION.CLOSE,
+            ACTION.MOVE,
+            ACTION.RENAME,
+            ACTION.DOWNLOAD,
+            ACTION.RELOAD,
+            ACTION.DELETE,
+            ACTION.NEW_FILE,
+            ACTION.NEW_DIRECTORY,
+            ACTION.CLIPBOARD,
+            ACTION.LAYOUT,
+            ACTION.COLUMNS,
+            ACTION.SELECTION,
+            ACTION.PREVIEW,
+            ACTION.OPEN_IN,
+            ACTION.GO_UP,
+            ACTION.SEARCH,
+            ACTION.OPEN_IN_TAB,
+            ACTION.TOOLBAR,
+            ACTION.STATUSBAR,
+            ACTION.UPLOAD,
+            ACTION.SOURCE,
+            ACTION.SIZE_STATS,
+            ACTION.CONSOLE,
+            ACTION.HEADER,
+            'File/Compress',
+            'File/New'
+        ];
+
+        types.DEFAULT_FILE_GRID_PERMISSIONS = DEFAULT_PERMISSIONS;
 
         types.FIELDS = {
             SHOW_ISDIR:1602,
@@ -68487,7 +68521,7 @@ define('xfile/types',[
             EXTRACT:32
         };
 
-        return types;
+    return types;
 });;
 define('xide/mainr',[
     "xide/types",
