@@ -17,9 +17,9 @@ define([
 ], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable,Types,has,on) {
 
     var isIDE = has('xcf-ui');
-    var debugWire = true;
-    var debugBoot = true;
-    var debugRun = true;
+    var debugWire = false;
+    var debugBoot = false;
+    var debugRun = false;
 
     /**
      * Lightweight context for end-user apps

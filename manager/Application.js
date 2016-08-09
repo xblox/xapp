@@ -7,8 +7,8 @@ define([
     "xide/manager/ManagerBase"
 ], function (dcl,Deferred,types, utils,ManagerBase) {
 
-    var debugBootstrap = true;
-    var debugBlocks = true;
+    var debugBootstrap = false;
+    var debugBlocks = false;
 
     //Application
     return dcl([ManagerBase],{
