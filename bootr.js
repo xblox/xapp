@@ -2,7 +2,7 @@ define([
     "dcl/dcl",
     "requirejs-dplugins/has",
     "dojo/has",
-    'dojo/Deferred',
+    'dojo/Deferred'
     //'xdojo/declare',
     //"dstore/build/dstorer",
     //"xide/build/xider",
@@ -31,6 +31,11 @@ define([
         "deliteful/Checkbox",
         "deliteful/RadioButton",
         "deliteful/ToggleButton",
+        "deliteful/ViewStack",
+        "xdeliteful/TabBar",
+        "deliteful/Accordion",
+        "deliteful/Panel",
+        "deliteful/LinearLayout",
         'dojo/Deferred',
         'xdojo/declare',
         "require"

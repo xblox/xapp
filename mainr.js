@@ -20,6 +20,7 @@ define([
 
     "xblox/CSSState",
     "xblox/StyleState",
+    'xblox/model/html/SetState',
     'xide/mainr',
 
     'xfile/manager/FileManager',
@@ -66,6 +67,8 @@ define([
     "deliteful/ProgressBar",
     "deliteful/list/List",
     "dojo/selector/_loader",
+    "xdeliteful/TabBar",
+    "deliteful/Accordion",
     "requirejs-domready/domReady"
 ], function(Button,RunScript,register){
     

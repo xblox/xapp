@@ -53,10 +53,12 @@ define([
                 'xide/utils/StoreUtils',
                 'xide/utils/WidgetUtils',
                 'xide/utils/ObjectUtils',
+                'xide/utils/CSSUtils',
                 'xide/factory/Objects',
                 'xide/factory/Events',
                 'xapp/manager/Context',
-                'xapp/manager/Application'
+                'xapp/manager/Application',
+                'xblox/model/html/SetState'
             ];
 
             if(extraDependencies){

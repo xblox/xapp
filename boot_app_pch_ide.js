@@ -15,17 +15,18 @@ define([
         "dojo/has",
         'dojo/Deferred',
         'xdojo/has',
+        "xide/utils/ObjectUtils",
         "xblox/RunScript",
         "xblox/CSSState",
         "xblox/StyleState",
         'delite/register',        
-        "delite/register",
         "deliteful/Button",
         "deliteful/Slider",
         "deliteful/Combobox",
         "deliteful/Checkbox",
         "deliteful/RadioButton",
         "deliteful/ToggleButton",
+        'xblox/model/html/SetState',
         "require"
     ],function(has,dcl,dHas,Deferred){
 
