@@ -1,4 +1,4 @@
-require.config({"config":{"delite/theme":{"layersMap":{"delite/themes/{{theme}}/common.css":"themes/layer_{{theme}}.css","deliteful/Accordion/themes/{{theme}}/Accordion.css":"themes/layer_{{theme}}.css","xdeliteful/Bar/themes/Bar.css":"themes/layer_{{theme}}.css","deliteful/list/List/themes/{{theme}}/List.css":"themes/layer_{{theme}}.css","delite/Scrollable/themes/{{theme}}/Scrollable.css":"themes/layer_{{theme}}.css","deliteful/ProgressBar/themes/{{theme}}/ProgressBar.css":"themes/layer_{{theme}}.css","deliteful/StarRating/themes/{{theme}}/StarRating.css":"themes/layer_{{theme}}.css","deliteful/LinearLayout/themes/{{theme}}/LinearLayout.css":"themes/layer_{{theme}}.css","deliteful/SidePane/themes/{{theme}}/SidePane.css":"themes/layer_{{theme}}.css","deliteful/ViewStack/themes/{{theme}}/ViewStack.css":"themes/layer_{{theme}}.css","deliteful/ProgressIndicator/themes/{{theme}}/ProgressIndicator.css":"themes/layer_{{theme}}.css","deliteful/Switch/themes/{{theme}}/Switch.css":"themes/layer_{{theme}}.css","deliteful/ToggleButton/themes/{{theme}}/ToggleButton.css":"themes/layer_{{theme}}.css","deliteful/RadioButton/themes/{{theme}}/RadioButton.css":"themes/layer_{{theme}}.css","deliteful/Checkbox/themes/{{theme}}/Checkbox.css":"themes/layer_{{theme}}.css","deliteful/Combobox/themes/{{theme}}/Combobox.css":"themes/layer_{{theme}}.css","delite/DialogUnderlay/themes/{{theme}}/DialogUnderlay.css":"themes/layer_{{theme}}.css","deliteful/Slider/themes/{{theme}}/Slider.css":"themes/layer_{{theme}}.css","deliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css"}}}});require.config({"config":{"requirejs-dplugins/i18n":{"bundlesMap":{"nls/main_build":["deliteful/list/List/nls/List","deliteful/StarRating/nls/StarRating","deliteful/Combobox/nls/Combobox"]},"localesMap":{"nls/main_build":["root"]}}}});require.config({config:{'ecma402/impl/load':{"af":true,"af-NA":true,"am":true,"ar":true,"ar-AE":true,"ar-BH":true,"ar-DZ":true,"ar-EG":true,"ar-IQ":true,"ar-JO":true,"ar-KW":true,"ar-LB":true,"ar-LY":true,"ar-MA":true,"ar-OM":true,"ar-QA":true,"ar-SA":true,"ar-SD":true,"ar-SY":true,"ar-TN":true,"ar-YE":true,"as":true,"az":true,"be":true,"bg":true,"bn":true,"bn-IN":true,"ca":true,"cs":true,"cy":true,"da":true,"de":true,"de-AT":true,"de-LU":true,"de-CH":true,"el":true,"en":true,"en-AU":true,"en-BE":true,"en-CM":true,"en-CA":true,"en-GB":true,"en-GH":true,"en-HK":true,"en-IE":true,"en-IN":true,"en-KE":true,"en-MU":true,"en-NG":true,"en-NZ":true,"en-PH":true,"en-SG":true,"en-TT":true,"en-ZA":true,"en-ZM":true,"es":true,"es-AR":true,"es-BO":true,"es-CL":true,"es-CO":true,"es-CR":true,"es-DO":true,"es-EC":true,"es-GT":true,"es-HN":true,"es-MX":true,"es-NI":true,"es-PA":true,"es-PE":true,"es-PR":true,"es-PY":true,"es-SV":true,"es-US":true,"es-UY":true,"es-VE":true,"eu":true,"fil":true,"fi":true,"fr":true,"fr-BE":true,"fr-CA":true,"fr-CD":true,"fr-CH":true,"fr-CI":true,"fr-CM":true,"fr-DZ":true,"fr-LU":true,"fr-MR":true,"fr-MA":true,"fr-SN":true,"fr-TN":true,"gl":true,"gu":true,"ha":true,"he":true,"hi":true,"hr":true,"hu":true,"hy":true,"id":true,"ig":true,"is":true,"it":true,"it-CH":true,"ja":true,"ka":true,"kk":true,"km":true,"kn":true,"ko":true,"kok":true,"lg":true,"lt":true,"lv":true,"mk":true,"ml":true,"mn":true,"mr":true,"ms":true,"mt":true,"nb":true,"ne":true,"ne-IN":true,"nl":true,"nl-BE":true,"nn":true,"om":true,"or":true,"pa":true,"pl":true,"pt":true,"pt-AO":true,"pt-MZ":true,"pt-PT":true,"ro":true,"root":true,"ru":true,"rw":true,"si":true,"sk":true,"sl":true,"sr":true,"sr-Latn":true,"sq":true,"sv":true,"sw":true,"sw-KE":true,"ta":true,"te":true,"th":true,"tr":true,"uk":true,"ur":true,"ur-IN":true,"uz":true,"uz-Cyrl":true,"vi":true,"yo":true,"zh":true,"zh-Hans":true,"zh-Hans-SG":true,"zh-Hant":true,"zh-Hant-HK":true,"_layerMid":"cldr/main_build"}}});require.config({"config":{"requirejs-dplugins/css":{"layersMap":{"deliteful/ViewStack/transitions/slide.css":"main_build.css","deliteful/ViewStack/transitions/reveal.css":"main_build.css"}}}});define('xapp/mainr',[
+require.config({"config":{"delite/theme":{"layersMap":{"delite/themes/{{theme}}/common.css":"themes/layer_{{theme}}.css","deliteful/Accordion/themes/{{theme}}/Accordion.css":"themes/layer_{{theme}}.css","xdeliteful/Bar/themes/Bar.css":"themes/layer_{{theme}}.css","deliteful/list/List/themes/{{theme}}/List.css":"themes/layer_{{theme}}.css","delite/Scrollable/themes/{{theme}}/Scrollable.css":"themes/layer_{{theme}}.css","deliteful/ProgressBar/themes/{{theme}}/ProgressBar.css":"themes/layer_{{theme}}.css","deliteful/StarRating/themes/{{theme}}/StarRating.css":"themes/layer_{{theme}}.css","xdeliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css","deliteful/LinearLayout/themes/{{theme}}/LinearLayout.css":"themes/layer_{{theme}}.css","deliteful/SidePane/themes/{{theme}}/SidePane.css":"themes/layer_{{theme}}.css","deliteful/Panel/themes/{{theme}}/Panel.css":"themes/layer_{{theme}}.css","deliteful/ViewStack/themes/{{theme}}/ViewStack.css":"themes/layer_{{theme}}.css","deliteful/ProgressIndicator/themes/{{theme}}/ProgressIndicator.css":"themes/layer_{{theme}}.css","deliteful/Switch/themes/{{theme}}/Switch.css":"themes/layer_{{theme}}.css","deliteful/ToggleButton/themes/{{theme}}/ToggleButton.css":"themes/layer_{{theme}}.css","deliteful/RadioButton/themes/{{theme}}/RadioButton.css":"themes/layer_{{theme}}.css","deliteful/Checkbox/themes/{{theme}}/Checkbox.css":"themes/layer_{{theme}}.css","deliteful/Combobox/themes/{{theme}}/Combobox.css":"themes/layer_{{theme}}.css","delite/DialogUnderlay/themes/{{theme}}/DialogUnderlay.css":"themes/layer_{{theme}}.css","deliteful/Slider/themes/{{theme}}/Slider.css":"themes/layer_{{theme}}.css","deliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css"}}}});require.config({"config":{"requirejs-dplugins/i18n":{"bundlesMap":{"nls/main_build":["deliteful/list/List/nls/List","deliteful/StarRating/nls/StarRating","deliteful/Combobox/nls/Combobox"]},"localesMap":{"nls/main_build":["root"]}}}});require.config({config:{'ecma402/impl/load':{"af":true,"af-NA":true,"am":true,"ar":true,"ar-AE":true,"ar-BH":true,"ar-DZ":true,"ar-EG":true,"ar-IQ":true,"ar-JO":true,"ar-KW":true,"ar-LB":true,"ar-LY":true,"ar-MA":true,"ar-OM":true,"ar-QA":true,"ar-SA":true,"ar-SD":true,"ar-SY":true,"ar-TN":true,"ar-YE":true,"as":true,"az":true,"be":true,"bg":true,"bn":true,"bn-IN":true,"ca":true,"cs":true,"cy":true,"da":true,"de":true,"de-AT":true,"de-LU":true,"de-CH":true,"el":true,"en":true,"en-AU":true,"en-BE":true,"en-CM":true,"en-CA":true,"en-GB":true,"en-GH":true,"en-HK":true,"en-IE":true,"en-IN":true,"en-KE":true,"en-MU":true,"en-NG":true,"en-NZ":true,"en-PH":true,"en-SG":true,"en-TT":true,"en-ZA":true,"en-ZM":true,"es":true,"es-AR":true,"es-BO":true,"es-CL":true,"es-CO":true,"es-CR":true,"es-DO":true,"es-EC":true,"es-GT":true,"es-HN":true,"es-MX":true,"es-NI":true,"es-PA":true,"es-PE":true,"es-PR":true,"es-PY":true,"es-SV":true,"es-US":true,"es-UY":true,"es-VE":true,"eu":true,"fil":true,"fi":true,"fr":true,"fr-BE":true,"fr-CA":true,"fr-CD":true,"fr-CH":true,"fr-CI":true,"fr-CM":true,"fr-DZ":true,"fr-LU":true,"fr-MR":true,"fr-MA":true,"fr-SN":true,"fr-TN":true,"gl":true,"gu":true,"ha":true,"he":true,"hi":true,"hr":true,"hu":true,"hy":true,"id":true,"ig":true,"is":true,"it":true,"it-CH":true,"ja":true,"ka":true,"kk":true,"km":true,"kn":true,"ko":true,"kok":true,"lg":true,"lt":true,"lv":true,"mk":true,"ml":true,"mn":true,"mr":true,"ms":true,"mt":true,"nb":true,"ne":true,"ne-IN":true,"nl":true,"nl-BE":true,"nn":true,"om":true,"or":true,"pa":true,"pl":true,"pt":true,"pt-AO":true,"pt-MZ":true,"pt-PT":true,"ro":true,"root":true,"ru":true,"rw":true,"si":true,"sk":true,"sl":true,"sr":true,"sr-Latn":true,"sq":true,"sv":true,"sw":true,"sw-KE":true,"ta":true,"te":true,"th":true,"tr":true,"uk":true,"ur":true,"ur-IN":true,"uz":true,"uz-Cyrl":true,"vi":true,"yo":true,"zh":true,"zh-Hans":true,"zh-Hans-SG":true,"zh-Hant":true,"zh-Hant-HK":true,"_layerMid":"cldr/main_build"}}});require.config({"config":{"requirejs-dplugins/css":{"layersMap":{"deliteful/ViewStack/transitions/slide.css":"main_build.css","deliteful/ViewStack/transitions/reveal.css":"main_build.css"}}}});define('xapp/mainr',[
     "deliteful/Button",
     "xblox/RunScript",
     "delite/Container",
@@ -60,9 +60,11 @@ require.config({"config":{"delite/theme":{"layersMap":{"delite/themes/{{theme}}/
     "deliteful/features",
     "deliteful/ProgressIndicator",
     "deliteful/ViewStack",
+    "deliteful/Panel",
     "deliteful/SidePane",
     "deliteful/LinearLayout",
     "deliteful/Button",
+    "xdeliteful/Button",
     "deliteful/StarRating",
     "deliteful/ProgressBar",
     "deliteful/list/List",
@@ -5827,7 +5829,7 @@ define('xdeliteful/TabBar',[
          * @member {deliteful/Toggle}
          * @default deliteful/ToggleButton
          */
-        toggle: Button,
+        toggle: ToggleButton,
 
         preRender: function () {
             // we want to inherit from Bar
@@ -5835,6 +5837,9 @@ define('xdeliteful/TabBar',[
         },
 
         refreshRendering: function (oldValues) {
+            if(!this.viewStack){
+                this.viewStack = $('#' + $(this).attr('_viewstack'))[0];
+            }
             if ("viewStack" in oldValues) {
                 // take all existing views and fill the bar with corresponding buttons
                 for (var i = 0; i < this.viewStack.children.length; i++) {
@@ -5864,7 +5869,6 @@ define('xdeliteful/TabBar',[
 
             }
         },
-
         /**
          * Creates the tab bar button corresponding to the given view. The default implementation is using the
          * `toggle` property to create the button and pass the view `title` as `label` and when provided the
@@ -5873,7 +5877,7 @@ define('xdeliteful/TabBar',[
          * @returns {deliteful/Toggle} An element representing the tab bar button for the given view.
          */
         createTabButton: function (view) {
-            return new this.toggle({label: view.title, iconClass: view.getAttribute("iconClass")});
+            return new this.toggle({label: view.label, iconClass: view.getAttribute("iconClass")});
         },
 
         /**
@@ -20582,6 +20586,118 @@ define('delite/FormWidget',[
 
 
 ;
+define('delite/handlebars!xdeliteful/Button/Button.html',["delite/handlebars"], function(handlebars){
+	return handlebars.compile("<template attach-point=\"focusNode\">\n\t<span attach-point=\"iconNode\" class=\"d-icon {{this.iconClass ? this.iconClass : 'd-hidden'}}\" aria-hidden=\"true\"> </span><span attach-point=\"labelNode\" d-hidden=\"{{!this.label}}\">{{label}}</span>\n</template>");
+});;
+/** @module deliteful/Button */
+define('xdeliteful/Button',[
+	"dcl/dcl",
+	"requirejs-dplugins/has",
+	"delite/register",
+	"delite/Widget",
+	"delite/Container",
+	"requirejs-dplugins/has!bidi?./Button/bidi/Button",
+	"delite/handlebars!./Button/Button.html",
+	"delite/theme!./Button/themes/{{theme}}/Button.css"
+], function (dcl, has, register, Widget,Container, BidiButton, template) {
+
+	/**
+	 * A Non-templated form-aware button widget.
+	 * A Button can display a label, an icon, or both. Icon is specified via the iconClass property that
+	 * takes the name of the class to apply to the button node to display the icon.
+	 * @example
+	 * <style>
+	 *   .iconForButton {
+	 *     background-image: url('images/cut.png');
+	 *     width: 16px;
+	 *     height: 16px;
+	 *   }
+	 * </style>
+	 * <button is="d-button" iconClass="iconForButton">Click Me</button>
+	 * @class module:deliteful/Button
+	 * @augments module:delite/Widget
+	 */
+	var Button = dcl(Container, /** @lends module:deliteful/Button# */ {
+
+		/**
+		 * The text to display in the button.
+		 * @member {string}
+		 * @default ""
+		 */
+		label: "",
+
+		/**
+		 * The name of the CSS class to apply to DOMNode in button to make it display an icon.
+		 * @member {string}
+		 * @default ""
+		 */
+		iconClass: "",
+
+		/**
+		 * The name of the CSS class of this widget.
+		 * @member {string}
+		 * @default "d-button"
+		 */
+		baseClass: "d-button",
+
+		template: template,
+
+		createdCallback: function () {
+			// Get label from innerHTML, and then clear it since we are to put the label in a <span>
+			if (!this.label) {
+				this.label = this.textContent.trim();
+				//this.innerHTML = "";
+			}
+		},
+
+		computeProperties: function (props) {
+			if ("title" in props || "label" in props) {
+				this.title = this.title || this.label || "";
+			}
+		}
+	});
+
+	var ButtonElt = register("d-button", has("bidi") ? [HTMLButtonElement, Button, BidiButton] :
+		[HTMLButtonElement, Button]);
+	ButtonElt.Impl = Button;
+	return ButtonElt;
+});
+;
+define('xdeliteful/Button/bidi/Button',["dcl/dcl", "dpointer/events"], function (dcl) {
+
+	// module:
+	//		deliteful/Button/bidi/Button
+
+	return dcl(null, {
+		// summary:
+		//		Support for control over text direction for Button widget,
+		//		using Unicode Control Characters to control text direction.
+		// description:
+		//		Implementation for text direction support for label and tooltip.
+		//		This class should not be used directly.
+		//		Button widget loads this module when user sets "has: {'bidi': true }" in data-dojo-config.
+
+		refreshRendering: function (oldVals) {
+			if ("textDir" in oldVals || "label" in oldVals) {
+				this.labelNode.textContent = this.applyTextDirection(this.label);
+			}
+			if (this.title && "textDir" in oldVals) {
+				this.title = this.applyTextDirection(this.title);
+			}
+		},
+		
+		postRender: function () {
+			this.on("pointerover", this._pointerOverHandler.bind(this));
+		},
+		
+		_pointerOverHandler: function () {
+			if (this.title) {
+				this.title = this.applyTextDirection(this.title);
+			}
+		}
+	});
+});
+;
 /** @module deliteful/LinearLayout */
 define('deliteful/LinearLayout',[
 	"requirejs-dplugins/jquery!attributes/classes",
@@ -21066,6 +21182,55 @@ define('deliteful/SidePane',[
 		});
 	});
 ;
+/** @module deliteful/Panel */
+define('deliteful/Panel',["dcl/dcl",
+	"delite/register",
+	"delite/Widget",
+    "delite/theme!./Panel/themes/{{theme}}/Panel.css"
+], function (dcl, register, Widget) {
+
+	/**
+	 * A container widget used inside an Accordion.
+	 *
+	 * @class module:deliteful/Panel
+	 * @augments module:delite/Widget
+	 * @example
+	 * <d-panel id="panel" label="Title">
+	 *   <div>...</div>
+	 *   <div>...</div>
+	 * </d-panel>
+	 */
+	return register("d-panel", [HTMLElement, Widget], /** @lends module:deliteful/Panel# */ {
+
+		/**
+		 * The name of the CSS class of this widget.
+		 * @member {string}
+		 * @default "d-panel"
+		 */
+		baseClass: "d-panel",
+
+		/**
+		 * The label to be displayed in the panel's header.
+		 * @member {string}
+		 * @default ""
+		 */
+		label: "",
+
+		/**
+		 * CSS class to apply to the icon node in the header when this panel is open.
+		 * @member {string}
+		 * @default ""
+		 */
+		openIconClass: "",
+
+		/**
+		 * CSS class to apply to icon node in the header when this panel is closed.
+		 * @member {string}
+		 * @default ""
+		 */
+		closedIconClass: ""
+	});
+});;
 /** @module deliteful/ViewStack */
 define('deliteful/ViewStack',[
 	"dcl/dcl",
@@ -69755,6 +69920,8 @@ define('xide/manager/Context',[
         _reloadModule: function (_module, reload) {
 
             var _errorHandle = null;
+
+            _module = _module.replace('0/8','0.8');
 
             function handleError(error){
 

@@ -26,6 +26,8 @@ define([
         "deliteful/Checkbox",
         "deliteful/RadioButton",
         "deliteful/ToggleButton",
+        "deliteful/ViewStack",
+        "deliteful/Panel",
         'xblox/model/html/SetState',
         "require"
     ],function(has,dcl,dHas,Deferred){
