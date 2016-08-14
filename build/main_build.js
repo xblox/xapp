@@ -40203,6 +40203,7 @@ define('xide/mixins/ReloadMixin',[
          * @param evt
          */
         onModuleReloaded: function (evt) {
+            //console.log('on module reloaded');
             var newModule = evt.newModule;
             if (!newModule || !newModule.prototype || evt._processed) {
                 return;
@@ -57649,11 +57650,11 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
                             for (var i = 0; i < messagesNew.length; i++) {
                                 var _message = messagesNew[i];
-                                if (_.isString(_message) && _message.length == 0) {
+                                if (_.isString(_message.string) && _message.string.length == 0) {
                                     continue;
                                 }
                                 if (hex) {
-                                    _message = utils.stringToHex(_message);
+                                    _message = utils.stringToHex(_message.string);
                                 }
                                 consoleView.log(_message, split, true, types.LOG_OUTPUT.RESPONSE);
                             }
