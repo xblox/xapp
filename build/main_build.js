@@ -55064,7 +55064,7 @@ define('xide/manager/ServerActionBase',[
                 for (var i = 0; i < config.mixins.length; i++) {
                     var obj = config.mixins[i];
                     if (obj.declaredClass === declaredClass && obj.mixin && obj.mixin.serviceUrl) {
-                        return obj.mixin.serviceUrl;
+                        return decodeURIComponent(obj.mixin.serviceUrl);
                     }
                 }
             }
@@ -55101,8 +55101,8 @@ define('xide/manager/ServerActionBase',[
                     }
                 }
                 if (!this.serviceObject) {
-                    //console.log('Init RPC Class ' + this.serviceClass + ' with url : ' + this.serviceUrl + ' singleton ' + this.singleton);
-                    this.serviceObject = new RPCService(this.serviceUrl,this.options);
+                    var url = decodeURIComponent(this.serviceUrl);
+                    this.serviceObject = new RPCService(decodeURIComponent(this.serviceUrl),this.options);
                     this.serviceObject.runDeferred = function(){
                         return thiz.runDeferred.apply(thiz,arguments);
                     }
@@ -57015,6 +57015,11 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 baseDriverPrefix = this.driverScopes['system_drivers'],
                 baseDriverRequire = baseDriverPrefix + 'DriverBase';
 
+            var urlBase = require.toUrl(this.driverScopes['system_drivers']);
+
+            var url = decodeURIComponent(urlBase) + "/DriverBase";
+
+
             function buildMQTTParams(cInfo,driverInstance,deviceItem,driverItem){
                 return {
                     driverScopeId:driverInstance.blockScope.id,
@@ -57024,7 +57029,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
 
             try {
-                require([baseDriverRequire], function (baseDriver) {
+                require([url], function (baseDriver) {
                     baseDriver.prototype.declaredClass = baseDriverRequire;
                     thiz.createDriverInstance(cInfo, baseDriver, item).then(function (driverInstance) {
                         debugCreateInstance && console.info('created driver instance for '+ cInfo.toString());                        
@@ -57053,9 +57058,14 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
             var hash = deviceInfo.hash,
                 driverPrefix = this.driverScopes[deviceInfo.driverScope],
-                requirePath = driverPrefix + deviceInfo.driver;
-            
-            requirePath = requirePath.replace('.js', '').trim();
+                requirePath = decodeURIComponent(require.toUrl(driverPrefix)) + deviceInfo.driver;
+
+            //var baseUrl = decodeURIComponent(require.toUrl(driverPrefix));
+
+
+            requirePath = requirePath.replace('', '').trim();
+
+            //debugger;
 
             var thiz = this,
                 ctx = thiz.ctx,
@@ -57291,6 +57301,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             var baseDriverRequire = baseDriverPrefix + 'DriverBase';
 
             debugDevice && console.log('device conntected, load base driver with prefix : ' +baseDriverPrefix + ' and final require ' + baseDriverRequire);
+
+
 
             try {
                 require([baseDriverRequire], function (baseDriver) {
@@ -68644,7 +68656,7 @@ define('xfile/manager/FileManager',[
             selection.push(src.path);
 
             var thiz = this;
-            var downloadUrl = this.serviceUrl;
+            var downloadUrl = decodeURIComponent(this.serviceUrl);
             downloadUrl = downloadUrl.replace('view=rpc', 'view=smdCall');
             if (downloadUrl.indexOf('?') != -1) {
                 downloadUrl += '&';
@@ -68705,7 +68717,7 @@ define('xfile/manager/FileManager',[
             }
             var thiz = this;
             preventCache = location.href.indexOf('noImageCache') != -1 || preventCache === true || src.dirty === true;
-            var downloadUrl = this.serviceUrl;
+            var downloadUrl = decodeURIComponent(this.serviceUrl);
             downloadUrl = downloadUrl.replace('view=rpc', 'view=smdCall');
             var path = utils.buildPath(src.mount, src.path, true);
             path = this.serviceObject.base64_encode(path);
@@ -68792,7 +68804,7 @@ define('xfile/manager/FileManager',[
 
         },
         getUploadUrl: function () {
-            var url = '' + this.serviceUrl;
+            var url = '' + decodeURIComponent(this.serviceUrl);
             url = url.replace('view=rpc', 'view=upload');
             url = url.replace('../../../../', './');
             url += '&service=';
@@ -69212,7 +69224,7 @@ define('xfile/manager/FileManager',[
         _initService: function () {
             this.filesToUpload = [];
             if (!this.serviceObject) {
-                this.serviceObject = new RPCService(this.serviceUrl);
+                this.serviceObject = new RPCService(decodeURIComponent(this.serviceUrl));
                 this.serviceObject.config = this.config;
             }
         }
