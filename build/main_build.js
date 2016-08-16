@@ -314,7 +314,8 @@ define('deliteful/Accordion',[
 		_numOpenPanels: 0,
 
 		createdCallback: function () {
-			this._panelList = [];
+
+			this._panelList = this._panelList || [];
 
 			// Declarative case (panels specified declaratively inside the declarative Accordion).
 			var panels = Array.prototype.slice.call(this.children);	// copy array since we'll be adding more children
@@ -371,6 +372,13 @@ define('deliteful/Accordion',[
 		},
 
 		_setupUpgradedChild: function (panel) {
+
+			var existing = this._panelList.indexOf(panel);
+			if(existing > -1 ){
+				console.error('already exists');
+				return this._panelList[existing];
+			}
+
 			// Create the header (that displays the panel's title).
 			var header = this.createHeader(panel, {
 				id: panel.id + "_panelHeader",
@@ -57042,7 +57050,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
 
             try {
-                require([url], function (baseDriver) {
+                require([baseDriverRequire], function (baseDriver) {
                     baseDriver.prototype.declaredClass = baseDriverRequire;
                     thiz.createDriverInstance(cInfo, baseDriver, item).then(function (driverInstance) {
                         debugCreateInstance && console.info('created driver instance for '+ cInfo.toString());                        
@@ -57306,11 +57314,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             var thiz = this;
             var baseDriverPrefix = this.driverScopes['system_drivers'];
             var baseDriverRequire = baseDriverPrefix + 'DriverBase';
-
-            debugDevice && console.log('device conntected, load base driver with prefix : ' +baseDriverPrefix + ' and final require ' + baseDriverRequire);
-
-
-
+            console.log('device conntected, load base driver with prefix : ' +baseDriverPrefix + ' and final require ' + baseDriverRequire);
             try {
                 require([baseDriverRequire], function (baseDriver) {
                     baseDriver.prototype.declaredClass = baseDriverRequire;
