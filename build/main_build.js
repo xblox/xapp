@@ -5838,9 +5838,14 @@ define('xdeliteful/TabBar',[
 
         refreshRendering: function (oldValues) {
             if(!this.viewStack){
-                this.viewStack = $('#' + $(this).attr('_viewstack'))[0];
+                this.viewStack = $('#' + $(this).attr('viewStack'))[0];
+            }else if(_.isString(this.viewStack)){
+                var viewStack = $('#' + $(this).attr('viewStack'))[0];
+                if(viewStack){
+                    this.viewStack = viewStack;
+                }
             }
-            if ("viewStack" in oldValues) {
+            if (this.viewStack && this.viewStack.children && "viewStack" in oldValues) {
                 // take all existing views and fill the bar with corresponding buttons
                 for (var i = 0; i < this.viewStack.children.length; i++) {
                     var element = this.viewStack.children[i];
@@ -5958,6 +5963,7 @@ define('xdeliteful/Bar',[
         }),
 
         _setupHolder: function (child) {
+            this._childArray = this._childArray || [];
             var holder = this.ownerDocument.createElement("div");
             this._childArray.push(child);
             holder.appendChild(child);
@@ -6036,9 +6042,16 @@ define('xdeliteful/Bar',[
                 node = this.getChildren()[node];
             }
 
-            if (node && node.parentNode) {
-                HTMLElement.prototype.removeChild.call(node.parentNode.parentNode, node.parentNode);
-                HTMLElement.prototype.removeChild.call(node.parentNode, node); // detach but don't destroy
+            if(this.contains(node)) {
+                //this.removeChild(node);
+                HTMLElement.prototype.removeChild.call(this, node);
+                if (node && node.parentNode && node.parentNode.parentNode) {
+
+                    //HTMLElement.prototype.removeChild.call(node.parentNode.parentNode, node.parentNode);
+                    //HTMLElement.prototype.removeChild.call(node.parentNode, node); // detach but don't destroy
+                }
+            }else{
+                console.warn('no me');
             }
         },
 
@@ -57059,14 +57072,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             var hash = deviceInfo.hash,
                 driverPrefix = this.driverScopes[deviceInfo.driverScope],
                 requirePath = decodeURIComponent(require.toUrl(driverPrefix)) + deviceInfo.driver;
-
             //var baseUrl = decodeURIComponent(require.toUrl(driverPrefix));
-
-
             requirePath = requirePath.replace('', '').trim();
-
-            //debugger;
-
             var thiz = this,
                 ctx = thiz.ctx,
                 meta = device['user'],
