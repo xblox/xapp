@@ -21,6 +21,7 @@ define([
         'delite/register',
         "deliteful/Button",
         "deliteful/Slider",
+        "deliteful/Select",
         "deliteful/Combobox",
         "deliteful/Checkbox",
         "deliteful/RadioButton",

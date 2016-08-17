@@ -23,6 +23,7 @@ define([
         "deliteful/Button",
         "deliteful/Slider",
         "deliteful/Combobox",
+        "deliteful/Select",
         "deliteful/Checkbox",
         "deliteful/RadioButton",
         "deliteful/ToggleButton",

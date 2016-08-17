@@ -1,4 +1,4 @@
-require.config({"config":{"delite/theme":{"layersMap":{"delite/themes/{{theme}}/common.css":"themes/layer_{{theme}}.css","deliteful/Accordion/themes/{{theme}}/Accordion.css":"themes/layer_{{theme}}.css","xdeliteful/Bar/themes/Bar.css":"themes/layer_{{theme}}.css","deliteful/list/List/themes/{{theme}}/List.css":"themes/layer_{{theme}}.css","delite/Scrollable/themes/{{theme}}/Scrollable.css":"themes/layer_{{theme}}.css","deliteful/ProgressBar/themes/{{theme}}/ProgressBar.css":"themes/layer_{{theme}}.css","deliteful/StarRating/themes/{{theme}}/StarRating.css":"themes/layer_{{theme}}.css","xdeliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css","deliteful/LinearLayout/themes/{{theme}}/LinearLayout.css":"themes/layer_{{theme}}.css","deliteful/SidePane/themes/{{theme}}/SidePane.css":"themes/layer_{{theme}}.css","deliteful/Panel/themes/{{theme}}/Panel.css":"themes/layer_{{theme}}.css","deliteful/ViewStack/themes/{{theme}}/ViewStack.css":"themes/layer_{{theme}}.css","deliteful/ProgressIndicator/themes/{{theme}}/ProgressIndicator.css":"themes/layer_{{theme}}.css","deliteful/Switch/themes/{{theme}}/Switch.css":"themes/layer_{{theme}}.css","deliteful/ToggleButton/themes/{{theme}}/ToggleButton.css":"themes/layer_{{theme}}.css","deliteful/RadioButton/themes/{{theme}}/RadioButton.css":"themes/layer_{{theme}}.css","deliteful/Checkbox/themes/{{theme}}/Checkbox.css":"themes/layer_{{theme}}.css","deliteful/Combobox/themes/{{theme}}/Combobox.css":"themes/layer_{{theme}}.css","delite/DialogUnderlay/themes/{{theme}}/DialogUnderlay.css":"themes/layer_{{theme}}.css","deliteful/Slider/themes/{{theme}}/Slider.css":"themes/layer_{{theme}}.css","deliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css"}}}});require.config({"config":{"requirejs-dplugins/i18n":{"bundlesMap":{"nls/main_build":["deliteful/list/List/nls/List","deliteful/StarRating/nls/StarRating","deliteful/Combobox/nls/Combobox"]},"localesMap":{"nls/main_build":["root"]}}}});require.config({config:{'ecma402/impl/load':{"af":true,"af-NA":true,"am":true,"ar":true,"ar-AE":true,"ar-BH":true,"ar-DZ":true,"ar-EG":true,"ar-IQ":true,"ar-JO":true,"ar-KW":true,"ar-LB":true,"ar-LY":true,"ar-MA":true,"ar-OM":true,"ar-QA":true,"ar-SA":true,"ar-SD":true,"ar-SY":true,"ar-TN":true,"ar-YE":true,"as":true,"az":true,"be":true,"bg":true,"bn":true,"bn-IN":true,"ca":true,"cs":true,"cy":true,"da":true,"de":true,"de-AT":true,"de-LU":true,"de-CH":true,"el":true,"en":true,"en-AU":true,"en-BE":true,"en-CM":true,"en-CA":true,"en-GB":true,"en-GH":true,"en-HK":true,"en-IE":true,"en-IN":true,"en-KE":true,"en-MU":true,"en-NG":true,"en-NZ":true,"en-PH":true,"en-SG":true,"en-TT":true,"en-ZA":true,"en-ZM":true,"es":true,"es-AR":true,"es-BO":true,"es-CL":true,"es-CO":true,"es-CR":true,"es-DO":true,"es-EC":true,"es-GT":true,"es-HN":true,"es-MX":true,"es-NI":true,"es-PA":true,"es-PE":true,"es-PR":true,"es-PY":true,"es-SV":true,"es-US":true,"es-UY":true,"es-VE":true,"eu":true,"fil":true,"fi":true,"fr":true,"fr-BE":true,"fr-CA":true,"fr-CD":true,"fr-CH":true,"fr-CI":true,"fr-CM":true,"fr-DZ":true,"fr-LU":true,"fr-MR":true,"fr-MA":true,"fr-SN":true,"fr-TN":true,"gl":true,"gu":true,"ha":true,"he":true,"hi":true,"hr":true,"hu":true,"hy":true,"id":true,"ig":true,"is":true,"it":true,"it-CH":true,"ja":true,"ka":true,"kk":true,"km":true,"kn":true,"ko":true,"kok":true,"lg":true,"lt":true,"lv":true,"mk":true,"ml":true,"mn":true,"mr":true,"ms":true,"mt":true,"nb":true,"ne":true,"ne-IN":true,"nl":true,"nl-BE":true,"nn":true,"om":true,"or":true,"pa":true,"pl":true,"pt":true,"pt-AO":true,"pt-MZ":true,"pt-PT":true,"ro":true,"root":true,"ru":true,"rw":true,"si":true,"sk":true,"sl":true,"sr":true,"sr-Latn":true,"sq":true,"sv":true,"sw":true,"sw-KE":true,"ta":true,"te":true,"th":true,"tr":true,"uk":true,"ur":true,"ur-IN":true,"uz":true,"uz-Cyrl":true,"vi":true,"yo":true,"zh":true,"zh-Hans":true,"zh-Hans-SG":true,"zh-Hant":true,"zh-Hant-HK":true,"_layerMid":"cldr/main_build"}}});require.config({"config":{"requirejs-dplugins/css":{"layersMap":{"deliteful/ViewStack/transitions/slide.css":"main_build.css","deliteful/ViewStack/transitions/reveal.css":"main_build.css"}}}});define('xapp/mainr',[
+require.config({"config":{"delite/theme":{"layersMap":{"delite/themes/{{theme}}/common.css":"themes/layer_{{theme}}.css","deliteful/Accordion/themes/{{theme}}/Accordion.css":"themes/layer_{{theme}}.css","xdeliteful/Bar/themes/Bar.css":"themes/layer_{{theme}}.css","deliteful/list/List/themes/{{theme}}/List.css":"themes/layer_{{theme}}.css","delite/Scrollable/themes/{{theme}}/Scrollable.css":"themes/layer_{{theme}}.css","deliteful/ProgressBar/themes/{{theme}}/ProgressBar.css":"themes/layer_{{theme}}.css","deliteful/StarRating/themes/{{theme}}/StarRating.css":"themes/layer_{{theme}}.css","xdeliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css","deliteful/LinearLayout/themes/{{theme}}/LinearLayout.css":"themes/layer_{{theme}}.css","deliteful/SidePane/themes/{{theme}}/SidePane.css":"themes/layer_{{theme}}.css","deliteful/Panel/themes/{{theme}}/Panel.css":"themes/layer_{{theme}}.css","deliteful/ViewStack/themes/{{theme}}/ViewStack.css":"themes/layer_{{theme}}.css","deliteful/ProgressIndicator/themes/{{theme}}/ProgressIndicator.css":"themes/layer_{{theme}}.css","deliteful/Switch/themes/{{theme}}/Switch.css":"themes/layer_{{theme}}.css","deliteful/ToggleButton/themes/{{theme}}/ToggleButton.css":"themes/layer_{{theme}}.css","deliteful/RadioButton/themes/{{theme}}/RadioButton.css":"themes/layer_{{theme}}.css","deliteful/Checkbox/themes/{{theme}}/Checkbox.css":"themes/layer_{{theme}}.css","deliteful/Select/themes/{{theme}}/Select.css":"themes/layer_{{theme}}.css","deliteful/Combobox/themes/{{theme}}/Combobox.css":"themes/layer_{{theme}}.css","delite/DialogUnderlay/themes/{{theme}}/DialogUnderlay.css":"themes/layer_{{theme}}.css","deliteful/Slider/themes/{{theme}}/Slider.css":"themes/layer_{{theme}}.css","deliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css"}}}});require.config({"config":{"requirejs-dplugins/i18n":{"bundlesMap":{"nls/main_build":["deliteful/list/List/nls/List","deliteful/StarRating/nls/StarRating","deliteful/Combobox/nls/Combobox"]},"localesMap":{"nls/main_build":["root"]}}}});require.config({config:{'ecma402/impl/load':{"af":true,"af-NA":true,"am":true,"ar":true,"ar-AE":true,"ar-BH":true,"ar-DZ":true,"ar-EG":true,"ar-IQ":true,"ar-JO":true,"ar-KW":true,"ar-LB":true,"ar-LY":true,"ar-MA":true,"ar-OM":true,"ar-QA":true,"ar-SA":true,"ar-SD":true,"ar-SY":true,"ar-TN":true,"ar-YE":true,"as":true,"az":true,"be":true,"bg":true,"bn":true,"bn-IN":true,"ca":true,"cs":true,"cy":true,"da":true,"de":true,"de-AT":true,"de-LU":true,"de-CH":true,"el":true,"en":true,"en-AU":true,"en-BE":true,"en-CM":true,"en-CA":true,"en-GB":true,"en-GH":true,"en-HK":true,"en-IE":true,"en-IN":true,"en-KE":true,"en-MU":true,"en-NG":true,"en-NZ":true,"en-PH":true,"en-SG":true,"en-TT":true,"en-ZA":true,"en-ZM":true,"es":true,"es-AR":true,"es-BO":true,"es-CL":true,"es-CO":true,"es-CR":true,"es-DO":true,"es-EC":true,"es-GT":true,"es-HN":true,"es-MX":true,"es-NI":true,"es-PA":true,"es-PE":true,"es-PR":true,"es-PY":true,"es-SV":true,"es-US":true,"es-UY":true,"es-VE":true,"eu":true,"fil":true,"fi":true,"fr":true,"fr-BE":true,"fr-CA":true,"fr-CD":true,"fr-CH":true,"fr-CI":true,"fr-CM":true,"fr-DZ":true,"fr-LU":true,"fr-MR":true,"fr-MA":true,"fr-SN":true,"fr-TN":true,"gl":true,"gu":true,"ha":true,"he":true,"hi":true,"hr":true,"hu":true,"hy":true,"id":true,"ig":true,"is":true,"it":true,"it-CH":true,"ja":true,"ka":true,"kk":true,"km":true,"kn":true,"ko":true,"kok":true,"lg":true,"lt":true,"lv":true,"mk":true,"ml":true,"mn":true,"mr":true,"ms":true,"mt":true,"nb":true,"ne":true,"ne-IN":true,"nl":true,"nl-BE":true,"nn":true,"om":true,"or":true,"pa":true,"pl":true,"pt":true,"pt-AO":true,"pt-MZ":true,"pt-PT":true,"ro":true,"root":true,"ru":true,"rw":true,"si":true,"sk":true,"sl":true,"sr":true,"sr-Latn":true,"sq":true,"sv":true,"sw":true,"sw-KE":true,"ta":true,"te":true,"th":true,"tr":true,"uk":true,"ur":true,"ur-IN":true,"uz":true,"uz-Cyrl":true,"vi":true,"yo":true,"zh":true,"zh-Hans":true,"zh-Hans-SG":true,"zh-Hant":true,"zh-Hant-HK":true,"_layerMid":"cldr/main_build"}}});require.config({"config":{"requirejs-dplugins/css":{"layersMap":{"deliteful/ViewStack/transitions/slide.css":"main_build.css","deliteful/ViewStack/transitions/reveal.css":"main_build.css"}}}});define('xapp/mainr',[
     "deliteful/Button",
     "xblox/RunScript",
     "delite/Container",
@@ -53,6 +53,7 @@ require.config({"config":{"delite/theme":{"layersMap":{"delite/themes/{{theme}}/
 
     "deliteful/Slider",
     "deliteful/Combobox",
+    "deliteful/Select",
     "deliteful/Checkbox",
     "deliteful/RadioButton",
     "deliteful/ToggleButton",
@@ -22812,6 +22813,343 @@ define('deliteful/Checkbox',[
 		}
 	});
 });;
+define('delite/handlebars!deliteful/Select/Select.html',["delite/handlebars"], function(handlebars){
+	return handlebars.compile("<template class=\"d-select\" role=\"presentation\">\n\t<select class=\"d-select-inner\" attach-point=\"valueNode,focusNode\" value=\"{{value}}\" name=\"{{name}}\" size=\"{{size}}\" multiple=\"{{this.selectionMode === 'multiple'}}\" disabled=\"{{disabled}}\"></select>\n</template>");
+});;
+/** @module deliteful/Select */
+define('deliteful/Select',[
+	"dcl/dcl",
+	"requirejs-dplugins/jquery!attributes/classes",
+	"decor/sniff",
+	"delite/register",
+	"delite/FormWidget",
+	"delite/StoreMap",
+	"delite/Selection",
+	"delite/handlebars!./Select/Select.html",
+	"delite/theme!./Select/themes/{{theme}}/Select.css"
+], function (dcl, $, has, register,
+	FormWidget, StoreMap, Selection, template) {
+
+	/**
+	 * A form-aware and store-aware widget leveraging the native HTML5 `<select>`
+	 * element.
+	 * It has the following characteristics:
+	 * * The corresponding custom tag is `<d-select>`.
+	 * * Allows to select one or more items among a number of options (in single
+	 * or multiple selection mode; see `selectionMode`).
+	 * * Store support (limitation: to avoid graphic glitches, the updates to the
+	 * store should not be done while the native dropdown of the select is open).
+	 * The attributes of data items used for the `label`, `value`, and `disabled`
+	 * attributes of option elements can be customized using respectively the
+	 * `labelAttr`, `valueAttr`, and `disabledAttr` properties, or using
+	 * `labelFunc`, `valueFunc`, and `disabledFunc` properties (for details, see
+	 * the documentation of the `delite/StoreMap` superclass).
+	 * * Form support (inherits from `delite/FormWidget`).
+	 * * The item rendering has the limitations of the `<option>` elements of the
+	 * native `<select>`, in particular it is text-only.
+	 * 
+	 * Remarks:
+	 * * The option items must be added, removed or updated exclusively using
+	 * the store API. Direct operations using the DOM API are not supported.
+	 * * The handling of the selected options of the underlying native `<select>`
+	 * must be done using the API inherited by deliteful/Select from delite/Selection.
+	 * 
+	 * @example <caption>Using store custom element in markup</caption>
+	 * JS:
+	 * require(["deliteful/Select", "requirejs-domready/domReady!"],
+	 *   function () {
+	 *   });
+	 * HTML:
+	 * <d-select id="select">
+	 *    {text: "Option 1", value: "1"}
+	 *    ...
+	 * </d-select>
+	 * @example <caption>Using programmatically created store</caption>
+	 * JS:
+	 * require(["dstore/Memory", "dstore/Trackable",
+	 *         "deliteful/Select", "requirejs-domready/domReady!"],
+	 *   function (Memory, Trackable) {
+	 *     var store = new (Memory.createSubclass(Trackable))({});
+	 *     select1.source = store;
+	 *     store.add({text: "Option 1", value: "1"});
+	 *     ...
+	 *   });
+	 * HTML:
+	 * <d-select selectionMode="multiple" id="select"></d-select>
+	 * 
+	 * @class module:deliteful/Select
+	 * @augments module:delite/FormWidget
+	 * @augments module:delite/StoreMap
+	 * @augments module:delite/Selection
+	 */
+	return register("d-select", [HTMLElement, FormWidget, Selection, StoreMap],
+		// Have to keep StoreMap after Selection to get Store definition of getIdentity function
+		/** @lends module:deliteful/Select# */ {
+		
+		// TODO: improve doc.
+		
+		// Note: the properties `store` and `query` are inherited from delite/Store, and
+		// the property `disabled` is inherited from delite/FormWidget.
+		
+		/**
+		 * The number of rows that should be visible at one time when the widget
+		 * is presented as a scrollable list box. Corresponds to the `size` attribute
+		 * of the underlying native HTML `<select>`.
+		 * @member {number}
+		 * @default 0
+		 */
+		size: 0,
+		
+		/**
+		 * The name of the property of store items which contains the text
+		 * of Select's options.
+		 * @member {string}
+		 * @default "text"
+		 */
+		textAttr: "text",
+		
+		/**
+		 * The name of the property of store items which contains the value
+		 * of Select's options.
+		 * @member {string}
+		 * @default "value"
+		 */
+		valueAttr: "value",
+		
+		/**
+		 * The name of the property of store items which contains the disabled
+		 * value of Select's options. To disable a given option, the `disabled`
+		 * property of the corresponding data item must be set to a truthy value.
+		 * Otherwise, the option is enabled if data item property is absent, or
+		 * its value is falsy or the string "false".
+		 * @member {string}
+		 * @default "disabled"
+		 */
+		disabledAttr: "disabled",
+		
+		baseClass: "d-select",
+		
+		/**
+		 * The chosen selection mode.
+		 *
+		 * Valid values are:
+		 *
+		 * 1. "single": Only one option can be selected at a time.
+		 * 2. "multiple": Several options can be selected (by taping or using the
+		 * control key modifier).
+		 *
+		 * Changing this value impacts the currently selected items to adapt the
+		 * selection to the new mode. However, regardless of the selection mode,
+		 * it is always possible to set several selected items using the
+		 * `selectedItem` or `selectedItems` properties.
+		 * The mode will be enforced only when using `setSelected` and/or
+		 * `selectFromEvent` APIs.
+		 *
+		 * @member {string} module:deliteful/Select#selectionMode
+		 * @default "single"
+		 */
+		// The purpose of the above pseudo-property is to adjust the documentation
+		// of selectionMode as provided by delite/Selection.
+		  
+		template: template,
+
+		afterFormResetCallback: function () {
+			this.valueNode.selectedIndex =
+				this.selectionMode === "single" ?
+					// First option selected in "single" selection mode, and
+					// no option selected in "multiple" mode
+					0 : -1;
+			this.value = this.valueNode.value;
+		},
+
+		postRender: function () {
+			// To provide graphic feedback for focus, react to focus/blur events
+			// on the underlying native select. The CSS class is used instead
+			// of the focus pseudo-class because the browsers give the focus
+			// to the underlying select, not to the widget.
+			this.on("focus", function (evt) {
+				$(this).toggleClass("d-select-focus", evt.type === "focus");
+			}.bind(this), this.valueNode);
+			this.on("blur", function (evt) {
+				$(this).toggleClass("d-select-focus", evt.type === "focus");
+			}.bind(this), this.valueNode);
+
+			// Keep delite/Selection's selectedItem/selectedItems in sync after
+			// interactive selection of options.
+			this.on("change", function (event) {
+				this._duringInteractiveSelection = true;
+				var selectedItems = this.selectedItems,
+					selectedOptions = this.valueNode.selectedOptions;
+				// HTMLSelectElement.selectedOptions is not present in all browsers...
+				// At least IE10/Win misses it. Hence:
+				if (selectedOptions === undefined) {
+					// Convert to array
+					var options = Array.prototype.slice.call(this.valueNode.options);
+					selectedOptions = options.filter(function (option) {
+						return option.selected;
+					});
+				} else {
+					// convert HTMLCollection into array (to be able to use array.indexOf)
+					selectedOptions = Array.prototype.slice.call(selectedOptions);
+				}
+				var nSelectedItems = selectedItems ? selectedItems.length : 0,
+					nSelectedOptions = selectedOptions ? selectedOptions.length : 0;
+				var i;
+				var selectedOption, selectedItem;
+				// Identify the options which changed their selection state. Two steps:
+				// Step 1. Search options previously selected (currently in widget.selectedItems)
+				// which are no longer selected in the native select.
+				for (i = 0; i < nSelectedItems; i++) {
+					selectedItem = selectedItems[i];
+					if (selectedOptions.indexOf(selectedItem.__visualItem) === -1) {
+						this.selectFromEvent(event, selectedItem, selectedItem.__visualItem, true);
+					}
+				}
+				// Step 2. Search options newly selected in the native select which are not
+				// present in the current selection (widget.selectedItems).
+				for (i = 0; i < nSelectedOptions; i++) {
+					selectedOption = selectedOptions[i];
+					if (selectedItems.indexOf(selectedOption.__dataItem) === - 1) {
+						this.selectFromEvent(event, selectedOption.__dataItem, selectedOption, true);
+					}
+				}
+
+				// Update widget's value after interactive selection
+				this._set("value", this.valueNode.value);
+
+				this._duringInteractiveSelection = false;
+			}.bind(this), this.valueNode);
+			
+			// Thanks to the custom getter defined in deliteful/Select for widget's
+			// `value` property, there is no need to add code for keeping the
+			// property in sync after a form reset.
+		},
+		
+		hasSelectionModifier: function () {
+			// Override of the method from delite/Selection because the
+			// default implementation is inappropriate: the "change" event
+			// has no key modifier.
+			return this.selectionMode === "multiple";
+		},
+		
+		refreshRendering: function (props) {
+			/* jshint maxcomplexity: 13 */
+			if ("renderItems" in props) {
+				// Populate the select with the items retrieved from the store.
+				var renderItems = this.renderItems;
+				var n = renderItems ? renderItems.length : 0;
+				// TODO: CHECKME/IMPROVEME. Also called after adding, deleting or updating just one item.
+				// Worth optimizing to avoid recreating from scratch?
+				this.valueNode.innerHTML = ""; // Remove the existing options from the DOM
+				if (n > 0) {
+					var fragment = this.ownerDocument.createDocumentFragment();
+					var renderItem, option;
+					for (var i = 0; i < n; i++) {
+						renderItem = renderItems[i];
+						option = this.ownerDocument.createElement("option");
+						// to allow retrieving the data item from the option element
+						option.__dataItem = renderItem.__item; // __item is set by StoreMap.itemToRenderItem()
+						// to allow retrieving the option element from widget's selectedItems
+						// (which are data items, not render items).
+						option.__dataItem.__visualItem = option;
+						this.discardChanges(); // to avoid infinity loop
+						
+						// According to http://www.w3.org/TR/html5/forms.html#the-option-element, we 
+						// could use equivalently the label or the text IDL attribute of the option element.
+						// However, using the label attr. breaks the rendering in FF29/Win7!
+						// This is https://bugzilla.mozilla.org/show_bug.cgi?id=40545.
+						// Hence don't do
+						// option.label = renderItem.label;
+						// Instead:
+						if (renderItem.text !== undefined) { // optional
+							option.text = renderItem.text;
+						}
+						if (renderItem.value !== undefined) { // optional
+							option.setAttribute("value", renderItem.value);
+						} else if (has("ie") && renderItem.text !== undefined) { // #546
+							option.setAttribute("value", renderItem.text);
+						}
+						// The selection API (delite/Selection) needs to be called consistently
+						// for data items, not for render items.
+						// renderItem.__item is the data item instance for which
+						// StoreMap.itemToRenderItem() has created the render item.
+						// For now there is no public API for accessing it.
+						if (this.isSelected(renderItem.__item)) { // delite/Selection's API
+							option.setAttribute("selected", "true");
+						}
+						if (renderItem.disabled !== undefined &&
+							!!renderItem.disabled && renderItem.disabled !== "false") { // optional
+							// Note that for an enabled option the attribute must NOT be set
+							// (<option disabled="false"> is a disabled option!)
+							option.setAttribute("disabled", "true");
+						}
+						
+						fragment.appendChild(option);
+					}
+					this.valueNode.appendChild(fragment);
+					
+					if (this.selectionMode === "single") {
+						// Since there is no native "change" event initially, initialize
+						// the delite/Selection's selectedItem property with the currently
+						// selected option of the native select.
+						this.selectedItem =
+							this.valueNode.options[this.valueNode.selectedIndex].__dataItem;
+					} // else for the native multi-select: it does not have any
+					// option selected by default.
+					
+					// Initialize widget's value
+					this._set("value", this.valueNode.value);
+				}
+			}
+		},
+		
+		getIdentity: dcl.superCall(function (sup) {
+			return function (dataItem) {
+				return sup.call(this, dataItem);
+			};
+		}),
+		
+		updateRenderers: function () {
+			// Override of delite/Selection's method.
+			// Trigger rerendering from scratch, in order to keep the rendering
+			// in sync with the selection state of items. This method gets called
+			// by delite/Selection after changes of selection state. However, the
+			// re-rendering must not be triggered while the user clicks items,
+			// because it would disturb user's interaction with a Select in
+			// multiple mode (#510): with more options than the available height, after
+			// scrolling and clicking an item, the rerendered Select may not have
+			// the same scroll amount as before the click, which isn't ergonomical.
+			// (Differently, in single selection mode, the popup closes right after
+			// the interactive selection.)
+			if (!this._duringInteractiveSelection) {
+				this.notifyCurrentValue("renderItems");
+			}
+		},
+		
+		_setValueAttr: function (value) {
+			if (this.valueNode) {
+				this.valueNode.value = value;
+			}
+			this._set("value", value);
+		},
+		
+		_setSelectionModeAttr: dcl.superCall(function (sup) {
+			// Override of the setter from delite/Selection to forbid the values
+			// "none" and "radio"
+			return function (value) {
+				if (value !== "single" && value !== "multiple") {
+					throw new TypeError("'" + value +
+						"' not supported for selectionMode; keeping the previous value of '" +
+						this.selectionMode + "'");
+				} else {
+					this._set("selectionMode", value);
+				}
+				sup.call(this, value);
+			};
+		})
+	});
+});
+;
 define('delite/handlebars!deliteful/Combobox/Combobox.html',["delite/handlebars"], function(handlebars){
 	return handlebars.compile("<template class=\"d-combobox\" role=\"presentation\" attach-point=\"buttonNode\">\n\t<input class=\"d-combobox-input\" role=\"combobox\" attach-point=\"inputNode,focusNode\" autocomplete=\"off\" autocorrect=\"off\" autocapitalize=\"none\" aria-autocomplete=\"list\" type=\"text\" readonly=\"{{this._inputReadOnly ? 'readonly' : ''}}\">\n\t<input class=\"d-hidden\" attach-point=\"valueNode\" readonly=\"\" name=\"{{name}}\" value=\"{{value}}\">\n\t<span class=\"d-combobox-arrow\" aria-hidden=\"true\"></span>\n</template>");
 });;
