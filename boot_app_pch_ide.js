@@ -28,6 +28,8 @@ define([
         "deliteful/RadioButton",
         "deliteful/ToggleButton",
         "deliteful/ViewStack",
+        "xdeliteful/TabBar",
+        "deliteful/Accordion",
         "deliteful/Panel",
         'xblox/model/html/SetState',
         "require"
