@@ -66,6 +66,13 @@ define([
         dHas.add('use-dcl', function () {
             return true;
         });
+        
+        dHas.add('runDrivers', function () {
+            return true;
+        });
+        has.add('runDrivers', function () {
+            return true;
+        });
 
         bootx({
             delegate:null

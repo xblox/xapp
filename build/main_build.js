@@ -30620,7 +30620,6 @@ define('xapp/manager/Context',[
              * @param widget
              */
             var run = function (event, value, block, widget) {
-
                 if(event==='load' && widget.__didRunLoad){
                     return;
                 }
@@ -30658,9 +30657,9 @@ define('xapp/manager/Context',[
                     if (onBeforeRun) {
                         onBeforeRun(block, value);
                     }
-
                     result = block.solve(block.scope, {
-                        highlight: true
+                        highlight: true,
+                        args:[value]
                     });
                     debugWire && console.log('run ' + block.name + ' for even ' + event, result + ' for ' + this.id);
                 }
@@ -30726,7 +30725,14 @@ define('xapp/manager/Context',[
                                     event = event.replace('on', '');
                                 }
                                 _handle = _target.on(event, function (evt) {
-                                    run(event, evt.currentTarget.value, block, widget);
+
+                                    var value = evt.target.value;
+
+                                    if("checked" in evt.target){
+                                        value = evt.target.checked;
+                                    }
+                                    run(event, value, block, widget);
+
                                 }.bind(this));
                             }
                         }
@@ -30862,7 +30868,7 @@ define('xapp/manager/Context',[
                 if (params && params.widget) {
                     this.wireWidget(scope, params.widget, params.widget.domNode || params.widget, params.event, group, params);
                 }else{
-                    console.error('invalid params');
+                    console.error('cant resolve group '+group);
                 }
 
                 var blocks = scope.getBlocks({
@@ -32115,7 +32121,7 @@ define('xblox/model/Block',[
         getArgs: function (settings) {
 
             var result = [],
-                _inArgs = this._get('args');
+                _inArgs = settings.args || this._get('args');
 
             if(settings && settings.override && settings.override.args){
                 _inArgs = settings.override.args;
@@ -33058,7 +33064,6 @@ define('xblox/factory/Blocks',[
                         condition:"[value]=='PW'"
                     }
                 },
-                /*
                 {
                     name:'Switch',
                     owner:owner,
@@ -33070,7 +33075,6 @@ define('xblox/factory/Blocks',[
                         group:group
                     }
                 },
-                */
                 {
                     name:'Variable Switch',
                     owner:owner,
@@ -35868,7 +35872,13 @@ define('xide/mixins/ReferenceMixin',[
                         }
                         return out;
                     }
-                    return [registry.byId(query)] || [dojo.byId(query)];
+
+                    var _byRegistry = registry.byId(query);
+                    var _byDoc = typeof document !=='undefined' ? document.getElementById(query) : null;
+                    if(_byRegistry || _byDoc){
+                        return _byRegistry ? [_byRegistry] : [_byDoc];
+                    }
+                    break;
                 }
                 //By declared widget class
                 //
@@ -37700,6 +37710,7 @@ define('xblox/model/logging/Log',[
         }
     });
 });;
+/** @module xblox/model/variables/VariableSwitch **/
 define('xblox/model/variables/VariableSwitch',[
     'dcl/dcl',
     "xblox/model/logic/SwitchBlock",
@@ -37708,17 +37719,18 @@ define('xblox/model/variables/VariableSwitch',[
     "xblox/model/logic/DefaultBlock",
     "dojo/Deferred"
 ], function(dcl,SwitchBlock,types,CaseBlock,DefaultBlock,Deferred){
-
-    // summary:
-    //		The switch command model. These kind of commands takes a existing variable and applies some comparison.
-    //      Depending on the comparison results, the code into each case block is executed or not.
-
-    // module:
-    //		xblox.model.VariableSwitch
+    /**
+     *
+     * The switch command model. These kind of commands takes a existing variable and applies some comparison.
+     * Depending on the comparison results, the code into each case block is executed or not.
+     * @class module:xblox/model/variables/VariableSwitch
+     * @extends module:xblox/model/Block
+     */
     return dcl(SwitchBlock,{
         declaredClass:"xblox.model.variables.VariableSwitch",
         name:'Switch on Variable',
         icon:'',
+        variable:"PowerState",
         toText:function(){
             var _variable = this.scope.getVariableById(this.variable);
             var _text = _variable ? _variable.name : '';
@@ -37727,7 +37739,7 @@ define('xblox/model/variables/VariableSwitch',[
         //  standard call for editing
         getFields:function(){
             //options:this.scope.getVariablesAsOptions(),
-            var fields = this.inherited(arguments) || this.getDefaultFields();
+            var fields = this.getDefaultFields(false,false);
             fields = fields.concat([
                 this.utils.createCI('Variable',3,this.variable,
                     {
@@ -37751,81 +37763,6 @@ define('xblox/model/variables/VariableSwitch',[
                 )
             ]);
             return fields;
-        },
-        stop:function(){
-            this._stopped = true;
-        },
-        runAction:function(action){
-
-            if(action.command==='New/Case'){
-                var dfd = new Deferred();
-                var newBlock = this.add(CaseBlock,{
-                    comparator : "==",
-                    expression : "on",
-                    group:null
-                });
-
-                var defaultDfdArgs = {
-                    select: [newBlock],
-                    focus: true,
-                    append: false
-                };
-                dfd.resolve(defaultDfdArgs);
-                newBlock.refresh();
-                return dfd;
-            }
-
-            if(action.command==='New/Default'){
-                var dfd = new Deferred();
-                var newBlock = this.add(DefaultBlock,{
-                    group:null
-                });
-
-                var defaultDfdArgs = {
-                    select: [newBlock],
-                    focus: true,
-                    append: false
-                };
-                dfd.resolve(defaultDfdArgs);
-                newBlock.refresh();
-                return dfd;
-            }
-
-        },
-        getActions:function(){
-
-            var result = [this.createAction({
-                label: 'New Case',
-                command: 'New/Case',
-                icon: this.getBlockIcon('I'),
-                tab: 'Home',
-                group: 'File',
-                mixin: {
-                    addPermission: true,
-                    custom:true,
-                    quick:false
-                }
-            })];
-
-
-            if(!_.find(this.items,{
-                    declaredClass:'xblox.model.logic.DefaultBlock'
-                })){
-                result.push(this.createAction({
-                    label: 'Default',
-                    command: 'New/Default',
-                    icon: 'fa-eject',
-                    tab: 'Home',
-                    group: 'File',
-                    mixin: {
-                        addPermission: true,
-                        custom:true,
-                        quick:false
-                    }
-                }));
-            }
-
-            return result;
         }
     });
 });;
@@ -37863,40 +37800,33 @@ define('xblox/model/logic/DefaultBlock',[
         }
     });
 });;
+/** @module xblox/model/logic/SwitchBlock **/
 define('xblox/model/logic/SwitchBlock',[
     'dcl/dcl',
     "xblox/model/Block",
-    "xblox/model/logic/CaseBlock"
-], function(dcl,Block,CaseBlock){
-
-    // summary:
-    //		Switchs on  a variable's value and runs one case block
-
-    // module:
-    //		xblox.model.SwitchBlock
+    "xblox/model/logic/CaseBlock",
+    "xblox/model/logic/DefaultBlock",
+    "dojo/Deferred"
+], function(dcl,Block,CaseBlock,DefaultBlock,Deferred){
+    /**
+     *
+     * @class module:xblox/model/logic/SwitchBlock
+     * @extends module:xblox/model/Block
+     */
     return dcl(Block,{
         declaredClass:"xblox.model.logic.SwitchBlock",
-        // switchVariable: xcf.model.Variable
-        //  3.12.10.3. The “variable” field indicates the variable name to be evaluated
-        //  into the switch block
-        variable: 'PowerState',
-
-        //items: Array (xblox.model.CaseBlock / xblox.model.Block)
-        //  Each case to be evaluated / Block to be executed if none of the cases occurs.
-        //
-        //
         items:null,
-
         name:'Switch',
-
+        icon:null,
         toText:function(){
-            return this.getBlockIcon('H') + this.name + ' ' + this.variable;
+            return this.getBlockIcon('H')  + this.name + ' ';
         },
-
         canAdd:function(){
             return [];
         },
-
+        getFields:function() {
+            return this.getDefaultFields(false,false);
+        },
         /***
          * Solve the switchblock
          *
@@ -37960,7 +37890,7 @@ define('xblox/model/logic/SwitchBlock',[
             return this.items;
         },
         postCreate:function(){
-
+            /*
             this.add(CaseBlock,{
                 comparator : "==",
                 expression : "'ON'",
@@ -37972,6 +37902,82 @@ define('xblox/model/logic/SwitchBlock',[
                 expression : "'Standby'",
                 group:null
             });
+            */
+
+        },
+        stop:function(){
+            this._stopped = true;
+        },
+        runAction:function(action){
+
+            if(action.command==='New/Case'){
+                var dfd = new Deferred();
+                var newBlock = this.add(CaseBlock,{
+                    comparator : "==",
+                    expression : "on",
+                    group:null
+                });
+
+                var defaultDfdArgs = {
+                    select: [newBlock],
+                    focus: true,
+                    append: false
+                };
+                dfd.resolve(defaultDfdArgs);
+                newBlock.refresh();
+                return dfd;
+            }
+
+            if(action.command==='New/Default'){
+                var dfd = new Deferred();
+                var newBlock = this.add(DefaultBlock,{
+                    group:null
+                });
+
+                var defaultDfdArgs = {
+                    select: [newBlock],
+                    focus: true,
+                    append: false
+                };
+                dfd.resolve(defaultDfdArgs);
+                newBlock.refresh();
+                return dfd;
+            }
+
+        },
+        getActions:function(){
+
+            var result = [this.createAction({
+                label: 'New Case',
+                command: 'New/Case',
+                icon: this.getBlockIcon('I'),
+                tab: 'Home',
+                group: 'File',
+                mixin: {
+                    addPermission: true,
+                    custom:true,
+                    quick:false
+                }
+            })];
+
+            if(!_.find(this.items,{
+                    declaredClass:'xblox.model.logic.DefaultBlock'
+                })){
+                result.push(this.createAction({
+                    label: 'Default',
+                    command: 'New/Default',
+                    icon: 'fa-eject',
+                    tab: 'Home',
+                    group: 'File',
+                    mixin: {
+                        addPermission: true,
+                        custom:true,
+                        quick:false
+                    }
+                }));
+            }
+
+            return result;
         }
     });
 });;
@@ -39601,6 +39607,7 @@ define('xblox/model/loops/ForBlock',[
         }
     });
 });;
+/** @module xblox/model/code/RunScript **/
 define('xblox/model/code/RunScript',[
     'dcl/dcl',
     'xdojo/has',
@@ -39622,24 +39629,15 @@ define('xblox/model/code/RunScript',[
     var console = typeof window !== 'undefined' ? window.console : global.console;
     if(isServer && tracer && console && console.error){
         console = _console;
-    }else{
-        //console.error('have no tracer ' + (tracer!=null && tracer.error!=null ? 'tracer ok ' : 'no ') + ' | ' + (console.error!=null ? 'errir ok ' : 'no error') );
-        //console.dir(tracer);
     }
-
-    // summary:
-    //		The Call Block model.
-    //      This block makes calls to another blocks in the same scope by action name
-
-    // module:
-    //		xblox.model.code.CallMethod
+    /**
+     *
+     * @class module:xblox/model/code/RunScript
+     * @extends module:xblox/model/Block
+     */
     return dcl([Block,Contains],{
         declaredClass:"xblox.model.code.RunScript",
-        //method: (String)
-        //  block action name
         name:'Run Script',
-        //method: (String)
-        //  block action name
         method:'',
         args:'',
         deferred:false,
@@ -39651,11 +39649,6 @@ define('xblox/model/code/RunScript',[
         ],
         getContext:function(){
             return this.context || (this.scope.getContext ?  this.scope.getContext() : this);
-            /*
-             sudo /Applications/Install\ OS\ X\ El\ Capitan.app/Contents/Resources/createinstallmedia --volume /Volumes/USB --applicationpath /Applications/Install\ OS\ X\ El\ Capitan.app --nointeraction
-            if(this.scope.context && this.scope.context.instance){
-                return this.scope.context.instance;
-            }*/
             return this.context || this;
         },
         /***
@@ -40239,31 +40232,22 @@ define('xblox/model/logic/CaseBlock',[
         //comparator: xblox.model.Comparator
         // Comparison to be applied -> compare <switch variable> width <expression>
         comparator:null,
-
         //expression: xblox.model.Expression
         // expression to be compared
         expression:null,
-
         //items: Array (xblox.model.Block)
         //  block to be executed if the comparison result is true
         items:null,
-
         name:'Case',
-
         icon:'',
-
         hasInlineEdits:true,
-
-
         toText:function(){
-
             var _comparator = '' + this.comparator;
             if(_comparator=='=='){
                 //_comparator =''
             }
             return '<span style="text-indent: 1em;">&nbsp;&nbsp;&nbsp;' +this.getBlockIcon('I') + this.name + ' ' + this.makeEditable('comparator','right','text','Enter a comparison','inline') + (this.expression !=null ?  ' ' + this.makeEditable('expression','right','text','Enter a value to compare') : '') + '</span>';
         },
-
         canAdd:function(){
             return [];
         },
@@ -40295,9 +40279,8 @@ define('xblox/model/logic/CaseBlock',[
          * @param switchBlock   => parent SwitchCommand block
          */
         solve:function(scope,switchBlock,settings) {
-
             try {
-                var _var = scope.getVariableById(switchBlock.variable);
+                var _var = scope.getVariableById(switchBlock.variable)  || settings.args ? {value:settings.args[0]} : null;
                 //console.log('case block: ' + this.comparator + this.expression,_var);
                 // Get the variable to evaluate
                 var switchVarValue = '';
@@ -43531,6 +43514,9 @@ define('xide/data/TreeMemory',[
     'dstore/QueryResults'
 ], function (declare, Memory, Tree, Deferred, QueryResults) {
 
+    /**
+     * 
+     */
     return declare('xide.data.TreeMemory', [Memory, Tree], {
         _state: {
             filter: null
@@ -43556,7 +43542,6 @@ define('xide/data/TreeMemory',[
             });
         },
         filter: function (data) {
-
             try {
                 var _res = this.inherited(arguments);
                 this._state.filter = data;
@@ -43567,12 +43552,9 @@ define('xide/data/TreeMemory',[
             return _res;
         },
         _fetchRange: function (kwArgs) {
-
             var deferred = new Deferred();
-
             var _res = this.fetchRangeSync(kwArgs);
             var thiz = this;
-
             if (this._state.filter) {
                 //the parent query
                 if (this._state && this._state.filter && this._state.filter['parent']) {
@@ -45532,6 +45514,10 @@ define('xblox/model/Scope',[
          * @return variable
          */
         getVariableById:function(id) {
+
+            if(!id){
+                return null;
+            }
 
             var parts = id.split('/');
             var scope = this;
@@ -50268,6 +50254,7 @@ define('xcf/manager/DeviceManager',[
      * @class module:xcf/manager/DeviceManager
      * @augments module:xide/mixins/EventedMixin
      * @extends module:xcf/manager/BeanManager
+     * @extends module:xide/mixins/ReloadMixin
      */
     return dcl(bases,{
         declaredClass:"xcf.manager.DeviceManager",
@@ -50386,6 +50373,26 @@ define('xcf/manager/DeviceManager',[
         //  Device-Related
         //
         /////////////////////////////////////////////////////////////////////////////////////
+
+        /**
+         * Returns the file object for a device
+         * @param device
+         * @returns {module:xfile/model/File}
+         */
+        getFile:function(device){
+            var dfd = new Deferred();
+            var ctx = this.ctx;
+            var fileManager = ctx.getFileManager();
+            var fileStore = fileManager.getStore(device.scope);
+            fileStore.initRoot().then(function(){
+                fileStore._loadPath('.',true).then(function(){
+                    fileStore.getItem(device.path,true).then(function (item) {
+                        dfd.resolve(item);
+                    });
+                });
+            });
+            return dfd;
+        },
         getSourceHash:function () {
 
             var userDirectory = this.ctx.getUserDirectory();
@@ -51144,7 +51151,6 @@ define('xcf/manager/DeviceManager',[
          * @private
          */
         onModuleReloaded: function (evt) {
-
             if (this.deviceInstances.length == 0) {//nothing to do
                 return;
             }
@@ -51480,7 +51486,10 @@ define('xcf/manager/DeviceManager',[
             return this.callMethodEx(null, 'getDriverContent', [scope, path], readyCB, true);
         },
         createStore:function(data,scope,track){
-            var storeClass = declare('deviceStore',[TreeMemory,Trackable,ObservableStore],{});
+
+            var storeClass = declare('deviceStore',[TreeMemory,Trackable,ObservableStore],{
+
+            });
             var store = new storeClass({
                 data: data.items,
                 idProperty: 'path',
@@ -51498,7 +51507,7 @@ define('xcf/manager/DeviceManager',[
                 this.stores[scope] = store;
             }
 
-            if(!this.store && scope ==='system_devices'){
+            if(!this.store && scope ==='system_devices' && track!==false){
                 this.store = store;
             }
             return store;
@@ -51806,6 +51815,7 @@ define('xcf/manager/DeviceManager',[
          * @private
          */
         onStoreCreated: function (evt) {
+
             var thiz = this,
                 ctx = thiz.ctx,
                 type = evt.type,
@@ -51856,8 +51866,6 @@ define('xcf/manager/DeviceManager',[
                     }
                 }
             }
-
-
             this.connectToAllDevices();
         },
         /**
@@ -51979,43 +51987,50 @@ define('xcf/manager/DeviceManager',[
          * @param scope{string}
          * @returns {Deferred}
          */
-        ls: function (scope) {
+        ls: function (scope,silent) {
+
+
+            var dfd = new Deferred();
 
             function data(data) {
-
                 try {
-                    var store = this.initStore(data, scope);
+                    var store = this.createStore(data, scope, silent);
                     if (scope === 'system_devices') {
                         this.store = store;
                     }
-                    this.stores[scope] = store;
+
+                    silent!==true && (this.stores[scope] = store);
+
                     this.onStoreReady(store);
-                    this.publish(types.EVENTS.ON_STORE_CREATED, {
+
+                    silent!==true && this.publish(types.EVENTS.ON_STORE_CREATED, {
                         data: data,
                         owner: this,
                         store: store,
                         type: this.itemType
                     });
+
+                    dfd.resolve(store);
+
                 } catch (e) {
                     logError(e, 'error ls drivers');
                 }
             }
 
             if(has('php')) {
-                return this.runDeferred(null, 'ls', [scope]).then(data.bind(this));
+                this.runDeferred(null, 'ls', [scope]).then(data.bind(this));
             }else{
                 if(!isServer) {
-                    var def = this._getText(require.toUrl(scope).replace('main.js', '') + scope + '.json', {
+                    this._getText(require.toUrl(scope).replace('main.js', '') + scope + '.json', {
                         sync: false,
                         handleAs: 'json'
                     }).then(data.bind(this));
                 }else{
-                    var def = new Deferred();
-                    def.resolve({items:[]});
-                    return def;
+                    dfd.resolve({items:[]});
                 }
-                return def;
             }
+
+            return dfd;
         },
         /**
          *
@@ -52024,6 +52039,124 @@ define('xcf/manager/DeviceManager',[
          */
         hasStore:function(scope){
             return this.stores[scope];
+        },
+        /**
+         * 
+         * @param device
+         * @param target
+         * @returns {*}
+         */
+        cloneDevice : function (device, target) {
+            var dfd = new Deferred();
+            var self = this;
+            var ctx = this.ctx;
+            var fileManager = ctx.getFileManager();
+            
+            this.getFile(target).then(function (parentFolder) {
+    
+                self.getFile(device).then(function (sourceDeviceFile) {
+    
+                    if (sourceDeviceFile) {
+    
+                        var srcParentFolder = sourceDeviceFile.getParent();
+    
+                        if (srcParentFolder) {
+    
+                            var sourceFileStore = srcParentFolder._store;
+                            var targetFileStore = parentFolder._store;
+    
+    
+                            //neighbour items
+                            var items = targetFileStore.getChildren(parentFolder);
+    
+                            var newName = fileManager.getNewName(sourceDeviceFile, parentFolder.children);
+    
+                            fileManager.getContent(sourceDeviceFile.mount, sourceDeviceFile.path, function (content) {
+                                // update meta data
+                                var cis = utils.getJson(content);
+                                var DEVICE_PROPERTY = types.DEVICE_PROPERTY;
+                                var meta = cis['inputs'];
+                                var idCI = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_ID);
+                                utils.setCIValueByField(idCI, 'value', utils.createUUID());
+                                var titleCI = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_TITLE);
+                                utils.setCIValueByField(titleCI, 'value', newName.replace('.meta.json', ''));
+    
+                                //store it as new file
+                                var newPath = parentFolder.path + '/' + newName;
+                                fileManager.mkfile(parentFolder.mount, newPath).then(function () {
+    
+                                    fileManager.setContent(parentFolder.mount, newPath, JSON.stringify(cis, null, 2), function () {
+    
+    
+                                        //create a temporary store and move it to the originating
+                                        self.ls(target.scope, true).then(function (store) {
+                                            var _device = store.query({
+                                                id: idCI.value
+                                            })[0];
+    
+                                            if (_device) {
+    
+    
+                                                //remove it from temp store
+                                                store.removeSync(_device.path);
+    
+                                                //remove it from target store (wtf?)
+                                                target._store.removeSync(_device.path);
+    
+                                                //set to the target's store
+                                                _device._store = target._store;
+    
+                                                //add it to the target store
+    
+                                                _device  = target._store.addSync(_device);
+    
+                                                //trigger some events
+                                                _device.refresh();
+    
+                                                //trigger some events
+                                                /*
+                                                 device._store.emit('added', {
+                                                 target: _device
+                                                 });
+                                                 */
+    
+                                                target._store.emit('added', {
+                                                    target: _device
+                                                });
+    
+    
+                                                var CIS = _device.user;
+    
+                                                //complete CIS
+                                                _.each(CIS.inputs,function(ci) {
+                                                    ci.device = _device;
+                                                    ci.actionTarget = ctx.mainView.getToolbar();
+                                                    ci.ctx = ctx;
+                                                });
+    
+    
+                                                var driverId = self.getMetaValue(_device, types.DEVICE_PROPERTY.CF_DEVICE_DRIVER);
+                                                if (!driverId) {
+                                                    console.error('device has no driver id!');
+                                                }
+                                                var driver = self.ctx.getDriverManager().getItemById(driverId);
+    
+                                                if (driver) {
+                                                    self.completeDevice(_device._store,_device, driver);
+                                                }
+                                                dfd.resolve(_device);
+                                            }
+                                        });
+                                    });
+                                });
+                            }, false);
+                        }
+                    } else {
+                        dfd.reject("Cant get file object for device");
+                    }
+                });
+            });
+            return dfd;
         }
     });
 });
@@ -57056,6 +57189,9 @@ define('xcf/model/Device',[
     return dcl('xcf.model.Device',[Model,Source,EventedMixin],{
 
         _userStopped:false,
+        getParent:function(){
+            return this.getStore().getSync(this.parentId);
+        },
         isServerSide:function(){
             var driverOptions = this.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS);
             return (1 << types.DRIVER_FLAGS.RUNS_ON_SERVER & driverOptions);
@@ -57210,7 +57346,6 @@ define('xcf/model/Device',[
          * @param silent
          */
         setState:function(state,silent){
-
             if(state==this.state){
                 return;
             }
@@ -57253,7 +57388,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
     var isServer = has('host-node'),
         isIDE = has('xcf-ui'),
-        runDrivers = has('runDrivers');
+        runDrivers = true;
 
     if(!String.prototype.setBytes) {
         String.prototype.setBytes = function (bytes) {
@@ -57320,6 +57455,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
          * @param item
          */
         startDevice: function (item,force) {
+
+            //console.error('start device : ' + item._store.id);
             this.checkDeviceServerConnection();
             item.check();
             var dfd = new Deferred();
@@ -57417,9 +57554,20 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
             var hash = deviceInfo.hash,
                 driverPrefix = this.driverScopes[deviceInfo.driverScope],
-                requirePath = decodeURIComponent(require.toUrl(driverPrefix)) + deviceInfo.driver;
+                isRequireJS = !require.cache,
+                packageUrl = require.toUrl(driverPrefix);
+
+
+            if(isRequireJS){
+                packageUrl = packageUrl.replace('/.js','/');
+            }
+
+            var requirePath = decodeURIComponent(packageUrl) + deviceInfo.driver;
+
             //var baseUrl = decodeURIComponent(require.toUrl(driverPrefix));
+
             requirePath = requirePath.replace('', '').trim();
+
             var thiz = this,
                 ctx = thiz.ctx,
                 meta = device['user'],
@@ -57460,7 +57608,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     driverInstance.declaredClass = requirePath;
                     driverInstance.options = deviceInfo;
                     driverInstance.baseClass = baseClass.prototype.declaredClass;
-                    driverInstance.modulePath = utils.replaceAll('//', '/', requirePath);
+                    //driverInstance.modulePath = utils.replaceAll('//', '/', requirePath);
+                    driverInstance.modulePath = utils.replaceAll('//', '/', driverPrefix + deviceInfo.driver).replace('.js','');
                     driverInstance.delegate = thiz;
                     driverInstance.driver = driver;
                     driverInstance.serverSide = deviceInfo.serverSide;
@@ -67521,7 +67670,8 @@ define('xide/mixins/EventedMixin',[
                     _listener = listeners[i];
                     who = _listener.owner|| this;
                     args && args[0] && (args[0].owner =args[0] ? args[0].owner || who : null);
-                    temp = _listener.handler.apply(who, args);
+
+                    _listener.handler && (temp = _listener.handler.apply(who, args));
                     if (temp !== undefined)
                         returnValue = temp;
                 }
@@ -68966,6 +69116,31 @@ define('xfile/manager/FileManager',[
      */
     return dcl(bases, {
         declaredClass:"xfile.manager.FileManager",
+        /**
+         * Returns a new name 
+         * @param item
+         * @param others
+         * @returns {*}
+         */
+        getNewName:function(item,others){
+            var name = item.name.replace('.meta.json','');
+            var found = false;
+            var i = 1;
+            var newName = null;
+            while (!found){
+                newName = name + '-' + i + '.meta.json';
+                var colliding = _.find(others,{
+                    name:newName
+                });
+
+                if(!colliding){
+                    found = true;
+                }else{
+                    i++;
+                }
+            }
+            return newName;
+        },
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         //
         //  Variables
@@ -68979,7 +69154,8 @@ define('xfile/manager/FileManager',[
         serviceClass: 'XCOM_Directory_Service',
         settingsStore: null,
         stores:[],
-        getStore:function(mount){
+        getStore:function(mount,cache){
+
             var store =  _.find(this.stores,{
                 mount:mount
             });
@@ -69992,7 +70168,7 @@ define('xfile/data/Store',[
         _getItem:function(path,allowNonLoaded){
 
             //try instant and return when loaded
-            var item = this.getSync(path);
+            var item = this.getSync(path) || this.getSync('./' + path );
 
             if(item && (this.isItemLoaded(item) || allowNonLoaded==true)){
                 return item;
@@ -71435,7 +71611,7 @@ define('xide/manager/Context',[
                     }
                 }
 
-
+                
                 publish !== false && thiz.publish(data.event, data);
                 thiz.fileUpdateTimes[_path] = timeNow;
                 //path is absolute and might look like: /PMaster/projects/xbox-app/client/src/lib/xfile/Views.js
@@ -71589,6 +71765,8 @@ define('xide/manager/Context',[
         _reloadModule: function (_module, reload) {
 
             var _errorHandle = null;
+            var dfd = new Deferred();
+            
 
             _module = _module.replace('0/8','0.8');
 
@@ -71597,14 +71775,15 @@ define('xide/manager/Context',[
                 debugModuleReload && console.log(error.src, error.id);
                 debugModuleReload && console.error('require error ' + _module,error);
                 _errorHandle.remove();
+                dfd.reject(error);
             }
 
 
 
+            //has its own impl.
             var obj = lang.getObject(utils.replaceAll('/', '.', _module)) || lang.getObject(_module);
             if (obj && obj.prototype && obj.prototype.reloadModule) {
-                obj.prototype.reloadModule();
-                return;
+                return obj.prototype.reloadModule();
             }
 
             _errorHandle = _require.on("error", handleError);
@@ -71615,14 +71794,14 @@ define('xide/manager/Context',[
                 if (!oldModule && typeof window !== 'undefined') {
                     //try global namespace
                     oldModule = utils.getAt(window, utils.replaceAll('/', '.', _module), null);
-
                     if (oldModule) {
                         obj = oldModule;
                     } else {
                         try {
                             oldModule = _require(utils.replaceAll('.', '/', _module));
                         } catch (e) {
-
+                            logError(e,'error requiring '+_module);
+                            dfd.reject(e);
                         }
                     }
                 }
@@ -71646,7 +71825,6 @@ define('xide/manager/Context',[
             var thiz = this;
 
             if (reload) {
-
                 setTimeout(function () {
                     _require({
                         cacheBust: 'time=' + new Date().getTime(),
@@ -71655,7 +71833,6 @@ define('xide/manager/Context',[
 
                     try {
                         _require([_module], function (moduleLoaded) {
-
                             _require({
                                 cacheBust: null
                             });
@@ -71685,15 +71862,18 @@ define('xide/manager/Context',[
                                     moduleProto: moduleLoaded.prototype
                                 });
                             }
-
+                            dfd.resolve(moduleLoaded);
                         });
                     } catch (e) {
                         console.error('error reloading module', e);
                         logError(e, 'error reloading module');
+                        dfd.reject(e);
                     }
-
                 }, 100);
+            }else {
+                dfd.resolve();
             }
+            return dfd;
         },
 
 
@@ -75328,8 +75508,9 @@ define('xide/manager/NotificationManager',[
     'dcl/dcl',
     'xide/types',
     'xide/utils',
-    'xide/manager/ManagerBase'
-],function(dcl,types,utils,ManagerBase){
+    'xide/manager/ManagerBase',
+    'xide/encoding/MD5'
+],function(dcl,types,utils,ManagerBase,MD5){
 
     return dcl([ManagerBase],{
         declaredClass:"xide.manager.NotificationManager",
@@ -75359,6 +75540,8 @@ define('xide/manager/NotificationManager',[
             }
             this.postMessage(args);
         },
+        _lastMessageTime:null,
+        _lastMessageHash:null,
         onStatus:function(err){
             var mess = '';
 
@@ -75383,13 +75566,47 @@ define('xide/manager/NotificationManager',[
                 duration: 500,
                 showCloseButton: true
             };
-            if(err.messageArgs){
-                utils.mixin(args,err.messageArgs);
+
+            utils.mixin(args,err.messageArgs);
+
+            //var timeNow = new Date().getTime();
+            /*
+            if (thiz.fileUpdateTimes[_path]) {
+                var last = thiz.fileUpdateTimes[_path];
+                var diff = timeNow - last;
+                if (diff < 1000) {
+                    thiz.fileUpdateTimes[_path] = timeNow;
+                    return;
+                }
             }
+
+
+
+            thiz.fileUpdateTimes[_path] = timeNow;
+            */
+
+            //console.log('print ' + hash,args);
 
             this.postMessage(args);
         },
         postMessage:function(msg){
+            var hash = MD5(JSON.stringify(msg),1);
+            if(this._lastMessageHash===hash){
+                return;
+            }
+            this._lastMessageHash = hash;
+            if(this._lastMessageTime){
+                clearTimeout(this._lastMessageTime);
+            }
+
+            var self = this;
+            if(!this._lastMessageTime) {
+                this._lastMessageTime = setTimeout(function () {
+                    self._lastMessageHash = null;
+                    delete self._lastMessageTime;
+                    self._lastMessageTime = null;
+                }, 1000);
+            }
             return Messenger().post(msg);
         },
         init:function(){
@@ -75444,7 +75661,6 @@ define('xide/manager/WindowManager',[
             var thiz = this;
 
             function findFrame(docker){
-
                 var result = null;
                 var panels = docker.getPanels();
                 if(docker._lastSelected) {
@@ -75583,7 +75799,6 @@ define('xide/manager/WindowManager',[
             return true;
         },
         clearView:function(view,active){
-
             var thiz = this,
                 toolbar = this.getToolbar(),
                 menu = this.getMainMenu(),
@@ -75623,6 +75838,24 @@ define('xide/manager/WindowManager',[
                 icon: icon || 'fa-code'
             });
         },
+        getDefaultPanel:function(){
+            this.ctx.mainView.getDocker().getDefaultPanel();
+        },
+        createDefaultTab:function(title,icon){
+            var docker = this.ctx.mainView.getDocker();
+            return docker.addTab(null, {
+                title: title,
+                icon: icon
+            });
+        },
+        /**
+         *
+         * @param item
+         * @param where
+         * @param mixin
+         * @param select
+         * @returns {*}
+         */
         openItem:function(item,where,mixin,select){
             /**
              *
@@ -75656,6 +75889,8 @@ define('xide/manager/WindowManager',[
             //create tab
             var title = utils.toString(item.name);
 
+            //where = where || this.getDefaultPanel();
+
             if (_.isFunction(where)) {
                 root = where({
                     title:title,
@@ -75679,9 +75914,7 @@ define('xide/manager/WindowManager',[
             }
 
 
-
             var args = {
-
                 dataItem:item,
                 item:item,
                 filePath:item.path,
@@ -75725,7 +75958,7 @@ define('xide/manager/WindowManager',[
 
             docker.resize();
 
-            if(mixin.global){
+            if(mixin && mixin.global){
                 this.registerView(editor,select);
             }
             return editor;
@@ -78270,6 +78503,7 @@ define('xblox/model/Targeted',[
 
     });
 });;
+/** @module xblox/model/html/SetStyle **/
 define('xblox/model/html/SetStyle',[
     "dcl/dcl",
     "xblox/model/Block",
@@ -78283,18 +78517,14 @@ define('xblox/model/html/SetStyle',[
     "xide/registry"
 ], function(dcl,Block,utils,types,EventedMixin,Referenced,domAttr,domStyle,Color,registry){
 
-    var debug = false;
-    // summary:
-    //		The Call Block model.
-    //      This block makes calls to another blocks in the same scope by action name
-
-    // module:
-    //		xblox.model.code.CallMethod
-    //declare("xblox.model.html.SetStyle",[Block,EventedMixin,Referenced]
+    var debug = true;
+    /**
+     *
+     * @class module:xblox/model/html/SetStyle
+     * @extends module:xblox/model/Block
+     */
     var Impl = {
         declaredClass:"xblox.model.html.SetStyle",
-        //method: (String)
-        //  block name
         name:'Set Style',
         reference:'',
         references:null,
@@ -78315,12 +78545,21 @@ define('xblox/model/html/SetStyle',[
         solve:function(scope,settings) {
             debug && console.log('-set style solve');
             var value = this.value;
+
             if(this.override && this.override.variables){
                 value = utils.replace(value,null,this.override.variables,{
                     begin:'{',
                     end:'}'
                 });
             }
+
+            if(settings.args[0]!==null){
+                value = utils.replace(value,null,{value:settings.args[0]},{
+                    begin:'{',
+                    end:'}'
+                });
+            }
+
             this.updateObjects(null,value,this.mode);
             this.onSuccess(this,settings);
             this.onDidRun();//clear overrides

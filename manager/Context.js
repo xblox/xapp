@@ -158,7 +158,6 @@ define([
              * @param widget
              */
             var run = function (event, value, block, widget) {
-
                 if(event==='load' && widget.__didRunLoad){
                     return;
                 }
@@ -196,9 +195,9 @@ define([
                     if (onBeforeRun) {
                         onBeforeRun(block, value);
                     }
-
                     result = block.solve(block.scope, {
-                        highlight: true
+                        highlight: true,
+                        args:[value]
                     });
                     debugWire && console.log('run ' + block.name + ' for even ' + event, result + ' for ' + this.id);
                 }
@@ -264,7 +263,14 @@ define([
                                     event = event.replace('on', '');
                                 }
                                 _handle = _target.on(event, function (evt) {
-                                    run(event, evt.currentTarget.value, block, widget);
+
+                                    var value = evt.target.value;
+
+                                    if("checked" in evt.target){
+                                        value = evt.target.checked;
+                                    }
+                                    run(event, value, block, widget);
+
                                 }.bind(this));
                             }
                         }
@@ -400,7 +406,7 @@ define([
                 if (params && params.widget) {
                     this.wireWidget(scope, params.widget, params.widget.domNode || params.widget, params.event, group, params);
                 }else{
-                    console.error('invalid params');
+                    console.error('cant resolve group '+group);
                 }
 
                 var blocks = scope.getBlocks({
