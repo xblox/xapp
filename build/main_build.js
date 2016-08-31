@@ -31369,8 +31369,20 @@ define('xblox/model/Block',[
 
     var bases = [ModelBase];
 
-    if(!has('host-browser')){
 
+    function index(what,items) {
+        for (var j = 0; j < items.length; j++) {
+            if (what.id === items[j].id) {
+                return j;
+            }
+        }
+    }
+
+    function compare(left, right) {
+        return index(left) - index(right);
+    }
+
+    if(!has('host-browser')){
         bases.push(dcl(null,{
             getStatusIcon:function(){},
             getStatusClass:function(){},
@@ -31381,7 +31393,6 @@ define('xblox/model/Block',[
             onSuccess:function(){},
             getIconClass:function(){}
         }));
-
     }
 
     /***
@@ -31469,13 +31480,124 @@ define('xblox/model/Block',[
      * Base block class.
      *
      * @class module:xblox/model/Block
-     * @augments module:xblox/model/ModelBase
+     * @extends module:xblox/model/ModelBase
      * @extends module:xblox/model/Block_UI
      */
     var Block = dcl(bases, {
         declaredClass:"xblox.model.Block",
         scopeId: null,
         isCommand:false,
+        /**
+         * Switch to include the block for execution.
+         * @todo, move to block flags
+         * @type {boolean}
+         * @default true
+         */
+        enabled: true,
+        /**
+         * Switch to include the block for serialization.
+         * @todo, move to block flags
+         * @type {boolean}
+         * @default true
+         */
+        serializeMe: true,
+        /**
+         * Name is used for the interface, mostly as prefix within
+         * this.toText() which includes also the 'icon' (as icon font).
+         * This should be unique and expressive.
+         *
+         * This field can be changed by the user. Examples
+         * 'Run Script' will result in result 'Run Script + this.script'
+         *
+         * @todo: move that in user space, combine that with a template system, so any block ui parts gets off from here!
+         * @type {string}
+         * @default null
+         * @required false
+         */
+        name: null,
+        /**
+         * @todo: same as name, move that in user space, combine that with a template system, so any block ui parts gets off from here!
+         * @type {string}
+         * @default 'No Description'
+         * @required true
+         */
+        shareTitle: '',
+        /**
+         * The blocks internal user description
+         * Description is used for the interface. This should be short and expressive and supports plain and html text.
+         *
+         * @todo: same as name, move that in user space, combine that with a template system, so any block ui parts gets off from here!
+         * @type {boolean}
+         * @default 'No Description'
+         * @required true
+         */
+        sharable: false,
+        /**
+         * Container holding a 'child' blocks. Subclassing block might hold that somewhere else.
+         * @type {Block[]}
+         * @default null
+         * @required false
+         */
+        items: null,
+        /**
+         * Parent up-link
+         * @type {string|Block}
+         * @default null
+         * @required false
+         */
+        parent: null,
+        /**
+         * @var temporary variable to hold remainin blocks to run
+         */
+        _return: null,
+        /**
+         * @var temporary variable to store the last result
+         */
+        _lastResult: null,
+
+        _deferredObject: null,
+
+        _currentIndex: 0,
+
+        _lastRunSettings: null,
+
+        _onLoaded: false,
+
+        beanType: 'BLOCK',
+
+        override: {},
+        /**
+         * ignore these due to serialization
+         */
+        ignoreSerialize: [
+            '_didSubscribe',
+            '_currentIndex',
+            '_deferredObject',
+            '_return',
+            'parent',
+            '__started',
+            'ignoreSerialize',
+            '_lastRunSettings',
+            '_onLoaded',
+            'beanType',
+            'sharable',
+            'override',
+            'virtual',
+            '_scenario',
+            '_didRegisterSubscribers',
+            'additionalProperties',
+            'renderBlockIcon',
+            'serializeMe',
+            '_statusIcon',
+            '_statusClass',
+            'hasInlineEdits',
+            '_loop',
+            'help',
+            'owner',
+            'allowActionOverride',
+            'canDelete',
+            'isCommand'
+        ],
         postCreate:function(){},
         /**
          * 
@@ -31546,23 +31668,16 @@ define('xblox/model/Block',[
             }
         },
         __onReloaded:function(newModule){
-
             this.mergeNewModule(newModule.prototype);
-
             var _class = this.declaredClass;
             var _module = lang.getObject(utils.replaceAll('/', '.', _class)) || lang.getObject(_class);
             if(_module){
                 if(_module.prototype && _module.prototype.solve){
-
                     this.mergeNewModule(_module.prototype);
-
                 }
-            }else {
-
             }
         },
         reparent:function(){
-
             var item = this;
             if (!item) {
                 return false;
@@ -31578,15 +31693,11 @@ define('xblox/model/Block',[
             }
         },
         unparent:function(blockgroup,move){
-
             var item = this;
-
             if (!item) {
                 return false;
             }
-
             var parent = item.getParent();
-
             if (parent && parent.removeBlock) {
                 parent.removeBlock(item,false);
             }
@@ -31594,38 +31705,25 @@ define('xblox/model/Block',[
             item.group = blockgroup;
             item.parentId = null;
             item.parent = null;
-
             if(move!==false) {
                 item._place(null, -1, null);
                 item._place(null, -1, null);
             }
         },
         move: function (dir) {
-
             var item = this;
-
             if (!item) {
                 return false;
             }
-
             var parent = item.getParent();
-
             var items = null;
-
             var store = item._store;
-
             if (parent) {
-
-
                 items = parent[parent._getContainer(item)];
-
                 if (!items || items.length < 2 || !this.containsItem(items, item)) {
                     return false;
                 }
-
                 var cIndex = this.indexOf(items, item);
-
-
                 if (cIndex + (dir) < 0) {
                     return false;
                 }
@@ -31635,99 +31733,38 @@ define('xblox/model/Block',[
                 }
                 items[cIndex + (dir)] = item;
                 items[cIndex] = upperItem;
-
                 return true;
-
             } else {
-
-
                 if (store && item.group) {
                     items = store.storage.fullData;
                 }
-
-                /*
-                 var next = item.next(null,dir);
-                 if (!next) {
-                 console.warn('have no next');
-                 return false;
-                 }else{
-
-                 }*/
-
-                //console.log('next is ' + next.id);
-                //console.log('next:: is ' + item.next(null,dir).id);
-                /*
-                 var _dstIndex = 0;
-                 var step = 1;
-
-                 function _next(item,items,dir){
-
-                 var cIndex = item.indexOf(items, item);
-                 var upperItem = items[cIndex + (dir * step)];
-                 if(upperItem){
-                 if(!upperItem.parentId && upperItem.group && upperItem.group===item.group){
-
-                 _dstIndex = cIndex + (dir * step);
-                 return upperItem;
-                 }else{
-                 step++;
-                 return _next(item,items,dir);
-                 }
-                 }
-                 return null;
-                 }
-                 */
-
-
                 item._place(null, dir);
-
                 return true;
             }
         },
         _place: function (ref, direction, items) {
-
             var store = this._store,
                 dst = this;
 
             ref = ref || dst.next(null, direction);
-
             if (!ref) {
                 console.error('have no next', this);
                 return;
             }
-
             ref = _.isString(ref) ? store.getSync(ref) : ref;
-
             dst = _.isString(dst) ? store.getSync(dst) : dst;
-
             items = items || store.storage.fullData;
-
             direction = direction == -1 ? 0 : 1;
-
-            function index(what) {
-                for (var j = 0; j < items.length; j++) {
-                    if (what.id === items[j].id) {
-                        return j;
-                    }
-                }
-            }
-
-            function compare(left, right) {
-                return index(left) - index(right);
-            }
-
             items.remove(dst);
 
             if (direction == -1) {
                 direction = 0;
             }
 
-            items.splice(Math.max(index(ref) + direction, 0), 0, dst);
-
+            items.splice(Math.max(index(ref,items) + direction, 0), 0, dst);
             store._reindex();
         },
         index:function(){
-
             var item = this,
                 parent = item.getParent(),
                 items = null,
@@ -31756,7 +31793,6 @@ define('xblox/model/Block',[
             }
         },
         numberOfParents:function(){
-
             var result = 0;
             var parent = this.getParent();
             if(parent){
@@ -31766,13 +31802,9 @@ define('xblox/model/Block',[
             return result;
         },
         next: function (items, dir) {
-
             var _dstIndex = 0;
             var step = 1;
-
             items = items || this._store.storage.fullData;
-
-
             function _next(item, items, dir) {
                 var cIndex = item.indexOf(items, item);
                 var _nIndex = cIndex + (dir * step);
@@ -31790,7 +31822,6 @@ define('xblox/model/Block',[
                 }
                 return null;
             };
-
             return _next(this, items, dir);
         },
         getParent: function () {
@@ -31799,7 +31830,6 @@ define('xblox/model/Block',[
             }
             return null;
         },
-
         getScope: function () {
             var scope = this.scope;
             if (this.scopeId && this.scopeId.length > 0) {
@@ -31814,131 +31844,15 @@ define('xblox/model/Block',[
             }
             return scope;
         },
-
-        /**
-         * Switch to include the block for execution.
-         * @todo, move to block flags
-         * @type {boolean}
-         * @default true
-         */
-        enabled: true,
-        /**
-         * Switch to include the block for serialization.
-         * @todo, move to block flags
-         * @type {boolean}
-         * @default true
-         */
-        serializeMe: true,
-        /**
-         * Name is used for the interface, mostly as prefix within
-         * this.toText() which includes also the 'icon' (as icon font).
-         * This should be unique and expressive.
-         *
-         * This field can be changed by the user. Examples
-         * 'Run Script' will result in result 'Run Script + this.script'
-         *
-         * @todo: move that in user space, combine that with a template system, so any block ui parts gets off from here!
-         * @type {string}
-         * @default null
-         * @required false
-         */
-        name: null,
-        /**
-         * @todo: same as name, move that in user space, combine that with a template system, so any block ui parts gets off from here!
-         * @type {string}
-         * @default 'No Description'
-         * @required true
-         */
-        shareTitle: '',
-        /**
-         * The blocks internal user description
-         * Description is used for the interface. This should be short and expressive and supports plain and html text.
-         *
-         * @todo: same as name, move that in user space, combine that with a template system, so any block ui parts gets off from here!
-         * @type {string}
-         * @default 'No Description'
-         * @required true
-         */
-        sharable: false,
-        /**
-         * Container holding a 'child' blocks. Subclassing block might hold that somewhere else.
-         * @type {Block[]}
-         * @default null
-         * @required false
-         */
-        items: null,
-        /**
-         * Parent up-link
-         * @type {string|Block}
-         * @default null
-         * @required false
-         */
-        parent: null,
-        /**
-         * @var temporary variable to hold remainin blocks to run
-         */
-        _return: null,
-
-        /**
-         * @var temporary variable to store the last result
-         */
-        _lastResult: null,
-
-        _deferredObject: null,
-
-        _currentIndex: 0,
-
-        _lastRunSettings: null,
-
-        _onLoaded: false,
-
-        beanType: 'BLOCK',
-
-        override: {},
-        /**
-         * ignore these due to serialization
-         */
-        ignoreSerialize: [
-            '_didSubscribe',
-            '_currentIndex',
-            '_deferredObject',
-            '_return',
-            'parent',
-            '__started',
-            'ignoreSerialize',
-            '_lastRunSettings',
-            '_onLoaded',
-            'beanType',
-            'sharable',
-            'override',
-            'virtual',
-            '_scenario',
-            '_didRegisterSubscribers',
-            'additionalProperties',
-            'renderBlockIcon',
-            'serializeMe',
-            '_statusIcon',
-            '_statusClass',
-            'hasInlineEdits',
-            '_loop',
-            'help',
-            'owner',
-            'allowActionOverride',
-            'canDelete',
-            'isCommand'
-        ],
-
         //  standard call from interface
         canAdd: function () {
             return null;
         },
         getTarget: function () {
-
             var _res = this._targetReference;
             if (_res) {
                 return _res;
             }
-
             var _parent = this.getParent();
             if (_parent && _parent.getTarget) {
                 _res = _parent.getTarget();
@@ -31962,7 +31876,6 @@ define('xblox/model/Block',[
          */
         removeBlock: function (what, del) {
             if (what) {
-
                 if (del !== false && what.empty) {
                     what.empty();
                 }
@@ -32180,24 +32093,19 @@ define('xblox/model/Block',[
          * @returns {*}
          */
         remove: function (what) {
-
             this._destroyed = true;
-
             if (this.parentId != null && this.parent == null) {
                 this.parent = this.scope.getBlockById(this.parentId);
             }
-
             if (this.parent && this.parent.removeBlock) {
                 this.parent.removeBlock(this);
                 return;
             }
             what = what || this;
             if (what) {
-
                 if (what.empty) {
                     what.empty();
                 }
-
                 delete what.items;
                 what.parent = null;
                 if (this.items) {
@@ -32216,11 +32124,6 @@ define('xblox/model/Block',[
             }
             if (!ctorArgs['items']) {
                 ctorArgs['items'] = [];
-            }
-
-            //create a global scope if none has been provided
-            if (!ctorArgs['scope']) {
-                //ctorArgs['scope']=thiz.getScope('global')
             }
         },
         /**
@@ -32272,11 +32175,9 @@ define('xblox/model/Block',[
 
                 var container = where || this._getContainer();
                 if (container) {
-
                     if (!this[container]) {
                         this[container] = [];
                     }
-
                     var index = this.indexOf(this[container], _block);
                     if (index != -1) {
                         console.error(' have already ' + _block.id + ' in ' + container);
@@ -32288,9 +32189,7 @@ define('xblox/model/Block',[
                         this[container].push(_block);
                     }
                 }
-
                 return _block;
-
             } catch (e) {
                 logError(e,'_add');
             }
@@ -32308,11 +32207,8 @@ define('xblox/model/Block',[
          * @returns {*}
          */
         add: function (proto, ctrArgs, where) {
-
             var block = this._add(proto, ctrArgs, where);
-
             return block.getStore().getSync(block.id);
-
         },
         /////////////////////////////////////////////////////////////////////////////////////
         //
@@ -32320,14 +32216,12 @@ define('xblox/model/Block',[
         //
         /////////////////////////////////////////////////////////////////////////////////////
         getContext: function () {
-
             if (this.scope.instance && this.scope.instance) {
                 return this.scope.instance;
             }
             return null;
         },
         resolved: function () {
-
             if (this._deferredObject) {
                 this._deferredObject.resolve();
                 delete this._deferredObject;
@@ -32340,16 +32234,12 @@ define('xblox/model/Block',[
          * @return  list of commands to send
          */
         _solve: function (scope, settings) {
-
-            settings = settings || {
-                    highlight: false
-                };
+            settings = settings || { highlight: false};
             var ret = [];
             for (var n = 0; n < this.items.length; n++) {
                 var block = this.items[n];
                 this.addToEnd(ret, block.solve(scope, settings));
             }
-
             return ret;
         },
         /***
@@ -32359,12 +32249,8 @@ define('xblox/model/Block',[
          * @return  list of commands to send
          */
         solve: function (scope, settings) {
-
-            settings = settings || {
-                    highlight: false
-                };
+            settings = settings || {highlight: false};
             var ret = [];
-
             for (var n = 0; n < this.items.length; n++) {
                 var block = this.items[n];
                 this.addToEnd(ret, block.solve(scope, settings));
@@ -32378,16 +32264,13 @@ define('xblox/model/Block',[
          * @return  list of commands to send
          */
         solveMany: function (scope, settings) {
-
             if (!this._lastRunSettings && settings) {
                 this._lastRunSettings = settings;
             }
-
             settings = this._lastRunSettings || settings;
 
             this._currentIndex = 0;
             this._return = [];
-
             var ret = [], items = this[this._getContainer()];
             if (items.length) {
                 var res = this.runFrom(items, 0, settings);
@@ -32400,15 +32283,14 @@ define('xblox/model/Block',[
         },
         runFrom: function (blocks, index, settings) {
 
-            var thiz = this,
-                blocks = blocks || this.items;
+            var thiz = this;
 
+            blocks = blocks || this.items;
             var onFinishBlock = function (block, results) {
                 block._lastResult = block._lastResult || results;
                 thiz._currentIndex++;
                 thiz.runFrom(blocks, thiz._currentIndex, settings);
             };
-
             var wireBlock = function (block) {
                 block._deferredObject.then(function (results) {
                     onFinishBlock(block, results);
@@ -32432,7 +32314,6 @@ define('xblox/model/Block',[
             } else {
                 this.onSuccess(this, settings);
             }
-
             return this._return;
         },
         serializeField: function (name) {
@@ -71505,7 +71386,7 @@ define('xide/manager/Context',[
         isBrowser = has('host-browser'),
         bases = isBrowser ? [ContextBase, Context_UI] : [ContextBase],
         debugFileChanges = false,
-        debugModuleReload  = true;
+        debugModuleReload  = false;
 
     /**
      * @class module:xide/manager/Context
@@ -71619,6 +71500,11 @@ define('xide/manager/Context',[
                 var path = utils.replaceAll('\\', '/', data.data.path);
                 path = utils.replaceAll('//', '/', data.data.path);
                 path = path.replace(/\\/g, "/");
+
+                if(path.indexOf('/build/')!==-1){
+                    return;
+                }
+
                 if (path == null || path.indexOf == null) {
                     return;
                 }
@@ -71627,6 +71513,8 @@ define('xide/manager/Context',[
                         path: path
                     });
                 }
+
+
 
                 /**
                  * Try generic
@@ -71681,7 +71569,7 @@ define('xide/manager/Context',[
                         modulePath = utils.replaceAll('.', '/', modulePath);
                         setTimeout(function () {
                             if(!isServer) {
-                                console.log('reloading module '+modulePath);
+                                debugModuleReload && console.log('reloading module '+modulePath);
                                 thiz._reloadModule(modulePath, true);
                             }
                         }, 400);
