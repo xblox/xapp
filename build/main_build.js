@@ -32033,18 +32033,21 @@ define('xblox/model/Block',[
          */
         getArgs: function (settings) {
 
-            var result = [],
-                _inArgs = settings.args || this._get('args');
+            var result = [];
 
-            if(settings && settings.override && settings.override.args){
+            settings = settings || {};
+
+            var _inArgs = settings.args || this._get('args');
+
+            if(settings.override && settings.override.args){
                 _inArgs = settings.override.args;
             }
 
             if (_inArgs) {//direct json
                 result = utils.getJson(_inArgs,null,false);
-                if (result != null && _.isArray(result)) {
+                //if (result != null && _.isArray(result)) {
                     //return result;
-                }
+                //}
             }
 
 
@@ -57839,7 +57842,11 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     console.error('error parsing device message', evt);
                     return;
                 }
+            }else if(_.isObject(dataIn) && dataIn.data){
+                //emulated
+                deviceMessageData = dataIn;
             }
+
             if (!deviceMessageData || !deviceMessageData.data || !deviceMessageData.data.device) {
                 debug && console.error('bad device message : ',deviceMessageData);
                 return;
@@ -57919,6 +57926,9 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     messages.push(msg.string);
                     bytes.push(msg.bytes);
                 }
+                //console.log('got messages split',_messages);
+            }else {
+                //console.log('messages normal : ',messages);
             }
 
             //replay on driver code instance
