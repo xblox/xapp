@@ -32,6 +32,7 @@ define([
         "deliteful/Accordion",
         "deliteful/Panel",
         'xblox/model/html/SetState',
+        "requirejs-dplugins/css!Font-Awesome/css/font-awesome.css",
         "require"
     ],function(has,dcl,dHas,Deferred){
 
