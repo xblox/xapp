@@ -11,7 +11,7 @@ define([
     var debugBlocks = false;
 
     //Application
-    return dcl([ManagerBase],{
+    var Module = dcl([ManagerBase],{
         declaredClass:"xapp/manager/Application",
         delegate:null,
         settings:null,
@@ -128,7 +128,18 @@ define([
                 console.error('error loading xblox '+e,e);
                 def.reject(e);
             }
+
+            window['xapp'] = this;
+
             return def;
         }
     });
+    
+
+    Module.getApp = function(){
+        return window['xapp'];
+    }
+
+    return Module;
+
 });

@@ -40893,8 +40893,12 @@ define('xcf/model/Command',[
 
                 var res='';
 
+                var override = this.override || {};
+
+                //console.log('overrides : ',override);
+
                 if(/*(this.isScript(value) && parse!==false) || */isExpression && parse!==false){
-                    res = scope.parseExpression(value,null,_overrides);
+                    res = scope.parseExpression(value,null,_overrides,null,null,null,override.args);
                 }else{
                     res = '' + value;
                 }
@@ -43426,13 +43430,8 @@ define('xide/data/TreeMemory',[
             });
         },
         filter: function (data) {
-            try {
-                var _res = this.inherited(arguments);
-                this._state.filter = data;
-            }catch(e){
-                console.error('-error filter store ',e);
-                logError(e);
-            }
+            var _res = this.inherited(arguments);
+            this._state.filter = data;
             return _res;
         },
         _fetchRange: function (kwArgs) {
@@ -44996,10 +44995,12 @@ define('xblox/model/Scope',[
     "xide/utils",
     "xide/types",
     "xide/mixins/EventedMixin",
-    'dojo/_base/lang'
+    'dojo/_base/lang',
+    'dojo/has',
+    'xide/encoding/MD5'
     //'xdojo/has!host-node?dojo/node!tracer',
     //'xdojo/has!host-node?nxapp/utils/_console'
-], function(dcl,ModelBase,Expression,factory,utils,types,EventedMixin,lang,tracer,_console){
+], function(dcl,ModelBase,Expression,factory,utils,types,EventedMixin,lang,has,MD5,tracer,_console){
 
     var console = typeof window !== 'undefined' ? window.console : console;
     if(tracer && tracer.error && console && console.error){
@@ -45016,6 +45017,7 @@ define('xblox/model/Scope',[
     }
 
     var debug = false;
+    var isIDE = has('xcf-ui');
     /**
      * The scope acts as a real scope as usual. All registered variables and blocks are excecuted in this scope only.
      * @class module:xblox/model/Scope
@@ -45344,14 +45346,38 @@ define('xblox/model/Scope',[
             }
             return result;
         },
+        _cached:null,
         getBlocks:function(query){
+
+            if(!isIDE){
+
+                if(!this._cached){
+                    this._cached = {};
+                }
+
+                if(query){
+                    var hash = MD5(JSON.stringify(query), 1);
+                    var cached = this._cached[hash];
+                    if(cached){
+                        return cached;
+                    }
+                }
+            }
+
             //no store,
             if(!this.blockStore){
                 return [];
             }
             query = query||{id:/\S+/};//all blocks
-            return this.blockStore.query(query);
 
+            var result = this.blockStore.query(query);
+
+            if(!isIDE){
+                var hash = MD5(JSON.stringify(query), 1);
+                this._cached[hash] = result;
+            }
+
+            return result;
         },
         //declaredClass: String (dcl internals, private!)
         /**
@@ -46702,6 +46728,285 @@ define('xblox/model/Scope',[
     dcl.chainAfter(Module,'destroy');
     return Module;
 });;
+define('xide/encoding/MD5',["./_base"], function(base) {
+
+/*	A port of Paul Johnstone's MD5 implementation
+ *	http://pajhome.org.uk/crypt/md5/index.html
+ *
+ *	Copyright (C) Paul Johnston 1999 - 2002.
+ *	Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+ * 	Distributed under the BSD License
+ *
+ *	Dojo port by Tom Trenka
+ */
+
+	var chrsz=8;
+
+	//	MD5 rounds functions
+	function R(n,c){ return (n<<c)|(n>>>(32-c)); }
+	function C(q,a,b,x,s,t){ return base.addWords(R(base.addWords(base.addWords(a, q), base.addWords(x, t)), s), b); }
+	function FF(a,b,c,d,x,s,t){ return C((b&c)|((~b)&d),a,b,x,s,t); }
+	function GG(a,b,c,d,x,s,t){ return C((b&d)|(c&(~d)),a,b,x,s,t); }
+	function HH(a,b,c,d,x,s,t){ return C(b^c^d,a,b,x,s,t); }
+	function II(a,b,c,d,x,s,t){ return C(c^(b|(~d)),a,b,x,s,t); }
+
+	//	the core MD5 rounds method
+	function core(x,len){
+		x[len>>5]|=0x80<<((len)%32);
+		x[(((len+64)>>>9)<<4)+14]=len;
+		var a= 1732584193;
+		var b=-271733879;
+		var c=-1732584194;
+		var d= 271733878;
+		for(var i=0; i<x.length; i+=16){
+			var olda=a;
+			var oldb=b;
+			var oldc=c;
+			var oldd=d;
+
+			a=FF(a,b,c,d,x[i+ 0],7 ,-680876936);
+			d=FF(d,a,b,c,x[i+ 1],12,-389564586);
+			c=FF(c,d,a,b,x[i+ 2],17, 606105819);
+			b=FF(b,c,d,a,x[i+ 3],22,-1044525330);
+			a=FF(a,b,c,d,x[i+ 4],7 ,-176418897);
+			d=FF(d,a,b,c,x[i+ 5],12, 1200080426);
+			c=FF(c,d,a,b,x[i+ 6],17,-1473231341);
+			b=FF(b,c,d,a,x[i+ 7],22,-45705983);
+			a=FF(a,b,c,d,x[i+ 8],7 , 1770035416);
+			d=FF(d,a,b,c,x[i+ 9],12,-1958414417);
+			c=FF(c,d,a,b,x[i+10],17,-42063);
+			b=FF(b,c,d,a,x[i+11],22,-1990404162);
+			a=FF(a,b,c,d,x[i+12],7 , 1804603682);
+			d=FF(d,a,b,c,x[i+13],12,-40341101);
+			c=FF(c,d,a,b,x[i+14],17,-1502002290);
+			b=FF(b,c,d,a,x[i+15],22, 1236535329);
+
+			a=GG(a,b,c,d,x[i+ 1],5 ,-165796510);
+			d=GG(d,a,b,c,x[i+ 6],9 ,-1069501632);
+			c=GG(c,d,a,b,x[i+11],14, 643717713);
+			b=GG(b,c,d,a,x[i+ 0],20,-373897302);
+			a=GG(a,b,c,d,x[i+ 5],5 ,-701558691);
+			d=GG(d,a,b,c,x[i+10],9 , 38016083);
+			c=GG(c,d,a,b,x[i+15],14,-660478335);
+			b=GG(b,c,d,a,x[i+ 4],20,-405537848);
+			a=GG(a,b,c,d,x[i+ 9],5 , 568446438);
+			d=GG(d,a,b,c,x[i+14],9 ,-1019803690);
+			c=GG(c,d,a,b,x[i+ 3],14,-187363961);
+			b=GG(b,c,d,a,x[i+ 8],20, 1163531501);
+			a=GG(a,b,c,d,x[i+13],5 ,-1444681467);
+			d=GG(d,a,b,c,x[i+ 2],9 ,-51403784);
+			c=GG(c,d,a,b,x[i+ 7],14, 1735328473);
+			b=GG(b,c,d,a,x[i+12],20,-1926607734);
+
+			a=HH(a,b,c,d,x[i+ 5],4 ,-378558);
+			d=HH(d,a,b,c,x[i+ 8],11,-2022574463);
+			c=HH(c,d,a,b,x[i+11],16, 1839030562);
+			b=HH(b,c,d,a,x[i+14],23,-35309556);
+			a=HH(a,b,c,d,x[i+ 1],4 ,-1530992060);
+			d=HH(d,a,b,c,x[i+ 4],11, 1272893353);
+			c=HH(c,d,a,b,x[i+ 7],16,-155497632);
+			b=HH(b,c,d,a,x[i+10],23,-1094730640);
+			a=HH(a,b,c,d,x[i+13],4 , 681279174);
+			d=HH(d,a,b,c,x[i+ 0],11,-358537222);
+			c=HH(c,d,a,b,x[i+ 3],16,-722521979);
+			b=HH(b,c,d,a,x[i+ 6],23, 76029189);
+			a=HH(a,b,c,d,x[i+ 9],4 ,-640364487);
+			d=HH(d,a,b,c,x[i+12],11,-421815835);
+			c=HH(c,d,a,b,x[i+15],16, 530742520);
+			b=HH(b,c,d,a,x[i+ 2],23,-995338651);
+
+			a=II(a,b,c,d,x[i+ 0],6 ,-198630844);
+			d=II(d,a,b,c,x[i+ 7],10, 1126891415);
+			c=II(c,d,a,b,x[i+14],15,-1416354905);
+			b=II(b,c,d,a,x[i+ 5],21,-57434055);
+			a=II(a,b,c,d,x[i+12],6 , 1700485571);
+			d=II(d,a,b,c,x[i+ 3],10,-1894986606);
+			c=II(c,d,a,b,x[i+10],15,-1051523);
+			b=II(b,c,d,a,x[i+ 1],21,-2054922799);
+			a=II(a,b,c,d,x[i+ 8],6 , 1873313359);
+			d=II(d,a,b,c,x[i+15],10,-30611744);
+			c=II(c,d,a,b,x[i+ 6],15,-1560198380);
+			b=II(b,c,d,a,x[i+13],21, 1309151649);
+			a=II(a,b,c,d,x[i+ 4],6 ,-145523070);
+			d=II(d,a,b,c,x[i+11],10,-1120210379);
+			c=II(c,d,a,b,x[i+ 2],15, 718787259);
+			b=II(b,c,d,a,x[i+ 9],21,-343485551);
+
+			a=base.addWords(a, olda);
+			b=base.addWords(b, oldb);
+			c=base.addWords(c, oldc);
+			d=base.addWords(d, oldd);
+		}
+		return [a,b,c,d];
+	}
+
+	function hmac(data, key){
+		var wa=base.stringToWord(key);
+		if(wa.length>16){
+			wa=core(wa, key.length*chrsz);
+		}
+		var l=[], r=[];
+		for(var i=0; i<16; i++){
+			l[i]=wa[i]^0x36363636;
+			r[i]=wa[i]^0x5c5c5c5c;
+		}
+		var h=core(l.concat(base.stringToWord(data)), 512+data.length*chrsz);
+		return core(r.concat(h), 640);
+	}
+
+	//	public function
+	base.MD5=function(/* string */data, /* dojox.encoding.digests.outputTypes? */outputType){
+		// summary:
+		//		computes the digest of data, and returns the result according to type outputType
+		var out=outputType || base.outputTypes.Base64;
+		var wa=core(base.stringToWord(data), data.length*chrsz);
+		switch(out){
+			case base.outputTypes.Raw:{
+				return wa;	//	word[]
+			}
+			case base.outputTypes.Hex:{
+				return base.wordToHex(wa);	//	string
+			}
+			case base.outputTypes.String:{
+				return base.wordToString(wa);	//	string
+			}
+			default:{
+				return base.wordToBase64(wa);	//	string
+			}
+		}
+	};
+
+	//	make this private, for later use with a generic HMAC calculator.
+	base.MD5._hmac=function(/* string */data, /* string */key, /* dojox.encoding.digests.outputTypes? */outputType){
+		// summary:
+		//		computes the digest of data, and returns the result according to type outputType
+		var out=outputType || base.outputTypes.Base64;
+		var wa=hmac(data, key);
+		switch(out){
+			case base.outputTypes.Raw:{
+				return wa;	//	word[]
+			}
+			case base.outputTypes.Hex:{
+				return base.wordToHex(wa);	//	string
+			}
+			case base.outputTypes.String:{
+				return base.wordToString(wa);	//	string
+			}
+			default:{
+				return base.wordToBase64(wa);	//	string
+			}
+		}
+	};
+
+	return base.MD5;
+});
+;
+define('xide/encoding/_base',[
+	"dojo/_base/lang"
+
+], function(lang){
+
+	//	These functions are 32-bit word-based.  See _sha-64 for 64-bit word ops.
+	var base = {};//lang.getObject("dojox.encoding.digests", true);
+
+	base.outputTypes={
+		// summary:
+		//		Enumeration for input and output encodings.
+		Base64:0, Hex:1, String:2, Raw:3
+	};
+
+	//	word-based addition
+	base.addWords=function(/* word */a, /* word */b){
+		// summary:
+		//		add a pair of words together with rollover
+		var l=(a&0xFFFF)+(b&0xFFFF);
+		var m=(a>>16)+(b>>16)+(l>>16);
+		return (m<<16)|(l&0xFFFF);	//	word
+	};
+
+	//	word-based conversion method, for efficiency sake;
+	//	most digests operate on words, and this should be faster
+	//	than the encoding version (which works on bytes).
+	var chrsz=8;	//	16 for Unicode
+	var mask=(1<<chrsz)-1;
+
+	base.stringToWord=function(/* string */s){
+		// summary:
+		//		convert a string to a word array
+		var wa=[];
+		for(var i=0, l=s.length*chrsz; i<l; i+=chrsz){
+			wa[i>>5]|=(s.charCodeAt(i/chrsz)&mask)<<(i%32);
+		}
+		return wa;	//	word[]
+	};
+
+	base.wordToString=function(/* word[] */wa){
+		// summary:
+		//		convert an array of words to a string
+		var s=[];
+		for(var i=0, l=wa.length*32; i<l; i+=chrsz){
+			s.push(String.fromCharCode((wa[i>>5]>>>(i%32))&mask));
+		}
+		return s.join("");	//	string
+	};
+
+	base.wordToHex=function(/* word[] */wa){
+		// summary:
+		//		convert an array of words to a hex tab
+		var h="0123456789abcdef", s=[];
+		for(var i=0, l=wa.length*4; i<l; i++){
+			s.push(h.charAt((wa[i>>2]>>((i%4)*8+4))&0xF)+h.charAt((wa[i>>2]>>((i%4)*8))&0xF));
+		}
+		return s.join("");	//	string
+	};
+
+	base.wordToBase64=function(/* word[] */wa){
+		// summary:
+		//		convert an array of words to base64 encoding, should be more efficient
+		//		than using dojox.encoding.base64
+		var p="=", tab="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", s=[];
+		for(var i=0, l=wa.length*4; i<l; i+=3){
+			var t=(((wa[i>>2]>>8*(i%4))&0xFF)<<16)|(((wa[i+1>>2]>>8*((i+1)%4))&0xFF)<<8)|((wa[i+2>>2]>>8*((i+2)%4))&0xFF);
+			for(var j=0; j<4; j++){
+				if(i*8+j*6>wa.length*32){
+					s.push(p);
+				} else {
+					s.push(tab.charAt((t>>6*(3-j))&0x3F));
+				}
+			}
+		}
+		return s.join("");	//	string
+	};
+
+	//	convert to UTF-8
+	base.stringToUtf8 = function(input){
+		var output = "";
+		var i = -1;
+		var x, y;
+
+		while(++i < input.length){
+			x = input.charCodeAt(i);
+			y = i + 1 < input.length ? input.charCodeAt(i + 1) : 0;
+			if(0xD800 <= x && x <= 0xDBFF && 0xDC00 <= y && y <= 0xDFFF){
+				x = 0x10000 + ((x & 0x03FF) << 10) + (y & 0x03FF);
+				i++;
+			}
+
+			if(x <= 0x7F)
+				output += String.fromCharCode(x);
+			else if(x <= 0x7FF)
+				output += String.fromCharCode(0xC0 | ((x >>> 6) & 0x1F), 0x80 | (x & 0x3F));
+			else if(x <= 0xFFFF)
+				output += String.fromCharCode(0xE0 | ((x >>> 12) & 0x0F), 0x80 | ((x >>> 6) & 0x3F), 0x80 | (x & 0x3F));
+			else if(x <= 0x1FFFFF)
+				output += String.fromCharCode(0xF0 | ((x >>> 18) & 0x07), 0x80 | ((x >>> 12) & 0x3F), 0x80 | ((x >>> 6) & 0x3F), 0x80 | (x & 0x3F));
+		}
+		return output;
+	};
+
+	return base;
+});
+;
 /** @module xblox/model/Expression */
 define('xblox/model/Expression',[
     "xdojo/declare",
@@ -50443,16 +50748,17 @@ define('xcf/manager/DeviceManager',[
                 }
             };
 
-            /**
-             * Add 'setVariable'
-             * @param title
-             * @param value
-             */
-            instance.setVariable = function (title, value, save) {
+            instance.setVariable = function (title, value, save, publish,highlight) {
                 var _variable = this.blockScope.getVariable(title);
                 if (_variable) {
                     _variable.value = value;
-                    _variable.set('value',value);
+                    if(highlight===false){
+                        _variable.__ignoreChangeMark = true;
+                    }
+                    _variable.set('value',value,save,publish,highlight);
+                    if(highlight===false){
+                        _variable.__ignoreChangeMark = false;
+                    }
                 } else {
                     _debug &&  console.log('no such variable : ' + title);
                     return;
@@ -50462,10 +50768,10 @@ define('xcf/manager/DeviceManager',[
                     scope: this.blockScope,
                     driver: driver,
                     owner: thiz,
-                    save: save === true
+                    save: save === true,
+                    publish : publish
                 });
             };
-
             /**
              * Add getVariable
              * @param title
@@ -50863,7 +51169,8 @@ define('xcf/manager/DeviceManager',[
 
                 if (instanceOptions.port === deviceInfo.port &&
                     instanceOptions.host === deviceInfo.host &&
-                    instanceOptions.protocol === deviceInfo.protocol) {
+                    instanceOptions.protocol === deviceInfo.protocol &&
+                    instanceOptions.isServer === deviceInfo.isServer) {
 
                     if (fillSettings !== false) {
                         //get settings, if not cached already
@@ -50918,6 +51225,18 @@ define('xcf/manager/DeviceManager',[
                 thiz.checkDeviceServerConnection();
                 thiz._reconnectServerTimer=null;
             },this.reconnectDeviceServer);
+
+            console.log('lost device server connection');
+            _.each(this.deviceInstances,function(instance){
+
+                if(instance && instance.device && !instance.domNode) {
+                    var device = instance.device;
+                    var driverInstance = device.driverInstance;
+                    driverInstance && driverInstance.onLostServer && driverInstance.onLostServer();
+                    device.setState(types.DEVICE_STATE.LOST_DEVICE_SERVER);
+                }
+            });
+
         },
         /**
          *
@@ -51135,8 +51454,8 @@ define('xcf/manager/DeviceManager',[
          * @param id {string}
          * @returns {module:xcf/model/Device|null}
          */
-        getDeviceById: function (id) {
-            var items = utils.queryStore(this.getStore(), {
+        getDeviceById: function (id,store) {
+            var items = utils.queryStore(store,this.getStore(), {
                 isDir: false
             });
             if (items._S) {
@@ -51174,10 +51493,19 @@ define('xcf/manager/DeviceManager',[
             return null;
         },
 
+        _cachedItems:null,
         getDeviceStoreItem: function (deviceInfo) {
             if(!deviceInfo){
                 return;
             }
+
+            if(!isIDE && deviceInfo.hash && this._cachedItems){
+                var _cached = this._cachedItems[deviceInfo.hash];
+                if(_cached){
+                    return _cached;
+                }
+            }
+
             //already device
             if(deviceInfo && deviceInfo._store){
                 //return deviceInfo;
@@ -51213,7 +51541,16 @@ define('xcf/manager/DeviceManager',[
 
                 if (port === deviceInfo.port &&
                     host === deviceInfo.host &&
-                    protocol === deviceInfo.protocol) {
+                    protocol === deviceInfo.protocol &&
+                    device.isServer() === deviceInfo.isServer) {
+
+                    if(!isIDE && deviceInfo.hash){
+                        if(!this._cachedItems){
+                            this._cachedItems = {};
+                        }
+                        this._cachedItems[deviceInfo.hash] = device;
+                    }
+
                     return device;
                 }
             }
@@ -51402,8 +51739,8 @@ define('xcf/manager/DeviceManager',[
          * @returns {exports|module.exports|module:xcf/data/Store}
          * @private
          */
-        initStore: function (data,scope) {
-            return this.createStore(data,scope);
+        initStore: function (data,scope,track) {
+            return this.createStore(data,scope,track);
         },
         /////////////////////////////////////////////////////////////////////////////////////
         //
@@ -51450,6 +51787,10 @@ define('xcf/manager/DeviceManager',[
                         {
                             value: 8,
                             label: 'Allow Multiple Device Connections'
+                        },
+                        {
+                            value: 16,
+                            label: 'Server'
                         }
 
                     ],
@@ -51469,6 +51810,10 @@ define('xcf/manager/DeviceManager',[
                     {
                         value: 8,
                         label: 'Allow Multiple Device Connections'
+                    },
+                    {
+                        value: 16,
+                        label: 'Server'
                     }
 
                 ];
@@ -51595,6 +51940,7 @@ define('xcf/manager/DeviceManager',[
                 loggingFlags = utils.getCIInputValueByName(meta, DEVICE_PROPERTY.CF_DEVICE_LOGGING_FLAGS),
                 driverOptions = utils.getCIInputValueByName(meta, DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS),
                 serverSide = item.isServerSide(),
+                isServer = item.isServer(),
                 result = null;
 
             this.fixDeviceCI(item);
@@ -51605,6 +51951,7 @@ define('xcf/manager/DeviceManager',[
                     responseCI = utils.getCIByChainAndName(driverMeta, 0, types.DRIVER_PROPERTY.CF_DRIVER_RESPONSES),
                     responseSettings = {},
                     driverScope = driver['scope'];
+
                 if (responseCI && responseCI['params']) {
                     responseSettings = utils.getJson(responseCI['params']);
                 }
@@ -51621,7 +51968,8 @@ define('xcf/manager/DeviceManager',[
                     title:title,                    
                     options:options,                    
                     driverOptions:driverOptions,
-                    serverSide:serverSide,                    
+                    serverSide:serverSide,
+                    isServer:isServer,
                     responseSettings:responseSettings,
                     source:isIDE ? 'ide' : 'server',
                     user_devices:this.ctx.getMount(item.getScope()),
@@ -51633,6 +51981,13 @@ define('xcf/manager/DeviceManager',[
                         return item.getScope() +'://' + this.host + ':'+this.port+'@'+this.protocol;
                     }
                 };
+
+                if(!result['user_drivers']){
+                    //debugger;
+                    var mount = this.ctx.getMount('user_drivers');
+                    console.log('have no mounts');
+
+                }
 
                 result.hash = MD5(JSON.stringify({
                     host: host,
@@ -51790,9 +52145,10 @@ define('xcf/manager/DeviceManager',[
         onVariableChanged:function(evt){
             var variable = evt.item,
                 scope = evt.scope,
-                name = variable.name;
+                name = variable.name,
+                publish = evt.publish!==false;
             
-            if(name==='value'){
+            if(name==='value' || publish===false){
                 return;
             }
             if(_debug){
@@ -51813,6 +52169,7 @@ define('xcf/manager/DeviceManager',[
                     mqttTopic = deviceInfo.host + '/' + deviceInfo.port+'/Variable/' + name;
 
                 _debugMQTT && console.log('send mqtt message ' + mqttTopic);
+
                 this.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.MQTT_PUBLISH, {
                     topic:mqttTopic,
                     data:{
@@ -51863,7 +52220,24 @@ define('xcf/manager/DeviceManager',[
                 thiz.lastUpTime = current;
             }, 1000);
         },
-        onDeviceServerConnected:function(){},
+        onDeviceServerConnected:function(){
+            var self = this;
+            if(this.deviceInstances) {
+
+                _.each(this.deviceInstances, function (instance) {
+
+                    if(instance && instance.device && !instance.domNode) {
+                        var device = instance.device;
+                        self.startDevice(device);
+                    }else{
+                        console.log('invalid instance');
+                    }
+                    //var driverInstance = instance.driverInstance;
+                    //driverInstance && driverInstance.onLostServer && driverInstance.onLostServer();
+                    //device.setState(types.DEVICE_STATE.LOST_DEVICE_SERVER);
+                });
+            }
+        },
         //nulled in server mode
         addDeviceInstance:function(device,driver){},
         /***
@@ -56335,112 +56709,6 @@ define('xide/encoding/SHA1',["./_base"], function(base){
 	return base.SHA1;
 });
 ;
-define('xide/encoding/_base',[
-	"dojo/_base/lang"
-
-], function(lang){
-
-	//	These functions are 32-bit word-based.  See _sha-64 for 64-bit word ops.
-	var base = {};//lang.getObject("dojox.encoding.digests", true);
-
-	base.outputTypes={
-		// summary:
-		//		Enumeration for input and output encodings.
-		Base64:0, Hex:1, String:2, Raw:3
-	};
-
-	//	word-based addition
-	base.addWords=function(/* word */a, /* word */b){
-		// summary:
-		//		add a pair of words together with rollover
-		var l=(a&0xFFFF)+(b&0xFFFF);
-		var m=(a>>16)+(b>>16)+(l>>16);
-		return (m<<16)|(l&0xFFFF);	//	word
-	};
-
-	//	word-based conversion method, for efficiency sake;
-	//	most digests operate on words, and this should be faster
-	//	than the encoding version (which works on bytes).
-	var chrsz=8;	//	16 for Unicode
-	var mask=(1<<chrsz)-1;
-
-	base.stringToWord=function(/* string */s){
-		// summary:
-		//		convert a string to a word array
-		var wa=[];
-		for(var i=0, l=s.length*chrsz; i<l; i+=chrsz){
-			wa[i>>5]|=(s.charCodeAt(i/chrsz)&mask)<<(i%32);
-		}
-		return wa;	//	word[]
-	};
-
-	base.wordToString=function(/* word[] */wa){
-		// summary:
-		//		convert an array of words to a string
-		var s=[];
-		for(var i=0, l=wa.length*32; i<l; i+=chrsz){
-			s.push(String.fromCharCode((wa[i>>5]>>>(i%32))&mask));
-		}
-		return s.join("");	//	string
-	};
-
-	base.wordToHex=function(/* word[] */wa){
-		// summary:
-		//		convert an array of words to a hex tab
-		var h="0123456789abcdef", s=[];
-		for(var i=0, l=wa.length*4; i<l; i++){
-			s.push(h.charAt((wa[i>>2]>>((i%4)*8+4))&0xF)+h.charAt((wa[i>>2]>>((i%4)*8))&0xF));
-		}
-		return s.join("");	//	string
-	};
-
-	base.wordToBase64=function(/* word[] */wa){
-		// summary:
-		//		convert an array of words to base64 encoding, should be more efficient
-		//		than using dojox.encoding.base64
-		var p="=", tab="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", s=[];
-		for(var i=0, l=wa.length*4; i<l; i+=3){
-			var t=(((wa[i>>2]>>8*(i%4))&0xFF)<<16)|(((wa[i+1>>2]>>8*((i+1)%4))&0xFF)<<8)|((wa[i+2>>2]>>8*((i+2)%4))&0xFF);
-			for(var j=0; j<4; j++){
-				if(i*8+j*6>wa.length*32){
-					s.push(p);
-				} else {
-					s.push(tab.charAt((t>>6*(3-j))&0x3F));
-				}
-			}
-		}
-		return s.join("");	//	string
-	};
-
-	//	convert to UTF-8
-	base.stringToUtf8 = function(input){
-		var output = "";
-		var i = -1;
-		var x, y;
-
-		while(++i < input.length){
-			x = input.charCodeAt(i);
-			y = i + 1 < input.length ? input.charCodeAt(i + 1) : 0;
-			if(0xD800 <= x && x <= 0xDBFF && 0xDC00 <= y && y <= 0xDFFF){
-				x = 0x10000 + ((x & 0x03FF) << 10) + (y & 0x03FF);
-				i++;
-			}
-
-			if(x <= 0x7F)
-				output += String.fromCharCode(x);
-			else if(x <= 0x7FF)
-				output += String.fromCharCode(0xC0 | ((x >>> 6) & 0x1F), 0x80 | (x & 0x3F));
-			else if(x <= 0xFFFF)
-				output += String.fromCharCode(0xE0 | ((x >>> 12) & 0x0F), 0x80 | ((x >>> 6) & 0x3F), 0x80 | (x & 0x3F));
-			else if(x <= 0x1FFFFF)
-				output += String.fromCharCode(0xF0 | ((x >>> 18) & 0x07), 0x80 | ((x >>> 12) & 0x3F), 0x80 | ((x >>> 6) & 0x3F), 0x80 | (x & 0x3F));
-		}
-		return output;
-	};
-
-	return base;
-});
-;
 define('xide/rpc/JsonRPC',[
     "dojo/_base/lang",
     "dojo/_base/json",
@@ -57080,6 +57348,10 @@ define('xcf/model/Device',[
             var driverOptions = this.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS);
             return (1 << types.DRIVER_FLAGS.RUNS_ON_SERVER & driverOptions);
         },
+        isServer:function(){
+            var driverOptions = this.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS);
+            return (1 << types.DRIVER_FLAGS.SERVER & driverOptions);
+        },
         isDebug:function(){
             var driverOptions = this.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS);
             return (1 << types.DRIVER_FLAGS.DEBUG & driverOptions);
@@ -57221,6 +57493,10 @@ define('xcf/model/Device',[
                 {
                     return 'fa-spinner fa-spin'
                 }
+                case types.DEVICE_STATE.LOST_DEVICE_SERVER:
+                {
+                    return 'fa-spinner fa-spin'
+                }
             }
             return 'fa-unlink iconStatusOff';
         },
@@ -57277,6 +57553,16 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     if(!String.prototype.setBytes) {
         String.prototype.setBytes = function (bytes) {
             this.bytes = bytes;
+        }
+    }
+    if(!String.prototype.getString) {
+        String.prototype.getString = function () {
+            return this.string;
+        }
+    }
+    if(!String.prototype.setString) {
+        String.prototype.setString = function (string) {
+            this.string = string;
         }
     }
     if(!String.prototype.getBytes){
@@ -57340,7 +57626,12 @@ define('xcf/manager/DeviceManager_DeviceServer',[
          */
         startDevice: function (item,force) {
 
-            //console.error('start device : ' + item._store.id);
+            var thiz = this;
+            if(!item){
+                console.error('start device invalid item');
+                return null;
+            }
+
             this.checkDeviceServerConnection();
             item.check();
             var dfd = new Deferred();
@@ -57380,25 +57671,14 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
 
             var hash = cInfo.hash;
-            if (this.deviceInstances[hash]) {
+
+            var state = item.state;
+            var wasLost = state===types.DEVICE_STATE.LOST_DEVICE_SERVER;
+            if (this.deviceInstances[hash] && wasLost!==true) {
                 debugDevice && console.error('device already started' + cInfo.toString());
                 dfd.resolve(this.deviceInstances[hash]);
                 return dfd;
             }
-
-            item.setState(types.DEVICE_STATE.CONNECTING);
-
-            item._userStopped=null;
-            item._startDfd = dfd;
-
-            var thiz = this,
-                baseDriverPrefix = this.driverScopes['system_drivers'],
-                baseDriverRequire = baseDriverPrefix + 'DriverBase';
-
-            var urlBase = require.toUrl(this.driverScopes['system_drivers']);
-
-            var url = decodeURIComponent(urlBase) + "/DriverBase";
-
 
             function buildMQTTParams(cInfo,driverInstance,deviceItem,driverItem){
                 return {
@@ -57407,6 +57687,33 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     deviceId:item.path
                 };
             }
+
+            if(wasLost && this.deviceInstances[hash]){
+                thiz.publish(types.EVENTS.ON_STATUS_MESSAGE, {
+                    text: 'Trying to re-connect to ' + cInfo.toString(),
+                    type: 'info'
+                });
+                thiz.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.MANAGER_START_DRIVER, cInfo);
+                item.setState(types.DEVICE_STATE.CONNECTING);
+                dfd.resolve(this.deviceInstances[hash]);
+                return dfd;
+
+            }
+
+            item.setState(types.DEVICE_STATE.CONNECTING);
+
+            item._userStopped=null;
+            item._startDfd = dfd;
+
+            var baseDriverPrefix = this.driverScopes['system_drivers'],
+                baseDriverRequire = baseDriverPrefix + 'DriverBase';
+
+            var urlBase = require.toUrl(this.driverScopes['system_drivers']);
+
+            var url = decodeURIComponent(urlBase) + "/DriverBase";
+
+
+
 
             try {
                 require([baseDriverRequire], function (baseDriver) {
@@ -57500,13 +57807,13 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     driverInstance.utils = utils;
                     driverInstance.types = types;
                     driverInstance.device = device;
+                    
                     driverInstance.getDevice = function(){
                         return this.device;
                     }
                     driverInstance.getDeviceInfo = function(){
                         return this.getDevice().info;
                     }
-
 
                     var meta = driver['user'];
 
@@ -57567,7 +57874,10 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     //add variable && command functions:
                     isIDE && thiz.completeDriverInstance(driver, driverInstance, device);
 
+                    driverInstance._id= utils.createUUID();
+
                     dfd.resolve(driverInstance);
+
 
                     return driverInstance;
 
@@ -57626,12 +57936,14 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
             if(!deviceStoreItem && data.device && data.device.state){
                 //deviceStoreItem = data.device;
-                debugger;
+                //debugger;
 
             }
             if(data.isReplay && deviceStoreItem && deviceStoreItem.state ===types.DEVICE_STATE.READY){
+                deviceStoreItem.setState(types.DEVICE_STATE.READY);
                 return;
             }
+            
             var instance = this.getDriverInstance(data.device, true) || data.instance;
             if(!instance){
                 debugStrangers && !isServer && console.error('--cant find device instance',this.deviceInstances);
@@ -57729,15 +58041,16 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 }
 
                 deviceStoreItem.setState(types.DEVICE_STATE.DISCONNECTED);
-                function shouldRecconect(item){
+                
+                function shouldRecconect(item){                    
+                    
                     if(item._userStopped || item.state === types.DEVICE_STATE.DISABLED){
                         return false;
                     }
-                    enabled = thiz.getMetaValue(item, types.DEVICE_PROPERTY.CF_DEVICE_ENABLED);
+                    var enabled = thiz.getMetaValue(item, types.DEVICE_PROPERTY.CF_DEVICE_ENABLED);
                     if(!enabled){
                         return false;
                     }
-
                     return true;
                 }
 
@@ -57918,7 +58231,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 bytes.push(utils.stringToBuffer(messages[i]));
             }
 
-            if(_messages){
+            if(_messages && _messages.length){
                 messages = [];
                 bytes = [];
                 for (var i = 0; i < _messages.length; i++) {
@@ -58117,6 +58430,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
                     responseVariable.value = new String(messages[i]);
                     responseVariable.value.setBytes(bytes[i]);
+                    responseVariable.value.setString(messages[i]);
+
 
                     //console.log('responseVariable.value : ', responseVariable.value.getBytes());
 
@@ -58960,179 +59275,6 @@ define('xide/manager/BeanManager',[
         }
     });
 });;
-define('xide/encoding/MD5',["./_base"], function(base) {
-
-/*	A port of Paul Johnstone's MD5 implementation
- *	http://pajhome.org.uk/crypt/md5/index.html
- *
- *	Copyright (C) Paul Johnston 1999 - 2002.
- *	Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
- * 	Distributed under the BSD License
- *
- *	Dojo port by Tom Trenka
- */
-
-	var chrsz=8;
-
-	//	MD5 rounds functions
-	function R(n,c){ return (n<<c)|(n>>>(32-c)); }
-	function C(q,a,b,x,s,t){ return base.addWords(R(base.addWords(base.addWords(a, q), base.addWords(x, t)), s), b); }
-	function FF(a,b,c,d,x,s,t){ return C((b&c)|((~b)&d),a,b,x,s,t); }
-	function GG(a,b,c,d,x,s,t){ return C((b&d)|(c&(~d)),a,b,x,s,t); }
-	function HH(a,b,c,d,x,s,t){ return C(b^c^d,a,b,x,s,t); }
-	function II(a,b,c,d,x,s,t){ return C(c^(b|(~d)),a,b,x,s,t); }
-
-	//	the core MD5 rounds method
-	function core(x,len){
-		x[len>>5]|=0x80<<((len)%32);
-		x[(((len+64)>>>9)<<4)+14]=len;
-		var a= 1732584193;
-		var b=-271733879;
-		var c=-1732584194;
-		var d= 271733878;
-		for(var i=0; i<x.length; i+=16){
-			var olda=a;
-			var oldb=b;
-			var oldc=c;
-			var oldd=d;
-
-			a=FF(a,b,c,d,x[i+ 0],7 ,-680876936);
-			d=FF(d,a,b,c,x[i+ 1],12,-389564586);
-			c=FF(c,d,a,b,x[i+ 2],17, 606105819);
-			b=FF(b,c,d,a,x[i+ 3],22,-1044525330);
-			a=FF(a,b,c,d,x[i+ 4],7 ,-176418897);
-			d=FF(d,a,b,c,x[i+ 5],12, 1200080426);
-			c=FF(c,d,a,b,x[i+ 6],17,-1473231341);
-			b=FF(b,c,d,a,x[i+ 7],22,-45705983);
-			a=FF(a,b,c,d,x[i+ 8],7 , 1770035416);
-			d=FF(d,a,b,c,x[i+ 9],12,-1958414417);
-			c=FF(c,d,a,b,x[i+10],17,-42063);
-			b=FF(b,c,d,a,x[i+11],22,-1990404162);
-			a=FF(a,b,c,d,x[i+12],7 , 1804603682);
-			d=FF(d,a,b,c,x[i+13],12,-40341101);
-			c=FF(c,d,a,b,x[i+14],17,-1502002290);
-			b=FF(b,c,d,a,x[i+15],22, 1236535329);
-
-			a=GG(a,b,c,d,x[i+ 1],5 ,-165796510);
-			d=GG(d,a,b,c,x[i+ 6],9 ,-1069501632);
-			c=GG(c,d,a,b,x[i+11],14, 643717713);
-			b=GG(b,c,d,a,x[i+ 0],20,-373897302);
-			a=GG(a,b,c,d,x[i+ 5],5 ,-701558691);
-			d=GG(d,a,b,c,x[i+10],9 , 38016083);
-			c=GG(c,d,a,b,x[i+15],14,-660478335);
-			b=GG(b,c,d,a,x[i+ 4],20,-405537848);
-			a=GG(a,b,c,d,x[i+ 9],5 , 568446438);
-			d=GG(d,a,b,c,x[i+14],9 ,-1019803690);
-			c=GG(c,d,a,b,x[i+ 3],14,-187363961);
-			b=GG(b,c,d,a,x[i+ 8],20, 1163531501);
-			a=GG(a,b,c,d,x[i+13],5 ,-1444681467);
-			d=GG(d,a,b,c,x[i+ 2],9 ,-51403784);
-			c=GG(c,d,a,b,x[i+ 7],14, 1735328473);
-			b=GG(b,c,d,a,x[i+12],20,-1926607734);
-
-			a=HH(a,b,c,d,x[i+ 5],4 ,-378558);
-			d=HH(d,a,b,c,x[i+ 8],11,-2022574463);
-			c=HH(c,d,a,b,x[i+11],16, 1839030562);
-			b=HH(b,c,d,a,x[i+14],23,-35309556);
-			a=HH(a,b,c,d,x[i+ 1],4 ,-1530992060);
-			d=HH(d,a,b,c,x[i+ 4],11, 1272893353);
-			c=HH(c,d,a,b,x[i+ 7],16,-155497632);
-			b=HH(b,c,d,a,x[i+10],23,-1094730640);
-			a=HH(a,b,c,d,x[i+13],4 , 681279174);
-			d=HH(d,a,b,c,x[i+ 0],11,-358537222);
-			c=HH(c,d,a,b,x[i+ 3],16,-722521979);
-			b=HH(b,c,d,a,x[i+ 6],23, 76029189);
-			a=HH(a,b,c,d,x[i+ 9],4 ,-640364487);
-			d=HH(d,a,b,c,x[i+12],11,-421815835);
-			c=HH(c,d,a,b,x[i+15],16, 530742520);
-			b=HH(b,c,d,a,x[i+ 2],23,-995338651);
-
-			a=II(a,b,c,d,x[i+ 0],6 ,-198630844);
-			d=II(d,a,b,c,x[i+ 7],10, 1126891415);
-			c=II(c,d,a,b,x[i+14],15,-1416354905);
-			b=II(b,c,d,a,x[i+ 5],21,-57434055);
-			a=II(a,b,c,d,x[i+12],6 , 1700485571);
-			d=II(d,a,b,c,x[i+ 3],10,-1894986606);
-			c=II(c,d,a,b,x[i+10],15,-1051523);
-			b=II(b,c,d,a,x[i+ 1],21,-2054922799);
-			a=II(a,b,c,d,x[i+ 8],6 , 1873313359);
-			d=II(d,a,b,c,x[i+15],10,-30611744);
-			c=II(c,d,a,b,x[i+ 6],15,-1560198380);
-			b=II(b,c,d,a,x[i+13],21, 1309151649);
-			a=II(a,b,c,d,x[i+ 4],6 ,-145523070);
-			d=II(d,a,b,c,x[i+11],10,-1120210379);
-			c=II(c,d,a,b,x[i+ 2],15, 718787259);
-			b=II(b,c,d,a,x[i+ 9],21,-343485551);
-
-			a=base.addWords(a, olda);
-			b=base.addWords(b, oldb);
-			c=base.addWords(c, oldc);
-			d=base.addWords(d, oldd);
-		}
-		return [a,b,c,d];
-	}
-
-	function hmac(data, key){
-		var wa=base.stringToWord(key);
-		if(wa.length>16){
-			wa=core(wa, key.length*chrsz);
-		}
-		var l=[], r=[];
-		for(var i=0; i<16; i++){
-			l[i]=wa[i]^0x36363636;
-			r[i]=wa[i]^0x5c5c5c5c;
-		}
-		var h=core(l.concat(base.stringToWord(data)), 512+data.length*chrsz);
-		return core(r.concat(h), 640);
-	}
-
-	//	public function
-	base.MD5=function(/* string */data, /* dojox.encoding.digests.outputTypes? */outputType){
-		// summary:
-		//		computes the digest of data, and returns the result according to type outputType
-		var out=outputType || base.outputTypes.Base64;
-		var wa=core(base.stringToWord(data), data.length*chrsz);
-		switch(out){
-			case base.outputTypes.Raw:{
-				return wa;	//	word[]
-			}
-			case base.outputTypes.Hex:{
-				return base.wordToHex(wa);	//	string
-			}
-			case base.outputTypes.String:{
-				return base.wordToString(wa);	//	string
-			}
-			default:{
-				return base.wordToBase64(wa);	//	string
-			}
-		}
-	};
-
-	//	make this private, for later use with a generic HMAC calculator.
-	base.MD5._hmac=function(/* string */data, /* string */key, /* dojox.encoding.digests.outputTypes? */outputType){
-		// summary:
-		//		computes the digest of data, and returns the result according to type outputType
-		var out=outputType || base.outputTypes.Base64;
-		var wa=hmac(data, key);
-		switch(out){
-			case base.outputTypes.Raw:{
-				return wa;	//	word[]
-			}
-			case base.outputTypes.Hex:{
-				return base.wordToHex(wa);	//	string
-			}
-			case base.outputTypes.String:{
-				return base.wordToString(wa);	//	string
-			}
-			default:{
-				return base.wordToBase64(wa);	//	string
-			}
-		}
-	};
-
-	return base.MD5;
-});
-;
 define('xcf/manager/DriverManager',[
     'dcl/dcl',
     "dojo/_base/declare",
@@ -59645,34 +59787,42 @@ define('xcf/manager/DriverManager',[
         //  CI related
         //
         /////////////////////////////////////////////////////////////////////////////////////
-        getDriverById: function (id) {
+        _getDriverById: function (id,store) {
+            var items = utils.queryStore(store, {
+                isDir: false
+            });
+
+            if (!_.isArray(items)) {
+                items = [items];
+            }
+
+            for (var i = 0; i < items.length; i++) {
+                var driver = items[i];
+                var meta = driver['user'];
+                var _id = utils.getInputCIByName(meta, types.DRIVER_PROPERTY.CF_DRIVER_ID);
+                if (!_id) {
+                    continue;
+                }
+                if (_id.value == id) {
+                    return store.getSync(driver.path);
+                    return driver;
+                }
+            }
+            return null;
+        },
+        getDriverById: function (id,store) {
+
+            if(store){
+                return this._getDriverById(id,store);
+            }
 
             var options = [];
             var result = null;
+            var self = this;
 
-            function search(store) {
 
-                var items = utils.queryStore(store, {
-                    isDir: false
-                });
-
-                if (!_.isArray(items)) {
-                    items = [items];
-                }
-
-                for (var i = 0; i < items.length; i++) {
-                    var driver = items[i];
-                    var meta = driver['user'];
-                    var _id = utils.getInputCIByName(meta, types.DRIVER_PROPERTY.CF_DRIVER_ID);
-                    if (!_id) {
-                        continue;
-                    }
-                    if (_id.value == id) {
-                        return store.getSync(driver.path);
-                        return driver;
-                    }
-                }
-                return null;
+            function search(_store) {
+                return self._getDriverById(id,_store);
             }
 
             for(var scope in this.stores){
@@ -59760,7 +59910,6 @@ define('xcf/manager/DriverManager',[
             has('xcf-ui') && types.registerEnumeration('Driver', this.getDriversAsEnumeration(store));
         },
         onStoreCreated: function (evt) {
-
             var type = evt.type,
                 data = evt.data,
                 store = evt.store,
@@ -59774,13 +59923,11 @@ define('xcf/manager/DriverManager',[
             }
 
             for (var i = 0; i < items.length; i++) {
-
                 var item = items[i];
                 if (item._completed != null || item.name === 'Default') {
                     continue;
                 }
                 item._completed = true;
-
                 if(has('xcf-ui')) {
                     this.completeDriver(store, item, item);
                 }
@@ -59793,9 +59940,7 @@ define('xcf/manager/DriverManager',[
          * @returns {xide.data.TreeMemory}
          */
         createStore:function(data,scope,track){
-
             var storeClass = declare('driverStore',[TreeMemory,Trackable,ObservableStore],{});
-
             var store = new storeClass({
                 data: data.items,
                 Model:Driver,
@@ -59827,7 +59972,6 @@ define('xcf/manager/DriverManager',[
             return store;
         },
         getStore:function(scope){
-
             if(!scope || scope==='system_drivers') {
                 return this.store;
             }
@@ -59847,7 +59991,6 @@ define('xcf/manager/DriverManager',[
          * @returns {Deferred}
          */
         ls: function (scope) {
-
             function data(data) {
                 try {
                     var store = this.initStore(data, scope);
@@ -60408,7 +60551,8 @@ define('xcf/types/Types',[
         SYNCHRONIZING: 'DeviceIsSynchronizing',
         READY: 'DeviceIsReady',
         DISCONNECTED: 'DeviceIsDisconnected',
-        DISABLED: 'DeviceIsDisabled'
+        DISABLED: 'DeviceIsDisabled',
+        LOST_DEVICE_SERVER:'LostDeviceServerConnection'
     };
 
     /**
@@ -60491,7 +60635,7 @@ define('xcf/types/Types',[
      * @enum {int} DRIVER_FLAGS
      * @global
      */
-    types.DRIVER_FLAGS ={
+    types.DRIVER_FLAGS = {
         /**
          * Mark the driver for "server side"
          */
@@ -60499,7 +60643,11 @@ define('xcf/types/Types',[
         /**
          * Enable protocol's debug message on console
          */
-        DEBUG: 4
+        DEBUG: 4,
+        /**
+         * Enable protocol's debug message on console
+         */
+        SERVER: 16
     };
 
 
@@ -68204,7 +68352,7 @@ define('xapp/manager/Application',[
     var debugBlocks = false;
 
     //Application
-    return dcl([ManagerBase],{
+    var Module = dcl([ManagerBase],{
         declaredClass:"xapp/manager/Application",
         delegate:null,
         settings:null,
@@ -68321,9 +68469,20 @@ define('xapp/manager/Application',[
                 console.error('error loading xblox '+e,e);
                 def.reject(e);
             }
+
+            window['xapp'] = this;
+
             return def;
         }
     });
+    
+
+    Module.getApp = function(){
+        return window['xapp'];
+    }
+
+    return Module;
+
 });
 ;
 /** @module xnode/manager/NodeServiceManager **/
@@ -75489,7 +75648,12 @@ define('xide/manager/NotificationManager',[
         },
         postMessage:function(msg){
             var hash = MD5(JSON.stringify(msg),1);
+            var self = this;
+
             if(this._lastMessageHash===hash){
+                setTimeout(function () {
+                    self._lastMessageHash=null;
+                },2000);
                 return;
             }
             this._lastMessageHash = hash;
@@ -75497,7 +75661,7 @@ define('xide/manager/NotificationManager',[
                 clearTimeout(this._lastMessageTime);
             }
 
-            var self = this;
+
             if(!this._lastMessageTime) {
                 this._lastMessageTime = setTimeout(function () {
                     self._lastMessageHash = null;
