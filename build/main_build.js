@@ -19008,7 +19008,7 @@ define('ecma402/impl/common',["./List", "./Record",
 		"requirejs-text/text!../cldr/supplemental/aliases.json",
 		"requirejs-text/text!../cldr/supplemental/parentLocales.json",
 		"requirejs-text/text!../cldr/supplemental/likelySubtags.json",
-		"requirejs-text/text!../cldr/supplemental/calendarPreferenceData.json",
+		"requirejs-text/text!../cldr/supplemental/calendarPreferenceData.json"
 ],
 	function (List, Record, availableLocalesJson, aliasesJson, 
 			parentLocalesJson, likelySubtagsJson, calendarPreferenceDataJson) {
@@ -31596,7 +31596,8 @@ define('xblox/model/Block',[
             'owner',
             'allowActionOverride',
             'canDelete',
-            'isCommand'
+            'isCommand',
+            'lastCommand'
         ],
         postCreate:function(){},
         /**
@@ -31645,19 +31646,8 @@ define('xblox/model/Block',[
             }
             return null;
         },
-        reset:function(){
-            this._lastSettings = {};
-            if(this._loop){
-                clearTimeout(this._loop);
-                this._loop = null;
-            }
-        },
-        stop:function(){
-            if(this._loop){
-                clearTimeout(this._loop);
-                this._loop=null;
-            }
-            this.reset();
+        pause:function(){
+
         },
         mergeNewModule: function (source) {
             for (var i in source) {
@@ -32011,8 +32001,6 @@ define('xblox/model/Block',[
             return null;
         },
         _getArg: function (val,escape) {
-
-
             //try auto convert to number
             var _float = parseFloat(val);
             if (!isNaN(_float)) {
@@ -32080,7 +32068,7 @@ define('xblox/model/Block',[
             //add previous result
             var previousResult = this.getPreviousResult();
             if (previousResult != null) {
-                if (lang.isArray(previousResult) && previousResult.length == 1) {
+                if (_.isArray(previousResult) && previousResult.length == 1) {
                     result.push(previousResult[0]);
                 } else {
                     result.push(previousResult);
@@ -32291,6 +32279,7 @@ define('xblox/model/Block',[
             blocks = blocks || this.items;
             var onFinishBlock = function (block, results) {
                 block._lastResult = block._lastResult || results;
+                
                 thiz._currentIndex++;
                 thiz.runFrom(blocks, thiz._currentIndex, settings);
             };
@@ -32336,7 +32325,20 @@ define('xblox/model/Block',[
         },
         destroy:function(){
             this.stop();
+            this.reset();
+            this._destroyed = true;
+        },
+        reset:function(){
+            this._lastSettings = {};
+            if(this._loop){
+                clearTimeout(this._loop);
+                this._loop = null;
+            }
+        },
+        stop:function(){
+            this.reset();
         }
+
     });
 
     //global short-cuts
@@ -33377,7 +33379,7 @@ define('xblox/model/Contains',[
 
                 for (var n = index; n < blocks.length; n++) {
                     var block = blocks[n];
-                    if (block.deferred === true) {
+                    if (block.deferred === true && block.enabled) {
                         block._deferredObject = new Deferred();
                         this._currentIndex = n;
                         wireBlock(block);
@@ -33387,9 +33389,10 @@ define('xblox/model/Contains',[
                         break;
                     } else {
                         //this.addToEnd(this._return, block.solve(this.scope, settings));
-
-                        var blockDfd = block.solve(this.scope, settings);
-                        allDfds.push(blockDfd);
+                        if(block.enabled) {
+                            var blockDfd = block.solve(this.scope, settings);
+                            allDfds.push(blockDfd);
+                        }
                     }
 
                 }
@@ -38347,9 +38350,11 @@ define('xblox/model/variables/VariableAssignmentBlock',[
     "xide/utils",
     "xide/types",
     'dstore/legacy/DstoreAdapter',
-    "xide/factory"
-], function(dcl,Block,utils,types,DstoreAdapter,factory){
+    "xide/factory",
+    'xdojo/has'
+], function(dcl,Block,utils,types,DstoreAdapter,factory,has){
 
+    var isServer = has('host-node');
     /**
      *
      * @class module:xblox/model/variables/VariableAssignmentBlock
@@ -38368,8 +38373,8 @@ define('xblox/model/variables/VariableAssignmentBlock',[
         name:'Set Variable',
         icon:'',
         hasInlineEdits:true,
+        flags:0x00000004,
         toText:function(){
-
             var _variable = this.scope.getVariableById(this.variable);
             var _text = _variable ? _variable.name : '';
             if(this.variable.indexOf('://')!==-1) {
@@ -38413,13 +38418,34 @@ define('xblox/model/variables/VariableAssignmentBlock',[
 
                 _variable.set('value',_parsed);
 
+                var publish = false;
+
+
+                var context = this.getContext();
+                if(context) {
+                    var device = context.device;
+                    if(device && device.info && isServer && device.info.serverSide) {
+
+                        if (this.flags & types.VARIABLE_FLAGS.PUBLISH_IF_SERVER) {
+                            publish = true;
+
+                        }else{
+                            //console.log('dont publish');
+                            publish=false;
+                        }
+                    }
+                }
+                if(this.flags & types.VARIABLE_FLAGS.PUBLISH){
+                    publish = true;
+                }
                 factory.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED,{
                     item:_variable,
                     scope:this.scope,
                     save:false,
                     block:this,
                     name:_variable.name,
-                    value:_value
+                    value:_value,
+                    publish:publish
                 });
                 this.onSuccess(this,settings);
                 return [];
@@ -38501,6 +38527,28 @@ define('xblox/model/variables/VariableAssignmentBlock',[
                     ]
 
                 }
+            }));
+
+            fields.push(this.utils.createCI('flags',5,this.flags,{
+                group:'Variable',
+                title:'Flags',
+                dst:'flags',
+                data:[
+                    {
+                        value: 0x00000002,
+                        label: 'Publish to network',
+                        title:"Publish to network in order to make a network variable"
+                    },
+                    {
+                        value: 0x00000004,//2048
+                        label: 'Publish if server',
+                        title: 'Publish only on network if this is running server side'
+                    }
+                ],
+                widget:{
+                    hex:true
+                }
+
             }));
 
             return fields;
@@ -40164,7 +40212,10 @@ define('xblox/model/logic/CaseBlock',[
          */
         solve:function(scope,switchBlock,settings) {
             try {
-                var _var = scope.getVariableById(switchBlock.variable)  || settings.args ? {value:settings.args[0]} : null;
+                var _var = scope.getVariableById(switchBlock.variable);
+                if(!_var && settings.args && settings.args[0]){
+                    _var = {value:settings.args[0]};
+                }
                 //console.log('case block: ' + this.comparator + this.expression,_var);
                 // Get the variable to evaluate
                 var switchVarValue = '';
@@ -40725,22 +40776,14 @@ define('xcf/model/Command',[
         //send: xcf.model.Expression
         //  3.12.10.3. “Send” field containing the actual string or hexadecimal sequence used to communicate with the device.
         send:'',
-
         name:'No Title',
         observed:[
             'send'
         ],
-
         interval:0,
-
         flags:0x00000800,
-
-        waitForResponse:false,
-
         _runningDfd:null,
-
         __started:false,
-
         /**
          * onCommandFinish will be excecuted which a driver did run a command
          * @param msg {object}
@@ -40751,32 +40794,96 @@ define('xcf/model/Command',[
         onCommandFinish:function(msg){
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
+
             debug && console.log('onCommandFinish ' + this.send);
-            if(this.waitForResponse && msg.params && msg.params.id){
+
+            var result = {};
+            if(msg.params && msg.params.id){
                 this._emit('cmd:'+msg.cmd + '_' + msg.params.id,{
                     msg:msg
                 });
+                if(msg.lastResponse){
+                    var data = utils.getJson(msg.lastResponse);
+                    if(data && data.result && _.isString(data.result)){
+                        var _lastResult = utils.getJson(data.result);
+                        if(_lastResult){
+                            this._lastResult = result = _lastResult;
+                        }
+                    }
+                }
+            }
+
+            if(this.items.length) {
+                this.runFrom(this.items,0,this._lastSettings);
+            }
+
+            this.resolve(result);
+
+            this.onSuccess(this, this._lastSettings);
+
+        },
+        /**
+         * onCommandFinish will be excecuted which a driver did run a command
+         * @param msg {object}
+         * @param msg.id {string} the command job id
+         * @param msg.src {string} the source id, which is this block id
+         * @param msg.cmd {string} the command string being sent
+         */
+        onCommandProgress:function(msg){
+            var scope = this.getScope();
+            var context = scope.getContext();//driver instance
+
+            console.log('onCommandProgress ' + this.send);
+
+            var result = {};
+            if(msg.params && msg.params.id){
+                this._emit('cmd:'+msg.cmd + '_' + msg.params.id,{
+                    msg:msg
+                });
+                if(msg.lastResponse){
+                    var data = utils.getJson(msg.lastResponse);
+                    if(data && data.result && _.isString(data.result)){
+                        var _lastResult = utils.getJson(data.result);
+                        if(_lastResult){
+                            this._lastResult = result = _lastResult;
+                        }
+                    }
+                }
+            }
+        },
+        resolve:function(data){
+            data = data || this._lastResult;
+            if(this._runningDfd){
+                this._runningDfd.resolve(data);
             }
         },
         onCommandError:function(msg){
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
             debug && console.log('onCommandError',msg);
-            if(this.waitForResponse && msg.params && msg.params.id){
+            if(msg.params && msg.params.id){
                 this._emit('cmd:'+msg.cmd + '_' + msg.params.id,msg);
             }
             this.onFailed(this, this._settings);
 
         },
-        sendToDevice:function(msg,settings){
+        sendToDevice:function(msg,settings,stop,pause){
 
             msg=this.replaceAll("'",'',msg);
+
             var id = utils.createUUID(),
                 self = this;
 
+            var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
+
+            this.lastCommand = '' + msg;
+
+
             if(this.scope.instance){
-                if(this.waitForResponse){
+
+                if(wait){
                     this._on('cmd:'+msg + '_' + id,function(msg){
+                        console.log('-cmd done');
                         if(msg.error){
                             self.onFailed(self, settings);
                         }else {
@@ -40784,7 +40891,7 @@ define('xcf/model/Command',[
                         }
                     });
                 }
-                this.scope.instance.sendMessage(msg,null,this.id,id);
+                this.scope.instance.sendMessage(msg,null,this.id,id,wait,stop,pause);
             }else{
                 debug && console.warn('have no device!');
                 this.publish(types.EVENTS.ON_STATUS_MESSAGE,{
@@ -40802,6 +40909,7 @@ define('xcf/model/Command',[
                 clearTimeout(this._loop);
                 this._loop = null;
             }
+            delete this._runningDfd;
         },
         /***
          * Solves the command
@@ -40810,7 +40918,9 @@ define('xcf/model/Command',[
          * @returns formatted send string
          */
         solve:function(scope,settings,isInterface,send) {
+
             var dfd = null;
+
             scope = scope || this.scope;
 
             settings = this._lastSettings = settings || this._lastSettings;
@@ -40820,17 +40930,12 @@ define('xcf/model/Command',[
             }
 
             var value = send || this._get('send');
-
             var parse = !(this.flags & types.CIFLAG.DONT_PARSE);
-
             var isExpression = (this.flags & types.CIFLAG.EXPRESSION);
+            var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
 
             if(this.flags & types.CIFLAG.TO_HEX){
                 value = utils.to_hex(value);
-            }
-
-            if(this.flags & types.CIFLAG.REPLACE_HEX){
-                //value = utils.replaceHex(value);
             }
 
             if(parse!==false){
@@ -40845,7 +40950,7 @@ define('xcf/model/Command',[
             if(isInterface ==true && this._loop){
                 this.reset();
             }
-            if(this.waitForResponse!==true) {
+            if(wait!==true) {
                 this.onRun(this,settings);
             }else{
 
@@ -40854,7 +40959,9 @@ define('xcf/model/Command',[
                 });
 
                 dfd = new Deferred();
+
                 this._runningDfd = dfd;
+
             }
             if(this.items && this.items.length>0){
 
@@ -40867,6 +40974,10 @@ define('xcf/model/Command',[
                             this.onSuccess(this, settings);
                         }
                     }
+                }
+
+                if(wait){
+                    return this._runningDfd;
                 }
 
                 var ret=[];
@@ -40907,21 +41018,17 @@ define('xcf/model/Command',[
                         this.onFailed(this, settings);
                     }
                 }
-                //console.log('sending ' + res);
-                if(this.waitForResponse!==true) {
+                if(wait!==true) {
                     this.onSuccess(this, settings);
 
                 }else{
                     this._settings = settings;
-                    //this.onRun(this, settings);
                 }
-
                 if(isInterface){
                     if(this.auto && this.getInterval()>0) {
                         this.scope.loopBlock(this, settings);
                     }
                 }
-
                 return [res];
             }
             return false;
@@ -40947,7 +41054,6 @@ define('xcf/model/Command',[
             return this.items;
         },
         hasInlineEdits:true,
-
         toText:function(icon,label,detail,breakDetail){
             var out = "";
             if(icon!==false){
@@ -41007,12 +41113,14 @@ define('xcf/model/Command',[
                 order:197
             }));
 
+            /*
             fields.push(this.utils.createCI('waitForResponse',0,this.waitForResponse,{
                 group:'General',
                 title:'%%Has Response',
                 dst:'waitForResponse',
                 order:195
             }));
+            */
 
             fields.push(this.utils.createCI('send',types.ECIType.EXPRESSION_EDITOR,this.send,{
                 group:'Send',
@@ -41058,12 +41166,12 @@ define('xcf/model/Command',[
                         value: 0x00000800,//2048
                         label: 'Expression',
                         title: 'Parse it as Javascript'
-                    }/*,
+                    },
                     {
-                        value: 0x000004000,//8096
-                        label: '%%Replace Hex',
-                        title: "Replace string with the hex designator,ie x0d will be replaced by \\r"
-                    }*/
+                        value: 0x000008000,
+                        label: 'Wait',
+                        title: "Wait for response"
+                    }
                 ],
                 widget:{
                     hex:true
@@ -41113,6 +41221,23 @@ define('xcf/model/Command',[
         },
         destroy:function () {
             this.reset();
+        },
+        pause:function(){
+            var last = this.lastCommand;
+            if(last) {
+                this.sendToDevice(last, this._lastSettings, false, true);
+            }
+        },
+        stop:function(){
+            this.onSuccess(this, {
+                highlight:true
+            });
+            this.resolve('');
+            var last = this.lastCommand;
+            if(last) {
+                this.sendToDevice(last, this._lastSettings, true, false);
+            }
+            delete this._runningDfd;
         }
     });
 });
@@ -46537,6 +46662,7 @@ define('xblox/model/Scope',[
         },
         destroy:function(){
             this._destroy();
+            this._destroyed=true;
         },
 
         /**
@@ -50846,7 +50972,9 @@ define('xcf/manager/DeviceManager',[
             }
 
             var info = this.toDeviceControlInfo(deviceStoreItem),
-                serverSide = info.serverSide;
+                serverSide = info.serverSide,
+                isServer = info.isServer;
+
 
             /**
              * Post work :
@@ -50858,7 +50986,7 @@ define('xcf/manager/DeviceManager',[
             //1. fire startup blocks
             var blockScope = driverInstance.blockScope;// ctx.getBlockManager().getScope(driver.id);
 
-            if( (isServer && serverSide) || (!serverSide && !isServer && runDrivers)) {
+            if( !isServer && ((isServer && serverSide) || (!serverSide && !isServer && runDrivers))) {
 
                 var autoBlocks = [];
 
@@ -50951,7 +51079,7 @@ define('xcf/manager/DeviceManager',[
                 return;
             }
 
-            var hash = MD5(JSON.stringify(cInfo), 1);
+            var hash = cInfo.hash;
             if (this.deviceInstances[hash]) {
                 this._removeInstance(this.deviceInstances[hash], hash,item);
                 delete this.deviceInstances[hash];
@@ -51301,6 +51429,9 @@ define('xcf/manager/DeviceManager',[
         getBlock:function(url){
             for (var id in this.deviceInstances) {
                 var instance = this.deviceInstances[id];
+                if(!instance || !instance.device){
+                    continue;
+                }
                 var scope = instance.blockScope;
                 var block = scope.resolveBlock(url);
                 if(block){
@@ -51542,8 +51673,9 @@ define('xcf/manager/DeviceManager',[
                 if (port === deviceInfo.port &&
                     host === deviceInfo.host &&
                     protocol === deviceInfo.protocol &&
-                    device.isServer() === deviceInfo.isServer) {
-
+                    device.isServer() === deviceInfo.isServer &&
+                    id === deviceInfo.id ) {
+                    
                     if(!isIDE && deviceInfo.hash){
                         if(!this._cachedItems){
                             this._cachedItems = {};
@@ -51616,7 +51748,7 @@ define('xcf/manager/DeviceManager',[
                 console.error('couldnt start device, invalid control info');
                 return;
             }
-            var hash = MD5(JSON.stringify(cInfo), 1);
+            var hash = cInfo.hash;
             if (this.deviceInstances[hash]) {
                 _debugConnect && console.log('device already connected', cInfo);
                 item.setState(types.DEVICE_STATE.CONNECTED);
@@ -57921,6 +58053,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             this.onDeviceConnected(data);
             device.setState(types.DEVICE_STATE.READY);
             device._startDfd && device._startDfd.resolve(device.driverInstance);
+            delete device._userStopped;
+            delete device.lastError;
             delete device._startDfd;
             device._startDfd = null;
         },
@@ -58009,12 +58143,18 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
         },
         onDeviceDisconnected: function (data) {
+
             if (data && data.device) {
                 var error = data.error;
+
                 var code = error && error.code ? error.code :  error || '';
                 var deviceStoreItem = this.getDeviceStoreItem(data.device);
                 if(!deviceStoreItem){
                     debugDevice && isIDE && console.error('deviceStoreItem is null');
+                    return;
+                }
+                if(data.stopped===true){
+                    this.stopDevice(deviceStoreItem);
                     return;
                 }
 
@@ -58041,7 +58181,9 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 }
 
                 deviceStoreItem.setState(types.DEVICE_STATE.DISCONNECTED);
-                
+                deviceStoreItem.lastError = error;
+                deviceStoreItem.refresh();
+
                 function shouldRecconect(item){                    
                     
                     if(item._userStopped || item.state === types.DEVICE_STATE.DISABLED){
@@ -58117,6 +58259,23 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 var block = scope.getBlockById(params.src);
                 if(block && block.onCommandFinish){
                     block.onCommandFinish(message);
+                }
+            }
+        },
+        onCommandProgress:function(deviceData,message){
+            var driverInstance = this.getDriverInstance(deviceData, true);
+            if (!driverInstance) {
+                return;
+            }
+
+            var deviceInfo  = deviceData;
+            var device = this.getDeviceStoreItem(deviceInfo);
+            var params = message.params || {};
+            if(params.src && params.id){
+                var scope = driverInstance.blockScope;
+                var block = scope.getBlockById(params.src);
+                if(block && block.onCommandProgress){
+                    block.onCommandProgress(message);
                 }
             }
         },
@@ -58224,6 +58383,10 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 message:message,
                 bytes:deviceMessageData.data.bytes
             });
+
+            if(_messages && !_messages.length){
+                _messages = null;
+            }
 
             var bytes = [];
 
@@ -58356,7 +58519,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
                             messagesNew = [];
                             if (_.isString(message)) {
-                                messagesNew = split ? _messages ? _messages : driverInstance.split(message) : [message];
+                                messagesNew = split ? _messages && _messages.length ? _messages : driverInstance.split(message) : [message];
                             } else if (_.isObject(message)) {
                                 clear(message);
                                 messagesNew = [message];
@@ -58552,12 +58715,16 @@ define('xcf/manager/DeviceManager_DeviceServer',[
          * @param driverInstance
          * @param data
          */
-        sendDeviceCommand: function (driverInstance, data,src,id,print) {
+        sendDeviceCommand: function (driverInstance, data,src,id,print,wait,stop,pause) {
+
             this.checkDeviceServerConnection();
+
+
             var options = driverInstance.getDeviceInfo();
             var sendOptions = utils.mixin({
                 src:src
             },options);
+
             var dataOut = {
                 command: data,
                 device_command: 'Device_Send',
@@ -58567,16 +58734,36 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             utils.mixin(dataOut.options,{
                 params:{
                     src:src,
-                    id:id
+                    id:id,
+                    wait:wait,
+                    stop:stop,
+                    pause:pause
                 }
             });
 
             debug && console.log("Device.Manager.Send.Message : " + dataOut.command.substr(0,30) + ' = hex = ' + utils.stringToHex(dataOut.command) + ' l = ' + dataOut.command.length, dataOut);//sending device message
             
             var device = this.getDevice(options.id);
+
+            if(!device){
+                console.error('invalid device');
+                return;
+            }
+
+            if(device._userStopped){
+                return;
+            }
+
+            if(device && (device.state === types.DEVICE_STATE.DISABLED||device.state === types.DEVICE_STATE.DISCONNECTED)){
+                console.error('send command when disconnected');
+            }
+
+            var message = utils.stringFromDecString(dataOut.command);
+
+
             if(device.isDebug()) {
                 this.publish(types.EVENTS.ON_STATUS_MESSAGE, {
-                    text: "Did send message : " + '<span class="text-warnin">' + dataOut.command.substr(0, 30) + '</span>' + " to " + '<span class="text-info">' + dataOut.host + ":" + dataOut.port + "@" + dataOut.protocol + '</span>'
+                    text: "Did send message : " + '<span class="text-warnin">' + message.substr(0, 30) + '</span>' + " to " + '<span class="text-info">' + options.host + ":" + options.port + "@" + options.protocol + '</span>'
                 })
             }
 
@@ -58596,6 +58783,9 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 this.onHaveNoDeviceServer();
                 console.error('this.deviceServerClient is null');
                 console.error(' Send Device Command ' + data +'failed, have no  device Server client');
+            }
+            if(!driverInstance.blockScope){
+                return;
             }
             var command = driverInstance.blockScope.getBlockById(src);
             
@@ -58718,6 +58908,10 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                             
                             if (msg && msg.data && msg.data.deviceMessage && msg.data.deviceMessage.event === types.EVENTS.ON_COMMAND_FINISH) {
                                 thiz.onCommandFinish(msg.data.device,msg.data.deviceMessage);
+                                return;
+                            }
+                            if (msg && msg.data && msg.data.deviceMessage && msg.data.deviceMessage.event === types.EVENTS.ON_COMMAND_PROGRESS) {
+                                thiz.onCommandProgress(msg.data.device,msg.data.deviceMessage);
                                 return;
                             }
                             if (msg.data && msg.data.deviceMessage && msg.data.deviceMessage.event === types.EVENTS.ON_COMMAND_ERROR) {
@@ -60367,6 +60561,17 @@ define('xcf/types/Types',[
 ], function (aTypes,cTypes,types,utils) {
 
     /**
+     * Variable Flags
+     *
+     * @enum {int} VARIABLE_FLAGS
+     * @global
+     */
+    types.VARIABLE_FLAGS = {
+        PUBLISH:0x00000002,
+        PUBLISH_IF_SERVER:0x00000004
+        
+    }
+    /**
      * Flags to define logging outputs per device or view
      *
      * @enum {int} LOGGING_FLAGS
@@ -60495,6 +60700,7 @@ define('xcf/types/Types',[
         ON_DEVICE_MESSAGE: 'onDeviceMessage',
         ON_DEVICE_MESSAGE_EXT: 'onDeviceMessageExt',
         ON_COMMAND_FINISH:'onCommandFinish',
+        ON_COMMAND_PROGRESS:'onCommandProgress',
         ON_COMMAND_ERROR:'onCommandError',
         ON_DEVICE_DISCONNECTED: 'onDeviceDisconnected',
         ON_DEVICE_CONNECTED:'onDeviceConnected',
@@ -61778,11 +61984,17 @@ define('xide/types/Types',[
          */
         REPLACE_HEX: 0x000004000,
         /**
+         * Wait for finish
+         * @constant
+         * @type int
+         */
+        WAIT: 0x000008000,
+        /**
          * Flag to mark the maximum core bit mask, after here its user land
          * @constant
          * @type int
          */
-        END: 0x000008000
+        END: 0x000010000
     }
     /**
      * A CI's default post-pre processing order.
@@ -68928,7 +69140,6 @@ define('xwire/EventSource',[
          */
         start:function(){
             if(this._started){
-                console.warn('already started',this);
                 return;
             }
             this.subscribe(this.trigger,this.onTriggered);
@@ -71551,11 +71762,13 @@ define('xide/manager/Context',[
         return true;
     }, true);
 
+
+
     var isServer = has('host-node'),
         isBrowser = has('host-browser'),
         bases = isBrowser ? [ContextBase, Context_UI] : [ContextBase],
         debugFileChanges = false,
-        debugModuleReload  = false;
+        debugModuleReload  = true;
 
     /**
      * @class module:xide/manager/Context
@@ -71828,7 +72041,6 @@ define('xide/manager/Context',[
             _module = _module.replace('0/8','0.8');
 
             function handleError(error){
-
                 debugModuleReload && console.log(error.src, error.id);
                 debugModuleReload && console.error('require error ' + _module,error);
                 _errorHandle.remove();
@@ -71857,8 +72069,9 @@ define('xide/manager/Context',[
                         try {
                             oldModule = _require(utils.replaceAll('.', '/', _module));
                         } catch (e) {
-                            logError(e,'error requiring '+_module);
-                            dfd.reject(e);
+                            //logError(e,'error requiring '+_module);
+                            //dfd.reject(e);
+                            debugModuleReload && console.log('couldnt require old module',_module);
                         }
                     }
                 }
@@ -71936,8 +72149,11 @@ define('xide/manager/Context',[
 
         onCSSChanged: function (evt) {
             if(isBrowser) {
-                console.log('onCSSChanged',evt);;
                 var path = evt.path;
+                var _p = this.findVFSMount(path);
+                console.log('onCSSChanged ' + _p,evt);
+                var _p2 = this.toVFSShort(path,_p);
+                console.log('onCSSChanged ' + _p2,evt);
                 path = utils.replaceAll('//', '/', path);
                 path = path.replace('/PMaster/', '');
                 var reloadFn = window['xappOnStyleSheetChanged'];
