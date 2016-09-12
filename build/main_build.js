@@ -33468,12 +33468,11 @@ define('xblox/model/Contains',[
             var thiz = this;
 
             //more blocks?
-            if(items.length) {
+            if(items && items.length) {
 
                 var subDfds = thiz.runFrom(items,0,settings);
 
                 all(subDfds).then(function(what){
-                    console.log('all solved!',what);
                     thiz.onDidRunItem(dfd,result,settings);
                 },function(err){
                     console.error('error in chain',err);
@@ -51675,7 +51674,12 @@ define('xcf/manager/DeviceManager',[
                     protocol === deviceInfo.protocol &&
                     device.isServer() === deviceInfo.isServer &&
                     id === deviceInfo.id ) {
-                    
+
+                    var deviceStoreItem = store.getSync(device.path);
+                    if(deviceStoreItem){
+                        device = deviceStoreItem;
+                    }
+
                     if(!isIDE && deviceInfo.hash){
                         if(!this._cachedItems){
                             this._cachedItems = {};
@@ -57638,15 +57642,21 @@ define('xcf/model/Device',[
          * @param silent
          */
         setState:function(state,silent){
-            if(state==this.state){
+
+            //console.log('state : '+state);
+            if(state===this.state){
                 return;
             }
+            
             var oldState = this.state,
                 icon = this.getStateIcon(state);
 
             this.state = state;
             this.set('iconClass',icon);
             this.set('state',state);
+
+            //console.log('state : '+state);
+
             this._emit(types.EVENTS.ON_DEVICE_STATE_CHANGED,{
                 old:oldState,
                 state:state,
@@ -58050,7 +58060,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 });
             }
 
-            this.onDeviceConnected(data);
+            this.onDeviceConnected(data,false);
+            device.setState(types.DEVICE_STATE.SYNCHRONIZING);
             device.setState(types.DEVICE_STATE.READY);
             device._startDfd && device._startDfd.resolve(device.driverInstance);
             delete device._userStopped;
@@ -58064,7 +58075,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
          * @param data.device {module:xide/types~DeviceInfo}
          * @returns {*}
          */
-        onDeviceConnected:function(data){
+        onDeviceConnected:function(data,setReadyState){
 
             var deviceStoreItem = this.getDeviceStoreItem(data.device);
 
@@ -58352,6 +58363,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             deviceInfo = device.info;
 
             var state = device.get('state');
+
             var serverSide = deviceInfo.serverSide;
 
             function clear(message){
@@ -58476,7 +58488,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
                 debug && console.log('on_device message '+hash,driverInstance.options);
 
-                device.setState(types.DEVICE_STATE.READY);
+                //device.setState(types.DEVICE_STATE.READY);
 
                 if(debugDevice) {
                     var text = deviceMessageData.data.deviceMessage;
@@ -62978,6 +62990,7 @@ define('xide/client/WebSocket',[
         connect: function (_options) {
             this.options = utils.mixin(this.options, _options);
             var host = this.options.host;
+            //host = host.replace('http://','wss://');
             var port = this.options.port;
             if (this.options.debug) {
                 this.initLogger(this.options.debug);
@@ -62996,11 +63009,14 @@ define('xide/client/WebSocket',[
                 'xdr-polling',
                 'xhr-polling',
                 'iframe-xhr-polling',
-                'jsonp-polling'];
+                'jsonp-polling'
+            ];
 
             var options = {
                 debug: debug,
-                devel: false
+                devel: true,
+                noCredentials:true,
+                nullOrigin:true
             };
             options.transports = protocol;
             var sock = new SockJS(host + ":" + port, null, options);
