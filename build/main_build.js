@@ -30486,23 +30486,23 @@ define('xapp/manager/Context',[
     var debugBoot = false;
     var debugRun = false;
 
+    var Instance = null;
+
     /**
      * Lightweight context for end-user apps
      * @class module:xapp/manager/Context
      * @augments module:xide/mixins/EventedMixin
      * @extends module:xide/manager/ContextBase
      */
-    return dcl([ContextBase, Reloadable, _WidgetPickerMixin], {
+    var Module = dcl([ContextBase, Reloadable, _WidgetPickerMixin], {
         declaredClass:"xapp/manager/Context",
         settings: null,
         application: null,
         blockManager: null,
-        getUserDirectory:function(){
+        getUserDirectory:function(){            
             var resourceManager = this.getResourceManager(),
                 userDir =  resourceManager ? resourceManager.getVariable('USER_DIRECTORY') || {} : null;
-
             return userDir;
-
         },
         getResourceManager:function(){
             return this.resourceManager;
@@ -31145,8 +31145,16 @@ define('xapp/manager/Context',[
         constructManagers: function () {
             this.pluginManager = this.createManager(PluginManager);
             this.application = this.createManager(Application);
+
+            Instance = this;
+
         }
     });
+    Module.getInstance  = function () {
+        return Instance;
+    }
+    return Module;
+
 });
 ;
 define('xcf/factory/Blocks',[
@@ -50651,7 +50659,37 @@ define('xcf/manager/DeviceManager',[
     runDrivers = has('runDrivers'),
     EVENTS = types.EVENTS;
     has('xcf-ui') && bases.push(DeviceManager_UI);
-    
+
+
+    if(window['sctx']){
+
+        /*
+        var deviceManager = sctx.getDeviceManager();
+
+        var instanceName = "Loopback-Client";
+
+        deviceManager.getInstanceByName = function(name){
+
+            var instances = this.deviceInstances;
+            var self = this;
+            for(var instance in instances){
+
+                var device = instances[instance].device;
+                var title = self.getMetaValue(device, DEVICE_PROPERTY.CF_DEVICE_TITLE);
+                if(title ===name){
+                    return instances[instance];
+                }
+            }
+        }
+
+        var instance = deviceManager.getInstanceByName(instanceName);
+
+        console.log('instance : ',instance);
+        */
+
+    }
+
+
     /**
      * Common base class, for server and client.
      * @class module:xcf/manager/DeviceManager
@@ -50776,7 +50814,18 @@ define('xcf/manager/DeviceManager',[
         //  Device-Related
         //
         /////////////////////////////////////////////////////////////////////////////////////
+        getInstanceByName:function(name){
 
+            var instances = this.deviceInstances;
+            var self = this;
+            for(var instance in instances){
+                var device = instances[instance].device;
+                var title = self.getMetaValue(device, DEVICE_PROPERTY.CF_DEVICE_TITLE);
+                if(title ===name){
+                    return instances[instance];
+                }
+            }
+        },
         /**
          * Returns the file object for a device
          * @param device
@@ -51668,6 +51717,7 @@ define('xcf/manager/DeviceManager',[
             }
             return null;
         },
+
         /**
          * Returns a device by id
          * @param id {string}
@@ -62734,21 +62784,6 @@ define('xide/manager/Reloadable',[
     "xide/factory"
 ], function (dcl,lang,utils,types,factory) {
 
-    var throttle = function(timeout, callback) {
-        var blocked = false;
-        return function() {
-
-            if (blocked)
-                return;
-
-            blocked = true;
-            setTimeout(function() {
-                blocked = false;
-            }, timeout);
-
-            callback();
-        };
-    };
     /**
      *
      * Resource manager which provides:
@@ -62777,7 +62812,7 @@ define('xide/manager/Reloadable',[
             try {
                 var client = new WebSocket(_ctorArgs);
 
-                lang.mixin(client, _ctorArgs);
+                utils.mixin(client, _ctorArgs);
 
                 client.init({
                     options: {
@@ -62922,7 +62957,7 @@ define('xide/manager/Reloadable',[
 
             for (var i in source) {
                 var o = source[i];
-                if (lang.isFunction(source[i]) /*&& lang.isFunction(target[i])*/) {
+                if (_.isFunction(source[i]) /*&& lang.isFunction(target[i])*/) {
                     target[i] = source[i];//swap
                 }
 
@@ -62965,10 +63000,15 @@ define('xide/manager/Reloadable',[
             if (reload) {
                 setTimeout(function () {
                     require([module], function (moduleLoaded) {
-                        if (lang.isString(moduleLoaded)) {
+                        if(!moduleLoaded){
+                            console.warn('invalid module');
+                            return;
+                        }
+                        if (_.isString(moduleLoaded)) {
                             console.error('module reloaded failed : ' + moduleLoaded + ' for module : ' + module);
                             return;
                         }
+                        
                         console.log('did - re-require module : ' + module);
                         moduleLoaded.modulePath = module;
                         var obj = lang.getObject(utils.replaceAll('/', '.', module));
@@ -78244,6 +78284,9 @@ define('xblox/StyleState',[
         },
         applyTo:function(widget){
 
+            $(widget).removeClass($(widget).data('_lastCSSState'));
+            $(widget).removeClass($(widget).data('_lastCSSClass'));
+
             if(widget && widget._attached){
                 this._widget = widget;
                 //console.error('css ',$(widget).attr());
@@ -78595,6 +78638,8 @@ define('xblox/CSSState',[
             $(widget).removeClass($(widget).data('_lastCSSClass'));
             $(widget).removeClass(cssClass);
 
+            console.log('set css state');
+            
             if(!cssClass) {
                 $(widget).addClass(_uniqueId);
                 $(widget).data('_lastCSSState', _uniqueId);

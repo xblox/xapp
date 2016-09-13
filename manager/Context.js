@@ -34,12 +34,10 @@ define([
         settings: null,
         application: null,
         blockManager: null,
-        getUserDirectory:function(){
+        getUserDirectory:function(){            
             var resourceManager = this.getResourceManager(),
                 userDir =  resourceManager ? resourceManager.getVariable('USER_DIRECTORY') || {} : null;
-
             return userDir;
-
         },
         getResourceManager:function(){
             return this.resourceManager;
