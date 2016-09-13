@@ -22223,7 +22223,10 @@ define('deliteful/features',["requirejs-dplugins/has", "deliteful/channelBreakpo
 			return mqAboveSmall.matches && !mqAboveMedium.matches;
 		});
 		has.add("desktop-like-channel", function () {
-			return mqAboveSmall.matches && mqAboveMedium.matches;
+
+			var desktop = mqAboveSmall.matches && mqAboveMedium.matches;
+			console.log('desktop ' + desktop);
+			return desktop;
 		});
 	}
 
@@ -31487,6 +31490,7 @@ define('xblox/model/Block',[
         declaredClass:"xblox.model.Block",
         scopeId: null,
         isCommand:false,
+        outlet:0,
         /**
          * Switch to include the block for execution.
          * @todo, move to block flags
@@ -31987,7 +31991,7 @@ define('xblox/model/Block',[
         getNextBlock: function () {
             return this._getBlock(1);
         },
-        getPreviousResult: function () {
+        _getPreviousResult: function () {
 
             var parent = this.getPreviousBlock() || this.getParent();
             if (parent && parent._lastResult != null) {
@@ -31996,6 +32000,31 @@ define('xblox/model/Block',[
                     return parent._lastResult;
                 } else {
                     return [parent._lastResult];
+                }
+            }
+            return null;
+        },
+        getPreviousResult: function () {
+            var parent = null;
+            var prev = this.getPreviousBlock();
+            if(!prev || !prev._lastResult || !prev.enabled){
+                parent = this.getParent();
+            }else{
+                parent = prev;
+            }
+
+            if (parent && !parent._lastResult) {
+                var _newParent = parent.getParent();
+                if(_newParent){
+                    parent = _newParent;
+                }
+            }
+
+            if (parent && parent._lastResult != null) {
+                if (this.isArray(parent._lastResult)) {
+                    return parent._lastResult;
+                } else {
+                    return parent._lastResult;
                 }
             }
             return null;
@@ -38381,6 +38410,24 @@ define('xblox/model/variables/VariableAssignmentBlock',[
             }
             return this.getBlockIcon('C') + this.name + ' ' + _text  + "<span class='text-muted small'> to <kbd class='text-warning'>" + this.makeEditable("value",'bottom','text','Enter the string to send','inline') + "</kbd></span>";
         },
+        _getPreviousResult: function () {
+            var parent = null;
+            var prev = this.getPreviousBlock();
+            if(!prev || !prev._lastResult || !prev.enabled){
+                parent = this.getParent();
+            }else{
+                parent = prev;
+            }
+
+            if (parent && parent._lastResult != null) {
+                if (this.isArray(parent._lastResult)) {
+                    return parent._lastResult;
+                } else {
+                    return parent._lastResult;
+                }
+            }
+            return null;
+        },
         /***
          * Makes the assignation
          * @param scope
@@ -38398,14 +38445,21 @@ define('xblox/model/variables/VariableAssignmentBlock',[
                 this.onRun(this,settings);
                 //var _variable = scope.getVariable(this.variable).value = scope.parseExpression(this.value);
                 var _variable = this.variable.indexOf('://')!==-1 ? this.scope.resolveBlock(this.variable) : scope.getVariableById(this.variable);
+                //console.log('assign variable',settings);
                 var _value = this._getArg(value);
+
+                var _args = this.getArgs(settings) || [];
+                //console.log('run with args ' , _args);
+
                 if(!_variable){
                     console.error('     no such variable : ' + this.variable);
                     return [];
                 }
                 var _parsed = null;
                 if(this.isScript(_value)){
-                    _parsed = scope.parseExpression(_value);
+                    var override = this.override || {};
+                    _parsed = scope.parseExpression(value,null,null,null,null,null,_args || override.args);
+                    //_parsed = scope.parseExpression(_value);
                     _parsed = this.replaceAll("'",'',_parsed);
                     //_variable.value = scope.parseExpression(_value);
                     //_variable.value = this.replaceAll("'",'',_variable.value);
@@ -39026,7 +39080,9 @@ define('xblox/model/variables/Variable',[
         readOnly:false,
 
         initial:null,
-
+        
+        isVariable:true,
+        
         getValue:function(){
             return this.value;
         },
@@ -39760,6 +39816,7 @@ define('xblox/model/code/RunScript',[
 
             //var _function = new Function(_script);
             var _args = thiz.getArgs(settings) || [];
+            //console.log('run with args ' , _args);
             try {
 
                 if(isDfd){
@@ -40783,6 +40840,26 @@ define('xcf/model/Command',[
         flags:0x00000800,
         _runningDfd:null,
         __started:false,
+        isCommand:true,
+        getItems:function(outletType){
+
+            var items = this.items;
+
+            if(!outletType){
+                return items;
+            }
+
+            var result = [];
+
+            _.each(items,function(item){
+                if(item.outlet & outletType){
+                    result.push(item);
+                }
+            });
+
+            return result;
+
+        },
         /**
          * onCommandFinish will be excecuted which a driver did run a command
          * @param msg {object}
@@ -40794,7 +40871,7 @@ define('xcf/model/Command',[
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
 
-            debug && console.log('onCommandFinish ' + this.send);
+            //console.log('onCommandFinish ' + this.send);
 
             var result = {};
             if(msg.params && msg.params.id){
@@ -40812,8 +40889,11 @@ define('xcf/model/Command',[
                 }
             }
 
-            if(this.items.length) {
-                this.runFrom(this.items,0,this._lastSettings);
+            var items = this.getItems(types.BLOCK_OUTLET.FINISH);
+
+            if(items.length) {
+                //console.log('finish, run : '+items.length,items);
+                this.runFrom(items,0,this._lastSettings);
             }
 
             this.resolve(result);
@@ -40832,7 +40912,7 @@ define('xcf/model/Command',[
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
 
-            console.log('onCommandProgress ' + this.send);
+            //console.log('onCommandProgress ' + this.send);
 
             var result = {};
             if(msg.params && msg.params.id){
@@ -40849,6 +40929,13 @@ define('xcf/model/Command',[
                     }
                 }
             }
+
+            var items = this.getItems(types.BLOCK_OUTLET.PROGRESS);
+            if(items.length) {
+                console.log('progress, run : '+items.length,this._lastSettings);
+                this.runFrom(items,0,this._lastSettings);
+            }
+
         },
         resolve:function(data){
             data = data || this._lastResult;
@@ -40927,6 +41014,8 @@ define('xcf/model/Command',[
             if(settings && settings.override && settings.override.mixin){
                 utils.mixin(this.override,settings.override.mixin);
             }
+
+            //console.log('command : ',this.override);
 
             var value = send || this._get('send');
             var parse = !(this.flags & types.CIFLAG.DONT_PARSE);
@@ -47313,7 +47402,7 @@ define('xblox/model/Expression',[
 
                 }
                 //parsed = (new Function("{" +expression+"; }")).call(this.context||{});
-                parsed = _function.call(expressionContext,args);
+                parsed = _function.apply(expressionContext,args);
             }catch(e){
                 console.error('     invalid expression : \n' + expression, e);
                 if(errorCallback){
@@ -78233,7 +78322,6 @@ define('xblox/_State',[
          */
         destroy: function () {
             this.onDestroy && this.onDestroy();
-            console.log('-destroy');
             this.reset();
         },
         /**
@@ -78408,6 +78496,7 @@ define('xblox/CSSState',[
     var Impl = {
         _lastState:null,
         declaredClass: 'xblox/CSSState',
+        cssClass:"",
         addCssRule: function (selector, css) {
             // summary:
             //		Dynamically adds a style rule to the document.  Returns an object
@@ -78484,6 +78573,9 @@ define('xblox/CSSState',[
             }
 
 
+            var cssClass = this.cssClass;
+            var isCSSClass = cssClass.length > 0;
+
             //console.log('apply state ' + name);
 
 
@@ -78499,20 +78591,23 @@ define('xblox/CSSState',[
 
             _uniqueId+='_state_' + name;
 
-
-
             $(widget).removeClass($(widget).data('_lastCSSState'));
-            $(widget).addClass(_uniqueId);
-            $(widget).data('_lastCSSState',_uniqueId);
+            $(widget).removeClass($(widget).data('_lastCSSClass'));
+            $(widget).removeClass(cssClass);
 
-            var  selectorPrefix = '.' + this.escapeCssIdentifier(_uniqueId);
-            if(!this._styles){
-                this._styles = [];
+            if(!cssClass) {
+                $(widget).addClass(_uniqueId);
+                $(widget).data('_lastCSSState', _uniqueId);
+                var selectorPrefix = '.' + this.escapeCssIdentifier(_uniqueId);
+                if (!this._styles) {
+                    this._styles = [];
+                }
+                var style = this.addCssRule(selectorPrefix, css);
+                this._styles.push(style);
+            }else{
+                $(widget).addClass(cssClass);
+                $(widget).data('_lastCSSClass', cssClass);
             }
-            
-            var style = this.addCssRule(selectorPrefix,css);
-            
-            this._styles.push(style);
         }
 
     };
@@ -78556,19 +78651,25 @@ define('xblox/mainr',[
 ;
 define('xblox/types/Types',[
     'xide/types/Types',
-    'dojo/_base/lang'
-],function(types,lang)
-    {
-
-
+    'dojo/_base/lang',
+    'xide/utils'
+],function(types,lang,utils){
 
         types.BLOCK_MODE = {
             NORMAL:0,
             UPDATE_WIDGET_PROPERTY:1
         };
 
-        lang.mixin(types.EVENTS,{
+        types.BLOCK_OUTLET = {
+            NONE:0x00000000,
+            PROGRESS:0x00000001,
+            ERROR:0x00000002,
+            PAUSED:0x00000004,
+            FINISH:0x00000008,
+            STOPPED:0x00000010
+        };
 
+        utils.mixin(types.EVENTS,{
             ON_RUN_BLOCK:                   'onRunBlock',
             ON_RUN_BLOCK_FAILED:            'onRunBlockFailed',
             ON_RUN_BLOCK_SUCCESS:           'onRunBlockSuccess',
@@ -78581,7 +78682,6 @@ define('xblox/types/Types',[
             ON_SCOPE_CREATED:               'onScopeCreated',
             ON_VARIABLE_CHANGED:            'onVariableChanged',
             ON_CREATE_VARIABLE_CI:          'onCreateVariableCI'
-
         });
 
 

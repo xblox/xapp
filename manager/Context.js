@@ -21,13 +21,15 @@ define([
     var debugBoot = false;
     var debugRun = false;
 
+    var Instance = null;
+
     /**
      * Lightweight context for end-user apps
      * @class module:xapp/manager/Context
      * @augments module:xide/mixins/EventedMixin
      * @extends module:xide/manager/ContextBase
      */
-    return dcl([ContextBase, Reloadable, _WidgetPickerMixin], {
+    var Module = dcl([ContextBase, Reloadable, _WidgetPickerMixin], {
         declaredClass:"xapp/manager/Context",
         settings: null,
         application: null,
@@ -680,6 +682,14 @@ define([
         constructManagers: function () {
             this.pluginManager = this.createManager(PluginManager);
             this.application = this.createManager(Application);
+
+            Instance = this;
+
         }
     });
+    Module.getInstance  = function () {
+        return Instance;
+    }
+    return Module;
+
 });
