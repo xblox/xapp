@@ -23,6 +23,13 @@ define([
 
     var Instance = null;
 
+    var NotifierClass = dcl([EventedMixin.dcl],{
+        
+    });
+
+    var Notifier = new NotifierClass({});
+
+
     /**
      * Lightweight context for end-user apps
      * @class module:xapp/manager/Context
@@ -43,7 +50,6 @@ define([
             return this.resourceManager;
         },
         getMount:function(mount){
-
             var resourceManager = this.getResourceManager(),
                 vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
 
@@ -623,6 +629,10 @@ define([
                             });
                         });
                     });
+
+
+                    Notifier.publish('onContextReady',thiz);
+
                 } catch (e) {
                     logError(e);
                 }
@@ -680,14 +690,15 @@ define([
         constructManagers: function () {
             this.pluginManager = this.createManager(PluginManager);
             this.application = this.createManager(Application);
-
             Instance = this;
-
+            var self = this;
         }
     });
+
     Module.getInstance  = function () {
         return Instance;
     }
+    Module.notifier = Notifier;
     return Module;
 
 });
