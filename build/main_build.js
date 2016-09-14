@@ -6100,8 +6100,8 @@ define('dojo/selector/_loader',["../has", "require"],
 		function(has, require){
 
 "use strict";
-
-var testDiv = document.createElement("div");
+var doc = typeof document !== 'undefined' ? document : null;
+var testDiv = doc.createElement("div");
 has.add("dom-qsa2.1", !!testDiv.querySelectorAll);
 has.add("dom-qsa3", function(){
 			// test to see if we have a reasonable native selector engine available
@@ -40879,8 +40879,6 @@ define('xcf/model/Command',[
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
 
-            //console.log('onCommandFinish ' + this.send);
-
             var result = {};
             if(msg.params && msg.params.id){
                 this._emit('cmd:'+msg.cmd + '_' + msg.params.id,{
@@ -40898,16 +40896,14 @@ define('xcf/model/Command',[
             }
 
             var items = this.getItems(types.BLOCK_OUTLET.FINISH);
-
             if(items.length) {
-                //console.log('finish, run : '+items.length,items);
                 this.runFrom(items,0,this._lastSettings);
             }
-
             this.resolve(result);
-
             this.onSuccess(this, this._lastSettings);
-
+            if(this._runningDfd){
+                this._runningDfd.resolve(this._lastResult);
+            }
         },
         /**
          * onCommandFinish will be excecuted which a driver did run a command
@@ -41017,7 +41013,7 @@ define('xcf/model/Command',[
 
             scope = scope || this.scope;
 
-            settings = this._lastSettings = settings || this._lastSettings;
+            settings = this._lastSettings = settings || this._lastSettings || {};
 
             if(settings && settings.override && settings.override.mixin){
                 utils.mixin(this.override,settings.override.mixin);
@@ -41053,11 +41049,8 @@ define('xcf/model/Command',[
                 this.onRun(this,settings,{
                     timeout:false
                 });
-
                 dfd = new Deferred();
-
                 this._runningDfd = dfd;
-
             }
             if(this.items && this.items.length>0){
 
@@ -41089,7 +41082,10 @@ define('xcf/model/Command',[
                 return ret;
 
             }else if(value.length>0){
-                var _overrides = (this.override && this.override.variables) ? this.override.variables : null;
+
+                var override = settings.override || this.override;
+
+                var _overrides = (override && override.variables) ? override.variables : null;
                 if(_overrides){
                     for(var prop in _overrides){
                         if(_.isNumber(_overrides[prop])){
@@ -41097,13 +41093,7 @@ define('xcf/model/Command',[
                         }
                     }
                 }
-
                 var res='';
-
-                var override = this.override || {};
-
-                //console.log('overrides : ',override);
-
                 if(/*(this.isScript(value) && parse!==false) || */isExpression && parse!==false){
                     res = scope.parseExpression(value,null,_overrides,null,null,null,override.args);
                 }else{
@@ -41125,7 +41115,7 @@ define('xcf/model/Command',[
                         this.scope.loopBlock(this, settings);
                     }
                 }
-                return [res];
+                return !wait ? [res] : dfd;
             }
             return false;
         },
@@ -50660,36 +50650,7 @@ define('xcf/manager/DeviceManager',[
     EVENTS = types.EVENTS;
     has('xcf-ui') && bases.push(DeviceManager_UI);
 
-
-    if(window['sctx']){
-
-        /*
-        var deviceManager = sctx.getDeviceManager();
-
-        var instanceName = "Loopback-Client";
-
-        deviceManager.getInstanceByName = function(name){
-
-            var instances = this.deviceInstances;
-            var self = this;
-            for(var instance in instances){
-
-                var device = instances[instance].device;
-                var title = self.getMetaValue(device, DEVICE_PROPERTY.CF_DEVICE_TITLE);
-                if(title ===name){
-                    return instances[instance];
-                }
-            }
-        }
-
-        var instance = deviceManager.getInstanceByName(instanceName);
-
-        console.log('instance : ',instance);
-        */
-
-    }
-
-
+   
     /**
      * Common base class, for server and client.
      * @class module:xcf/manager/DeviceManager
@@ -51004,12 +50965,14 @@ define('xcf/manager/DeviceManager',[
              * Add 'callCommand'
              * @param title
              */
+            /*
             instance.callCommand = function (title) {
                 var _block = this.blockScope.getBlockByName(title);
                 if (_block) {
-                    _block.solve(this.blockScope);
+                    return _block.solve(this.blockScope,settings);
                 }
             };
+            */
 
             instance.setVariable = function (title, value, save, publish,highlight) {
                 var _variable = this.blockScope.getVariable(title);
@@ -52260,8 +52223,7 @@ define('xcf/manager/DeviceManager',[
                 if(!result['user_drivers']){
                     //debugger;
                     var mount = this.ctx.getMount('user_drivers');
-                    console.log('have no mounts');
-
+                    //console.log('have no mounts');
                 }
 
                 result.hash = MD5(JSON.stringify({
@@ -54366,6 +54328,12 @@ define('xide/utils/StringUtils',[
         String.prototype.startsWith = function (str) {
             return this.indexOf(str) === 0;
         };
+    }
+
+    if ( typeof String.prototype.endsWith != 'function' ) {
+        String.prototype.endsWith = function( str ) {
+            return this.substring( this.length - str.length, this.length ) === str;
+        }
     }
 
     /**
@@ -70306,7 +70274,7 @@ define('xfile/data/Store',[
      * @augments module:xide/mixins/ReloadMixin
      */
     return declare("xfile/data/Store", [TreeMemory,Cache,Trackable,ObservableStore,ServerActionBase.declare,ReloadMixin],{
-
+        addDot:true,
         Model:File,
         /**
          * @member idProperty {string} sets the unique identifier for store items is set to the 'path' of a file.
@@ -70461,11 +70429,7 @@ define('xfile/data/Store',[
             return result;
         },
         onSorted:function(sorted,data){
-
-
-
-            //console.log('sorted : ' , [sorted,data] );
-
+            
             if(sorted.length==1 && sorted[0].property==='name'){
 
                 var upperCaseFirst = true,
@@ -70474,13 +70438,12 @@ define('xfile/data/Store',[
 
                 if(directoriesFirst) {
 
-                    var _sort = function (item) {
+                    function _sort(item) {
                         return upperCaseFirst ? item.name : item.name.toLowerCase();
                     };
-
+                    
                     var grouped = _.groupBy(data, function (item) {
                         return item.directory === true;
-
                     }, this);
 
                     data = _.sortBy(grouped['true'], _sort);
@@ -70490,8 +70453,6 @@ define('xfile/data/Store',[
                     }
                 }
             }
-
-
             var _back = _.find(data,{
                 name:'..'
             });
@@ -70572,7 +70533,6 @@ define('xfile/data/Store',[
         //
         /////////////////////////////////////////////////////////////////////////////
         _getItem:function(path,allowNonLoaded){
-
             //try instant and return when loaded
             var item = this.getSync(path) || this.getSync('./' + path );
 
@@ -70597,7 +70557,6 @@ define('xfile/data/Store',[
          * @returns {Object|Deferred|null}
          */
         getItem:function(path,load){
-
             if(load==false){
 
                 return this._getItem(path);
@@ -70763,7 +70722,6 @@ define('xfile/data/Store',[
                 result = this.getSync(item.parent);
             }
             return result || this.getRootItem();
-
         },
         /**
          * Return 'loaded' state
@@ -70790,7 +70748,6 @@ define('xfile/data/Store',[
          * @private
          */
         _parse:function(item){
-
             item._S = this;
 
             if(!_.isEmpty(item.children)){
@@ -70799,7 +70756,6 @@ define('xfile/data/Store',[
                     this._parse(_item);
                 },this);
             }
-
             item.getPath = function(){
                 return this.realPath || this.path;
             }
@@ -70809,7 +70765,6 @@ define('xfile/data/Store',[
         //  True store impl.
         //
         /////////////////////////////////////////////////////////////////////////////
-
         /**
          * Trash
          * @private
@@ -70881,9 +70836,6 @@ define('xfile/data/Store',[
          * @private
          */
         _loadItem:function(item,force){
-
-            //console.log('load ' + item.path + ' with force ' + force);
-
             var deferred = new Deferred(),
                 thiz = this;
             if(!item){
@@ -70965,18 +70917,12 @@ define('xfile/data/Store',[
                 if(storeItem){
                     this.removeSync(item.path);
                 }
-                //if(!this.getSync(item.path)){
-
                 this.add(item);
-                /*
-                }else{
-                    console.log('tried to add item which already exists : ' , item);
-                }*/
             },this);
         },
         open:function(item){
-
             var thiz = this;
+            
             function update(){
                 thiz.emit('update',{
                     target:item
@@ -71011,7 +70957,6 @@ define('xfile/data/Store',[
             return [{property: 'name', descending: false, ignoreCase: true}];
         },
         lastOpenedPath:function(){
-
             var path = this._state.path;
             if(path){
 
@@ -71029,8 +70974,6 @@ define('xfile/data/Store',[
             return null;
         },
         filter:function(data){
-
-
             _debug && console.log('filter : ',this._state);
             if(data.parent){
                 this._state.path = data.parent;
@@ -71060,10 +71003,6 @@ define('xfile/data/Store',[
          * @private
          */
         _request:function(path){
-
-            //runDeferred: function (serviceClassIn, method, args, options) {
-            //callMethodEx2: function (serverClassIn, method, args, readyCB, omitError) {
-
             _debug && console.log('__request ' + path);
 
             var collection = this,
@@ -71089,7 +71028,6 @@ define('xfile/data/Store',[
             return prom;
         },
         fetchSync: function () {
-
             _debug && console.log('fetSync: ',this._state);
             var data = this.inherited(arguments),
                 directoriesFirst = true,
@@ -71099,14 +71037,12 @@ define('xfile/data/Store',[
             return data;
         },
         fetchRangeSync: function (kwArgs) {
-
             var data = this.fetchSync();
             var total = new Deferred();
             total.resolve(data.length);
             return new QueryResults(data, {
                 totalLength: total
             });
-
         },
         reset:function(){
             this._state.filter = null;
