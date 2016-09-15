@@ -30488,6 +30488,13 @@ define('xapp/manager/Context',[
 
     var Instance = null;
 
+    var NotifierClass = dcl([EventedMixin.dcl],{
+        
+    });
+
+    var Notifier = new NotifierClass({});
+
+
     /**
      * Lightweight context for end-user apps
      * @class module:xapp/manager/Context
@@ -30508,7 +30515,6 @@ define('xapp/manager/Context',[
             return this.resourceManager;
         },
         getMount:function(mount){
-
             var resourceManager = this.getResourceManager(),
                 vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
 
@@ -31088,6 +31094,10 @@ define('xapp/manager/Context',[
                             });
                         });
                     });
+
+
+                    Notifier.publish('onContextReady',thiz);
+
                 } catch (e) {
                     logError(e);
                 }
@@ -31145,14 +31155,15 @@ define('xapp/manager/Context',[
         constructManagers: function () {
             this.pluginManager = this.createManager(PluginManager);
             this.application = this.createManager(Application);
-
             Instance = this;
-
+            var self = this;
         }
     });
+
     Module.getInstance  = function () {
         return Instance;
     }
+    Module.notifier = Notifier;
     return Module;
 
 });
@@ -40880,10 +40891,16 @@ define('xcf/model/Command',[
             var context = scope.getContext();//driver instance
 
             var result = {};
+            var dfd = null;
             if(msg.params && msg.params.id){
-                this._emit('cmd:'+msg.cmd + '_' + msg.params.id,{
+
+                var id = msg.params.id;
+                dfd = this.getDeferred(id);
+                delete this._solving[id];
+                this._emit('cmd:'+msg.cmd + '_' + id,{
                     msg:msg
                 });
+
                 if(msg.lastResponse){
                     var data = utils.getJson(msg.lastResponse);
                     if(data && data.result && _.isString(data.result)){
@@ -40894,15 +40911,14 @@ define('xcf/model/Command',[
                     }
                 }
             }
-
             var items = this.getItems(types.BLOCK_OUTLET.FINISH);
             if(items.length) {
                 this.runFrom(items,0,this._lastSettings);
             }
             this.resolve(result);
             this.onSuccess(this, this._lastSettings);
-            if(this._runningDfd){
-                this._runningDfd.resolve(this._lastResult);
+            if(dfd){
+                dfd.resolve(this._lastResult);
             }
         },
         /**
@@ -40957,17 +40973,14 @@ define('xcf/model/Command',[
             this.onFailed(this, this._settings);
 
         },
-        sendToDevice:function(msg,settings,stop,pause){
+        sendToDevice:function(msg,settings,stop,pause,id){
 
-            msg=this.replaceAll("'",'',msg);
-
-            var id = utils.createUUID(),
-                self = this;
-
+            msg = this.replaceAll("'",'',msg);
+            id = id || utils.createUUID();
+            var self = this;
             var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
 
             this.lastCommand = '' + msg;
-
 
             if(this.scope.instance){
 
@@ -41001,6 +41014,20 @@ define('xcf/model/Command',[
             }
             delete this._runningDfd;
         },
+        _solving:null,
+        addDeferred:function(id){
+            if(!this._solving){
+                this._solving  = {};
+            }
+            this._solving[id] = new Deferred();
+            return this._solving[id];
+        },
+        getDeferred:function(id){
+            if(!this._solving){
+                this._solving  = {};
+            }
+            return this._solving[id];
+        },
         /***
          * Solves the command
          *
@@ -41019,12 +41046,11 @@ define('xcf/model/Command',[
                 utils.mixin(this.override,settings.override.mixin);
             }
 
-            //console.log('command : ',this.override);
-
             var value = send || this._get('send');
             var parse = !(this.flags & types.CIFLAG.DONT_PARSE);
             var isExpression = (this.flags & types.CIFLAG.EXPRESSION);
             var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
+            var id = utils.createUUID();
 
             if(this.flags & types.CIFLAG.TO_HEX){
                 value = utils.to_hex(value);
@@ -41049,8 +41075,8 @@ define('xcf/model/Command',[
                 this.onRun(this,settings,{
                     timeout:false
                 });
-                dfd = new Deferred();
-                this._runningDfd = dfd;
+                dfd = this.addDeferred(id);
+                //this._runningDfd = dfd;
             }
             if(this.items && this.items.length>0){
 
@@ -41100,7 +41126,7 @@ define('xcf/model/Command',[
                     res = '' + value;
                 }
                 if(res && res.length>0){
-                    if(!this.sendToDevice(res,settings)) {
+                    if(!this.sendToDevice(res,settings,null,null,id)) {
                         this.onFailed(this, settings);
                     }
                 }
@@ -50616,7 +50642,8 @@ define('xcf/manager/DeviceManager',[
     'xide/utils/StringUtils',
     'xcf/mixins/LogMixin',
     'xdojo/has!xcf-ui?./DeviceManager_UI',
-    'xdojo/has!xexpression?xexpression/Expression'
+    'xdojo/has!xexpression?xexpression/Expression',
+    'dojo/promise/all'
     //'xdojo/has!host-node?nxapp/utils/_console',
     //"xdojo/has!host-node?nxapp/utils"
 ], function (dcl,declare, lang, MD5,
@@ -50624,7 +50651,7 @@ define('xcf/manager/DeviceManager',[
              DeviceManager_Server, DeviceManager_DeviceServer,TreeMemory,has,
              ObservableStore,Trackable,Device,Deferred,ServerActionBase,Reference,StringUtils,
              LogMixin,
-             DeviceManager_UI,Expression,_console,xUtils) {
+             DeviceManager_UI,Expression,all,_console,xUtils) {
   /*  
     var console = typeof window !== 'undefined' ? window.console : console;
     if(_console && _console.error && _console.warn){
@@ -51278,8 +51305,10 @@ define('xcf/manager/DeviceManager',[
                 return;
             }
 
+            var all = [];
+
             function start(device) {
-                thiz.startDevice(device);
+                all.push(thiz.startDevice(device));
             };
 
             function connect(store){
@@ -51312,6 +51341,8 @@ define('xcf/manager/DeviceManager',[
                     }
                 }            }
             _.each(stores,connect,this);
+
+            return all;
         },
         /**
          *
@@ -51553,22 +51584,11 @@ define('xcf/manager/DeviceManager',[
                 this.deviceServerClient.destroy();
             }
             var store = evt.store,thiz = this;
+
             var client = this.createDeviceServerClient(store);
+
             var connect = has('drivers') && has('devices');
-            /*
-            if(client && client.dfd){
-                thiz.connectToAllDevices();
-                client.dfd.then(function(){
-                    thiz.connectToAllDevices();
-                });
-            }else {
-                */
-                if (this.autoConnectDevices && connect) {
-                    setTimeout(function () {
-                        //thiz.connectToAllDevices();
-                    }, 3000);
-                }
-            /*}*/
+
         },
         /**
          *
@@ -52342,7 +52362,12 @@ define('xcf/manager/DeviceManager',[
                     }
                 }
             }
-            this.connectToAllDevices();
+
+
+            all(this.connectToAllDevices()).then(function(){
+                thiz.publish('DevicesConnected',evt);
+            });
+            
         },
         /**
          *
@@ -52432,7 +52457,9 @@ define('xcf/manager/DeviceManager',[
 
                 var connect = has('drivers') && has('devices');
                 if (thiz.autoConnectDevices && connect) {
-                    thiz.connectToAllDevices();
+                    all(thiz.connectToAllDevices()).then(function(){
+                        thiz.publish('DevicesConnected');
+                    });
                 }
             });
             this.subscribe([
@@ -57975,6 +58002,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                             type: 'info'
                         });
                         thiz.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.MANAGER_START_DRIVER, cInfo);
+                        console.log('resolve instance');
+                        dfd.resolve(thiz.deviceInstances[hash]);
                         delete cInfo.mqtt;
                     });
                 });
@@ -70273,809 +70302,896 @@ define('xfile/data/Store',[
      * @augments module:dgrid/Cache
      * @augments module:xide/mixins/ReloadMixin
      */
-    return declare("xfile/data/Store", [TreeMemory,Cache,Trackable,ObservableStore,ServerActionBase.declare,ReloadMixin],{
-        addDot:true,
-        Model:File,
-        /**
-         * @member idProperty {string} sets the unique identifier for store items is set to the 'path' of a file.
-         * @public
-         */
-        idProperty:'path',
-        parentField:'parent',
-        /**
-         * @member mount {string} sets the 'mount' prefix for a VFS. This is needed to simplify the work
-         * with paths and needs to be handled separated. By default any request expects full paths as:
-         * - root/_my_path
-         * - root://_my_path/even_deeper
-         * - dropbox/_my_folder
-         *
-         * This property is is being used to complete a full file path automatically in the request so that only the
-         * actual inner path needs to be specified in all methods.
-         * By default xfile supports multiple stores in the same application.
-         * Each store is created upon mount + store options hash.
-         * @public
-         */
-        mount:'path',
-        /**
-         * @member options{Object[]} specifies the store options. The store options are tied to the server. As the store
-         * is only relavant for enumerating files through a server method, there are only a couple of options needed:
-         *
-         * <b>options.fields</b> {int} A enumeration bitmask which specifies the fields to be added for a file or
-         * directory node. This is described in link:xfile/types/Types#Fields and again, this is being processed by
-         * the server.
-         *
-         * options.includeList {string} a comma separated list of allowed file extensions, this has priority the
-         * exclusion mask.
-         *
-         * options.excludeList {string} a comma separated list of excluded file extensions
-         *
-         * This options are set through xfile/manager/Context#defaultStoreOptions which might be overriden
-         * through the server controlled xFileConfiguration.mixins global header script tag.
-         *
-         * @example {
+    function Implementation() {
+        return {
+            addDot: true,
+            Model: File,
+            /**
+             * @member idProperty {string} sets the unique identifier for store items is set to the 'path' of a file.
+             * @public
+             */
+            idProperty: 'path',
+            parentField: 'parent',
+            /**
+             * @member mount {string} sets the 'mount' prefix for a VFS. This is needed to simplify the work
+             * with paths and needs to be handled separated. By default any request expects full paths as:
+             * - root/_my_path
+             * - root://_my_path/even_deeper
+             * - dropbox/_my_folder
+             *
+             * This property is is being used to complete a full file path automatically in the request so that only the
+             * actual inner path needs to be specified in all methods.
+             * By default xfile supports multiple stores in the same application.
+             * Each store is created upon mount + store options hash.
+             * @public
+             */
+            mount: 'path',
+            /**
+             * @member options{Object[]} specifies the store options. The store options are tied to the server. As the store
+             * is only relavant for enumerating files through a server method, there are only a couple of options needed:
+             *
+             * <b>options.fields</b> {int} A enumeration bitmask which specifies the fields to be added for a file or
+             * directory node. This is described in link:xfile/types/Types#Fields and again, this is being processed by
+             * the server.
+             *
+             * options.includeList {string} a comma separated list of allowed file extensions, this has priority the
+             * exclusion mask.
+             *
+             * options.excludeList {string} a comma separated list of excluded file extensions
+             *
+             * This options are set through xfile/manager/Context#defaultStoreOptions which might be overriden
+             * through the server controlled xFileConfiguration.mixins global header script tag.
+             *
+             * @example {
                 "fields": 1663,
                 "includeList": "*",
                 "excludeList": "*"
             }
-         * @public
-         */
-        options:{
-            fields: 1663,
-            includeList: "*",
-            excludeList: "*"    // XPHP actually sets this to ".svn,.git,.idea" which are compatible to PHP's 'glob'
-        },
-        /**
-         * @member serviceUrl {string} the path to the service entry point. There are 2 modes this end-point must
-         * provide:
-         * - a Dojo compatible SMD
-         * - post/get requests with parameters. Currently JSONP & JSON-RPC-1/2.0 is supported.
-         *
-         * You can set also static SMD (see xide/manager/ServerActionBase) to bypass the SMD output. However,
-         * this is being set usually by a server side mixin (in HTML header tag) on the fly!
-         * @default null
-         * @public
-         */
-        serviceUrl:null,
-        /**
-         * @member serviceClass {string} is the server class to be called. By default, this store creates a
-         * JSON-RPC-2.0 post request where the methods looks like "XApp_Directory_Service.ls". Other formats are
-         * supported in XPHP as well and support also composer autoloaders. If this is a singleton, you can also call
-         * this.serviceObject.SERVER_CLASS.SERVER_METHOD(args) through here!
-         * @public
-         *
-         */
-        serviceClass:null,
-        /**
-         * @member singleton {bool} sets the ServerActionBase as 'Singleton' at the time of the construction. If there
-         * is any other ServerActionBase subclass with the same service url, this will avoid additional requests to
-         * fetch a SMD, furthermore, you can call other methods on the server through this here
-         * as well: this.serviceObject.SERVER_CLASS.SERVER_METHOD(args)
-         * @default true
-         * @public
-         */
-        singleton:true,
-        /////////////////////////////////////////////////////////////////////////////
-        //
-        //  dstore/Tree implementation
-        //
-        /////////////////////////////////////////////////////////////////////////////
-         queryAccessors:true,
-         autoEmitEvents: false, // this is handled by the methods themselves
-        /*
-         * test
-         * @param object
-         * @returns {boolean}
-         */
-        mayHaveChildren: function (object) {
-            // summary:
-            //		Check if an object may have children
-            // description:
-            //		This method is useful for eliminating the possibility that an object may have children,
-            //		allowing collection consumers to determine things like whether to render UI for child-expansion
-            //		and whether a query is necessary to retrieve an object's children.
-            // object:
-            //		The potential parent
-            // returns: boolean
-            if(object.mayHaveChildren==false){
-                return false;
-            }
-            return object.directory===true;
-        },
-        getChildren:function(item){
-            //console.log('FILESTORE::getChildren',arguments);
-            var _p = this.inherited(arguments);
-            return _p;
-        },
-        /////////////////////////////////////////////////////////////////////////////
-        //
-        //  Private part, might be trashed
-        //
-        /////////////////////////////////////////////////////////////////////////////
-        _lastFilter:null,
-        _lastFilterDef:null,
-        _lastFilterItem:null,
-        _initiated:{
-            value:false
-        },
-        id:null,
-        _state:{
-            initiated:false,
-            filter:null,
-            filterDef:null
-        },
-        isInitiated:function(){
-            return this._state.initiated;
-        },
-        setInitiated:function(initiated){
-            this._state.initiated = initiated;
-        },
-        _extraSortProperties:{
-            name:{
-                ignoreCase:true
-            }
-        },
-        /////////////////////////////////////////////////////////////////////////////
-        //
-        //  Sorting
-        //
-        /////////////////////////////////////////////////////////////////////////////
+             * @public
+             */
+            options: {
+                fields: 1663,
+                includeList: "*",
+                excludeList: "*"    // XPHP actually sets this to ".svn,.git,.idea" which are compatible to PHP's 'glob'
+            },
+            /**
+             * @member serviceUrl {string} the path to the service entry point. There are 2 modes this end-point must
+             * provide:
+             * - a Dojo compatible SMD
+             * - post/get requests with parameters. Currently JSONP & JSON-RPC-1/2.0 is supported.
+             *
+             * You can set also static SMD (see xide/manager/ServerActionBase) to bypass the SMD output. However,
+             * this is being set usually by a server side mixin (in HTML header tag) on the fly!
+             * @default null
+             * @public
+             */
+            serviceUrl: null,
+            /**
+             * @member serviceClass {string} is the server class to be called. By default, this store creates a
+             * JSON-RPC-2.0 post request where the methods looks like "XApp_Directory_Service.ls". Other formats are
+             * supported in XPHP as well and support also composer autoloaders. If this is a singleton, you can also call
+             * this.serviceObject.SERVER_CLASS.SERVER_METHOD(args) through here!
+             * @public
+             *
+             */
+            serviceClass: null,
+            /**
+             * @member singleton {bool} sets the ServerActionBase as 'Singleton' at the time of the construction. If there
+             * is any other ServerActionBase subclass with the same service url, this will avoid additional requests to
+             * fetch a SMD, furthermore, you can call other methods on the server through this here
+             * as well: this.serviceObject.SERVER_CLASS.SERVER_METHOD(args)
+             * @default true
+             * @public
+             */
+            singleton: true,
+            /////////////////////////////////////////////////////////////////////////////
+            //
+            //  dstore/Tree implementation
+            //
+            /////////////////////////////////////////////////////////////////////////////
+            queryAccessors: true,
+            autoEmitEvents: false, // this is handled by the methods themselves
+            /*
+             * test
+             * @param object
+             * @returns {boolean}
+             */
+            mayHaveChildren: function (object) {
+                // summary:
+                //		Check if an object may have children
+                // description:
+                //		This method is useful for eliminating the possibility that an object may have children,
+                //		allowing collection consumers to determine things like whether to render UI for child-expansion
+                //		and whether a query is necessary to retrieve an object's children.
+                // object:
+                //		The potential parent
+                // returns: boolean
+                if (object.mayHaveChildren == false) {
+                    return false;
+                }
+                return object.directory === true;
+            },
+            getChildren: function (item) {
+                //console.log('FILESTORE::getChildren',arguments);
+                var _p = this.inherited(arguments);
+                return _p;
+            },
+            /////////////////////////////////////////////////////////////////////////////
+            //
+            //  Private part, might be trashed
+            //
+            /////////////////////////////////////////////////////////////////////////////
+            _lastFilter: null,
+            _lastFilterDef: null,
+            _lastFilterItem: null,
+            _initiated: {
+                value: false
+            },
+            id: null,
+            _state: {
+                initiated: false,
+                filter: null,
+                filterDef: null
+            },
+            isInitiated: function () {
+                return this._state.initiated;
+            },
+            setInitiated: function (initiated) {
+                this._state.initiated = initiated;
+            },
+            _extraSortProperties: {
+                name: {
+                    ignoreCase: true
+                }
+            },
+            /////////////////////////////////////////////////////////////////////////////
+            //
+            //  Sorting
+            //
+            /////////////////////////////////////////////////////////////////////////////
 
-        constructor:function(){
-            this.id = utils.createUUID();
-        },
-        sort:function(){
-            var result = this.inherited(arguments);
+            constructor: function () {
+                this.id = utils.createUUID();
+            },
+            sort: function () {
+                var result = this.inherited(arguments);
 
-            return result;
-        },
-        onSorted:function(sorted,data){
-            
-            if(sorted.length==1 && sorted[0].property==='name'){
+                return result;
+            },
+            onSorted: function (sorted, data) {
 
-                var upperCaseFirst = true,
-                    directoriesFirst = true,
-                    descending = sorted[0].descending;
+                if (sorted.length == 1 && sorted[0].property === 'name') {
 
-                if(directoriesFirst) {
+                    var upperCaseFirst = true,
+                        directoriesFirst = true,
+                        descending = sorted[0].descending;
 
-                    function _sort(item) {
-                        return upperCaseFirst ? item.name : item.name.toLowerCase();
-                    };
-                    
-                    var grouped = _.groupBy(data, function (item) {
-                        return item.directory === true;
-                    }, this);
+                    if (directoriesFirst) {
 
-                    data = _.sortBy(grouped['true'], _sort);
-                    data = data.concat(_.sortBy(grouped['false'], _sort));
-                    if(descending){
-                        data.reverse();
+                        function _sort(item) {
+                            return upperCaseFirst ? item.name : item.name.toLowerCase();
+                        };
+
+                        var grouped = _.groupBy(data, function (item) {
+                            return item.directory === true;
+                        }, this);
+
+                        data = _.sortBy(grouped['true'], _sort);
+                        data = data.concat(_.sortBy(grouped['false'], _sort));
+                        if (descending) {
+                            data.reverse();
+                        }
                     }
                 }
-            }
-            var _back = _.find(data,{
-                name:'..'
-            });
-            if(_back){
-                data.remove(_back);
-                data.unshift(_back);
-            }
-            return data;
-        },
-        /**
-         * Overrides dstore method to add support for case in-sensitive sorting. This requires
-         * ignoreCase: true in a this.sort(..) call, ie:
-         *
-         *  return [{property: 'name', descending: false, ignoreCase: true}]
-         *
-         * this will involve this._extraSortProperties and is being called by this.getDefaultSort().
-         *
-         * @param sorted
-         * @returns {Function}
-         * @private
-         */
-        _createSortQuerier: function (sorted) {
+                var _back = _.find(data, {
+                    name: '..'
+                });
+                if (_back) {
+                    data.remove(_back);
+                    data.unshift(_back);
+                }
 
-            var thiz = this;
+                data = this.onAfterSort(data);
 
-            return function (data) {
-                data = data.slice();
-                data.sort(typeof sorted == 'function' ? sorted : function (a, b) {
+                return data;
+            },
+            onAfterSort:function(data){
+                var micromatch = this.micromatch;
+                if(typeof mm !=='undefined' && micromatch) {
+                    var _items = _.pluck(data, "name");
+                    //'*.sql|*.txt|!(*.*)'
+                    var matching = mm(_items,micromatch);
+                    data = data.filter(function (item) {
+                        if (matching.indexOf(item.name) === -1) {
+                            return null;
+                        }
+                        return item;
+                    });
+                }
+                return data;
+            },
+            /**
+             * Overrides dstore method to add support for case in-sensitive sorting. This requires
+             * ignoreCase: true in a this.sort(..) call, ie:
+             *
+             *  return [{property: 'name', descending: false, ignoreCase: true}]
+             *
+             * this will involve this._extraSortProperties and is being called by this.getDefaultSort().
+             *
+             * @param sorted
+             * @returns {Function}
+             * @private
+             */
+            _createSortQuerier: function (sorted) {
 
-                    for (var i = 0; i < sorted.length; i++) {
+                var thiz = this;
 
-                        var comparison;
+                return function (data) {
+                    data = data.slice();
+                    data.sort(typeof sorted == 'function' ? sorted : function (a, b) {
 
-                        if (typeof sorted[i] == 'function') {
+                        for (var i = 0; i < sorted.length; i++) {
 
-                            comparison = sorted[i](a, b);
+                            var comparison;
 
-                        } else {
+                            if (typeof sorted[i] == 'function') {
 
-                            var property = sorted[i].property;
+                                comparison = sorted[i](a, b);
 
-                            if(thiz._extraSortProperties[property]){
-                                lang.mixin(sorted[i],thiz._extraSortProperties[property]);
-                            }
+                            } else {
 
-                            var descending = sorted[i].descending;
+                                var property = sorted[i].property;
 
-                            var aValue = a.get ? a.get(property) : a[property];
-                            var bValue = b.get ? b.get(property) : b[property];
+                                if (thiz._extraSortProperties[property]) {
+                                    lang.mixin(sorted[i], thiz._extraSortProperties[property]);
+                                }
 
-                            var ignoreCase = !!sorted[i].ignoreCase;
-                            aValue != null && (aValue = aValue.valueOf());
-                            bValue != null && (bValue = bValue.valueOf());
+                                var descending = sorted[i].descending;
 
-                            if (ignoreCase) {
-                                aValue.toUpperCase && ( aValue = aValue.toUpperCase() );
-                                bValue.toUpperCase && ( bValue = bValue.toUpperCase() );
-                            }
+                                var aValue = a.get ? a.get(property) : a[property];
+                                var bValue = b.get ? b.get(property) : b[property];
 
-                            comparison = aValue === bValue
+                                var ignoreCase = !!sorted[i].ignoreCase;
+                                aValue != null && (aValue = aValue.valueOf());
+                                bValue != null && (bValue = bValue.valueOf());
+
+                                if (ignoreCase) {
+                                    aValue.toUpperCase && ( aValue = aValue.toUpperCase() );
+                                    bValue.toUpperCase && ( bValue = bValue.toUpperCase() );
+                                }
+
+                                comparison = aValue === bValue
                                     ? 0
                                     : (!!descending === (aValue === null || aValue > bValue) ? -1 : 1);
 
-                        }
+                            }
 
-                        if (comparison !== 0) {
-                            return comparison;
-                        }
-                    }
-                    return 0;
-                });
-                return thiz.onSorted(sorted,data);
-            };
-        },
-        /////////////////////////////////////////////////////////////////////////////
-        //
-        //  Public API section
-        //
-        /////////////////////////////////////////////////////////////////////////////
-        _getItem:function(path,allowNonLoaded){
-            //try instant and return when loaded
-            var item = this.getSync(path) || this.getSync('./' + path );
-
-            if(item && (this.isItemLoaded(item) || allowNonLoaded==true)){
-                return item;
-            }
-            if(path==='.'){
-                return this.getRootItem();
-            }
-            return null;
-        },
-
-        /**
-         * Returns a promise or a store item. This works recursively for any path and
-         * results in one request per path segment or a single request when batch-requests
-         * are enabled on the server.
-
-         * @param path {string} a unique path, ie: ./ | . | ./myFolder | ./myFolder/and_deeper. If the item isn't
-         * fully loaded yet, it just returns the item, if you enable 'load' and does the full load.
-         * @param load {boolean} load the item if not already
-         *
-         * @returns {Object|Deferred|null}
-         */
-        getItem:function(path,load){
-            if(load==false){
-
-                return this._getItem(path);
-
-            }else if(load==true){
-
-                //at this point we have to load recursivly
-                var parts = path.split('/'),
-                    thiz = this,
-                    partsToLoad = [],
-                    item  = thiz.getSync(path);
-
-                if(!item){
-                    item = thiz.getSync(path.replace('./',''));
-                }
-
-                if(item && this.isItemLoaded(item)){
-                    return item;
-                }
-
-                //new head promise for all underlying this.getItem calls
-                var deferred = new Deferred();
-
-                var _loadNext = function (){
-
-                    //no additional lodash or array stuff please, keep it simple
-                    var isFinish = !_.find(partsToLoad, {loaded: false});
-                    if (isFinish) {
-
-                        deferred.resolve(thiz.getItem(path,false));
-
-                    } else {
-
-                        for (var i = 0; i < partsToLoad.length; i++) {
-
-                            if (!partsToLoad[i].loaded) {
-
-                                var _item = thiz.getSync(partsToLoad[i].path);
-
-                                if(_item) {
-
-                                    if(_item.directory===true && thiz.isItemLoaded(_item)) {
-                                        partsToLoad[i].loaded = true;
-                                        continue;
-                                    }else if(_item.directory==null){
-
-
-                                        deferred.resolve(_item);
-                                        break;
-
-                                        when(thiz.getItem(partsToLoad[i-1].path,false),function(_item){
-                                            deferred.resolve(_item);
-                                        });
-                                        break;
-                                    }
-                                }
-
-                                thiz._loadPath(partsToLoad[i].path).then(function (items) {
-
-                                    partsToLoad[i].loaded = true;
-
-                                    _loadNext();
-
-                                },function(err){
-
-
-                                    var _i = Math.abs(Math.min(0,i-1));
-                                    var nextPart = partsToLoad[_i];
-                                    var parts = partsToLoad;
-                                    if(!nextPart){
-                                        _i = partsToLoad.length-1;
-                                        //console.error('nada!',parts);
-                                        nextPart = partsToLoad[_i];
-                                    }
-
-                                    var _item = thiz.getItem(nextPart.path);
-
-                                    when(thiz.getItem(partsToLoad[_i].path,false),function(_item){
-                                        deferred.resolve(_item,partsToLoad[_i].path);
-                                    });
-                                    return;
-
-                                });
-                                break;
+                            if (comparison !== 0) {
+                                return comparison;
                             }
                         }
-                    }
+                        return 0;
+                    });
+                    return thiz.onSorted(sorted, data);
                 };
+            },
+            /////////////////////////////////////////////////////////////////////////////
+            //
+            //  Public API section
+            //
+            /////////////////////////////////////////////////////////////////////////////
+            _getItem: function (path, allowNonLoaded) {
+                //try instant and return when loaded
+                var item = this.getSync(path) || this.getSync('./' + path);
 
-                //prepare process array
-                var itemStr = '.';
-                for (var i = 0; i < parts.length; i++) {
-
-                    if (parts[i] == '.') {
-                        continue;
-                    }
-                    if (parts.length > 0) {
-                        itemStr += '/'
-                    }
-
-                    itemStr += parts[i];
-                    partsToLoad.push({path: itemStr, loaded: false});
+                if (item && (this.isItemLoaded(item) || allowNonLoaded == true)) {
+                    return item;
                 }
-                //fire
-                _loadNext();
-
-                return deferred;
-            }
-
-
-            if(path==='.'){
-                return this.getRootItem();
-            }
-            return null;
-        },
-        /**
-         * Return the root item, is actually private
-         * @TODO: root item unclear
-         * @returns {{path: string, name: string, mount: *, directory: boolean, virtual: boolean, _S: (xfile|data|FileStore), getPath: Function}}
-         */
-        getRootItem:function(){
-            return {
-                _EX:true,
-                path: '.',
-                name: '.',
-                mount: this.mount,
-                directory: true,
-                virtual: true,
-                _S: this,
-                getPath: function () {
-                    return this.path;
+                if (path === '.') {
+                    return this.getRootItem();
                 }
-            }
-        },
-        /**
-         * back compat, trash
-         */
-        getItemByPath:function(){
-            //console.log('FILESTORE::getItemByPath',arguments);
-        },
-        /*
-        * */
-        getParents:function(){
-            return null;
-        },
-        /**
-         * Return parent object in sync mode, default to root item
-         * @TODO fix root problem
-         * @param mixed {string|object}
-         */
-        getParent:function(mixed){
-            if(!mixed){
                 return null;
-            }
-            var item = mixed,
-                result = null;
+            },
 
-            if(lang.isString(item)){
-                item = this.getSync(mixed);
-            }
+            /**
+             * Returns a promise or a store item. This works recursively for any path and
+             * results in one request per path segment or a single request when batch-requests
+             * are enabled on the server.
 
-            if(item && item.parent){
-                result = this.getSync(item.parent);
-            }
-            return result || this.getRootItem();
-        },
-        /**
-         * Return 'loaded' state
-         * @param item
-         * @returns {boolean}
-         */
-        isItemLoaded:function(item){
-            return item && (!item.directory || this._isLoaded(item));
-        },
-        /**
-         * Wrap loadItem
-         * @TODO yeah, what?
-         * @param item
-         * @param force
-         * @returns {*}
-         */
-        loadItem:function(item,force){
-            return this._loadItem(item,force);
-        },
-        /**
-         * Fix an incoming item for our nneds, adds the _S(this) attribute and
-         * a function to savely return a its path since there are items with fake paths as: './myPath_back_'
-         * @param item
-         * @private
-         */
-        _parse:function(item){
-            item._S = this;
+             * @param path {string} a unique path, ie: ./ | . | ./myFolder | ./myFolder/and_deeper. If the item isn't
+             * fully loaded yet, it just returns the item, if you enable 'load' and does the full load.
+             * @param load {boolean} load the item if not already
+             *
+             * @returns {Object|Deferred|null}
+             */
+            getItem: function (path, load) {
+                if (load == false) {
 
-            if(!_.isEmpty(item.children)){
-                _.each(item.children,function(_item){
-                    _item.parent = item.path;
-                    this._parse(_item);
-                },this);
-            }
-            item.getPath = function(){
-                return this.realPath || this.path;
-            }
-        },
-        /////////////////////////////////////////////////////////////////////////////
-        //
-        //  True store impl.
-        //
-        /////////////////////////////////////////////////////////////////////////////
-        /**
-         * Trash
-         * @private
-         */
-        _itemReloaded:function(){},
-        /**
-         * Here to load an item forcefully (reload/refresh)
-         * @param path
-         * @param force
-         * @returns {*}
-         * @private
-         */
-        _loadPath:function(path,force){
+                    return this._getItem(path);
 
-            var _item = this.getSync(path),
-                thiz = this;
+                } else if (load == true) {
 
-            if(_item && _item.directory!==true){
-                //shouldn't happen
-                //console.error('is file! ' + path);
-                debugger;
-            }
+                    //at this point we have to load recursivly
+                    var parts = path.split('/'),
+                        thiz = this,
+                        partsToLoad = [],
+                        item = thiz.getSync(path);
 
-            var prom = this._request(path).then(function(items){
-
-                var _item = thiz._getItem(path,true);
-                if(_item) {
-
-                    if(force) {
-                        if (!_.isEmpty(_item.children)) {
-                            thiz.removeItems(_item.children);
-                        }
+                    if (!item) {
+                        item = thiz.getSync(path.replace('./', ''));
                     }
 
-                    _item._EX = true;
-                    thiz.addItems(items,force);
-                    _item.children = items;
-                    return items;
-                }else{
+                    if (item && this.isItemLoaded(item)) {
+                        return item;
+                    }
 
-                    throw new Error('cant get item at '  + path);
+                    //new head promise for all underlying this.getItem calls
+                    var deferred = new Deferred();
+
+                    var _loadNext = function () {
+
+                        //no additional lodash or array stuff please, keep it simple
+                        var isFinish = !_.find(partsToLoad, {loaded: false});
+                        if (isFinish) {
+
+                            deferred.resolve(thiz.getItem(path, false));
+
+                        } else {
+
+                            for (var i = 0; i < partsToLoad.length; i++) {
+
+                                if (!partsToLoad[i].loaded) {
+
+                                    var _item = thiz.getSync(partsToLoad[i].path);
+
+                                    if (_item) {
+
+                                        if (_item.directory === true && thiz.isItemLoaded(_item)) {
+                                            partsToLoad[i].loaded = true;
+                                            continue;
+                                        } else if (_item.directory == null) {
+
+
+                                            deferred.resolve(_item);
+                                            break;
+
+                                            when(thiz.getItem(partsToLoad[i - 1].path, false), function (_item) {
+                                                deferred.resolve(_item);
+                                            });
+                                            break;
+                                        }
+                                    }
+
+                                    thiz._loadPath(partsToLoad[i].path).then(function (items) {
+
+                                        partsToLoad[i].loaded = true;
+
+                                        _loadNext();
+
+                                    }, function (err) {
+
+
+                                        var _i = Math.abs(Math.min(0, i - 1));
+                                        var nextPart = partsToLoad[_i];
+                                        var parts = partsToLoad;
+                                        if (!nextPart) {
+                                            _i = partsToLoad.length - 1;
+                                            //console.error('nada!',parts);
+                                            nextPart = partsToLoad[_i];
+                                        }
+
+                                        var _item = thiz.getItem(nextPart.path);
+
+                                        when(thiz.getItem(partsToLoad[_i].path, false), function (_item) {
+                                            deferred.resolve(_item, partsToLoad[_i].path);
+                                        });
+                                        return;
+
+                                    });
+                                    break;
+                                }
+                            }
+                        }
+                    };
+
+                    //prepare process array
+                    var itemStr = '.';
+                    for (var i = 0; i < parts.length; i++) {
+
+                        if (parts[i] == '.') {
+                            continue;
+                        }
+                        if (parts.length > 0) {
+                            itemStr += '/'
+                        }
+
+                        itemStr += parts[i];
+                        partsToLoad.push({path: itemStr, loaded: false});
+                    }
+                    //fire
+                    _loadNext();
+
+                    return deferred;
                 }
-                return items;
 
-            },function(err){
-                console.error('error in load');
-            });
 
-            return prom;
-
-        },
-        /**
-         * Creates an object, throws an error if the object already exists.
-         * @param object {Object} The object to store.
-         * @param options {Object} Additional metadata for storing the data.  Includes an 'id' property if a specific
-         * id is to be used. dstore/Store.PutDirectives?
-         * @returns {Number|Object}
-         */
-        addSync: function (object, options) {
-            (options = options || {}).overwrite = false;
-            // call put with overwrite being false
-            return this.putSync(object, options);
-        },
-        /**
-         * @TODO: what?
-         * @param item
-         * @param force
-         * @returns {Deferred}
-         * @private
-         */
-        _loadItem:function(item,force){
-            var deferred = new Deferred(),
-                thiz = this;
-            if(!item){
-                deferred.reject('need item');
-                return deferred;
-            }
-            if(force){
-                //special case on root
-
-                if(item.path==='.'){
-
-                    thiz.setInitiated(false);
-                    //console.error('thiz.initiated = false');
-                    thiz.fetchRange().then(function(items){
-                        deferred.resolve({
-                            store:thiz,
-                            items:items,
-                            item:item
-                        });
-                    });
-                }else{
-
-                    var loadProm = this._loadPath(item.path,true).then(function(items){
-                        deferred.resolve(item);
-                    },function(err){
-                        console.error('error occured whilst loading items');
-                        deferred.reject(err);
-                    });
-
+                if (path === '.') {
+                    return this.getRootItem();
                 }
-            }
-            return deferred;
+                return null;
+            },
+            /**
+             * Return the root item, is actually private
+             * @TODO: root item unclear
+             * @returns {{path: string, name: string, mount: *, directory: boolean, virtual: boolean, _S: (xfile|data|FileStore), getPath: Function}}
+             */
+            getRootItem: function () {
+                return {
+                    _EX: true,
+                    path: '.',
+                    name: '.',
+                    mount: this.mount,
+                    directory: true,
+                    virtual: true,
+                    _S: this,
+                    getPath: function () {
+                        return this.path;
+                    }
+                }
+            },
+            /**
+             * back compat, trash
+             */
+            getItemByPath: function () {
+                //console.log('FILESTORE::getItemByPath',arguments);
+            },
+            /*
+             * */
+            getParents: function () {
+                return null;
+            },
+            /**
+             * Return parent object in sync mode, default to root item
+             * @TODO fix root problem
+             * @param mixed {string|object}
+             */
+            getParent: function (mixed) {
+                if (!mixed) {
+                    return null;
+                }
+                var item = mixed,
+                    result = null;
 
-        },
-        _normalize:function(response){
-            if(response && response.items) {
-                return response.items[0];
-            }
-            return [];
-        },
-        _isLoaded:function(item){
-            return item && item[C_ITEM_EXPANDED]===true;
-        },
-        fetch:function(){
-            //console.error('FILESTORE::fetch',arguments);
-        },
-        put:function(){
-            //console.error('FILESTORE::put',arguments);
-        },
-        add:function(item){
+                if (lang.isString(item)) {
+                    item = this.getSync(mixed);
+                }
 
-           // console.error('FILESTORE::add',arguments);
-            var _item = this.getSync(item.path);
-            if(_item){
-               // console.error('have already ' + item.getPath());
-            }else{
-                _item = this.addSync(item);
-                _item._S = this;
-                _item.getPath = function(){
+                if (item && item.parent) {
+                    result = this.getSync(item.parent);
+                }
+                return result || this.getRootItem();
+            },
+            /**
+             * Return 'loaded' state
+             * @param item
+             * @returns {boolean}
+             */
+            isItemLoaded: function (item) {
+                return item && (!item.directory || this._isLoaded(item));
+            },
+            /**
+             * Wrap loadItem
+             * @TODO yeah, what?
+             * @param item
+             * @param force
+             * @returns {*}
+             */
+            loadItem: function (item, force) {
+                return this._loadItem(item, force);
+            },
+            /**
+             * Fix an incoming item for our nneds, adds the _S(this) attribute and
+             * a function to savely return a its path since there are items with fake paths as: './myPath_back_'
+             * @param item
+             * @private
+             */
+            _parse: function (item) {
+                item._S = this;
+
+                if (!_.isEmpty(item.children)) {
+                    _.each(item.children, function (_item) {
+                        _item.parent = item.path;
+                        this._parse(_item);
+                    }, this);
+                }
+                item.getPath = function () {
                     return this.realPath || this.path;
                 }
-            }
-            return _item;
-        },
-        removeItems:function(items){
-            _.each(items,function(item){
+            },
+            /////////////////////////////////////////////////////////////////////////////
+            //
+            //  True store impl.
+            //
+            /////////////////////////////////////////////////////////////////////////////
+            /**
+             * Trash
+             * @private
+             */
+            _itemReloaded: function () {
+            },
+            /**
+             * Here to load an item forcefully (reload/refresh)
+             * @param path
+             * @param force
+             * @returns {*}
+             * @private
+             */
+            _loadPath: function (path, force) {
 
-                if(this.getSync(item.path)){
-               //     console.log('remove ' +item.path);
-                    this.removeSync(item.path);
-                }else{
-                    console.log('tried to remove item which already exists : ' , item);
+                var _item = this.getSync(path),
+                    thiz = this;
+
+                if (_item && _item.directory !== true) {
+                    //shouldn't happen
+                    //console.error('is file! ' + path);
+                    debugger;
                 }
-            },this);
-        },
-        addItems:function(items,overwrite){
-            _.each(items,function(item){
-                var storeItem = this.getSync(item.path);
-                if(storeItem){
-                    this.removeSync(item.path);
-                }
-                this.add(item);
-            },this);
-        },
-        open:function(item){
-            var thiz = this;
-            
-            function update(){
-                thiz.emit('update',{
-                    target:item
-                });
-            }
 
-            if(!this._isLoaded(item)){
+                var prom = this._request(path).then(function (items) {
 
-                item.isLoading=true;
-               // update();
-                var prom = thiz._request(item.path).then(function(items){
-                    item.isLoading=false;
-                    //update();
-                    item._EX = true;
-                    thiz.addItems(items);
-                    item.children = items;
+                    var _item = thiz._getItem(path, true);
+                    if (_item) {
+
+                        if (force) {
+                            if (!_.isEmpty(_item.children)) {
+                                thiz.removeItems(_item.children);
+                            }
+                        }
+
+                        _item._EX = true;
+                        thiz.addItems(items, force);
+                        _item.children = items;
+                        return items;
+                    } else {
+
+                        throw new Error('cant get item at ' + path);
+                    }
                     return items;
+
+                }, function (err) {
+                    console.error('error in load');
                 });
 
                 return prom;
-            }else{
-                var deferred = new Deferred();
-                thiz.resetQueryLog();
-                deferred.resolve(item.children);
-                return deferred;
-            }
-        },
-        onReloaded:function(){
-          //console.log('reloaded');
-        },
-        getDefaultSort:function(){
-            return [{property: 'name', descending: false, ignoreCase: true}];
-        },
-        lastOpenedPath:function(){
-            var path = this._state.path;
-            if(path){
 
-                var item = this.getSync(path);
+            },
+            /**
+             * Creates an object, throws an error if the object already exists.
+             * @param object {Object} The object to store.
+             * @param options {Object} Additional metadata for storing the data.  Includes an 'id' property if a specific
+             * id is to be used. dstore/Store.PutDirectives?
+             * @returns {Number|Object}
+             */
+            addSync: function (object, options) {
+                (options = options || {}).overwrite = false;
+                // call put with overwrite being false
+                return this.putSync(object, options);
+            },
+            /**
+             * @TODO: what?
+             * @param item
+             * @param force
+             * @returns {Deferred}
+             * @private
+             */
+            _loadItem: function (item, force) {
+                var deferred = new Deferred(),
+                    thiz = this;
+                if (!item) {
+                    deferred.reject('need item');
+                    return deferred;
+                }
+                if (force) {
+                    //special case on root
 
-                if(item){
-                    item = this.getParent(item.getPath());
-                    if(item){
-                        //console.log('last path : ',item);
-                        return item.getPath();
+                    if (item.path === '.') {
+
+                        thiz.setInitiated(false);
+                        //console.error('thiz.initiated = false');
+                        thiz.fetchRange().then(function (items) {
+                            deferred.resolve({
+                                store: thiz,
+                                items: items,
+                                item: item
+                            });
+                        });
+                    } else {
+
+                        var loadProm = this._loadPath(item.path, true).then(function (items) {
+                            deferred.resolve(item);
+                        }, function (err) {
+                            console.error('error occured whilst loading items');
+                            deferred.reject(err);
+                        });
+
                     }
                 }
-            }
+                return deferred;
 
-            return null;
-        },
-        filter:function(data){
-            _debug && console.log('filter : ',this._state);
-            if(data.parent){
-                this._state.path = data.parent;
-            }
-
-            var item = this.getSync(data.parent);
-
-            if(item){
-                if(!this.isItemLoaded(item)) {
-                    this._state.filterDef = this._loadPath(item.path);
-                }else{
-                    this._state.filterDef = null;
-                }
-            }
-
-            this._state.filter= data;
-
-            var _def = this.inherited(arguments);
-
-            return _def;
-        },
-        /**
-         *
-         * @param path
-         * @param parent
-         * @returns {*}
-         * @private
-         */
-        _request:function(path){
-            _debug && console.log('__request ' + path);
-
-            var collection = this,
-                prom = this.runDeferred(null, 'ls', {
-                path: path,
-                mount: this.mount,
-                options: this.options
             },
-            {
-                checkErrors:false,
-                displayError:true
+            _normalize: function (response) {
+                if (response && response.items) {
+                    return response.items[0];
+                }
+                return [];
+            },
+            _isLoaded: function (item) {
+                return item && item[C_ITEM_EXPANDED] === true;
+            },
+            fetch: function () {
+                //console.error('FILESTORE::fetch',arguments);
+            },
+            put: function () {
+                //console.error('FILESTORE::put',arguments);
+            },
+            add: function (item) {
 
-            }).then(function (response) {
+                // console.error('FILESTORE::add',arguments);
+                var _item = this.getSync(item.path);
+                if (_item) {
+                    // console.error('have already ' + item.getPath());
+                } else {
+                    _item = this.addSync(item);
+                    _item._S = this;
+                    _item.getPath = function () {
+                        return this.realPath || this.path;
+                    }
+                }
+                return _item;
+            },
+            removeItems: function (items) {
+                _.each(items, function (item) {
+
+                    if (this.getSync(item.path)) {
+                        //     console.log('remove ' +item.path);
+                        this.removeSync(item.path);
+                    } else {
+                        console.log('tried to remove item which already exists : ', item);
+                    }
+                }, this);
+            },
+            addItems: function (items, overwrite) {
+                _.each(items, function (item) {
+                    var storeItem = this.getSync(item.path);
+                    if (storeItem) {
+                        this.removeSync(item.path);
+                    }
+                    this.add(item);
+                }, this);
+            },
+            open: function (item) {
+                var thiz = this;
+
+                function update() {
+                    thiz.emit('update', {
+                        target: item
+                    });
+                }
+
+                if (!this._isLoaded(item)) {
+
+                    item.isLoading = true;
+                    // update();
+                    var prom = thiz._request(item.path).then(function (items) {
+                        item.isLoading = false;
+                        //update();
+                        item._EX = true;
+                        thiz.addItems(items);
+                        item.children = items;
+                        return items;
+                    });
+
+                    return prom;
+                } else {
+                    var deferred = new Deferred();
+                    thiz.resetQueryLog();
+                    deferred.resolve(item.children);
+                    return deferred;
+                }
+            },
+            onReloaded: function () {
+                //console.log('reloaded');
+            },
+            getDefaultSort: function () {
+                return [{property: 'name', descending: false, ignoreCase: true}];
+            },
+            lastOpenedPath: function () {
+                var path = this._state.path;
+                if (path) {
+
+                    var item = this.getSync(path);
+
+                    if (item) {
+                        item = this.getParent(item.getPath());
+                        if (item) {
+                            //console.log('last path : ',item);
+                            return item.getPath();
+                        }
+                    }
+                }
+
+                return null;
+            },
+            filter: function (data) {
+                _debug && console.log('filter : ', this._state);
+                if (data.parent) {
+                    this._state.path = data.parent;
+                }
+
+                var item = this.getSync(data.parent);
+
+                if (item) {
+                    if (!this.isItemLoaded(item)) {
+                        this._state.filterDef = this._loadPath(item.path);
+                    } else {
+                        this._state.filterDef = null;
+                    }
+                }
+
+                this._state.filter = data;
+
+                var _def = this.inherited(arguments);
+
+                return _def;
+            },
+            /**
+             *
+             * @param path
+             * @param parent
+             * @returns {*}
+             * @private
+             */
+            _request: function (path) {
+                _debug && console.log('__request ' + path);
+
+                var collection = this,
+                    prom = this.runDeferred(null, 'ls', {
+                            path: path,
+                            mount: this.mount,
+                            options: this.options
+                        },
+                        {
+                            checkErrors: false,
+                            displayError: true
+
+                        }).then(function (response) {
                         var results = collection._normalize(response);
                         collection._parse(results);
                         // support items in the results
                         results = results.children || results;
                         return results;
-            },function(e){
-                console.error('error in FileStore : ' + this.mount + ' :' + e,e);
-            });
+                    }, function (e) {
+                        console.error('error in FileStore : ' + this.mount + ' :' + e, e);
+                    });
 
-            return prom;
-        },
-        fetchSync: function () {
-            _debug && console.log('fetSync: ',this._state);
-            var data = this.inherited(arguments),
-                directoriesFirst = true,
-                upperCaseFirst = true,//ala MC style
-                result;
+                return prom;
+            },
+            fetchSync: function () {
+                _debug && console.log('fetSync: ', this._state);
+                var data = this.inherited(arguments),
+                    directoriesFirst = true,
+                    upperCaseFirst = true,//ala MC style
+                    result;
 
-            return data;
-        },
-        fetchRangeSync: function (kwArgs) {
-            var data = this.fetchSync();
-            var total = new Deferred();
-            total.resolve(data.length);
-            return new QueryResults(data, {
-                totalLength: total
-            });
-        },
-        reset:function(){
-            this._state.filter = null;
-            this._state.filterDef = null;
-            this.resetQueryLog();
-        },
-        resetQueryLog:function(){
-            this.queryLog = [];
-        },
-        fetchRange:function(){
-            // dstore/Memory#fetchRange always uses fetchSync, which we aren't extending,
-            // so we need to extend this as well.
-            _debug && console.log('fetchRange : ',this._state);
-            var results = this._fetchRange();
-            return new QueryResults(results.then(function (data) {
                 return data;
-            }), {
-                totalLength: results.then(function (data) {
-                    return data.length;
-                })
-            });
-        },
-        initRoot:function(){
-            //first time load
-            var _path = '.';
-            var collection = this,
-                thiz = this;
+            },
+            fetchRangeSync: function (kwArgs) {
+                var data = this.fetchSync();
+                var total = new Deferred();
+                total.resolve(data.length);
+                return new QueryResults(data, {
+                    totalLength: total
+                });
+            },
+            reset: function () {
+                this._state.filter = null;
+                this._state.filterDef = null;
+                this.resetQueryLog();
+            },
+            resetQueryLog: function () {
+                this.queryLog = [];
+            },
+            fetchRange: function () {
+                // dstore/Memory#fetchRange always uses fetchSync, which we aren't extending,
+                // so we need to extend this as well.
+                _debug && console.log('fetchRange : ', this._state);
+                var results = this._fetchRange();
+                return new QueryResults(results.then(function (data) {
+                    return data;
+                }), {
+                    totalLength: results.then(function (data) {
+                        return data.length;
+                    })
+                });
+            },
+            initRoot: function () {
+                //first time load
+                var _path = '.';
+                var collection = this,
+                    thiz = this;
 
-            //business as usual, root is loaded
-            if(!this.isInitiated()){
-                var prom = thiz._request(_path).then(function(data){
-                    if(!thiz.isInitiated()){
-                        _.each(data,function(item){
+                //business as usual, root is loaded
+                if (!this.isInitiated()) {
+                    var prom = thiz._request(_path).then(function (data) {
+                        if (!thiz.isInitiated()) {
+                            _.each(data, function (item) {
+                                thiz._parse(item);
+                            });
+                            thiz.setData(data);
+                            thiz.setInitiated(true);
+                            thiz.emit('loaded');
+                        }
+                        return thiz.fetchRangeSync(arguments);
+                    }.bind(this));
+                    return prom;
+                }
+
+                var dfd = new Deferred();
+                dfd.resolve();
+                return dfd;
+            },
+            _fetchRange: function () {
+
+                _debug && console.log('_fetchRange : ', this._state);
+
+
+                if (!this.isInitiated()) {
+                }
+
+                //special case for trees
+                if (this._state.filter) {
+                    var def = this._state.filterDef;
+                    if (def) {
+                        def.then(function (items) {
+                            this.reset();
+                            if (def && def.resolve) {
+                                def.resolve(items);
+                            }
+                        }.bind(this));
+                        return def;
+                    } else {
+
+                        var _item = this.getSync(this._state.filter.parent);
+                        if (_item) {
+
+                        }
+                        //return;
+                    }
+                }
+
+                //first time load
+                var _path = '.';
+                var collection = this,
+                    thiz = this;
+
+                //business as usual, root is loaded
+                if (this.isInitiated()) {
+                    var _def = thiz.fetchRangeSync(arguments);
+                    var resultsDeferred = new Deferred();
+                    var totalDeferred = new Deferred();
+                    resultsDeferred.resolve(_def);
+                    totalDeferred.resolve(_def.length);
+                    thiz.emit('loaded');
+                    return new QueryResults(resultsDeferred, {
+                        totalLength: _def.totalLength
+                    });
+                    return _def;
+
+                }
+
+                var prom = thiz._request(_path).then(function (data) {
+                    if (!thiz.isInitiated()) {
+                        _.each(data, function (item) {
                             thiz._parse(item);
                         });
                         thiz.setData(data);
@@ -71085,90 +71201,29 @@ define('xfile/data/Store',[
                     return thiz.fetchRangeSync(arguments);
                 }.bind(this));
                 return prom;
-            }
-
-            var dfd = new Deferred();
-            dfd.resolve();
-            return dfd;
-        },
-        _fetchRange:function(){
-
-            _debug && console.log('_fetchRange : ',this._state);
-
-
-            if(!this.isInitiated()){}
-
-            //special case for trees
-            if(this._state.filter){
-                var def = this._state.filterDef;
-                if(def){
-                   def.then(function(items){
-                       this.reset();
-                       if(def && def.resolve) {
-                           def.resolve(items);
-                       }
-                   }.bind(this));
-                   return def;
-               }else{
-
-                    var _item = this.getSync(this._state.filter.parent);
-                    if(_item){
-
-                    }
-                    //return;
+            },
+            /**
+             *
+             * @param path
+             * @param store
+             * @returns {*}
+             */
+            getDefaultCollection: function (path) {
+                var _sort = this.getDefaultSort();
+                if (!path) {
+                    return this.sort(_sort);
+                } else {
+                    return this.filter({
+                        parent: path
+                    }).sort(_sort)
                 }
             }
+        };
+    }
 
-            //first time load
-            var _path = '.';
-            var collection = this,
-                thiz = this;
-
-            //business as usual, root is loaded
-            if(this.isInitiated()){
-                var _def = thiz.fetchRangeSync(arguments);
-                var resultsDeferred = new Deferred();
-                var totalDeferred = new Deferred();
-                resultsDeferred.resolve(_def);
-                totalDeferred.resolve(_def.length);
-                thiz.emit('loaded');
-                return new QueryResults(resultsDeferred, {
-                    totalLength: _def.totalLength
-                });
-                return _def;
-
-            }
-
-            var prom = thiz._request(_path).then(function(data){
-                if(!thiz.isInitiated()){
-                    _.each(data,function(item){
-                        thiz._parse(item);
-                    });
-                    thiz.setData(data);
-                    thiz.setInitiated(true);
-                    thiz.emit('loaded');
-                }
-                return thiz.fetchRangeSync(arguments);
-            }.bind(this));
-            return prom;
-        },
-        /**
-         *
-         * @param path
-         * @param store
-         * @returns {*}
-         */
-        getDefaultCollection:function(path){
-            var _sort = this.getDefaultSort();
-            if(!path) {
-                return this.sort(_sort);
-            }else{
-                return this.filter({
-                    parent:path
-                }).sort(_sort)
-            }
-        }
-    });
+    var Module = declare("xfile/data/Store", [TreeMemory,Cache,Trackable,ObservableStore,ServerActionBase.declare,ReloadMixin],Implementation());
+    Module.Implementation = Implementation;
+    return Module;
 });;
 /** @module xfile/model/File **/
 define('xfile/model/File',[
