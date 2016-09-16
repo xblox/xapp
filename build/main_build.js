@@ -31623,7 +31623,9 @@ define('xblox/model/Block',[
             'allowActionOverride',
             'canDelete',
             'isCommand',
-            'lastCommand'
+            'lastCommand',
+            'autoCreateElse',
+            '_postCreated'
         ],
         postCreate:function(){},
         /**
@@ -38082,7 +38084,6 @@ define('xblox/model/logic/IfBlock',[
             return "<span class='text-primary'>" + this.getBlockIcon('E') + this.name + " </span>" +  "<span class='text-warning small'>" + this.condition +"<span>";
         },
         _checkCondition:function(scope) {
-            //console.log('cond ' + this.condition.length);
             return scope.parseExpression(this.condition,null,null);
         },
         /***
@@ -38175,7 +38176,6 @@ define('xblox/model/logic/IfBlock',[
         },
         // evaluate the if condition
         _getContainer:function(item){
-
             if(this.consequent.indexOf(item)!=-1){
                 return 'consequent';
             }else if(this.alternate.indexOf(item)!=-1){
@@ -38183,7 +38183,6 @@ define('xblox/model/logic/IfBlock',[
             }else if(this.elseIfBlocks.indexOf(item)!=-1){
                 return 'elseIfBlocks';
             }
-
             return '_';
         },
         /**
@@ -38282,7 +38281,7 @@ define('xblox/model/logic/IfBlock',[
                 };
 
                 var dfd = new Deferred();
-                this.items.push(newBlock);
+                //this.items.push(newBlock);
                 store._emit('added',{
                     target:newBlock
                 });
@@ -46537,34 +46536,24 @@ define('xblox/model/Scope',[
          * Returns an array of blocks
          * @param blocks
          */
-        flatten:function(blocks){
-
+        _flatten:function(blocks){
             var result = [];
-
             for(var b in blocks){
-
                 var block = blocks[b];
-
                 if(block.keys==null){
                     continue;
                 }
                 result.push(block);
-
                 for(var prop in block){
-
                     if (prop == 'ctrArgs') {
                         continue;
                     }
-
                     //flatten children to ids. Skip "parent" field
-                    if (prop != 'parent') {
-                        if ( this.isBlock(block[prop]) )
-                        {
+                    if (prop !== 'parent') {
+                        if (this.isBlock(block[prop])){
                             // if the field is a single block container, store the child block's id
                             result.push(block[prop]);
-
-                        } else if ( this.areBlocks(block[prop]))
-                        {
+                        } else if (this.areBlocks(block[prop])){
                             for(var i = 0; i < block[prop].length ; i++){
                                 result.push(block[prop][i]);
                             }
@@ -46572,6 +46561,84 @@ define('xblox/model/Scope',[
                     }
                 }
             }
+            return result;
+        },
+        /**
+         * 
+         * @param blocks {module:xblox/model/Block[]}
+         */
+        flatten:function(blocks){
+
+            var result = [];
+            for(var b in blocks){
+
+                var block = blocks[b];
+
+                if(block.keys==null){
+                    continue;
+                }
+
+                var found = _.find(result,{
+                    id:block.id
+                })
+
+                if(found){
+                    //console.error('already in array  : ' +found.name);
+                }else {
+                    result.push(block);
+                }
+
+                for(var prop in block){
+                    if (prop == 'ctrArgs') {
+                        continue;
+                    }
+                    //flatten children to ids. Skip "parent" field
+                    if (prop !== 'parent') {
+
+                        var value = block[prop];
+                        if (this.isBlock(value)){
+                            // if the field is a single block container, store the child block's id
+                            //result.push(value);
+                            found = _.find(result,{
+                                id:value.id
+                            })
+                            if(found){
+                                //console.error('already in array  : ' +value.name);
+                            }else {
+                                result.push(value);
+                            }
+                        } else if (this.areBlocks(value)){
+
+                            //console.log('found sub blocks in ' + prop + ' ' + block.name);
+
+                            for(var i = 0; i < value.length ; i++){
+                                var sBlock = value[i];
+
+                                //result.push(sBlock);
+                                found = _.find(result,{
+                                    id:sBlock.id
+                                })
+
+                                if(found){
+                                    //console.error('already in array  : ' +sBlock.name);
+                                }else {
+                                    result.push(sBlock);
+                                }
+                                result = result.concat(this.flatten([sBlock]));
+                            }
+                        }
+                    }
+                }
+            }
+
+            //console.log('un : ' , _.uniqBy(result, 'id'));
+
+            //console.log('found in total '+result.length + ' blocks ',result);
+
+            result = _.uniq(result,false,function(item){
+                return item.id;
+            });
+
             return result;
         },
         _getSolve:function(block){
@@ -72740,7 +72807,7 @@ define('xaction/ActionProvider',[
             return groups;
         },
         getItemsAtBranch: function (items, path) {
-            return new Path(path).getChildren(_.pluck(items, 'command'), false);
+            return new Path(path).getChildren(_.map(items, 'command'), false);
         },
         /////////////////////////////////////////////////////
         //
