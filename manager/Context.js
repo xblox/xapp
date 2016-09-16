@@ -692,6 +692,9 @@ define([
             this.application = this.createManager(Application);
             Instance = this;
             var self = this;
+        },
+        initVe:function(){
+            this.notifier = Notifier;
         }
     });
 

@@ -31157,6 +31157,9 @@ define('xapp/manager/Context',[
             this.application = this.createManager(Application);
             Instance = this;
             var self = this;
+        },
+        initVe:function(){
+            this.notifier = Notifier;
         }
     });
 
@@ -58002,7 +58005,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                             type: 'info'
                         });
                         thiz.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.MANAGER_START_DRIVER, cInfo);
-                        console.log('resolve instance');
                         dfd.resolve(thiz.deviceInstances[hash]);
                         delete cInfo.mqtt;
                     });
