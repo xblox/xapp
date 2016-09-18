@@ -31819,6 +31819,16 @@ define('xblox/model/Block',[
             }
             return result;
         },
+        getTopRoot:function(){
+            var last = this.getParent();
+            if(last){
+                var next = last.getParent();
+                if(next){
+                    last = next;
+                }
+            }
+            return last;
+        },
         next: function (items, dir) {
             var _dstIndex = 0;
             var step = 1;
@@ -37849,6 +37859,8 @@ define('xblox/model/logic/SwitchBlock',[
         },
         runAction:function(action){
 
+            var store = this.scope.blockStore;
+
             if(action.command==='New/Case'){
                 var dfd = new Deferred();
                 var newBlock = this.add(CaseBlock,{
@@ -37864,6 +37876,11 @@ define('xblox/model/logic/SwitchBlock',[
                 };
                 dfd.resolve(defaultDfdArgs);
                 newBlock.refresh();
+
+                store._emit('added',{
+                    target:newBlock
+                });
+                
                 return dfd;
             }
 
@@ -37880,6 +37897,9 @@ define('xblox/model/logic/SwitchBlock',[
                 };
                 dfd.resolve(defaultDfdArgs);
                 newBlock.refresh();
+                store._emit('added',{
+                    target:newBlock
+                });
                 return dfd;
             }
 
@@ -37902,6 +37922,7 @@ define('xblox/model/logic/SwitchBlock',[
             if(!_.find(this.items,{
                     declaredClass:'xblox.model.logic.DefaultBlock'
                 })){
+
                 result.push(this.createAction({
                     label: 'Default',
                     command: 'New/Default',
@@ -37914,6 +37935,8 @@ define('xblox/model/logic/SwitchBlock',[
                         quick:false
                     }
                 }));
+
+
             }
 
             return result;
@@ -37988,6 +38011,7 @@ define('xblox/model/logic/IfBlock',[
     "dojo/Deferred",
     "xide/utils"
 ], function(dcl,Block,Statement,ElseIfBlock,Deferred,utils){
+    
     /**
      * Base block class.
      *
@@ -38171,7 +38195,6 @@ define('xblox/model/logic/IfBlock',[
                 this.alternate.remove(what);
                 this.consequent.remove(what);
                 this.elseIfBlocks.remove(what);
-                this.items.remove(what);
             }
         },
         // evaluate the if condition
@@ -38249,9 +38272,7 @@ define('xblox/model/logic/IfBlock',[
 
                 var args = utils.mixin({
                     name:'else',
-                    //items:this.alternate,
                     items:[],
-                    //group:this.group,//if we are child, don't set the group, otherwise it goes as top-level-block!
                     dstField:'alternate',
                     parentId:this.id,
                     parent:this,
@@ -38285,50 +38306,14 @@ define('xblox/model/logic/IfBlock',[
                 store._emit('added',{
                     target:newBlock
                 });
+
+                
                 dfd.resolve(defaultDfdArgs);
+
                 newBlock.refresh();
                 return dfd;
 
             }
-/*
-            if(action.command==='New/Else If'){
-                var dfd = new Deferred();
-                var newBlock = this.add(ElseIfBlock,{
-                    name:'else if',
-                    //items:this.alternate,
-                    items:[],
-                    //group:this.group,//if we are child, don't set the group, otherwise it goes as top-level-block!
-                    dstField:'elseIfBlocks',
-                    parentId:this.id,
-                    parent:this,
-                    scope:this.scope,
-                    canAdd:function(){
-                        return [];
-                    },
-                    canEdit:function(){
-                        return true;
-                    }
-                },'elseIfBlocks');
-
-                this.items.push(newBlock);
-
-                var defaultDfdArgs = {
-                    select: [newBlock],
-                    focus: true,
-                    append: false,
-                    expand:true,
-                    delay:1
-                };
-
-                store.emit('added',{
-                    target:newBlock
-                });
-                //this.refresh();
-                dfd.resolve(defaultDfdArgs);
-                newBlock.refresh();
-                return dfd;
-            }
-            */
         },
         getActions:function(){
 
@@ -38404,12 +38389,13 @@ define('xblox/model/variables/VariableAssignmentBlock',[
 ], function(dcl,Block,utils,types,DstoreAdapter,factory,has){
 
     var isServer = has('host-node');
+    var BLOCK_INSERT_ROOT_COMMAND = 'Step/Insert';
     /**
      *
      * @class module:xblox/model/variables/VariableAssignmentBlock
      * @extends xblox/model/Block
      */
-    return dcl(Block,{
+    var Module = dcl(Block,{
         declaredClass: "xblox.model.variables.VariableAssignmentBlock",
 
         //variable: (String)
@@ -38628,6 +38614,9 @@ define('xblox/model/variables/VariableAssignmentBlock',[
             return fields;
         }
     });
+
+    return Module;
+
 });;
 define('dstore/legacy/DstoreAdapter',[
 	'dojo/_base/declare',
@@ -46024,7 +46013,6 @@ define('xblox/model/Scope',[
             }
             var result = [];
             newBlocks = this.blocksFromJson(blocksJSON);//add it to our scope
-
             _.each(newBlocks,function(block){
                 result.push(store.getSync(block.id));
             });
@@ -46963,7 +46951,6 @@ define('xblox/model/Scope',[
 
             // we move within the same parent
             }else if( source.parentId && target.parentId && add==false && source.parentId === target.parentId){
-                console.error('we move within the same parents');
                 var parent = this.getBlockById(source.parentId);
                 if(!parent){
                     console.error('     couldnt find parent ');
@@ -46972,7 +46959,6 @@ define('xblox/model/Scope',[
 
                 var maxSteps = 20;
                 var items = parent[parent._getContainer(source)];
-
                 var cIndexSource = source.indexOf(items,source);
                 var cIndexTarget = source.indexOf(items,target);
                 var direction = cIndexSource > cIndexTarget ? -1 : 1;
