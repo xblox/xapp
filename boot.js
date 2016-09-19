@@ -6,38 +6,44 @@ define([
 ], function (dcl,Deferred,has,require) {
 
     var debug = false;
+    
     return dcl(null,{
         declaredClass:'xapp/boot',
-        start:function(settings){
-
+        start:function(settings,Context){
+            console.error('start boot');
             var _require = require;
             var _ctx=_require('xapp/manager/Context');
-
-            var ctx = new _ctx;
             try {
-                var _register = _require('delite/register');
-                if(_register){
-                    debug && console.log('   Checkpoint 3.3 xapp/boot->start : delite/register->parse');
-                    _register.parse();
+                var ctx = new _ctx;
+                try {
+                    var _register = _require('delite/register');
+                    if (_register) {
+                        debug && console.log('   Checkpoint 3.3 xapp/boot->start : delite/register->parse');
+                        _register.parse();
+                    }
+                } catch (e) {
+                    console.error('error in xapp/boot::start : ' + e, e);
+                    debugger;
+                }
+                debug && console.log('Checkpoint 4.1 xapp/boot->start : construct managers, init managers');
+                var dfd = null;
+                var head = new Deferred();
+                try {
+                    ctx.constructManagers(settings);
+                } catch (e) {
+                    console.error('error constructing managers ' + e, e);
+                }
+                try {
+
+                    ctx.initManagers();
+                } catch (e) {
+                    console.error('error init managers ' + e, e);
                 }
             }catch(e){
-                console.error('error in xapp/boot::start : ' + e,e);
                 debugger;
-            }
-            debug && console.log('Checkpoint 4.1 xapp/boot->start : construct managers, init managers');
-            try {
-                ctx.constructManagers(settings);
-            }catch(e){
-                console.error('error constructing managers ' + e,e);
-            }
-            try {
-                ctx.initManagers();
-            }catch(e){
-                console.error('error init managers ' + e,e);
             }
 
             return ctx.application.start(settings);
-
         },
         getDependencies:function(extraDependencies){
             var result = [

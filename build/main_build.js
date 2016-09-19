@@ -30474,26 +30474,21 @@ define('xapp/manager/Context',[
     'xide/types',
     'xide/utils',
     './_WidgetPickerMixin',
-    'require',
     'xide/manager/Reloadable',
     'xcf/types/Types',
-    'xdojo/has'
+    'xdojo/has',
+    'dojo/Deferred'
 
-], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, require, Reloadable,Types,has,on) {
+], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, Reloadable,Types,has,Deferred) {
 
     var isIDE = has('xcf-ui');
     var debugWire = false;
-    var debugBoot = false;
+    var debugBoot = true;
     var debugRun = false;
 
     var Instance = null;
-
-    var NotifierClass = dcl([EventedMixin.dcl],{
-        
-    });
-
+    var NotifierClass = dcl([EventedMixin.dcl],{});
     var Notifier = new NotifierClass({});
-
 
     /**
      * Lightweight context for end-user apps
@@ -30981,6 +30976,47 @@ define('xapp/manager/Context',[
                 }
             }
         },
+        loadAppModule:function (item) {
+
+            var dfd = new Deferred();
+
+            if(!item){
+                dfd.resolve();
+                return dfd;
+            }
+
+            var itemUrl = item.path.replace('./','').replace('.dhtml','');
+            var mid = item.mount.replace('/','')  + '/' + itemUrl;
+            var url = require.toUrl(item.mount.replace('/','')  + '/' + itemUrl);
+            debugBoot && console.log('load default app.js ' + mid);
+
+            require.config({
+                urlArgs:"bust=" +  (new Date()).getTime()
+            });
+
+            try{
+                require.undef(mid);
+            }catch(e){
+                console.warn('error unloading app module ' + mid,e);
+            }
+
+            try{
+                //probe
+                require([mid],function(appModule){
+                    console.log('got app module');
+                    dfd.resolve(appModule);
+                    require.config({
+                        urlArgs:null
+                    });
+                });
+
+            }catch(e){
+                console.error('error loading module ',e);
+                dfd.resolve();
+            }
+
+            return dfd;
+        },
         /**
          * Called when all managers and minimum dependencies are loaded.
          *
@@ -30988,13 +31024,46 @@ define('xapp/manager/Context',[
          *
          *
          */
-        onReady: function () {
+        onReady: function (settings) {
+
             debugBoot && console.log('Checkpoint 8. xapp/manager->onReady');
+
+            if(settings) {
+                this.settings = settings;
+            }else{
+                settings = this.settings;
+            }
+
             var xbloxFiles = this.settings.xbloxScripts;
             this.loadXBloxFiles(xbloxFiles);
             var thiz = this;
+            
             debugBoot && console.info('-app ready',this);
-            this.application.onReady();
+            if(!this.isVE()){
+                this.loadAppModule(settings.item).then(function(){
+                    this.application.onReady();
+                    console.log('app module loaded from ');
+                    setTimeout(function(){
+                        thiz.publish('onContextReady',thiz);
+                        thiz.publish('DevicesConnected');
+                    },1500);
+                });
+            }else{
+                this.application.onReady();
+            }
+            /*
+            this.loadAppModule(settings.item).then(function(){
+                console.log('app module loaded from ');
+                setTimeout(function(){
+                    thiz.publish('onContextReady',thiz);
+                    thiz.publish('DevicesConnected');
+                },1500);
+            });
+            */
+            //this.application.onReady();
+        },
+        isVE:function(){
+            return this.delegate;
         },
         init: function (settings) {
 
@@ -31019,90 +31088,97 @@ define('xapp/manager/Context',[
                 this.loadXIDE();
             }
 
-            require([
-                'xfile/manager/FileManager',
-                'xide/manager/ResourceManager',
-                'xnode/manager/NodeServiceManager',
-                'xcf/manager/DriverManager',
-                'xcf/manager/DeviceManager',
-                'xcf/manager/BlockManager',
-                'xcf/model/ModelBase',
-                'xcf/model/Command',
-                'xcf/model/Variable',
-                'xcf/factory/Blocks'
-            ], function (FileManager, ResourceManager, NodeServiceManager, DriverManager, DeviceManager, BlockManager) {
 
-                debugBoot && console.log('Checkpoint 7.0 xapp/Context::init');
+            function ready(){
+                require([
+                    'xfile/manager/FileManager',
+                    'xide/manager/ResourceManager',
+                    'xnode/manager/NodeServiceManager',
+                    'xcf/manager/DriverManager',
+                    'xcf/manager/DeviceManager',
+                    'xcf/manager/BlockManager',
+                    'xcf/model/ModelBase',
+                    'xcf/model/Command',
+                    'xcf/model/Variable',
+                    'xcf/factory/Blocks'
+                ], function (FileManager, ResourceManager, NodeServiceManager, DriverManager, DeviceManager, BlockManager) {
 
-
-                thiz.blockManager = thiz.createManager(BlockManager);
-                thiz.blockManager.init();
-
-                thiz.fileManager = thiz.createManager(FileManager, settings.xFileConfig, {
-                    serviceUrl: settings.rpcUrl,
-                    singleton: true
-                });
-                thiz.fileManager.init();
+                    debugBoot && console.log('Checkpoint 7.0 xapp/Context::init');
 
 
-                thiz.resourceManager = thiz.createManager(ResourceManager, settings.xFileConfig, {
-                    serviceUrl: settings.rpcUrl,
-                    singleton: true
-                });
-                thiz.resourceManager.init();
+                    thiz.blockManager = thiz.createManager(BlockManager);
+                    thiz.blockManager.init();
 
-                var nodeServices = settings.NODE_SERVICES;
-                if(nodeServices){
-                    var url = location.href;
-                    var parts = utils.parse_url(url);
-                    nodeServices[0].host = parts.host;
-                    if(nodeServices[0].info){
-                        nodeServices[0].info.host='http://'+parts.host;
-                    }
-                }
-
-                thiz.nodeServiceManager = thiz.createManager(NodeServiceManager, null, {
-                    serviceUrl: settings.rpcUrl,
-                    singleton: true,
-                    services:settings.NODE_SERVICES
-                });
-                thiz.nodeServiceManager.init();
-
-                thiz.driverManager = thiz.createManager(DriverManager, null, {
+                    thiz.fileManager = thiz.createManager(FileManager, settings.xFileConfig, {
                         serviceUrl: settings.rpcUrl,
                         singleton: true
+                    });
+                    thiz.fileManager.init();
+
+
+                    thiz.resourceManager = thiz.createManager(ResourceManager, settings.xFileConfig, {
+                        serviceUrl: settings.rpcUrl,
+                        singleton: true
+                    });
+                    thiz.resourceManager.init();
+
+                    var nodeServices = settings.NODE_SERVICES;
+                    if(nodeServices){
+                        var url = location.href;
+                        var parts = utils.parse_url(url);
+                        nodeServices[0].host = parts.host;
+                        if(nodeServices[0].info){
+                            nodeServices[0].info.host='http://'+parts.host;
+                        }
                     }
-                );
-                thiz.driverManager.init();
 
-                try {
-                    thiz.driverManager.ls('system_drivers').then(function () {
-                        thiz.driverManager.ls('user_drivers').then(function () {
-                            debugBoot && console.log('Checkpoint 7.1 drivers loaded');
-                            thiz.deviceManager = thiz.createManager(DeviceManager, null, {
-                                    serviceUrl: settings.rpcUrl,
-                                    singleton: true
-                                }
-                            );
-                            thiz.deviceManager.init();
-                            thiz.deviceManager.ls('system_devices').then(function () {
-                                thiz.deviceManager.ls('user_devices').then(function () {
-                                    debugBoot && console.log('Checkpoint 7.1.1 devices loaded');
-                                    thiz.onReady();
+                    thiz.nodeServiceManager = thiz.createManager(NodeServiceManager, null, {
+                        serviceUrl: settings.rpcUrl,
+                        singleton: true,
+                        services:settings.NODE_SERVICES
+                    });
+                    thiz.nodeServiceManager.init();
+
+                    thiz.driverManager = thiz.createManager(DriverManager, null, {
+                            serviceUrl: settings.rpcUrl,
+                            singleton: true
+                        }
+                    );
+                    thiz.driverManager.init();
+
+                    try {
+                        thiz.driverManager.ls('system_drivers').then(function () {
+                            thiz.driverManager.ls('user_drivers').then(function () {
+                                debugBoot && console.log('Checkpoint 7.1 drivers loaded');
+                                thiz.deviceManager = thiz.createManager(DeviceManager, null, {
+                                        serviceUrl: settings.rpcUrl,
+                                        singleton: true
+                                    }
+                                );
+                                thiz.deviceManager.init();
+                                thiz.deviceManager.ls('system_devices').then(function () {
+                                    thiz.deviceManager.ls('user_devices').then(function () {
+                                        debugBoot && console.log('Checkpoint 7.1.1 devices loaded');
+                                        thiz.onReady();
+                                    });
+
                                 });
-
                             });
                         });
-                    });
+                        Notifier.publish('onContextReady',thiz);
+                    } catch (e) {
+                        logError(e);
+                    }
+                });
+            }
 
-
-                    Notifier.publish('onContextReady',thiz);
-
-                } catch (e) {
-                    logError(e);
-                }
-            });
-
+            if(!this.isVE()){
+                this.loadAppModule(settings.item).then(function(){
+                    ready();
+                })
+            }else{
+                ready();
+            }
 
         },
         mergeFunctions: function (target, source) {
@@ -31118,7 +31194,6 @@ define('xapp/manager/Context',[
 
         },
         onModuleUpdated: function (evt) {
-
             var _obj = dojo.getObject(evt.moduleClass);
 
             if (_obj && _obj.prototype) {
@@ -31152,11 +31227,25 @@ define('xapp/manager/Context',[
             this.pluginManager.init();
             this.application.init();
         },
-        constructManagers: function () {
+        constructManagers: function (settings) {
+
             this.pluginManager = this.createManager(PluginManager);
             this.application = this.createManager(Application);
             Instance = this;
             var self = this;
+            if(settings){
+
+                this.settings = settings;
+                if(settings.delegate){
+                    this.delegate = settings.delegate;
+                }
+            }
+
+
+            if(this.isVE() && settings.item){
+                this.loadAppModule(settings.item);
+            }
+
         },
         initVe:function(){
             this.notifier = Notifier;
@@ -37804,8 +37893,6 @@ define('xblox/model/logic/SwitchBlock',[
                         anyCase = true;
                         this.addToEnd( ret , caseret);
                         break;
-                    }else{
-                        /*this.onFailed(block,settings);*/
                     }
                 }
                 if(this._stopped){
@@ -37817,14 +37904,11 @@ define('xblox/model/logic/SwitchBlock',[
                 for(var n = 0; n < this.items.length ; n++)
                 {
                     var block = this.items[n];
-
-                    if ( !(block.declaredClass=='xblox.model.logic.CaseBlock') )
-                    {
+                    if ( !(block.declaredClass=='xblox.model.logic.CaseBlock') ){
                         this.addToEnd( ret , block.solve(scope,settings) );
                     }
                 }
             }
-
             return ret;
         },
         init:function(){
@@ -37838,74 +37922,45 @@ define('xblox/model/logic/SwitchBlock',[
         getChildren:function(parent){
             return this.items;
         },
-        postCreate:function(){
-            /*
-            this.add(CaseBlock,{
-                comparator : "==",
-                expression : "'ON'",
-                group:null
-            });
-
-            this.add(CaseBlock,{
-                comparator : "==",
-                expression : "'Standby'",
-                group:null
-            });
-            */
-
-        },
         stop:function(){
             this._stopped = true;
         },
         runAction:function(action){
-
-            var store = this.scope.blockStore;
-
-            if(action.command==='New/Case'){
+            var command = action.command;
+            if(command==='New/Case' || action.command==='New/Default'){
+                var store = this.scope.blockStore;
                 var dfd = new Deferred();
-                var newBlock = this.add(CaseBlock,{
-                    comparator : "==",
-                    expression : "on",
-                    group:null
-                });
+                var newBlock = null;
 
-                var defaultDfdArgs = {
+                switch (command){
+                    case 'New/Case':{
+                        newBlock = this.add(CaseBlock,{
+                            comparator : "==",
+                            expression : "on",
+                            group:null
+                        });
+                        break;
+                    }
+                    case 'New/Default':{
+                        newBlock = this.add(DefaultBlock,{
+                            group:null
+                        });
+                        break;
+                    }
+                }
+
+                dfd.resolve({
                     select: [newBlock],
                     focus: true,
                     append: false
-                };
-                dfd.resolve(defaultDfdArgs);
-                newBlock.refresh();
-
-                store._emit('added',{
-                    target:newBlock
                 });
-                
-                return dfd;
-            }
-
-            if(action.command==='New/Default'){
-                var dfd = new Deferred();
-                var newBlock = this.add(DefaultBlock,{
-                    group:null
-                });
-
-                var defaultDfdArgs = {
-                    select: [newBlock],
-                    focus: true,
-                    append: false
-                };
-                dfd.resolve(defaultDfdArgs);
                 newBlock.refresh();
                 store._emit('added',{
                     target:newBlock
                 });
-                return dfd;
             }
-
         },
-        getActions:function(){
-
+        getActions:function(permissions,owner){
             var result = [this.createAction({
                 label: 'New Case',
                 command: 'New/Case',
@@ -37919,10 +37974,7 @@ define('xblox/model/logic/SwitchBlock',[
                 }
             })];
 
-            if(!_.find(this.items,{
-                    declaredClass:'xblox.model.logic.DefaultBlock'
-                })){
-
+            if(!_.find(this.items,{ declaredClass:'xblox.model.logic.DefaultBlock'})){
                 result.push(this.createAction({
                     label: 'Default',
                     command: 'New/Default',
@@ -37935,10 +37987,7 @@ define('xblox/model/logic/SwitchBlock',[
                         quick:false
                     }
                 }));
-
-
             }
-
             return result;
         }
     });
@@ -38074,8 +38123,8 @@ define('xblox/model/logic/IfBlock',[
         mayHaveChildren:function(parent){
             return (this.items !==null && this.items.length) ||
                 (this.elseIfBlocks !==null && this.elseIfBlocks.length) ||
-                (this.consequent!=null && this.consequent.length>0) ||
-                (this.alternate!=null && this.alternate.length>0);
+                (this.consequent!=null && this.consequent.length) ||
+                (this.alternate!=null && this.alternate.length);
 
         },
 
@@ -38086,11 +38135,9 @@ define('xblox/model/logic/IfBlock',[
          */
         getChildren:function(parent){
             var result=[];
-
             if(this.consequent){
                 result=result.concat(this.consequent);
             }
-
             if(this.elseIfBlocks){
                 result=result.concat(this.elseIfBlocks);
             }
@@ -38117,9 +38164,9 @@ define('xblox/model/logic/IfBlock',[
         solve:function(scope,settings) {
             // 1. Check the condition
             var solvedCondition = this._checkCondition(scope);
-            //console.log('elseIfBlocks ',this.alternate);
             var elseIfBlocks = this.getElseIfBlocks();
             var others = this.childrenByNotClass(ElseIfBlock);
+            var result = null;
 
             others = others.filter(function(block){
                return !block.isInstanceOf(Statement);
@@ -38128,7 +38175,6 @@ define('xblox/model/logic/IfBlock',[
             // 2. TRUE? => run consequent
             if (solvedCondition==true || solvedCondition > 0) {
                 this.onSuccess(this,settings);
-                var result = null;
                 if(others && others.length ){
                     for(var i = 0;i <others.length ; i++){
                         result = others[i].solve(scope,settings);
@@ -38138,9 +38184,7 @@ define('xblox/model/logic/IfBlock',[
             } else {
                 // 3. FALSE?
                 var anyElseIf = false;
-
                 this.onFailed(this,settings);
-
                 if (elseIfBlocks)
                 {
                     // 4. ---- check all elseIf blocks. If any of the elseIf conditions is true, run the elseIf consequent and
@@ -38158,11 +38202,9 @@ define('xblox/model/logic/IfBlock',[
                 }
 
                 var alternate = this.childrenByClass(Statement);
-
                 // 5. ---- If none of the ElseIf blocks has been run, run the alternate
-                if (alternate.length>0 && (!anyElseIf))
-                {
-                    var result = null;
+                if (alternate.length > 0 && (!anyElseIf)){
+                    result = null;
                     for(var i = 0;i <alternate.length ; i++){
                         result = alternate[i].solve(scope,settings);
                     }
@@ -38178,7 +38220,6 @@ define('xblox/model/logic/IfBlock',[
         empty:function(what){
             this._empty(this.alternate);
             this._empty(this.consequent);
-            this._empty(this.items);
             this._empty(this.elseIfBlocks);
         },
         /**
@@ -38212,7 +38253,6 @@ define('xblox/model/logic/IfBlock',[
          * Default override, prepare all variables
          */
         init:function(){
-
             this.alternate = this.alternate||[];
             this.consequent = this.consequent||[];
             this.elseIfBlocks = this.elseIfBlocks||[];
@@ -38232,7 +38272,6 @@ define('xblox/model/logic/IfBlock',[
             //var store = this.scope.blockStore;
         },
         getFields:function(){
-
             var thiz=this;
             var fields = this.inherited(arguments) || this.getDefaultFields();
             fields.push(
@@ -38247,7 +38286,6 @@ define('xblox/model/logic/IfBlock',[
                     }
                 })
             );
-
             return fields;
         },
         postCreate:function(){
@@ -38257,19 +38295,15 @@ define('xblox/model/logic/IfBlock',[
             this._postCreated = true;
             var store = this.scope.blockStore;
         },
-        toCode:function(lang,params){
-        },
+        toCode:function(lang,params){},
         getElseIfBlocks:function(){
             return this.childrenByClass(ElseIfBlock);
         },
         runAction:function(action){
             var store = this.scope.blockStore;
             var command = action.command;
-
             if(command==='New/Else' || command ==='New/Else If'){
-
                 var newBlockClass = command ==='New/Else If' ? ElseIfBlock : Statement;
-
                 var args = utils.mixin({
                     name:'else',
                     items:[],
@@ -38283,16 +38317,11 @@ define('xblox/model/logic/IfBlock',[
                     canEdit:function(){
                         return false;
                     }
-                }, newBlockClass == ElseIfBlock ? {
-                    name:'else if',
-                    dstField:'elseIfBlocks'
-                } : {
-                    name:'else',
-                    dstField:'alternate'
-                } );
+                }, newBlockClass == ElseIfBlock ? { name:'else if', dstField:'elseIfBlocks' } : {
+                    name:'else', dstField:'alternate'}
+                );
 
                 var newBlock = this.add(newBlockClass,args, newBlockClass == Statement ? 'alternate' : 'elseIfBlocks');
-
                 var defaultDfdArgs = {
                     select: [newBlock],
                     focus: true,
@@ -38300,25 +38329,17 @@ define('xblox/model/logic/IfBlock',[
                     expand:true,
                     delay:10
                 };
-
                 var dfd = new Deferred();
-                //this.items.push(newBlock);
                 store._emit('added',{
                     target:newBlock
                 });
-
-                
                 dfd.resolve(defaultDfdArgs);
-
                 newBlock.refresh();
                 return dfd;
-
             }
         },
         getActions:function(){
-
             var result = [];
-
             if(this.alternate.length==0) {
                 result.push(this.createAction({
                     label: 'Else',
@@ -38332,7 +38353,6 @@ define('xblox/model/logic/IfBlock',[
                     }
                 }));
             }
-
             result.push(this.createAction({
                 label: 'Else If',
                 command: 'New/Else If',
@@ -38344,7 +38364,6 @@ define('xblox/model/logic/IfBlock',[
                     custom: true
                 }
             }));
-
             return result;
         }
     });
@@ -46929,20 +46948,14 @@ define('xblox/model/Scope',[
                 if(!before){
                     this.getBlockStore().putSync(source);
                 }
-
                 return true;
-
             //we move from root to lower item
             }else if( !source.parentId && target.parentId && add==false){
                 source.group = target.group;
-                if(target){
-
-                }
 
             //we move from root to into root item
             }else if( !source.parentId && !target.parentId && add){
 
-                console.error('we are adding an item into root root item');
                 if(target.canAdd && target.canAdd()){
                     source.group=null;
                     target.add(source,null,null);
@@ -46953,7 +46966,6 @@ define('xblox/model/Scope',[
             }else if( source.parentId && target.parentId && add==false && source.parentId === target.parentId){
                 var parent = this.getBlockById(source.parentId);
                 if(!parent){
-                    console.error('     couldnt find parent ');
                     return false;
                 }
 
@@ -46971,18 +46983,13 @@ define('xblox/model/Scope',[
                 // we move within the different parents
             }else if( source.parentId && target.parentId && add==false && source.parentId !== target.parentId){                console.log('same parent!');
 
-                console.error('we move within the different parents');
-                //collect data
-
                 var sourceParent = this.getBlockById(source.parentId);
                 if(!sourceParent){
-                    console.error('     couldnt find source parent ');
                     return false;
                 }
 
                 var targetParent = this.getBlockById(target.parentId);
                 if(!targetParent){
-                    console.error('     couldnt find target parent ');
                     return false;
                 }
 
@@ -46992,7 +46999,6 @@ define('xblox/model/Scope',[
                     sourceParent.removeBlock(source,false);
                     targetParent.add(source,null,null);
                 }else{
-                    console.error('cant reparent');
                     return false;
                 }
 
@@ -57926,7 +57932,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     // debug device server connectivity
     var debugDevice = false;
     var debugStrangers = false;
-    var debugConnect = true;
+    var debugConnect = false;
     var debugServerCommands = false;
     var debugCreateInstance = false;
     var debugServerMessages = false;
@@ -58172,7 +58178,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     // "235eb680-cb87-11e3-9c1a-....ab5_Marantz/Marantz.20.meta.json"
                     var scopeId = driverId + '_' + hash + '_' + device.path;
                     if (!driver.blox || !driver.blox.blocks) {
-                        debugConnect && console.error('Attention : INVALID driver', device.toString());
+                        debugConnect && console.warn('Attention : INVALID driver, have no blocks', deviceInfo.toString());
                         driver.blox = {
                             blocks: []
                         }
@@ -68805,7 +68811,6 @@ define('xapp/manager/Application',[
         onReady:function(){
             
             debugBootstrap && console.log('   Checkpoint 5.3 managers ready');
-            
             this.publish(types.EVENTS.ON_APP_READY,{
                 context:this.ctx,
                 application:this,
@@ -78684,8 +78689,6 @@ define('xblox/CSSState',[
             $(widget).removeClass($(widget).data('_lastCSSClass'));
             $(widget).removeClass(cssClass);
 
-            console.log('set css state');
-            
             if(!cssClass) {
                 $(widget).addClass(_uniqueId);
                 $(widget).data('_lastCSSState', _uniqueId);
