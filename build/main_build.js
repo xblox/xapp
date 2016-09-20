@@ -30991,7 +30991,7 @@ define('xapp/manager/Context',[
             debugBoot && console.log('load default app.js ' + mid);
 
             require.config({
-                urlArgs:"bust=" +  (new Date()).getTime()
+                //urlArgs:"bust=" +  (new Date()).getTime()
             });
 
             try{
@@ -57884,6 +57884,9 @@ define('xcf/manager/DeviceManager_DeviceServer',[
              Deferred,ReloadMixin,EventedMixin,require,Variable,_console) {
 
 
+
+    
+
     var isServer = has('host-node'),
         isIDE = has('xcf-ui'),
         runDrivers = true;
@@ -58087,6 +58090,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 isRequireJS = !require.cache,
                 packageUrl = require.toUrl(driverPrefix);
 
+            packageUrl = utils.removeURLParameter(packageUrl,'bust');
 
             if(isRequireJS){
                 packageUrl = packageUrl.replace('/.js','/');

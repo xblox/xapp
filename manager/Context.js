@@ -526,7 +526,7 @@ define([
             debugBoot && console.log('load default app.js ' + mid);
 
             require.config({
-                urlArgs:"bust=" +  (new Date()).getTime()
+                //urlArgs:"bust=" +  (new Date()).getTime()
             });
 
             try{
