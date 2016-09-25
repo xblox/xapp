@@ -10,7 +10,6 @@ define([
     return dcl(null,{
         declaredClass:'xapp/boot',
         start:function(settings,Context){
-            console.error('start boot');
             var _require = require;
             var _ctx=_require('xapp/manager/Context');
             try {

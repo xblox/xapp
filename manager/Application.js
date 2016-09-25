@@ -52,6 +52,42 @@ define([
                 src:url
             }, query('head')[0]);*/
         },
+        publishVariables:function(){
+
+            var deviceManager = this.ctx.getDeviceManager();
+            if(deviceManager){
+                var deviceInstances = deviceManager.deviceInstances;
+                for (var i in deviceInstances) {
+
+                    var instance = deviceInstances[i];
+                    var instanceOptions = instance.options;
+                    if (!instanceOptions) {
+                        continue;
+                    }
+
+                    if(instance.blockScope){
+
+                        var basicVariables = instance.blockScope.getVariables({
+                            group: types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES
+                        });
+
+                        var out = [];
+                        for (var i = 0; i < basicVariables.length; i++) {
+                            var variable = basicVariables[i];
+
+                            this.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, {
+                                item: variable,
+                                scope: instance.blockScope,
+                                owner: this,
+                                save: false,                         //dont save it
+                                source: types.MESSAGE_SOURCE.DEVICE,  //for prioritizing
+                                refresh:true
+                            });
+                        }
+                    }
+                }
+            }
+        },
         onReady:function(){
             
             debugBootstrap && console.log('   Checkpoint 5.3 managers ready');
@@ -60,7 +96,6 @@ define([
                 application:this,
                 delegate:this.delegate
             });
-
         },
         onXBloxReady:function() {
             var _re = require,

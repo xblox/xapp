@@ -80,6 +80,10 @@ define([
             return true;
         });
 
+        dHas.add('debug', function () {
+            return true;
+        });
+
         bootx({
             delegate:null
         },Deferred);

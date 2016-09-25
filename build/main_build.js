@@ -71,6 +71,7 @@ require.config({"config":{"delite/theme":{"layersMap":{"delite/themes/{{theme}}/
     "deliteful/list/List",
     "dojo/selector/_loader",
     "xdeliteful/TabBar",
+    "xdeliteful/MediaPlayer",
     "deliteful/Accordion",
     "requirejs-domready/domReady"
 ], function(Button,RunScript,register){
@@ -392,7 +393,6 @@ define('deliteful/Accordion',[
 			header.setAttribute("role", "tab");
 			header.setAttribute("aria-expanded", "false");
 			header.setAttribute("aria-selected", "false");
-			header.setAttribute("aria-controls", panel.id);
 			header.on("click", this._headerClickHandler.bind(this));
 			header.placeAt(panel, "before");
 
@@ -596,6 +596,11 @@ define('deliteful/Accordion',[
 				widget.headerNode.setAttribute("aria-selected", "" + widget.open);
 				widget.headerNode.setAttribute("aria-expanded", "" + widget.open);
 				widget.setAttribute("aria-hidden", "" + !widget.open);
+				if (params.hide) {
+					widget.headerNode.removeAttribute("aria-controls");
+				} else {
+					widget.headerNode.setAttribute("aria-controls", widget.id);
+				}
 			}
 			return Promise.all(promises);
 		},
@@ -756,14 +761,13 @@ define('deliteful/Accordion',[
 ;
 define( 'jquery/src/attributes/classes',[
 	"../core",
-	"../var/rnotwhite",
+	"../core/stripAndCollapse",
+	"../var/rnothtmlwhite",
 	"../data/var/dataPriv",
 	"../core/init"
-], function( jQuery, rnotwhite, dataPriv ) {
+], function( jQuery, stripAndCollapse, rnothtmlwhite, dataPriv ) {
 
 "use strict";
-
-var rclass = /[\t\r\n\f]/g;
 
 function getClass( elem ) {
 	return elem.getAttribute && elem.getAttribute( "class" ) || "";
@@ -781,12 +785,11 @@ jQuery.fn.extend( {
 		}
 
 		if ( typeof value === "string" && value ) {
-			classes = value.match( rnotwhite ) || [];
+			classes = value.match( rnothtmlwhite ) || [];
 
 			while ( ( elem = this[ i++ ] ) ) {
 				curValue = getClass( elem );
-				cur = elem.nodeType === 1 &&
-					( " " + curValue + " " ).replace( rclass, " " );
+				cur = elem.nodeType === 1 && ( " " + stripAndCollapse( curValue ) + " " );
 
 				if ( cur ) {
 					j = 0;
@@ -797,7 +800,7 @@ jQuery.fn.extend( {
 					}
 
 					// Only assign if different to avoid unneeded rendering.
-					finalValue = jQuery.trim( cur );
+					finalValue = stripAndCollapse( cur );
 					if ( curValue !== finalValue ) {
 						elem.setAttribute( "class", finalValue );
 					}
@@ -823,14 +826,13 @@ jQuery.fn.extend( {
 		}
 
 		if ( typeof value === "string" && value ) {
-			classes = value.match( rnotwhite ) || [];
+			classes = value.match( rnothtmlwhite ) || [];
 
 			while ( ( elem = this[ i++ ] ) ) {
 				curValue = getClass( elem );
 
 				// This expression is here for better compressibility (see addClass)
-				cur = elem.nodeType === 1 &&
-					( " " + curValue + " " ).replace( rclass, " " );
+				cur = elem.nodeType === 1 && ( " " + stripAndCollapse( curValue ) + " " );
 
 				if ( cur ) {
 					j = 0;
@@ -843,7 +845,7 @@ jQuery.fn.extend( {
 					}
 
 					// Only assign if different to avoid unneeded rendering.
-					finalValue = jQuery.trim( cur );
+					finalValue = stripAndCollapse( cur );
 					if ( curValue !== finalValue ) {
 						elem.setAttribute( "class", finalValue );
 					}
@@ -878,7 +880,7 @@ jQuery.fn.extend( {
 				// Toggle individual class names
 				i = 0;
 				self = jQuery( this );
-				classNames = value.match( rnotwhite ) || [];
+				classNames = value.match( rnothtmlwhite ) || [];
 
 				while ( ( className = classNames[ i++ ] ) ) {
 
@@ -921,10 +923,8 @@ jQuery.fn.extend( {
 		className = " " + selector + " ";
 		while ( ( elem = this[ i++ ] ) ) {
 			if ( elem.nodeType === 1 &&
-				( " " + getClass( elem ) + " " ).replace( rclass, " " )
-					.indexOf( className ) > -1
-			) {
-				return true;
+				( " " + stripAndCollapse( getClass( elem ) ) + " " ).indexOf( className ) > -1 ) {
+					return true;
 			}
 		}
 
@@ -3512,9 +3512,9 @@ define( 'jquery/src/data/var/dataPriv',[
 ;
 define( 'jquery/src/data/Data',[
 	"../core",
-	"../var/rnotwhite",
+	"../var/rnothtmlwhite",
 	"./var/acceptData"
-], function( jQuery, rnotwhite, acceptData ) {
+], function( jQuery, rnothtmlwhite, acceptData ) {
 
 "use strict";
 
@@ -3639,7 +3639,7 @@ Data.prototype = {
 				// Otherwise, create an array by matching non-whitespace
 				key = key in cache ?
 					[ key ] :
-					( key.match( rnotwhite ) || [] );
+					( key.match( rnothtmlwhite ) || [] );
 			}
 
 			i = key.length;
@@ -3692,10 +3692,28 @@ return function( owner ) {
 
 } );
 ;
-define( 'jquery/src/var/rnotwhite',[],function() {
+define( 'jquery/src/var/rnothtmlwhite',[],function() {
 	"use strict";
 
-	return ( /\S+/g );
+	// Only count HTML whitespace
+	// Other whitespace should count in values
+	// https://html.spec.whatwg.org/multipage/infrastructure.html#space-character
+	return ( /[^\x20\t\r\n\f]+/g );
+} );
+;
+define( 'jquery/src/core/stripAndCollapse',[
+	"../var/rnothtmlwhite"
+], function( rnothtmlwhite ) {
+	"use strict";
+
+	// Strip and collapse whitespace according to HTML spec
+	// https://html.spec.whatwg.org/multipage/infrastructure.html#strip-and-collapse-whitespace
+	function stripAndCollapse( value ) {
+		var tokens = value.match( rnothtmlwhite ) || [];
+		return tokens.join( " " );
+	}
+
+	return stripAndCollapse;
 } );
 ;
 /* global Symbol */
@@ -4691,7 +4709,6 @@ define('delite/KeyNav',[
 	"requirejs-dplugins/jquery!attributes/classes",	// addClass(), removeClass()
 	"./features",
 	"./Widget",
-	"./activationTracker",	// delite-deactivated event when focus removed from KeyNav and logical descendants
 	"dpointer/events"		// so can just monitor for "pointerdown"
 ], function (dcl, $, has, Widget) {
 
@@ -4848,31 +4865,9 @@ define('delite/KeyNav',[
 			this.on("keypress", this._keynavKeyPressHandler.bind(this), this.keyNavContainerNode);
 			this.on("keydown", this._keynavKeyDownHandler.bind(this), this.keyNavContainerNode);
 
-			// Navigation occurs on pointerdown, to match behavior of native elements.
-			// Normally this handler isn't needed as it's redundant w/the focusin event.
-			this.on("pointerdown", function (evt) {
-				var target = this._getTargetElement(evt);
-				if (target !== this) {
-					this._descendantNavigateHandler(target, evt);
-				}
-			}.bind(this), this.keyNavContainerNode);
-
-			this.on("delite-deactivated", function () {
-				if (this.focusDescendants) {
-					this._keynavDeactivatedHandler();
-				}
-			}.bind(this));
-
-			this.on("focusin", function (evt) {
-				if (this.focusDescendants) {
-					var target = this._getTargetElement(evt);
-					if (target === this) {
-						this._keynavFocusHandler(evt);
-					} else {
-						this._descendantNavigateHandler(target, evt);
-					}
-				}
-			}.bind(this), this.keyNavContainerNode);
+			this.on("pointerdown", this.pointerdownHandler.bind(this), this.keyNavContainerNode);
+			this.on("focusin", this.focusinHandler.bind(this), this.keyNavContainerNode);
+			this.on("focusout", this.focusoutHandler.bind(this), this.keyNavContainerNode);
 
 			// Setup function to check which child nodes are navigable.
 			if (typeof this.descendantSelector === "string") {
@@ -4892,6 +4887,88 @@ define('delite/KeyNav',[
 			var container = this.keyNavContainerNode;
 			if (this.focusDescendants && !container.hasAttribute("tabindex")) {
 				container.tabIndex = "0";
+			}
+		},
+
+		/**
+		 * Called on pointerdown event (on container or child of container).
+		 * Navigation occurs on pointerdown, to match behavior of native elements.
+		 * Normally this handler isn't needed as it's redundant w/the focusin event.
+		 */
+		pointerdownHandler: function (evt) {
+			var target = this._getTargetElement(evt);
+			if (target && target !== this) {
+				this._descendantNavigateHandler(target, evt);
+			}
+		},
+
+		/**
+		 * Called on focus of container or child of container.
+		 */
+		focusinHandler: function (evt) {
+			var container = this.keyNavContainerNode;
+			if (this.focusDescendants) {
+				if (evt.target === this || evt.target === container) {
+					// Ignore spurious focus event:
+					// On IE, clicking the scrollbar of a select dropdown moves focus from the focused child item to me
+					if (!this.navigatedDescendant) {
+						this.focus();
+					}
+				} else {
+					// When container's descendant gets focus,
+					// remove the container's tabIndex so that tab or shift-tab
+					// will go to the fields after/before the container, rather than the container itself.
+					// Also avoids Safari and Firefox problems with nested focusable elements.
+					if (container.hasAttribute("tabindex")) {
+						this._savedTabIndex = container.tabIndex;
+						container.removeAttribute("tabindex");
+					}
+
+					// Also adjust tabIndex for navigable descendant (i.e. one that matches descendantSelector):
+					// 1. If the navigable descendant itself is focused, then set tabIndex=0 so that tab and
+					//    shift-tab work right.
+					// 2. If a descendant of the navigable descendant is focused, the clear the tabIndex, to
+					//    prevented unwanted tab stop and to avoid Safari/Firefox nested focus problems.
+					// When focus is moved outside the navigable descendant, focusoutHandler() resets its
+					// tabIndex to -1.
+					var navigatedDescendant = this._getTargetElement(evt);
+					if (navigatedDescendant !== this) {
+						if (evt.target === navigatedDescendant) {
+							navigatedDescendant.tabIndex = this._savedTabIndex;
+						} else {
+							navigatedDescendant.removeAttribute("tabindex");
+						}
+						this._descendantNavigateHandler(navigatedDescendant, evt);
+					}
+				}
+			}
+		},
+
+		/**
+		 * Called on blur of container or child of container.
+		 */
+		focusoutHandler: function (evt) {
+			if (this.focusDescendants) {
+				if (this.navigatedDescendant) {
+					if (this.navigatedDescendant.contains(evt.relatedTarget)) {
+						// If focus has moved inside of the navigable descendant, then clear the
+						// navigable descendant's tabindex, to prevent extraneous tab stop and to
+						// avoid Safari and Firefox problem with nested focusable elements.
+						this.navigatedDescendant.removeAttribute("tabindex");
+					} else if (this.navigatedDescendant !== evt.relatedTarget) {
+						// If focus has moved outside of the navigable descendant, then set its
+						// tabIndex back to -1, for future time when navigable descendant is clicked.
+						this.navigatedDescendant.tabIndex = "-1";
+						$(this.navigatedDescendant).removeClass("d-active-descendant");
+						this.navigatedDescendant = null;
+					}
+				}
+
+				// If focus has moved outside of container, then restore container's tabindex.
+				if ("_savedTabIndex" in this && !this.keyNavContainerNode.contains(evt.relatedTarget)) {
+					this.keyNavContainerNode.setAttribute("tabindex", this._savedTabIndex);
+					delete this._savedTabIndex;
+				}
 			}
 		},
 
@@ -4977,55 +5054,6 @@ define('delite/KeyNav',[
 		},
 
 		/**
-		 * Handler for when the container itself gets focus.
-		 * Called only when `this.focusDescendants` is true.
-		 * Initially the container itself has a tabIndex, but when it gets focus, switch focus to first child.
-		 *
-		 * @param {Event} evt
-		 * @private
-		 */
-		_keynavFocusHandler: function () {
-			// Note that we can't use the delite-activated event because switching focus from that
-			// event handler confuses the activationTracker.js code (because it recursively triggers the
-			// delite-activated event).  Also, delite-activated would fire when focus went
-			// directly to a child widget due to mouse click.
-
-			// Ignore spurious focus event:
-			// On IE, clicking the scrollbar of a select dropdown moves focus from the focused child item to me
-			if (this.navigatedDescendant) {
-				return;
-			}
-
-			// When the container gets focus by being tabbed into, or a descendant gets focus by being clicked,
-			// remove the container's tabIndex so that tab or shift-tab
-			// will go to the fields after/before the container, rather than the container itself
-			this._savedTabIndex = this.keyNavContainerNode.tabIndex;
-			this.keyNavContainerNode.removeAttribute("tabindex");
-
-			this.focus();
-		},
-
-		/**
-		 * Handler for when focus is moved away the container, and its descendant (popup) widgets.
-		 * Called only when `this.focusDescendants` is true.
-		 * @private
-		 */
-		_keynavDeactivatedHandler: function () {
-			// Restore the container's tabIndex so that user can tab to it again.
-			// Note: using _keynavDeactivatedHandler so that doesn't execute when focus is shifted
-			// to one of my child widgets (typically a popup)
-
-			// TODO: Consider changing this to blur whenever the container blurs, to be truthful that there is
-			// no focused child at that time.
-			this.keyNavContainerNode.setAttribute("tabindex", this._savedTabIndex);
-			delete this._savedTabIndex;
-			if (this.navigatedDescendant) {
-				this.navigatedDescendant.tabIndex = "-1";
-				this.navigatedDescendant = null;
-			}
-		},
-
-		/**
 		 * Called when a child is navigated to, either by user clicking it, or programatically by arrow key handling
 		 * code.  It marks that the specified child is the navigated one.
 		 * @param {Element} child
@@ -5036,24 +5064,9 @@ define('delite/KeyNav',[
 		 */
 		_descendantNavigateHandler: function (child, triggerEvent) {
 			if (child && child !== this.navigatedDescendant) {
-				if (this.focusDescendants) {
-					if (this.navigatedDescendant && !this.navigatedDescendant._destroyed) {
-						// mark that the previously focusable node is no longer focusable
-						this.navigatedDescendant.tabIndex = "-1";
-					}
-
-					// If container still has tabIndex setting then remove it; instead we'll set tabIndex on child
-					var container = this.keyNavContainerNode;
-					if (!("_savedTabIndex" in this)) {
-						this._savedTabIndex = container.tabIndex;
-						container.removeAttribute("tabindex");
-					}
-
-					child.tabIndex = this._savedTabIndex;
-				}
-
 				if (this.navigatedDescendant) {
 					$(this.navigatedDescendant).removeClass("d-active-descendant");
+					this.navigatedDescendant.tabIndex = "-1";
 				}
 
 				this.emit("keynav-child-navigated", {
@@ -5312,299 +5325,6 @@ define('delite/KeyNav',[
 	});
 });
 ;
-/**
- * Tracks which widgets are currently "active".
- * A widget is considered active if it or a descendant widget has focus,
- * or if a non-focusable node of this widget or a descendant was the most recent node
- * to get a touchstart/mousedown/pointerdown event.
- *
- * Emits non-bubbling `delite-activated` and `delite-deactivated` events on widgets
- * as they become active, or stop being active, as defined above.
- *
- * Call `activationTracker.on("active-widget-stack", callback)` to track the stack of currently active widgets.
- *
- * Call `activationTracker.on("deactivated", func)` or `activationTracker.on("activated", ...)` to monitor when
- * when widgets become active/inactive.
- *
- * @module delite/activationTracker
- * */
-define('delite/activationTracker',[
-	"dcl/advise",
-	"dcl/dcl",
-	"requirejs-dplugins/jquery!attributes/classes",	// hasClass()
-	"decor/Evented",
-	"dpointer/events",		// so can just monitor for "pointerdown"
-	"requirejs-domready/domReady!"
-], function (advise, dcl, $, Evented) {
-
-	// Time of the last touch/mouse and focusin events
-	var lastPointerDownTime;
-	var lastFocusinTime;
-
-	// Last node that got pointerdown or focusin event, and the time it happened.
-	var lastPointerDownOrFocusInNode;
-	var lastPointerDownOrFocusInTime;
-
-	var ActivationTracker = dcl(Evented, /** @lends module:delite/activationTracker */ {
-		/**
-		 * List of currently active widgets (focused widget and its ancestors).
-		 * @property {Element[]} activeStack
-		 */
-		activeStack: [],
-
-		/**
-		 * Registers listeners on the specified iframe so that any pointerdown
-		 * or focus event on that iframe (or anything in it) is reported
-		 * as a focus/pointerdown event on the `<iframe>` itself.
-		 *
-		 * In dijit this was only used by editor; perhaps it should be removed.
-		 *
-		 * @param {HTMLIframeElement} iframe
-		 * @returns {Object} Handle with `remove()` method to deregister.
-		 */
-		registerIframe: function (iframe) {
-			return this.registerWin(iframe.contentWindow, iframe);
-		},
-
-		/**
-		 * Registers listeners on the specified window (either the main
-		 * window or an iframe's window) to detect when the user has touched / mouse-downed /
-		 * focused somewhere.
-		 *
-		 * Users should call registerIframe() instead of this method.
-		 *
-		 * @param {Window} [targetWindow] - If specified this is the window associated with the iframe,
-		 *       i.e. iframe.contentWindow.
-		 * @param {Element} [effectiveNode] - If specified, report any focus events inside targetWindow as
-		 *       an event on effectiveNode, rather than on evt.target.
-		 * @returns {Object} Handle with `remove()` method to deregister.
-		 * @private
-		 */
-		registerWin: function (targetWindow, effectiveNode) {
-			// Listen for blur and focus events on targetWindow's document.
-			var _this = this,
-				doc = targetWindow.document,
-				body = doc && doc.body;
-
-			function pointerDownHandler(evt) {
-				// workaround weird IE bug where the click is on an orphaned node
-				// (first time clicking a Select/DropDownButton inside a TooltipDialog).
-				// actually, strangely this is happening on latest chrome too.
-				if (evt && evt.target && evt.target.parentNode == null) {
-					return;
-				}
-
-				lastPointerDownTime = (new Date()).getTime();
-
-				_this._pointerDownOrFocusHandler(effectiveNode || evt.target, "mouse");
-			}
-
-			function focusHandler(evt) {
-				// When you refocus the browser window, IE gives an event with an empty srcElement
-				if (!evt.target.tagName) {
-					return;
-				}
-
-				// IE reports that nodes like <body> have gotten focus, even though they don't have a
-				// tabindex setting.  Ignore those events.
-				var tag = evt.target.tagName.toLowerCase();
-				if (tag === "#document" || tag === "body") {
-					return;
-				}
-
-				_this._focusHandler(effectiveNode || evt.target);
-			}
-
-			function blurHandler(evt) {
-				_this._blurHandler(effectiveNode || evt.target);
-			}
-
-			if (body) {
-				// Listen for touches or mousedowns.
-				body.addEventListener("pointerdown", pointerDownHandler, true);
-				body.addEventListener("focus", focusHandler, true);	// need true since focus doesn't bubble
-				body.addEventListener("blur", blurHandler, true);	// need true since blur doesn't bubble
-
-				return {
-					remove: function () {
-						body.removeEventListener("pointerdown", pointerDownHandler, true);
-						body.removeEventListener("focus", focusHandler, true);
-						body.removeEventListener("blur", blurHandler, true);
-					}
-				};
-			}
-		},
-
-		/**
-		 * Called when focus leaves a node.
-		 * Usually ignored, _unless_ it *isn't* followed by touching another node,
-		 * which indicates that we tabbed off the last field on the page,
-		 * in which case every widget is marked inactive.
-		 * @param {Element} node
-		 * @private
-		 */
-		_blurHandler: function (node) { // jshint unused: vars
-			var now = (new Date()).getTime();
-
-			// IE9+ and chrome have a problem where focusout events come after the corresponding focusin event.
-			// For chrome problem see https://bugs.dojotoolkit.org/ticket/17668.
-			// IE problem happens when moving focus from the Editor's <iframe> to a normal DOMNode.
-			if (now < lastFocusinTime + 100) {
-				return;
-			}
-
-			// Unset timer to zero-out widget stack; we'll reset it below if appropriate.
-			if (this._clearActiveWidgetsTimer) {
-				clearTimeout(this._clearActiveWidgetsTimer);
-			}
-
-			if (now < lastPointerDownOrFocusInTime + 500) {
-				// This blur event is coming late (after the call to _pointerDownOrFocusHandler() rather than before.
-				// So let _pointerDownOrFocusHandler() handle setting the widget stack.
-				// See https://bugs.dojotoolkit.org/ticket/17668
-				return;
-			}
-
-			// If the blur event isn't followed (or preceded) by a focus or pointerdown event,
-			// mark all widgets as inactive.
-			this._clearActiveWidgetsTimer = setTimeout(function () {
-				delete this._clearActiveWidgetsTimer;
-				this._setStack([]);
-			}.bind(this), 0);
-		},
-
-		/**
-		 * Callback when node is focused or pointerdown'd.
-		 * @param {Element} node - The node.
-		 * @param {string} by - "mouse" if the focus/pointerdown was caused by a mouse down event.
-		 * @private
-		 */
-		_pointerDownOrFocusHandler: function (node, by) {
-			if (this._clearActiveWidgetsTimer) {
-				// forget the recent blur event
-				clearTimeout(this._clearActiveWidgetsTimer);
-				delete this._clearActiveWidgetsTimer;
-			}
-
-			// compute stack of active widgets (ex: ComboButton --> Menu --> MenuItem)
-			var newStack = [];
-			try {
-				while (node) {
-					if (node._popupParent) {
-						node = node._popupParent;
-					} else if (node.tagName && node.tagName.toLowerCase() === "body") {
-						// is this the root of the document or just the root of an iframe?
-						if (node === document.body) {
-							// node is the root of the main document
-							break;
-						}
-						// otherwise, find the iframe this node refers to (can't access it via parentNode,
-						// need to do this trick instead). window.frameElement is supported in IE/FF/Webkit
-						node = node.ownerDocument.defaultView.frameElement;
-					} else {
-						// if this node is the root node of a widget, then add widget id to stack,
-						// except ignore clicks on disabled widgets (actually focusing a disabled widget still works,
-						// to support MenuItem)
-						if (node.render && !(by === "mouse" && node.disabled)) {
-							newStack.unshift(node);
-						}
-						node = node.parentNode;
-					}
-				}
-			} catch (e) { /* squelch */
-			}
-
-			this._setStack(newStack, by);
-
-			// Keep track of most recent focusin or pointerdown event.
-			lastPointerDownOrFocusInTime = (new Date()).getTime();
-			lastPointerDownOrFocusInNode = node;
-		},
-
-		/**
-		 * Callback when node is focused.
-		 * @param {Element} node
-		 * @private
-		 */
-		_focusHandler: function (node) {
-			if (!node) {
-				return;
-			}
-
-			if (node.nodeType === 9) {
-				// Ignore focus events on the document itself.  This is here so that
-				// (for example) clicking the up/down arrows of a spinner
-				// (which don't get focus) won't cause that widget to blur. (FF issue)
-				return;
-			}
-
-			// Keep track of time of last focusin event.
-			lastFocusinTime = (new Date()).getTime();
-
-			// Also, if clicking a node causes its ancestor to be focused, ignore the focus event.
-			// Example in the activationTracker.html functional test on IE, where clicking the spinner buttons
-			// focuses the <fieldset> holding the spinner.
-			if ((new Date()).getTime() < lastPointerDownTime + 100 &&
-					node.contains(lastPointerDownOrFocusInNode.parentNode)) {
-				return;
-			}
-
-			// There was probably a blur event right before this event, but since we have a new focus,
-			// forget about the blur
-			if (this._clearFocusTimer) {
-				clearTimeout(this._clearFocusTimer);
-				delete this._clearFocusTimer;
-			}
-
-			this._pointerDownOrFocusHandler(node);
-		},
-
-		/**
-		 * The stack of active widgets has changed.  Send out appropriate events and records new stack.
-		 * @param {module:delite/Widget[]} newStack - Array of widgets, starting from the top (outermost) widget.
-		 * @param {string} by - "mouse" if the focus/pointerdown was caused by a mouse down event.
-		 * @private
-		 */
-		_setStack: function (newStack, by) {
-			var oldStack = this.activeStack, lastOldIdx = oldStack.length - 1, lastNewIdx = newStack.length - 1;
-
-			if (newStack[lastNewIdx] === oldStack[lastOldIdx]) {
-				// no changes, return now to avoid spurious notifications about changes to activeStack
-				return;
-			}
-
-			this.activeStack = newStack;
-			this.emit("active-widget-stack", newStack);
-
-			var widget, i;
-
-			// for all elements that have gone out of focus, set focused=false
-			for (i = lastOldIdx; i >= 0 && oldStack[i] !== newStack[i]; i--) {
-				widget = oldStack[i];
-				if (widget) {
-					widget.emit("delite-deactivated", {bubbles: false, by: by});
-					this.emit("deactivated", widget, by);
-				}
-			}
-
-			// for all element that have come into focus, set focused=true
-			for (i++; i <= lastNewIdx; i++) {
-				widget = newStack[i];
-				if (widget) {
-					widget.emit("delite-activated", {bubbles: false, by: by});
-					this.emit("activated", widget, by);
-				}
-			}
-		}
-	});
-
-	// Create singleton for top window
-	var singleton = new ActivationTracker();
-	singleton.registerWin(window);
-
-	return singleton;
-});
-;
 define('delite/features',["requirejs-dplugins/has"], function (has) {
 	// Flag for whether to create background iframe behind popups like Menus and Dialog.
 	// A background iframe is useful to prevent problems with popups appearing behind applets/pdf files.
@@ -5791,6 +5511,1173 @@ define('requirejs-dplugins/has',["module"], function (module) {
 	};
 
 	return has;
+});
+;
+define('delite/handlebars!xdeliteful/MediaPlayer/template.html',["delite/handlebars","xdeliteful/Button","xblox/RunScript"], function(handlebars){
+	return handlebars.compile("<template attach-point=\"focusNode\" style=\"position: relative;display: inherit;width: 300px;height: 300px\">\n\n<button class=\"mediaPlayerLabel\" is=\"d-button\" title=\"Default Label\" label=\"Position\" style=\"position: absolute; left: 18px; top: 61px;\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"label\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=2219d68b-862f-92ab-de5d-b7a847930a7a\" script=\"Current Position\" style=\"position: relative;\"></d-xscript>\n</button>\n<button class=\"mediaPlayerLabel\" attach-point=\"btnCurrentTrack\" is=\"d-button\" title=\"Default Label\" label=\"Current Track\" style=\"position: absolute; left: 19px; top: 158px;\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"label\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=e76f0b30-4443-47ae-0cef-2c4c9e4acffd\" style=\"position: relative;\"></d-xscript>\n</button>\n<d-slider class=\"mediaPlayerSlider\" attach-point=\"slider\" max=\"1\" step=\"0.01\" style=\"position: absolute; width: 202px; height: 3px; left: 14px; top: 106px;\" value=\"0.2\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"value\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=2219d68b-862f-92ab-de5d-b7a847930a7a\" style=\"position: relative;\"></d-xscript>\n</d-slider>\n<button class=\"mediaPlayerButton\" attach-point=\"btnStop\" is=\"d-button\" title=\"Default Label\" label=\" \" iconclass=\"fa fa-stop \" style=\"position: absolute; left: 63px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=418f48fc-9d4d-9c8c-fc19-4674848fa55c\" script=\"Stop\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnPause\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-pause\" style=\"position: absolute; left: 109.53125px; width: 38px; height: 34px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=a3c0e8d7-e517-18a2-1405-0a46e6182aef\" script=\"Pause\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnPlay\" is=\"d-button\" title=\"Default Label\" style=\"position: absolute; left: 155px; width: 38px; height: 34px; top: 17px;\" iconclass=\"fa fa-play\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=126d4b91-f6de-bce2-d150-932a1f5334ed\" script=\"Play\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnNext\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-caret-right\" style=\"position: absolute; left: 203px; width: 38px; height: 34px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=49936bba-e005-053f-b88d-48ec88688b8b\" script=\"Next\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnPrev\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-caret-left\" style=\"position: absolute; left: 15.015625px; width: 38px; height: 34px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=ab927f79-8968-ff46-44a8-e5fbe5bbfdbe\" script=\"Prev\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnOpenFolder\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-folder-open\" style=\"position: absolute; left: 254px; top: 17px;\"></button>\n\n<button is=\"d-button\" label=\"Default Label\" title=\"Default Label\" style=\"position: absolute; left: 19px; top: 236px;\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"label\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=9673fd4c-15f5-cebb-82a0-8500ec7b52e6\" style=\"position: relative;\"></d-xscript>\n</button>\n\n<d-slider class=\"mediaPlayerSlider\" attach-point=\"volume\" value=\"100\" sliderange=\"true\" vertical=\"true\" style=\"position: absolute; left: 354px; top: 5px; width: 4px; height: 104px;\" id=\"mediaPlayerVolume\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"value\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=3879e1cd-7a17-71d2-59d4-6e825658194b\" script=\"Current Volume\" style=\"position: relative;\"></d-xscript>\n</d-slider>\n\n<button attach-point=\"mute\" is=\"d-toggle-button\" checkediconclass=\"fa fa-volume-down\" iconclass=\"fa fa-volume-up\" style=\"position: absolute; left: 203px; top: 61px;display: none\" checked=\"false\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"checked\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=cabd937b-28b7-3985-6a10-d456dbe74374\" script=\"Muted\" style=\"position: relative;\"></d-xscript>\n</button>\n\n</template>");
+});;
+/** @module deliteful/TabBar */
+define('xdeliteful/MediaPlayer',[
+    "dcl/dcl",
+    "delite/register",
+    "delite/Widget",
+    "xblox/RunScript",
+    'xide/mixins/EventedMixin',
+    "delite/handlebars!./MediaPlayer/template.html",
+    "requirejs-dplugins/jquery!attributes/classes",
+    "requirejs-dplugins/has"
+], function (dcl, register,Widget,RunScript,EventedMixin,template, $,has) {
+
+    console.log('has debug ' + has('debug'));
+
+
+    var MediaPlayer = dcl([Widget,EventedMixin.dcl], /** @lends module:delite/Widget# */ {
+        baseClass: "d-media-player",
+        template:template,
+        context:null,
+        vlc:null,
+        fileServer:null,
+        getDriverInstance:function(name){
+            var deviceManager = this.context.getDeviceManager();
+            //device instance
+            return deviceManager.getInstanceByName(name);
+        },
+        onPickedFolder:function(path){
+            path = path  || "/home/mc007/Music/Sasha/";
+
+            var vlc = this.vlc;
+            var cmd = vlc.getCommand('Play Args');
+            cmd.stop();
+            //path = path.replace("/C:","C:");
+            path = path.replace(/\\/g, '/');
+            path += '/*.mp3';
+
+            vlc.setVariable("Current Folder",path);
+            vlc.callCommand('Play Args');
+
+
+        },
+        initFilePicker:function(){
+
+            var thiz  = this;
+            var btn = this.btnOpenFolder;
+            var _r = require;
+            _r(['xfile/build/xfiler'], function () {
+                _r([
+                    "xdeliteful/Widgets/Popup",
+                    'xfile/views/FileGridLight',
+                    'xide/utils',
+                    'xfile/data/DriverStore',
+                    'xide/types',
+                    'dojo/Deferred',
+                    'xide/_Popup',
+                    'xfile/views/FilePicker',
+                    "dojo/_base/declare",
+                    "delite/popup",
+                    "deliteful/Combobox",
+                    "deliteful/list/List",
+                    "dstore/Memory",
+                    "requirejs-dplugins/css!../../../css/xfile/main_lib.css"
+                ], function (Popup, FileGridLight, utils, DriverStore, types, Deferred, _Popup, FilePicker, declare,popup,Combobox, List, Memory) {
+
+                    function createStore(ext) {
+                        var config = {};
+                        var options = {
+                            fields: types.FIELDS.SHOW_ISDIR | types.FIELDS.SHOW_OWNER | types.FIELDS.SHOW_SIZE |
+                            types.FIELDS.SHOW_FOLDER_SIZE |
+                            types.FIELDS.SHOW_MIME |
+                            types.FIELDS.SHOW_PERMISSIONS |
+                            types.FIELDS.SHOW_TIME |
+                            types.FIELDS.SHOW_MEDIA_INFO
+                        };
+
+                        return new DriverStore({
+                            data: [],
+                            config: config,
+                            mount: 'none',
+                            options: options,
+                            driver: thiz.fileServer,
+                            glob: ext,
+                            micromatch: "*|*.wav|*.mp3" // Only folders
+                        });
+                    }
+                    _Popup.setStartIndex(2000);
+                    var owner = {};
+                    var permissions = utils.clone(types.DEFAULT_FILE_GRID_PERMISSIONS);
+                    function createPickerPopup(button,picker,Popup) {
+                        var value = [];
+                        var _popup;
+
+                        /**
+                         * callback when ok
+                         */
+                        function ok() {
+                            picker._selection = picker._selection || [''];
+                            console.log('ok ',picker._selection[0].realPath,picker._selection[0]);
+                            utils.destroy(picker);
+                            utils.destroy(_popup);
+                            thiz.onPickedFolder(picker._selection[0].realPath);
+                        }
+
+                        
+
+                        var dataSource = new Memory({idProperty: "label", data: []});
+                        var list = new List({source: dataSource, righttextAttr: "value"});
+                        var combo = new Combobox({
+                            list: list,
+                            id: "combo-single",
+                            selectionMode: 'single'
+                        });
+
+                        var gridNode = picker.domNode;
+
+                        _popup =  new Popup({
+                            /**
+                             * Called when clicking the OK button of the popup.
+                             * @protected
+                             */
+                            okHandler: function () {
+                                this.combobox._validateMultiple(this.combobox.inputNode);
+                                this.combobox.closeDropDown();
+                                popup.close(button.popup);
+                                ok();
+                            },
+
+                            /**
+                             * Called when clicking the Cancel button of the popup.
+                             * @protected
+                             */
+                            cancelHandler: function () {
+                                this.combobox.list.selectedItems = this.combobox._selectedItems;
+                                this.combobox.closeDropDown();
+                                popup.close(button.popup);
+                                utils.destroy(picker);
+                                utils.destroy(_popup);
+                            },
+                            combobox: combo
+                        });
+
+
+                        //extend button
+                        utils.mixin(button, {
+                            popup:_popup,
+                            _setLabelAttr: function (label) {
+                                this.textContent = label;
+                                this._set("label", label);
+                            },
+                            closePopup: function () {
+                                if (this.open) {
+                                    popup.close(this.popup);
+                                    this.open = false;
+                                }
+                            },
+                            _deactivatedHandler: function () {
+                                //this.closePopup();
+                            },
+                            _openPopup: function () {
+
+                                $(combo.list).css('height','600px');
+                                $(combo.list).css('width','800px');
+                                $(combo.list).empty();
+                                $(combo.list).append(gridNode);
+                                this._openRet = popup.open({
+                                    popup: this.popup,
+                                    parent: this,
+                                    around: this,
+                                    orient: ['center'],
+                                    maxHeight: -1
+                                });
+
+                                this.open = true;
+                                picker._parent = combo.list;
+
+                                $(gridNode).css('height','100%');
+                                $(gridNode).css('width','100%');
+                                picker.resize();
+                                function refreshGrid(fileGrid,collection){
+
+                                    picker.resize();
+                                    if(!fileGrid.collection) {
+                                        fileGrid.set('collection', collection);
+                                    }
+
+                                    fileGrid.collection._loadPath('.',true).then(function(){
+                                        fileGrid.refresh();
+                                    });
+                                    picker.resize();
+                                }
+                                
+                                setTimeout(function() {
+                                    refreshGrid(picker.leftGrid,picker.leftStore);
+
+                                    setTimeout(function() {
+                                        refreshGrid(picker.rightGrid,picker.rightStore);
+
+                                    },1000);
+
+                                },1000);
+                                
+                            }
+                        });
+                        button.on("delite-deactivated", function () {
+                            button._deactivatedHandler();
+                        });
+                        button._openPopup();
+                    }
+
+                    $(btn).on('click',function(){
+                        var picker = utils.addWidget(FilePicker, utils.mixin({
+                            ctx: thiz.context,
+                            owner: owner,
+                            selection: '.',
+                            resizeToParent: true,
+                            storeOptionsMixin: {
+                                "includeList": "*,.*",
+                                "excludeList": ""
+                            },
+                            Module: FileGridLight,
+                            permissions: permissions,
+                            leftStore: createStore("/*"),
+                            rightStore: createStore("/*")
+                        }, {}), this, $('BODY')[0], true);
+                        createPickerPopup(btn, picker, Popup);
+                    });
+
+                });
+            });
+        },
+        initVLC:function(){
+        },
+        wireWidgets:function(){
+            var self = this;
+            var vlc = self.vlc;
+            if(!vlc) {
+                return;
+            }
+            //wire slider to position
+            $(this.slider).on('change',function(e){
+                if(self._lastPos ===e.target.value){
+                    return;
+                }
+                self._lastPos = e.target.value;
+                var settings = {
+                    override:{
+                        args:[e.target.value]
+                    }
+                };
+                vlc.callCommand('Position',settings);
+            });
+
+            $(this.mute).on('click',function(e){
+
+                var settings = {
+                    override:{
+                        args:[self.mute.checked ? 1 : 0]
+                    }
+                };
+                console.log('changed mute : ',settings);
+                vlc.callCommand('Mute',settings);
+
+            });
+
+            $(this.volume).on('change',function(e){
+                if(self._lastVol ===e.target.value){
+                    return;
+                }
+                self._lastVol = e.target.value;
+
+                var settings = {
+                    override:{
+                        args:[e.target.value]
+                    }
+                };
+                console.log('changed volume : ',settings);
+                vlc.callCommand('Volume',settings);
+            });
+        },
+        attachedCallback:function () {
+
+        },
+        DevicesConnected:function(){
+
+            console.log('devices connected');
+
+            var vlc = this.getDriverInstance("VLC");
+            if(vlc){
+                this.vlc = vlc;
+                this.initVLC();
+
+                this.wireWidgets();
+            }
+            var fileServer = this.getDriverInstance("File-Server");
+            if(fileServer){
+                this.fileServer = fileServer;
+                this.initFilePicker();
+            }
+
+        },
+        onContextReady:function(context){
+            this.context = context;
+            this.subscribe('DevicesConnected');
+        },
+        init:function(){
+
+            this.subscribe('onContextReady');
+        },
+        createdCallback: function () {
+            // Get label from innerHTML, and then clear it since we are to put the label in a <span>
+            console.log('created ');
+            this.init();
+        }
+    });
+
+    return register("d-media-player", [HTMLElement,MediaPlayer]);
+});
+
+;
+/** @module xide/mixins/EventedMixin **/
+define('xide/mixins/EventedMixin',[
+    "dojo/_base/array",
+    "dcl/dcl",
+    "xdojo/declare",
+    "xdojo/has",
+    'xide/types',
+    'xide/factory'
+], function (array,dcl,declare, has, types, factory) {
+
+    var toString = Object.prototype.toString;
+    /**
+     * Adds convenient functions for events to the consumer, generalizing dojo.subscribe/publish or dojo.on.
+     * This mixin can be applied to anything dijit/_Widget based or custom functional classes(needs to call destroy!)
+     *
+     * Check online-documentation {@link http://rawgit.com/mc007/xjs/dgrid_update/src/lib/xide/out/xide/0.1.1-dev/EventedMixin.html|here}
+     *
+     * @class module:xide/mixins/EventedMixin
+     */
+    var Impl = {
+
+        _didRegisterSubscribers:false,
+
+        subscribers:null,
+        /**
+         * Subscription filter map
+         * @type {Object.<string,boolean}
+         */
+        subscribes: {},
+        /**
+         * Emit filter map
+         * @type {Object.<string,boolean}
+         */
+        emits: {},
+        /**
+         * Array of dojo subscribe/on handles, destroyed on this.destroy();
+         * @private
+         * @type {Object[]}
+         */
+        __events: null,
+        /**
+         * Add emit filter
+         * @param type
+         * @param data
+         */
+        addPublishFilter:function(type,data){
+            if(type){
+                if(data!=null){
+                    this.emits[type]=data;
+                }else if(type in this.emits){
+                    delete this.emits[type];
+                }
+            }
+        },
+        /**
+         * Simple filter function to block subscriptions.
+         * @param key
+         * @returns {boolean}
+         */
+        filterSubscribe: function (key) {
+
+            if (this.subscribes) {
+                return this.subscribes[key] !== false;
+            }
+            return true;
+        },
+        /**
+         * Simple filter function to block publishing.
+         * @param key
+         * @returns {boolean}
+         */
+        filterPublish: function (key) {
+            if (this.emits) {
+                return this.emits[key] !== false;
+            }
+            return true;
+        },
+        /**
+         * Subscribe to an event or multiple events. Attention, this is NOT checking for duplicates!
+         *
+         * @example
+         *
+         * // widget case with event callback delegation to 'this', code is written inside a custom widget or whatever
+         * // class subclassing from this mixin:
+         * // pre-requisites for dijit/dojox widgets: lang.extend(dijit.Button,EventedMixin.prototype);
+         *
+         * //simple example #1
+         * var button = new dijit.Button({});
+         * button.subscribe('click',this.onButtonClick,this);//calls this.onButtonClick with scope this
+         *
+         * //simple example #2
+         * var button = new dijit.Button({});
+         * button.subscribe('click',null,this);//calls this.click with scope this
+         *
+         * //multi-event example #1
+         * var button = new dijit.Button({});
+         * button.subscribe(['click','dblclick'],null,this);//calls this.click and this.dblclick with scope this
+         *
+         * // custom events (using dojo-publish/subscribe or dojo.topic)
+         * // assuming you want listen to the events of dijit/layout/TabContainer or any other StackContainer. Notice,
+         * // that stack-containers will publish events like this: topic.publish(this.id + "-removeChild", page);
+         *
+         * var tabContainerId = 'tabContainer';
+         *
+         * this.subscribe(tabContainerId + 'addChild',this.childAdded);//notice that the scope is set here automatically!
+         *
+         * //multi-event version, this will call this['tabContainerId-addChild'] and this['tabContainerId-removeChild']
+         *
+         * this.subscribe([tabContainerId + 'addChild',tabContainerId + 'removeChild']);
+         *
+         *
+         *
+         *
+         *
+         *
+         * @param keys {String|String[]} : The event key(s), given as single string or an array of strings, holding all
+         * event keys for publishing multiple events in one row.
+         *
+         * @param cb {Function} : callback, by the default the callback's scope will 'this'
+         *
+         * @param to {Object} : override 'this' scope to something else
+         */
+        subscribe: function (keys, cb, to) {
+            if (!this.__events) {
+                this.__events = {};
+            }
+            var self = this,
+                events = factory.subscribe(keys, cb, to || self, self.filterSubscribe.bind(self)),
+                container = self.__events;
+
+            //replay on local tracking map
+            for(var i=0, l=events.length; i<l ; i++){
+                var _type = events[i].type;
+                if(!container[_type]){
+                    container[_type]=[];
+                }
+                container[_type].push(events[i]);
+            }
+            return events;
+
+        },
+        /**
+         * Publish an event (uses dojo.publish)
+         *
+         * @param keys {String|String[]} : The event key, given as string or array for publishing multiple events in one row
+         *
+         * @param data {Object|null} : The actual event data.
+         *
+         * @param from {Object|null} : Send event 'as' this source. By default, its using 'this' as sender.
+         *
+         * @param delay {Number|null} : Send event with a delay, otherwise call now
+         *
+         */
+        publish: function (keys, data, from, delay) {
+            var self = this;
+            if (delay > 0) {
+                setTimeout(function () {
+                    factory.publish(keys, data, from || self, self.filterPublish.bind(self));
+                }.bind(self), delay);
+            } else {
+                factory.publish(keys, data, from || self, self.filterPublish.bind(self));
+            }
+        },
+        /**
+         * @TODO: deal with unsubscribe in _EventedMixin
+         * @param key
+         * @private
+         */
+        _destroyHandle: function (key) {},
+        /**
+         * Turns the lights off, kills all event handles.
+         * @private
+         * @returns void
+         */
+        _destroyHandles: function () {
+            if (this.__events) {
+                for(var type in this.__events){
+                    array.forEach(this.__events[type], function(item){
+                        if(item && item.remove){
+                            item.remove();
+                        }
+                    });
+                }
+                delete this.__events;
+            }
+        },
+        /**
+         * When using subscribe, all event subscription handles are stored in this.__events.
+         * This function will remove all the event handles, using this._destroyHandles()
+         */
+        destroy: function () {
+            this.inherited && this.inherited(arguments);
+            this._destroyHandles();
+        },
+        /**
+         * Adds a one time listener for the event. This listener is invoked only the
+         * next time the event is fired, after which it is removed.
+         *
+         * @name emitter.once(event, listener)
+         * @param {String} event- The event name/id to listen for
+         * @param {Function} listener - The function to bind to the event
+         * @api public
+         *
+         * ```javascript
+         * db.once('unauthorized', function (req) {
+         *     // this event listener will fire once, then be unbound
+         * });
+         * ```
+         */
+        once : function(type, listener) {
+            var self = this;
+            function wrapped() {
+                self.unsubscribe(type, listener);
+                return listener.apply(self, arguments);
+            }
+            wrapped.listener = listener;
+            self._on(type, wrapped);
+            return this;
+        },
+        /**
+         * Execute each of the listeners in order with the supplied arguments.
+         *
+         * @name emitter.emit(event, [arg1], [arg2], [...])
+         * @param {String} event - The event name/id to fire
+         * @api public
+         */
+        _emit:function(type) {
+            if (!this.__events)
+                return;
+
+            if(!this._didRegisterSubscribers && this.subscribers){
+                for(var i=0;i<this.subscribers.length ; i++){
+                    var subscriber = this.subscribers[i];
+                    this._on(subscriber.event,subscriber.handler,subscriber.owner);
+                }
+                this._didRegisterSubscribers = true;
+            }
+
+            if (arguments[2] === true)
+                throw new Error("Please use emit.sticky() instead of passing sticky=true for event: " + type);
+
+            var handler = this.__events[type],
+                eventArgs = arguments.length>1 ? arguments[2] : null;
+
+            if (!handler)
+                return;
+
+            var returnValue;
+
+            if (typeof handler == 'function') {
+                switch (arguments.length) {
+                    // fast cases
+                    case 1:
+                        return handler.call(this);
+                    case 2:
+                        return handler.call(this, arguments[1]);
+                    case 3:
+                        return handler.call(this, arguments[1], arguments[2]);
+                    // slower
+                    default:
+                        var args = Array.prototype.slice.call(arguments, 1);
+                        returnValue = handler.apply(this, args);
+                }
+            }
+
+            else if (_.isArray(handler)) {
+                var args = Array.prototype.slice.call(arguments, 1);
+                var listeners = handler.slice(), temp;
+                var _listener = null;
+                var who = null;
+
+                for (var i = 0, l = listeners.length; i < l; i++) {
+
+                    _listener = listeners[i];
+                    who = _listener.owner|| this;
+                    args && args[0] && (args[0].owner =args[0] ? args[0].owner || who : null);
+
+                    _listener.handler && (temp = _listener.handler.apply(who, args));
+                    if (temp !== undefined)
+                        returnValue = temp;
+                }
+            }
+
+            //forward to global
+            eventArgs && eventArgs['public']===true && this.publish(type,args);
+
+            return returnValue;
+        },
+        /**
+         * Remove a listener from the listener array for the specified event. Caution:
+         * changes array indices in the listener array behind the listener.
+         *
+         * @name emitter.removeListener(event, listener)
+         * @param {String} event - The event name/id to remove the listener from
+         * @param {Function} listener - The listener function to remove
+         * @api public
+         *
+         * ```javascript
+         * var callback = function (init) {
+         *     console.log('duality app loaded');
+         * };
+         * devents.on('init', callback);
+         * // ...
+         * devents.removeListener('init', callback);
+         * ```
+         */
+        unsubscribe:function(type,listener){
+
+            // does not use listeners(), so no side effect of creating __events[type]
+            if (!this.__events || !this.__events[type]) return this;
+
+            // no listener given, unsubscribe all per type
+            if (('function' !== typeof listener || !listener)) {
+                array.forEach(this.__events[type], dojo.unsubscribe);
+                delete this.__events[type];
+                this.__events[type] = [];
+                return this;
+            }
+            var list = this.__events[type];
+            if (_.isArray(list)) {
+                var _remove =[];
+                _.each(list,function(handle,a,b){
+                    var which= handle.handler == listener ? handle.handler : handle.handler.listener == listener ? handle.handler.listener : null;
+                    if(which) {
+                        _remove.push(handle);
+                    }
+                });
+                _.each(_remove,function(handler){
+                    handler.remove();
+                });
+                if (list.length === 0) {
+                    delete this.__events[type];
+                }
+            }else if ((this.__events[type].listener || this.__events[type]) === listener) {
+                delete this.__events[type];
+            }
+            return this;
+        },
+        /**
+         * Returns an array of listeners for the specified event. This array can be
+         * manipulated, e.g. to remove listeners.
+         *
+         * @name emitter.listeners(event)
+         * @param {String} events - The event name/id to return listeners for
+         * @api public
+         *
+         * ```javascript
+         * session.on('change', function (stream) {
+         *     console.log('session changed');
+         * });
+         * console.log(util.inspect(session.listeners('change'))); // [ [Function] ]
+         * ```
+         */
+        listeners:function(type) {
+            if (!this.__events) this.__events = {};
+            if (!this.__events[type]) this.__events[type] = [];
+            if (!isArray(this.__events[type])) {
+                this.__events[type] = [this.__events[type]];
+            }
+            return this.__events[type];
+        },
+        /**
+         *
+         * @param type
+         * @param handle
+         * @returns {*}
+         */
+        addHandle:function(type,handle){
+            if(!this.__events){
+                this.__events = {}
+            }
+            if(!this.__events[type]){
+                this.__events[type]=[];
+            }
+            handle.type = type;
+            this.__events[type].push(handle);
+            return handle;
+        },
+        /**
+         * jQuery sub
+         * @param element
+         * @param type
+         * @param selector
+         * @param handler
+         * @returns {{handler: *, owner: (exports|module.exports|module:xide/mixins/EventedMixin), type: *, element: (*|jQuery|HTMLElement), selector: *, remove: _handle.remove}}
+         */
+        __on:function(element,type,selector,handler){
+
+            var _handler = handler;
+
+            if(typeof selector =='function' && !handler){
+                //no selector given
+                handler = selector;
+                selector = null;
+            }
+
+            element = element.jquery ? element : $(element);
+            element.on(type,selector,handler);
+
+            if (!this.__events) this.__events = {};
+            if (!this.__events[type]) {
+                this.__events[type] = [];
+            }
+            var eventList = this.__events[type];
+            var _handle = {
+                handler: _handler,
+                owner: this,
+                type: type,
+                element:element,
+                selector:selector,
+                remove: function () {
+                    eventList.remove(this);
+                    this.element.off(this.type,this.selector,this.handler);
+                }
+            };
+            eventList.push(_handle);
+            return _handle;
+
+        },
+        /**
+         * Dojo based sub
+         * @param type
+         * @param listener
+         * @param owner
+         * @returns {*}
+         * @private
+         */
+        _on: function(type, listener,owner) {
+            try {
+                if (!this.__events) this.__events = {};
+
+                if (!this.__events[type]) {
+                    this.__events[type] = [];
+                }
+
+                var eventList = this.__events[type];
+
+                if (!eventList) {
+                    // Optimize the case of one listener. Don't need the extra array object.
+                    this.__events[type] = listener;
+                }
+                else if (_.isArray(eventList)) {
+
+                    if (eventList.indexOf(listener) != -1)
+                       return console.warn("adding same listener twice", type);
+
+                    // If we've already got an array, just append.
+                    var _handle = {
+                        handler: listener,
+                        owner: owner || this,
+                        type: type,
+                        remove: function () {
+                            eventList.remove(this);
+                            this.owner = null;
+                            this.handler = null;
+                            delete this.type;
+                        }
+                    };
+                    eventList.push(_handle);
+                    return _handle;
+                }
+            }catch(e){
+                logError(e);
+            }
+            return this;
+        }
+    };
+
+    //package via declare
+    var Module = declare(null, Impl);
+    //static access to Impl.
+    Module.Impl = Impl;
+    Module.dcl = dcl(null,Impl);
+    dcl.chainAfter(Module.dcl,'destroy');
+    return Module;
+});
+
+;
+define('xide/factory',[
+],function(){
+    return {
+
+    }
+});;
+define('xide/types',[
+    "dcl/dcl"
+],function(dcl){
+    return dcl(null,{
+        declaredClass:"xide/types"
+    });
+});;
+define('dojo/_base/array',["./kernel", "../has", "./lang"], function(dojo, has, lang){
+	// module:
+	//		dojo/_base/array
+
+	// our old simple function builder stuff
+	var cache = {}, u;
+
+	function buildFn(fn){
+		return cache[fn] = new Function("item", "index", "array", fn); // Function
+	}
+	// magic snippet: if(typeof fn == "string") fn = cache[fn] || buildFn(fn);
+
+	// every & some
+
+	function everyOrSome(some){
+		var every = !some;
+		return function(a, fn, o){
+			var i = 0, l = a && a.length || 0, result;
+			if(l && typeof a == "string") a = a.split("");
+			if(typeof fn == "string") fn = cache[fn] || buildFn(fn);
+			if(o){
+				for(; i < l; ++i){
+					result = !fn.call(o, a[i], i, a);
+					if(some ^ result){
+						return !result;
+					}
+				}
+			}else{
+				for(; i < l; ++i){
+					result = !fn(a[i], i, a);
+					if(some ^ result){
+						return !result;
+					}
+				}
+			}
+			return every; // Boolean
+		};
+	}
+
+	// indexOf, lastIndexOf
+
+	function index(up){
+		var delta = 1, lOver = 0, uOver = 0;
+		if(!up){
+			delta = lOver = uOver = -1;
+		}
+		return function(a, x, from, last){
+			if(last && delta > 0){
+				// TODO: why do we use a non-standard signature? why do we need "last"?
+				return array.lastIndexOf(a, x, from);
+			}
+			var l = a && a.length || 0, end = up ? l + uOver : lOver, i;
+			if(from === u){
+				i = up ? lOver : l + uOver;
+			}else{
+				if(from < 0){
+					i = l + from;
+					if(i < 0){
+						i = lOver;
+					}
+				}else{
+					i = from >= l ? l + uOver : from;
+				}
+			}
+			if(l && typeof a == "string") a = a.split("");
+			for(; i != end; i += delta){
+				if(a[i] == x){
+					return i; // Number
+				}
+			}
+			return -1; // Number
+		};
+	}
+
+	var array = {
+		// summary:
+		//		The Javascript v1.6 array extensions.
+
+		every: everyOrSome(false),
+		/*=====
+		 every: function(arr, callback, thisObject){
+			 // summary:
+			 //		Determines whether or not every item in arr satisfies the
+			 //		condition implemented by callback.
+			 // arr: Array|String
+			 //		the array to iterate on. If a string, operates on individual characters.
+			 // callback: Function|String
+			 //		a function is invoked with three arguments: item, index,
+			 //		and array and returns true if the condition is met.
+			 // thisObject: Object?
+			 //		may be used to scope the call to callback
+			 // returns: Boolean
+			 // description:
+			 //		This function corresponds to the JavaScript 1.6 Array.every() method, with one difference: when
+			 //		run over sparse arrays, this implementation passes the "holes" in the sparse array to
+			 //		the callback function with a value of undefined. JavaScript 1.6's every skips the holes in the sparse array.
+			 //		For more details, see:
+			 //		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/every
+			 // example:
+			 //	|	// returns false
+			 //	|	array.every([1, 2, 3, 4], function(item){ return item>1; });
+			 // example:
+			 //	|	// returns true
+			 //	|	array.every([1, 2, 3, 4], function(item){ return item>0; });
+		 },
+		 =====*/
+
+		some: everyOrSome(true),
+		/*=====
+		some: function(arr, callback, thisObject){
+			// summary:
+			//		Determines whether or not any item in arr satisfies the
+			//		condition implemented by callback.
+			// arr: Array|String
+			//		the array to iterate over. If a string, operates on individual characters.
+			// callback: Function|String
+			//		a function is invoked with three arguments: item, index,
+			//		and array and returns true if the condition is met.
+			// thisObject: Object?
+			//		may be used to scope the call to callback
+			// returns: Boolean
+			// description:
+			//		This function corresponds to the JavaScript 1.6 Array.some() method, with one difference: when
+			//		run over sparse arrays, this implementation passes the "holes" in the sparse array to
+			//		the callback function with a value of undefined. JavaScript 1.6's some skips the holes in the sparse array.
+			//		For more details, see:
+			//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/some
+			// example:
+			//	| // is true
+			//	| array.some([1, 2, 3, 4], function(item){ return item>1; });
+			// example:
+			//	| // is false
+			//	| array.some([1, 2, 3, 4], function(item){ return item<1; });
+		},
+		=====*/
+
+		indexOf: index(true),
+		/*=====
+		indexOf: function(arr, value, fromIndex, findLast){
+			// summary:
+			//		locates the first index of the provided value in the
+			//		passed array. If the value is not found, -1 is returned.
+			// description:
+			//		This method corresponds to the JavaScript 1.6 Array.indexOf method, with two differences:
+			//
+			//		1. when run over sparse arrays, the Dojo function invokes the callback for every index
+			//		   whereas JavaScript 1.6's indexOf skips the holes in the sparse array.
+			//		2. uses equality (==) rather than strict equality (===)
+			//
+			//		For details on this method, see:
+			//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/indexOf
+			// arr: Array
+			// value: Object
+			// fromIndex: Integer?
+			// findLast: Boolean?
+			//		Makes indexOf() work like lastIndexOf().  Used internally; not meant for external usage.
+			// returns: Number
+		},
+		=====*/
+
+		lastIndexOf: index(false),
+		/*=====
+		lastIndexOf: function(arr, value, fromIndex){
+			// summary:
+			//		locates the last index of the provided value in the passed
+			//		array. If the value is not found, -1 is returned.
+			// description:
+		 	//		This method corresponds to the JavaScript 1.6 Array.lastIndexOf method, with two differences:
+		 	//
+		 	//		1. when run over sparse arrays, the Dojo function invokes the callback for every index
+		 	//		   whereas JavaScript 1.6's lasIndexOf skips the holes in the sparse array.
+		 	//		2. uses equality (==) rather than strict equality (===)
+		 	//
+		 	//		For details on this method, see:
+		 	//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/lastIndexOf
+			// arr: Array,
+			// value: Object,
+			// fromIndex: Integer?
+			// returns: Number
+		},
+		=====*/
+
+		forEach: function(arr, callback, thisObject){
+			// summary:
+			//		for every item in arr, callback is invoked. Return values are ignored.
+			//		If you want to break out of the loop, consider using array.every() or array.some().
+			//		forEach does not allow breaking out of the loop over the items in arr.
+			// arr:
+			//		the array to iterate over. If a string, operates on individual characters.
+			// callback:
+			//		a function is invoked with three arguments: item, index, and array
+			// thisObject:
+			//		may be used to scope the call to callback
+			// description:
+			//		This function corresponds to the JavaScript 1.6 Array.forEach() method, with one difference: when
+			//		run over sparse arrays, this implementation passes the "holes" in the sparse array to
+			//		the callback function with a value of undefined. JavaScript 1.6's forEach skips the holes in the sparse array.
+			//		For more details, see:
+			//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/forEach
+			// example:
+			//	| // log out all members of the array:
+			//	| array.forEach(
+			//	|		[ "thinger", "blah", "howdy", 10 ],
+			//	|		function(item){
+			//	|			console.log(item);
+			//	|		}
+			//	| );
+			// example:
+			//	| // log out the members and their indexes
+			//	| array.forEach(
+			//	|		[ "thinger", "blah", "howdy", 10 ],
+			//	|		function(item, idx, arr){
+			//	|			console.log(item, "at index:", idx);
+			//	|		}
+			//	| );
+			// example:
+			//	| // use a scoped object member as the callback
+			//	|
+			//	| var obj = {
+			//	|		prefix: "logged via obj.callback:",
+			//	|		callback: function(item){
+			//	|			console.log(this.prefix, item);
+			//	|		}
+			//	| };
+			//	|
+			//	| // specifying the scope function executes the callback in that scope
+			//	| array.forEach(
+			//	|		[ "thinger", "blah", "howdy", 10 ],
+			//	|		obj.callback,
+			//	|		obj
+			//	| );
+			//	|
+			//	| // alternately, we can accomplish the same thing with lang.hitch()
+			//	| array.forEach(
+			//	|		[ "thinger", "blah", "howdy", 10 ],
+			//	|		lang.hitch(obj, "callback")
+			//	| );
+			// arr: Array|String
+			// callback: Function|String
+			// thisObject: Object?
+
+			var i = 0, l = arr && arr.length || 0;
+			if(l && typeof arr == "string") arr = arr.split("");
+			if(typeof callback == "string") callback = cache[callback] || buildFn(callback);
+			if(thisObject){
+				for(; i < l; ++i){
+					callback.call(thisObject, arr[i], i, arr);
+				}
+			}else{
+				for(; i < l; ++i){
+                    if(!callback || typeof callback !=="function"){
+                        console.error('array error');
+                    }
+					callback(arr[i], i, arr);
+				}
+			}
+		},
+
+		map: function(arr, callback, thisObject, Ctr){
+			// summary:
+			//		applies callback to each element of arr and returns
+			//		an Array with the results
+			// arr: Array|String
+			//		the array to iterate on. If a string, operates on
+			//		individual characters.
+			// callback: Function|String
+			//		a function is invoked with three arguments, (item, index,
+			//		array),	 and returns a value
+			// thisObject: Object?
+			//		may be used to scope the call to callback
+			// returns: Array
+			// description:
+			//		This function corresponds to the JavaScript 1.6 Array.map() method, with one difference: when
+			//		run over sparse arrays, this implementation passes the "holes" in the sparse array to
+			//		the callback function with a value of undefined. JavaScript 1.6's map skips the holes in the sparse array.
+			//		For more details, see:
+			//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/map
+			// example:
+			//	| // returns [2, 3, 4, 5]
+			//	| array.map([1, 2, 3, 4], function(item){ return item+1 });
+
+			// TODO: why do we have a non-standard signature here? do we need "Ctr"?
+			var i = 0, l = arr && arr.length || 0, out = new (Ctr || Array)(l);
+			if(l && typeof arr == "string") arr = arr.split("");
+			if(typeof callback == "string") callback = cache[callback] || buildFn(callback);
+			if(thisObject){
+				for(; i < l; ++i){
+					out[i] = callback.call(thisObject, arr[i], i, arr);
+				}
+			}else{
+				for(; i < l; ++i){
+					out[i] = callback(arr[i], i, arr);
+				}
+			}
+			return out; // Array
+		},
+
+		filter: function(arr, callback, thisObject){
+			// summary:
+			//		Returns a new Array with those items from arr that match the
+			//		condition implemented by callback.
+			// arr: Array
+			//		the array to iterate over.
+			// callback: Function|String
+			//		a function that is invoked with three arguments (item,
+			//		index, array). The return of this function is expected to
+			//		be a boolean which determines whether the passed-in item
+			//		will be included in the returned array.
+			// thisObject: Object?
+			//		may be used to scope the call to callback
+			// returns: Array
+			// description:
+			//		This function corresponds to the JavaScript 1.6 Array.filter() method, with one difference: when
+			//		run over sparse arrays, this implementation passes the "holes" in the sparse array to
+			//		the callback function with a value of undefined. JavaScript 1.6's filter skips the holes in the sparse array.
+			//		For more details, see:
+			//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/filter
+			// example:
+			//	| // returns [2, 3, 4]
+			//	| array.filter([1, 2, 3, 4], function(item){ return item>1; });
+
+			// TODO: do we need "Ctr" here like in map()?
+			var i = 0, l = arr && arr.length || 0, out = [], value;
+			if(l && typeof arr == "string") arr = arr.split("");
+			if(typeof callback == "string") callback = cache[callback] || buildFn(callback);
+			if(thisObject){
+				for(; i < l; ++i){
+					value = arr[i];
+					if(callback.call(thisObject, value, i, arr)){
+						out.push(value);
+					}
+				}
+			}else{
+				for(; i < l; ++i){
+					value = arr[i];
+					if(callback(value, i, arr)){
+						out.push(value);
+					}
+				}
+			}
+			return out; // Array
+		},
+
+		clearCache: function(){
+			cache = {};
+		}
+	};
+
+
+	has("extend-dojo") && lang.mixin(dojo, array);
+
+	return array;
 });
 ;
 /** @module deliteful/TabBar */
@@ -6468,7 +7355,7 @@ define('deliteful/list/List',[
 
 		refreshRendering: function (props) {
 			//	List attributes have been updated.
-			/*jshint maxcomplexity:11*/
+			/*jshint maxcomplexity:12*/
 			if ("selectionMode" in props) {
 				// Update aria attributes
 				$(this.containerNode).removeClass(this._cssClasses.selectable);
@@ -6516,6 +7403,11 @@ define('deliteful/list/List',[
 				} else {
 					this.containerNode.removeAttribute("aria-readonly");
 				}
+			}
+
+			if ("renderItems" in props && this.renderItems) {
+				// notify the list content changed.
+				this.emit("delite-size-change");
 			}
 		},
 
@@ -8230,7 +9122,7 @@ define('deliteful/list/ItemRenderer',[
 /** @module delite/Scrollable */
 define('delite/Scrollable',[
 	"dcl/dcl",
-	"requirejs-dplugins/jquery!css,attributes/classes,effects,event",	// css(), toggleClass(), animate(), on()
+	"requirejs-dplugins/jquery!attributes/classes,effects",	// toggleClass()
 	"./Widget",
 	"./theme!./Scrollable/themes/{{theme}}/Scrollable.css"
 ], function (dcl, $, Widget) {
@@ -8306,13 +9198,6 @@ define('delite/Scrollable',[
 			if (!this.scrollableNode) {
 				this.scrollableNode = this; // If unspecified, defaults to 'this'.
 			}
-
-			// Disable text selection in scrollable node as per
-			// http://stackoverflow.com/questions/2700000/how-to-disable-text-selection-using-jquery
-			this.scrollableNode.setAttribute("unselectable", "on");
-			$(this.scrollableNode)
-				.css("user-select", "none") // maps to WebkitUserSelect, etc.
-				.on("selectstart", false);
 		}),
 
 		refreshRendering: function (oldVals) {
@@ -8483,765 +9368,11 @@ define('delite/Scrollable',[
 	});
 });
 ;
-define( 'jquery/src/event',[
-	"./core",
-	"./var/document",
-	"./var/documentElement",
-	"./var/rnotwhite",
-	"./var/slice",
-	"./data/var/dataPriv",
-
-	"./core/init",
-	"./selector"
-], function( jQuery, document, documentElement, rnotwhite, slice, dataPriv ) {
-
-"use strict";
-
-var
-	rkeyEvent = /^key/,
-	rmouseEvent = /^(?:mouse|pointer|contextmenu|drag|drop)|click/,
-	rtypenamespace = /^([^.]*)(?:\.(.+)|)/;
-
-function returnTrue() {
-	return true;
-}
-
-function returnFalse() {
-	return false;
-}
-
-// Support: IE <=9 only
-// See #13393 for more info
-function safeActiveElement() {
-	try {
-		return document.activeElement;
-	} catch ( err ) { }
-}
-
-function on( elem, types, selector, data, fn, one ) {
-	var origFn, type;
-
-	// Types can be a map of types/handlers
-	if ( typeof types === "object" ) {
-
-		// ( types-Object, selector, data )
-		if ( typeof selector !== "string" ) {
-
-			// ( types-Object, data )
-			data = data || selector;
-			selector = undefined;
-		}
-		for ( type in types ) {
-			on( elem, type, selector, data, types[ type ], one );
-		}
-		return elem;
-	}
-
-	if ( data == null && fn == null ) {
-
-		// ( types, fn )
-		fn = selector;
-		data = selector = undefined;
-	} else if ( fn == null ) {
-		if ( typeof selector === "string" ) {
-
-			// ( types, selector, fn )
-			fn = data;
-			data = undefined;
-		} else {
-
-			// ( types, data, fn )
-			fn = data;
-			data = selector;
-			selector = undefined;
-		}
-	}
-	if ( fn === false ) {
-		fn = returnFalse;
-	} else if ( !fn ) {
-		return elem;
-	}
-
-	if ( one === 1 ) {
-		origFn = fn;
-		fn = function( event ) {
-
-			// Can use an empty set, since event contains the info
-			jQuery().off( event );
-			return origFn.apply( this, arguments );
-		};
-
-		// Use same guid so caller can remove using origFn
-		fn.guid = origFn.guid || ( origFn.guid = jQuery.guid++ );
-	}
-	return elem.each( function() {
-		jQuery.event.add( this, types, fn, data, selector );
-	} );
-}
-
-/*
- * Helper functions for managing events -- not part of the public interface.
- * Props to Dean Edwards' addEvent library for many of the ideas.
- */
-jQuery.event = {
-
-	global: {},
-
-	add: function( elem, types, handler, data, selector ) {
-
-		var handleObjIn, eventHandle, tmp,
-			events, t, handleObj,
-			special, handlers, type, namespaces, origType,
-			elemData = dataPriv.get( elem );
-
-		// Don't attach events to noData or text/comment nodes (but allow plain objects)
-		if ( !elemData ) {
-			return;
-		}
-
-		// Caller can pass in an object of custom data in lieu of the handler
-		if ( handler.handler ) {
-			handleObjIn = handler;
-			handler = handleObjIn.handler;
-			selector = handleObjIn.selector;
-		}
-
-		// Ensure that invalid selectors throw exceptions at attach time
-		// Evaluate against documentElement in case elem is a non-element node (e.g., document)
-		if ( selector ) {
-			jQuery.find.matchesSelector( documentElement, selector );
-		}
-
-		// Make sure that the handler has a unique ID, used to find/remove it later
-		if ( !handler.guid ) {
-			handler.guid = jQuery.guid++;
-		}
-
-		// Init the element's event structure and main handler, if this is the first
-		if ( !( events = elemData.events ) ) {
-			events = elemData.events = {};
-		}
-		if ( !( eventHandle = elemData.handle ) ) {
-			eventHandle = elemData.handle = function( e ) {
-
-				// Discard the second event of a jQuery.event.trigger() and
-				// when an event is called after a page has unloaded
-				return typeof jQuery !== "undefined" && jQuery.event.triggered !== e.type ?
-					jQuery.event.dispatch.apply( elem, arguments ) : undefined;
-			};
-		}
-
-		// Handle multiple events separated by a space
-		types = ( types || "" ).match( rnotwhite ) || [ "" ];
-		t = types.length;
-		while ( t-- ) {
-			tmp = rtypenamespace.exec( types[ t ] ) || [];
-			type = origType = tmp[ 1 ];
-			namespaces = ( tmp[ 2 ] || "" ).split( "." ).sort();
-
-			// There *must* be a type, no attaching namespace-only handlers
-			if ( !type ) {
-				continue;
-			}
-
-			// If event changes its type, use the special event handlers for the changed type
-			special = jQuery.event.special[ type ] || {};
-
-			// If selector defined, determine special event api type, otherwise given type
-			type = ( selector ? special.delegateType : special.bindType ) || type;
-
-			// Update special based on newly reset type
-			special = jQuery.event.special[ type ] || {};
-
-			// handleObj is passed to all event handlers
-			handleObj = jQuery.extend( {
-				type: type,
-				origType: origType,
-				data: data,
-				handler: handler,
-				guid: handler.guid,
-				selector: selector,
-				needsContext: selector && jQuery.expr.match.needsContext.test( selector ),
-				namespace: namespaces.join( "." )
-			}, handleObjIn );
-
-			// Init the event handler queue if we're the first
-			if ( !( handlers = events[ type ] ) ) {
-				handlers = events[ type ] = [];
-				handlers.delegateCount = 0;
-
-				// Only use addEventListener if the special events handler returns false
-				if ( !special.setup ||
-					special.setup.call( elem, data, namespaces, eventHandle ) === false ) {
-
-					if ( elem.addEventListener ) {
-						elem.addEventListener( type, eventHandle );
-					}
-				}
-			}
-
-			if ( special.add ) {
-				special.add.call( elem, handleObj );
-
-				if ( !handleObj.handler.guid ) {
-					handleObj.handler.guid = handler.guid;
-				}
-			}
-
-			// Add to the element's handler list, delegates in front
-			if ( selector ) {
-				handlers.splice( handlers.delegateCount++, 0, handleObj );
-			} else {
-				handlers.push( handleObj );
-			}
-
-			// Keep track of which events have ever been used, for event optimization
-			jQuery.event.global[ type ] = true;
-		}
-
-	},
-
-	// Detach an event or set of events from an element
-	remove: function( elem, types, handler, selector, mappedTypes ) {
-
-		var j, origCount, tmp,
-			events, t, handleObj,
-			special, handlers, type, namespaces, origType,
-			elemData = dataPriv.hasData( elem ) && dataPriv.get( elem );
-
-		if ( !elemData || !( events = elemData.events ) ) {
-			return;
-		}
-
-		// Once for each type.namespace in types; type may be omitted
-		types = ( types || "" ).match( rnotwhite ) || [ "" ];
-		t = types.length;
-		while ( t-- ) {
-			tmp = rtypenamespace.exec( types[ t ] ) || [];
-			type = origType = tmp[ 1 ];
-			namespaces = ( tmp[ 2 ] || "" ).split( "." ).sort();
-
-			// Unbind all events (on this namespace, if provided) for the element
-			if ( !type ) {
-				for ( type in events ) {
-					jQuery.event.remove( elem, type + types[ t ], handler, selector, true );
-				}
-				continue;
-			}
-
-			special = jQuery.event.special[ type ] || {};
-			type = ( selector ? special.delegateType : special.bindType ) || type;
-			handlers = events[ type ] || [];
-			tmp = tmp[ 2 ] &&
-				new RegExp( "(^|\\.)" + namespaces.join( "\\.(?:.*\\.|)" ) + "(\\.|$)" );
-
-			// Remove matching events
-			origCount = j = handlers.length;
-			while ( j-- ) {
-				handleObj = handlers[ j ];
-
-				if ( ( mappedTypes || origType === handleObj.origType ) &&
-					( !handler || handler.guid === handleObj.guid ) &&
-					( !tmp || tmp.test( handleObj.namespace ) ) &&
-					( !selector || selector === handleObj.selector ||
-						selector === "**" && handleObj.selector ) ) {
-					handlers.splice( j, 1 );
-
-					if ( handleObj.selector ) {
-						handlers.delegateCount--;
-					}
-					if ( special.remove ) {
-						special.remove.call( elem, handleObj );
-					}
-				}
-			}
-
-			// Remove generic event handler if we removed something and no more handlers exist
-			// (avoids potential for endless recursion during removal of special event handlers)
-			if ( origCount && !handlers.length ) {
-				if ( !special.teardown ||
-					special.teardown.call( elem, namespaces, elemData.handle ) === false ) {
-
-					jQuery.removeEvent( elem, type, elemData.handle );
-				}
-
-				delete events[ type ];
-			}
-		}
-
-		// Remove data and the expando if it's no longer used
-		if ( jQuery.isEmptyObject( events ) ) {
-			dataPriv.remove( elem, "handle events" );
-		}
-	},
-
-	dispatch: function( nativeEvent ) {
-
-		// Make a writable jQuery.Event from the native event object
-		var event = jQuery.event.fix( nativeEvent );
-
-		var i, j, ret, matched, handleObj, handlerQueue,
-			args = new Array( arguments.length ),
-			handlers = ( dataPriv.get( this, "events" ) || {} )[ event.type ] || [],
-			special = jQuery.event.special[ event.type ] || {};
-
-		// Use the fix-ed jQuery.Event rather than the (read-only) native event
-		args[ 0 ] = event;
-
-		for ( i = 1; i < arguments.length; i++ ) {
-			args[ i ] = arguments[ i ];
-		}
-
-		event.delegateTarget = this;
-
-		// Call the preDispatch hook for the mapped type, and let it bail if desired
-		if ( special.preDispatch && special.preDispatch.call( this, event ) === false ) {
-			return;
-		}
-
-		// Determine handlers
-		handlerQueue = jQuery.event.handlers.call( this, event, handlers );
-
-		// Run delegates first; they may want to stop propagation beneath us
-		i = 0;
-		while ( ( matched = handlerQueue[ i++ ] ) && !event.isPropagationStopped() ) {
-			event.currentTarget = matched.elem;
-
-			j = 0;
-			while ( ( handleObj = matched.handlers[ j++ ] ) &&
-				!event.isImmediatePropagationStopped() ) {
-
-				// Triggered event must either 1) have no namespace, or 2) have namespace(s)
-				// a subset or equal to those in the bound event (both can have no namespace).
-				if ( !event.rnamespace || event.rnamespace.test( handleObj.namespace ) ) {
-
-					event.handleObj = handleObj;
-					event.data = handleObj.data;
-
-					ret = ( ( jQuery.event.special[ handleObj.origType ] || {} ).handle ||
-						handleObj.handler ).apply( matched.elem, args );
-
-					if ( ret !== undefined ) {
-						if ( ( event.result = ret ) === false ) {
-							event.preventDefault();
-							event.stopPropagation();
-						}
-					}
-				}
-			}
-		}
-
-		// Call the postDispatch hook for the mapped type
-		if ( special.postDispatch ) {
-			special.postDispatch.call( this, event );
-		}
-
-		return event.result;
-	},
-
-	handlers: function( event, handlers ) {
-		var i, handleObj, sel, matchedHandlers, matchedSelectors,
-			handlerQueue = [],
-			delegateCount = handlers.delegateCount,
-			cur = event.target;
-
-		// Find delegate handlers
-		if ( delegateCount &&
-
-			// Support: IE <=9
-			// Black-hole SVG <use> instance trees (trac-13180)
-			cur.nodeType &&
-
-			// Support: Firefox <=42
-			// Suppress spec-violating clicks indicating a non-primary pointer button (trac-3861)
-			// https://www.w3.org/TR/DOM-Level-3-Events/#event-type-click
-			// Support: IE 11 only
-			// ...but not arrow key "clicks" of radio inputs, which can have `button` -1 (gh-2343)
-			!( event.type === "click" && event.button >= 1 ) ) {
-
-			for ( ; cur !== this; cur = cur.parentNode || this ) {
-
-				// Don't check non-elements (#13208)
-				// Don't process clicks on disabled elements (#6911, #8165, #11382, #11764)
-				if ( cur.nodeType === 1 && !( event.type === "click" && cur.disabled === true ) ) {
-					matchedHandlers = [];
-					matchedSelectors = {};
-					for ( i = 0; i < delegateCount; i++ ) {
-						handleObj = handlers[ i ];
-
-						// Don't conflict with Object.prototype properties (#13203)
-						sel = handleObj.selector + " ";
-
-						if ( matchedSelectors[ sel ] === undefined ) {
-							matchedSelectors[ sel ] = handleObj.needsContext ?
-								jQuery( sel, this ).index( cur ) > -1 :
-								jQuery.find( sel, this, null, [ cur ] ).length;
-						}
-						if ( matchedSelectors[ sel ] ) {
-							matchedHandlers.push( handleObj );
-						}
-					}
-					if ( matchedHandlers.length ) {
-						handlerQueue.push( { elem: cur, handlers: matchedHandlers } );
-					}
-				}
-			}
-		}
-
-		// Add the remaining (directly-bound) handlers
-		cur = this;
-		if ( delegateCount < handlers.length ) {
-			handlerQueue.push( { elem: cur, handlers: handlers.slice( delegateCount ) } );
-		}
-
-		return handlerQueue;
-	},
-
-	addProp: function( name, hook ) {
-		Object.defineProperty( jQuery.Event.prototype, name, {
-			enumerable: true,
-			configurable: true,
-
-			get: jQuery.isFunction( hook ) ?
-				function() {
-					if ( this.originalEvent ) {
-							return hook( this.originalEvent );
-					}
-				} :
-				function() {
-					if ( this.originalEvent ) {
-							return this.originalEvent[ name ];
-					}
-				},
-
-			set: function( value ) {
-				Object.defineProperty( this, name, {
-					enumerable: true,
-					configurable: true,
-					writable: true,
-					value: value
-				} );
-			}
-		} );
-	},
-
-	fix: function( originalEvent ) {
-		return originalEvent[ jQuery.expando ] ?
-			originalEvent :
-			new jQuery.Event( originalEvent );
-	},
-
-	special: {
-		load: {
-
-			// Prevent triggered image.load events from bubbling to window.load
-			noBubble: true
-		},
-		focus: {
-
-			// Fire native event if possible so blur/focus sequence is correct
-			trigger: function() {
-				if ( this !== safeActiveElement() && this.focus ) {
-					this.focus();
-					return false;
-				}
-			},
-			delegateType: "focusin"
-		},
-		blur: {
-			trigger: function() {
-				if ( this === safeActiveElement() && this.blur ) {
-					this.blur();
-					return false;
-				}
-			},
-			delegateType: "focusout"
-		},
-		click: {
-
-			// For checkbox, fire native event so checked state will be right
-			trigger: function() {
-				if ( this.type === "checkbox" && this.click && jQuery.nodeName( this, "input" ) ) {
-					this.click();
-					return false;
-				}
-			},
-
-			// For cross-browser consistency, don't fire native .click() on links
-			_default: function( event ) {
-				return jQuery.nodeName( event.target, "a" );
-			}
-		},
-
-		beforeunload: {
-			postDispatch: function( event ) {
-
-				// Support: Firefox 20+
-				// Firefox doesn't alert if the returnValue field is not set.
-				if ( event.result !== undefined && event.originalEvent ) {
-					event.originalEvent.returnValue = event.result;
-				}
-			}
-		}
-	}
-};
-
-jQuery.removeEvent = function( elem, type, handle ) {
-
-	// This "if" is needed for plain objects
-	if ( elem.removeEventListener ) {
-		elem.removeEventListener( type, handle );
-	}
-};
-
-jQuery.Event = function( src, props ) {
-
-	// Allow instantiation without the 'new' keyword
-	if ( !( this instanceof jQuery.Event ) ) {
-		return new jQuery.Event( src, props );
-	}
-
-	// Event object
-	if ( src && src.type ) {
-		this.originalEvent = src;
-		this.type = src.type;
-
-		// Events bubbling up the document may have been marked as prevented
-		// by a handler lower down the tree; reflect the correct value.
-		this.isDefaultPrevented = src.defaultPrevented ||
-				src.defaultPrevented === undefined &&
-
-				// Support: Android <=2.3 only
-				src.returnValue === false ?
-			returnTrue :
-			returnFalse;
-
-		// Create target properties
-		// Support: Safari <=6 - 7 only
-		// Target should not be a text node (#504, #13143)
-		this.target = ( src.target && src.target.nodeType === 3 ) ?
-			src.target.parentNode :
-			src.target;
-
-		this.currentTarget = src.currentTarget;
-		this.relatedTarget = src.relatedTarget;
-
-	// Event type
-	} else {
-		this.type = src;
-	}
-
-	// Put explicitly provided properties onto the event object
-	if ( props ) {
-		jQuery.extend( this, props );
-	}
-
-	// Create a timestamp if incoming event doesn't have one
-	this.timeStamp = src && src.timeStamp || jQuery.now();
-
-	// Mark it as fixed
-	this[ jQuery.expando ] = true;
-};
-
-// jQuery.Event is based on DOM3 Events as specified by the ECMAScript Language Binding
-// https://www.w3.org/TR/2003/WD-DOM-Level-3-Events-20030331/ecma-script-binding.html
-jQuery.Event.prototype = {
-	constructor: jQuery.Event,
-	isDefaultPrevented: returnFalse,
-	isPropagationStopped: returnFalse,
-	isImmediatePropagationStopped: returnFalse,
-	isSimulated: false,
-
-	preventDefault: function() {
-		var e = this.originalEvent;
-
-		this.isDefaultPrevented = returnTrue;
-
-		if ( e && !this.isSimulated ) {
-			e.preventDefault();
-		}
-	},
-	stopPropagation: function() {
-		var e = this.originalEvent;
-
-		this.isPropagationStopped = returnTrue;
-
-		if ( e && !this.isSimulated ) {
-			e.stopPropagation();
-		}
-	},
-	stopImmediatePropagation: function() {
-		var e = this.originalEvent;
-
-		this.isImmediatePropagationStopped = returnTrue;
-
-		if ( e && !this.isSimulated ) {
-			e.stopImmediatePropagation();
-		}
-
-		this.stopPropagation();
-	}
-};
-
-// Includes all common event props including KeyEvent and MouseEvent specific props
-jQuery.each( {
-	altKey: true,
-	bubbles: true,
-	cancelable: true,
-	changedTouches: true,
-	ctrlKey: true,
-	detail: true,
-	eventPhase: true,
-	metaKey: true,
-	pageX: true,
-	pageY: true,
-	shiftKey: true,
-	view: true,
-	"char": true,
-	charCode: true,
-	key: true,
-	keyCode: true,
-	button: true,
-	buttons: true,
-	clientX: true,
-	clientY: true,
-	offsetX: true,
-	offsetY: true,
-	pointerId: true,
-	pointerType: true,
-	screenX: true,
-	screenY: true,
-	targetTouches: true,
-	toElement: true,
-	touches: true,
-
-	which: function( event ) {
-		var button = event.button;
-
-		// Add which for key events
-		if ( event.which == null && rkeyEvent.test( event.type ) ) {
-			return event.charCode != null ? event.charCode : event.keyCode;
-		}
-
-		// Add which for click: 1 === left; 2 === middle; 3 === right
-		if ( !event.which && button !== undefined && rmouseEvent.test( event.type ) ) {
-			if ( button & 1 ) {
-				return 1;
-			}
-
-			if ( button & 2 ) {
-				return 3;
-			}
-
-			if ( button & 4 ) {
-				return 2;
-			}
-
-			return 0;
-		}
-
-		return event.which;
-	}
-}, jQuery.event.addProp );
-
-// Create mouseenter/leave events using mouseover/out and event-time checks
-// so that event delegation works in jQuery.
-// Do the same for pointerenter/pointerleave and pointerover/pointerout
-//
-// Support: Safari 7 only
-// Safari sends mouseenter too often; see:
-// https://bugs.chromium.org/p/chromium/issues/detail?id=470258
-// for the description of the bug (it existed in older Chrome versions as well).
-jQuery.each( {
-	mouseenter: "mouseover",
-	mouseleave: "mouseout",
-	pointerenter: "pointerover",
-	pointerleave: "pointerout"
-}, function( orig, fix ) {
-	jQuery.event.special[ orig ] = {
-		delegateType: fix,
-		bindType: fix,
-
-		handle: function( event ) {
-			var ret,
-				target = this,
-				related = event.relatedTarget,
-				handleObj = event.handleObj;
-
-			// For mouseenter/leave call the handler if related is outside the target.
-			// NB: No relatedTarget if the mouse left/entered the browser window
-			if ( !related || ( related !== target && !jQuery.contains( target, related ) ) ) {
-				event.type = handleObj.origType;
-				ret = handleObj.handler.apply( this, arguments );
-				event.type = fix;
-			}
-			return ret;
-		}
-	};
-} );
-
-jQuery.fn.extend( {
-
-	on: function( types, selector, data, fn ) {
-		return on( this, types, selector, data, fn );
-	},
-	one: function( types, selector, data, fn ) {
-		return on( this, types, selector, data, fn, 1 );
-	},
-	off: function( types, selector, fn ) {
-		var handleObj, type;
-		if ( types && types.preventDefault && types.handleObj ) {
-
-			// ( event )  dispatched jQuery.Event
-			handleObj = types.handleObj;
-			jQuery( types.delegateTarget ).off(
-				handleObj.namespace ?
-					handleObj.origType + "." + handleObj.namespace :
-					handleObj.origType,
-				handleObj.selector,
-				handleObj.handler
-			);
-			return this;
-		}
-		if ( typeof types === "object" ) {
-
-			// ( types-object [, selector] )
-			for ( type in types ) {
-				this.off( type, selector, types[ type ] );
-			}
-			return this;
-		}
-		if ( selector === false || typeof selector === "function" ) {
-
-			// ( types [, fn] )
-			fn = selector;
-			selector = undefined;
-		}
-		if ( fn === false ) {
-			fn = returnFalse;
-		}
-		return this.each( function() {
-			jQuery.event.remove( this, types, fn, selector );
-		} );
-	}
-} );
-
-return jQuery;
-} );
-;
-define( 'jquery/src/var/documentElement',[
-	"./document"
-], function( document ) {
-	"use strict";
-
-	return document.documentElement;
-} );
-;
 define( 'jquery/src/effects',[
 	"./core",
 	"./var/document",
 	"./var/rcssNum",
-	"./var/rnotwhite",
+	"./var/rnothtmlwhite",
 	"./css/var/cssExpand",
 	"./css/var/isHiddenWithinTree",
 	"./css/var/swap",
@@ -9256,7 +9387,7 @@ define( 'jquery/src/effects',[
 	"./manipulation",
 	"./css",
 	"./effects/Tween"
-], function( jQuery, document, rcssNum, rnotwhite, cssExpand, isHiddenWithinTree, swap,
+], function( jQuery, document, rcssNum, rnothtmlwhite, cssExpand, isHiddenWithinTree, swap,
 	adjustCSS, dataPriv, showHide ) {
 
 "use strict";
@@ -9654,7 +9785,7 @@ jQuery.Animation = jQuery.extend( Animation, {
 			callback = props;
 			props = [ "*" ];
 		} else {
-			props = props.match( rnotwhite );
+			props = props.match( rnothtmlwhite );
 		}
 
 		var prop,
@@ -10053,2069 +10184,6 @@ jQuery.fx = Tween.prototype.init;
 // Back compat <1.8 extension point
 jQuery.fx.step = {};
 
-} );
-;
-define( 'jquery/src/manipulation',[
-	"./core",
-	"./var/concat",
-	"./var/push",
-	"./core/access",
-	"./manipulation/var/rcheckableType",
-	"./manipulation/var/rtagName",
-	"./manipulation/var/rscriptType",
-	"./manipulation/wrapMap",
-	"./manipulation/getAll",
-	"./manipulation/setGlobalEval",
-	"./manipulation/buildFragment",
-	"./manipulation/support",
-
-	"./data/var/dataPriv",
-	"./data/var/dataUser",
-	"./data/var/acceptData",
-	"./core/DOMEval",
-
-	"./core/init",
-	"./traversing",
-	"./selector",
-	"./event"
-], function( jQuery, concat, push, access,
-	rcheckableType, rtagName, rscriptType,
-	wrapMap, getAll, setGlobalEval, buildFragment, support,
-	dataPriv, dataUser, acceptData, DOMEval ) {
-
-"use strict";
-
-var
-
-	/* eslint-disable max-len */
-
-	// See https://github.com/eslint/eslint/issues/3229
-	rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([a-z][^\/\0>\x20\t\r\n\f]*)[^>]*)\/>/gi,
-
-	/* eslint-enable */
-
-	// Support: IE <=10 - 11, Edge 12 - 13
-	// In IE/Edge using regex groups here causes severe slowdowns.
-	// See https://connect.microsoft.com/IE/feedback/details/1736512/
-	rnoInnerhtml = /<script|<style|<link/i,
-
-	// checked="checked" or checked
-	rchecked = /checked\s*(?:[^=]|=\s*.checked.)/i,
-	rscriptTypeMasked = /^true\/(.*)/,
-	rcleanScript = /^\s*<!(?:\[CDATA\[|--)|(?:\]\]|--)>\s*$/g;
-
-function manipulationTarget( elem, content ) {
-	if ( jQuery.nodeName( elem, "table" ) &&
-		jQuery.nodeName( content.nodeType !== 11 ? content : content.firstChild, "tr" ) ) {
-
-		return elem.getElementsByTagName( "tbody" )[ 0 ] || elem;
-	}
-
-	return elem;
-}
-
-// Replace/restore the type attribute of script elements for safe DOM manipulation
-function disableScript( elem ) {
-	elem.type = ( elem.getAttribute( "type" ) !== null ) + "/" + elem.type;
-	return elem;
-}
-function restoreScript( elem ) {
-	var match = rscriptTypeMasked.exec( elem.type );
-
-	if ( match ) {
-		elem.type = match[ 1 ];
-	} else {
-		elem.removeAttribute( "type" );
-	}
-
-	return elem;
-}
-
-function cloneCopyEvent( src, dest ) {
-	var i, l, type, pdataOld, pdataCur, udataOld, udataCur, events;
-
-	if ( dest.nodeType !== 1 ) {
-		return;
-	}
-
-	// 1. Copy private data: events, handlers, etc.
-	if ( dataPriv.hasData( src ) ) {
-		pdataOld = dataPriv.access( src );
-		pdataCur = dataPriv.set( dest, pdataOld );
-		events = pdataOld.events;
-
-		if ( events ) {
-			delete pdataCur.handle;
-			pdataCur.events = {};
-
-			for ( type in events ) {
-				for ( i = 0, l = events[ type ].length; i < l; i++ ) {
-					jQuery.event.add( dest, type, events[ type ][ i ] );
-				}
-			}
-		}
-	}
-
-	// 2. Copy user data
-	if ( dataUser.hasData( src ) ) {
-		udataOld = dataUser.access( src );
-		udataCur = jQuery.extend( {}, udataOld );
-
-		dataUser.set( dest, udataCur );
-	}
-}
-
-// Fix IE bugs, see support tests
-function fixInput( src, dest ) {
-	var nodeName = dest.nodeName.toLowerCase();
-
-	// Fails to persist the checked state of a cloned checkbox or radio button.
-	if ( nodeName === "input" && rcheckableType.test( src.type ) ) {
-		dest.checked = src.checked;
-
-	// Fails to return the selected option to the default selected state when cloning options
-	} else if ( nodeName === "input" || nodeName === "textarea" ) {
-		dest.defaultValue = src.defaultValue;
-	}
-}
-
-function domManip( collection, args, callback, ignored ) {
-
-	// Flatten any nested arrays
-	args = concat.apply( [], args );
-
-	var fragment, first, scripts, hasScripts, node, doc,
-		i = 0,
-		l = collection.length,
-		iNoClone = l - 1,
-		value = args[ 0 ],
-		isFunction = jQuery.isFunction( value );
-
-	// We can't cloneNode fragments that contain checked, in WebKit
-	if ( isFunction ||
-			( l > 1 && typeof value === "string" &&
-				!support.checkClone && rchecked.test( value ) ) ) {
-		return collection.each( function( index ) {
-			var self = collection.eq( index );
-			if ( isFunction ) {
-				args[ 0 ] = value.call( this, index, self.html() );
-			}
-			domManip( self, args, callback, ignored );
-		} );
-	}
-
-	if ( l ) {
-		fragment = buildFragment( args, collection[ 0 ].ownerDocument, false, collection, ignored );
-		first = fragment.firstChild;
-
-		if ( fragment.childNodes.length === 1 ) {
-			fragment = first;
-		}
-
-		// Require either new content or an interest in ignored elements to invoke the callback
-		if ( first || ignored ) {
-			scripts = jQuery.map( getAll( fragment, "script" ), disableScript );
-			hasScripts = scripts.length;
-
-			// Use the original fragment for the last item
-			// instead of the first because it can end up
-			// being emptied incorrectly in certain situations (#8070).
-			for ( ; i < l; i++ ) {
-				node = fragment;
-
-				if ( i !== iNoClone ) {
-					node = jQuery.clone( node, true, true );
-
-					// Keep references to cloned scripts for later restoration
-					if ( hasScripts ) {
-
-						// Support: Android <=4.0 only, PhantomJS 1 only
-						// push.apply(_, arraylike) throws on ancient WebKit
-						jQuery.merge( scripts, getAll( node, "script" ) );
-					}
-				}
-
-				callback.call( collection[ i ], node, i );
-			}
-
-			if ( hasScripts ) {
-				doc = scripts[ scripts.length - 1 ].ownerDocument;
-
-				// Reenable scripts
-				jQuery.map( scripts, restoreScript );
-
-				// Evaluate executable scripts on first document insertion
-				for ( i = 0; i < hasScripts; i++ ) {
-					node = scripts[ i ];
-					if ( rscriptType.test( node.type || "" ) &&
-						!dataPriv.access( node, "globalEval" ) &&
-						jQuery.contains( doc, node ) ) {
-
-						if ( node.src ) {
-
-							// Optional AJAX dependency, but won't run scripts if not present
-							if ( jQuery._evalUrl ) {
-								jQuery._evalUrl( node.src );
-							}
-						} else {
-							DOMEval( node.textContent.replace( rcleanScript, "" ), doc );
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return collection;
-}
-
-function remove( elem, selector, keepData ) {
-	var node,
-		nodes = selector ? jQuery.filter( selector, elem ) : elem,
-		i = 0;
-
-	for ( ; ( node = nodes[ i ] ) != null; i++ ) {
-		if ( !keepData && node.nodeType === 1 ) {
-			jQuery.cleanData( getAll( node ) );
-		}
-
-		if ( node.parentNode ) {
-			if ( keepData && jQuery.contains( node.ownerDocument, node ) ) {
-				setGlobalEval( getAll( node, "script" ) );
-			}
-			node.parentNode.removeChild( node );
-		}
-	}
-
-	return elem;
-}
-
-jQuery.extend( {
-	htmlPrefilter: function( html ) {
-		return html.replace( rxhtmlTag, "<$1></$2>" );
-	},
-
-	clone: function( elem, dataAndEvents, deepDataAndEvents ) {
-		var i, l, srcElements, destElements,
-			clone = elem.cloneNode( true ),
-			inPage = jQuery.contains( elem.ownerDocument, elem );
-
-		// Fix IE cloning issues
-		if ( !support.noCloneChecked && ( elem.nodeType === 1 || elem.nodeType === 11 ) &&
-				!jQuery.isXMLDoc( elem ) ) {
-
-			// We eschew Sizzle here for performance reasons: https://jsperf.com/getall-vs-sizzle/2
-			destElements = getAll( clone );
-			srcElements = getAll( elem );
-
-			for ( i = 0, l = srcElements.length; i < l; i++ ) {
-				fixInput( srcElements[ i ], destElements[ i ] );
-			}
-		}
-
-		// Copy the events from the original to the clone
-		if ( dataAndEvents ) {
-			if ( deepDataAndEvents ) {
-				srcElements = srcElements || getAll( elem );
-				destElements = destElements || getAll( clone );
-
-				for ( i = 0, l = srcElements.length; i < l; i++ ) {
-					cloneCopyEvent( srcElements[ i ], destElements[ i ] );
-				}
-			} else {
-				cloneCopyEvent( elem, clone );
-			}
-		}
-
-		// Preserve script evaluation history
-		destElements = getAll( clone, "script" );
-		if ( destElements.length > 0 ) {
-			setGlobalEval( destElements, !inPage && getAll( elem, "script" ) );
-		}
-
-		// Return the cloned set
-		return clone;
-	},
-
-	cleanData: function( elems ) {
-		var data, elem, type,
-			special = jQuery.event.special,
-			i = 0;
-
-		for ( ; ( elem = elems[ i ] ) !== undefined; i++ ) {
-			if ( acceptData( elem ) ) {
-				if ( ( data = elem[ dataPriv.expando ] ) ) {
-					if ( data.events ) {
-						for ( type in data.events ) {
-							if ( special[ type ] ) {
-								jQuery.event.remove( elem, type );
-
-							// This is a shortcut to avoid jQuery.event.remove's overhead
-							} else {
-								jQuery.removeEvent( elem, type, data.handle );
-							}
-						}
-					}
-
-					// Support: Chrome <=35 - 45+
-					// Assign undefined instead of using delete, see Data#remove
-					elem[ dataPriv.expando ] = undefined;
-				}
-				if ( elem[ dataUser.expando ] ) {
-
-					// Support: Chrome <=35 - 45+
-					// Assign undefined instead of using delete, see Data#remove
-					elem[ dataUser.expando ] = undefined;
-				}
-			}
-		}
-	}
-} );
-
-jQuery.fn.extend( {
-	detach: function( selector ) {
-		return remove( this, selector, true );
-	},
-
-	remove: function( selector ) {
-		return remove( this, selector );
-	},
-
-	text: function( value ) {
-		return access( this, function( value ) {
-			return value === undefined ?
-				jQuery.text( this ) :
-				this.empty().each( function() {
-					if ( this.nodeType === 1 || this.nodeType === 11 || this.nodeType === 9 ) {
-						this.textContent = value;
-					}
-				} );
-		}, null, value, arguments.length );
-	},
-
-	append: function() {
-		return domManip( this, arguments, function( elem ) {
-			if ( this.nodeType === 1 || this.nodeType === 11 || this.nodeType === 9 ) {
-				var target = manipulationTarget( this, elem );
-				target.appendChild( elem );
-			}
-		} );
-	},
-
-	prepend: function() {
-		return domManip( this, arguments, function( elem ) {
-			if ( this.nodeType === 1 || this.nodeType === 11 || this.nodeType === 9 ) {
-				var target = manipulationTarget( this, elem );
-				target.insertBefore( elem, target.firstChild );
-			}
-		} );
-	},
-
-	before: function() {
-		return domManip( this, arguments, function( elem ) {
-			if ( this.parentNode ) {
-				this.parentNode.insertBefore( elem, this );
-			}
-		} );
-	},
-
-	after: function() {
-		return domManip( this, arguments, function( elem ) {
-			if ( this.parentNode ) {
-				this.parentNode.insertBefore( elem, this.nextSibling );
-			}
-		} );
-	},
-
-	empty: function() {
-		var elem,
-			i = 0;
-
-		for ( ; ( elem = this[ i ] ) != null; i++ ) {
-			if ( elem.nodeType === 1 ) {
-
-				// Prevent memory leaks
-				jQuery.cleanData( getAll( elem, false ) );
-
-				// Remove any remaining nodes
-				elem.textContent = "";
-			}
-		}
-
-		return this;
-	},
-
-	clone: function( dataAndEvents, deepDataAndEvents ) {
-		dataAndEvents = dataAndEvents == null ? false : dataAndEvents;
-		deepDataAndEvents = deepDataAndEvents == null ? dataAndEvents : deepDataAndEvents;
-
-		return this.map( function() {
-			return jQuery.clone( this, dataAndEvents, deepDataAndEvents );
-		} );
-	},
-
-	html: function( value ) {
-		return access( this, function( value ) {
-			var elem = this[ 0 ] || {},
-				i = 0,
-				l = this.length;
-
-			if ( value === undefined && elem.nodeType === 1 ) {
-				return elem.innerHTML;
-			}
-
-			// See if we can take a shortcut and just use innerHTML
-			if ( typeof value === "string" && !rnoInnerhtml.test( value ) &&
-				!wrapMap[ ( rtagName.exec( value ) || [ "", "" ] )[ 1 ].toLowerCase() ] ) {
-
-				value = jQuery.htmlPrefilter( value );
-
-				try {
-					for ( ; i < l; i++ ) {
-						elem = this[ i ] || {};
-
-						// Remove element nodes and prevent memory leaks
-						if ( elem.nodeType === 1 ) {
-							jQuery.cleanData( getAll( elem, false ) );
-							elem.innerHTML = value;
-						}
-					}
-
-					elem = 0;
-
-				// If using innerHTML throws an exception, use the fallback method
-				} catch ( e ) {}
-			}
-
-			if ( elem ) {
-				this.empty().append( value );
-			}
-		}, null, value, arguments.length );
-	},
-
-	replaceWith: function() {
-		var ignored = [];
-
-		// Make the changes, replacing each non-ignored context element with the new content
-		return domManip( this, arguments, function( elem ) {
-			var parent = this.parentNode;
-
-			if ( jQuery.inArray( this, ignored ) < 0 ) {
-				jQuery.cleanData( getAll( this ) );
-				if ( parent ) {
-					parent.replaceChild( elem, this );
-				}
-			}
-
-		// Force callback invocation
-		}, ignored );
-	}
-} );
-
-jQuery.each( {
-	appendTo: "append",
-	prependTo: "prepend",
-	insertBefore: "before",
-	insertAfter: "after",
-	replaceAll: "replaceWith"
-}, function( name, original ) {
-	jQuery.fn[ name ] = function( selector ) {
-		var elems,
-			ret = [],
-			insert = jQuery( selector ),
-			last = insert.length - 1,
-			i = 0;
-
-		for ( ; i <= last; i++ ) {
-			elems = i === last ? this : this.clone( true );
-			jQuery( insert[ i ] )[ original ]( elems );
-
-			// Support: Android <=4.0 only, PhantomJS 1 only
-			// .get() because push.apply(_, arraylike) throws on ancient WebKit
-			push.apply( ret, elems.get() );
-		}
-
-		return this.pushStack( ret );
-	};
-} );
-
-return jQuery;
-} );
-;
-define( 'jquery/src/data/var/dataUser',[
-	"../Data"
-], function( Data ) {
-	"use strict";
-
-	return new Data();
-} );
-;
-define( 'jquery/src/manipulation/support',[
-	"../var/document",
-	"../var/support"
-], function( document, support ) {
-
-"use strict";
-
-( function() {
-	var fragment = document.createDocumentFragment(),
-		div = fragment.appendChild( document.createElement( "div" ) ),
-		input = document.createElement( "input" );
-
-	// Support: Android 4.0 - 4.3 only
-	// Check state lost if the name is set (#11217)
-	// Support: Windows Web Apps (WWA)
-	// `name` and `type` must use .setAttribute for WWA (#14901)
-	input.setAttribute( "type", "radio" );
-	input.setAttribute( "checked", "checked" );
-	input.setAttribute( "name", "t" );
-
-	div.appendChild( input );
-
-	// Support: Android <=4.1 only
-	// Older WebKit doesn't clone checked state correctly in fragments
-	support.checkClone = div.cloneNode( true ).cloneNode( true ).lastChild.checked;
-
-	// Support: IE <=11 only
-	// Make sure textarea (and checkbox) defaultValue is properly cloned
-	div.innerHTML = "<textarea>x</textarea>";
-	support.noCloneChecked = !!div.cloneNode( true ).lastChild.defaultValue;
-} )();
-
-return support;
-
-} );
-;
-define( 'jquery/src/manipulation/buildFragment',[
-	"../core",
-	"./var/rtagName",
-	"./var/rscriptType",
-	"./wrapMap",
-	"./getAll",
-	"./setGlobalEval"
-], function( jQuery, rtagName, rscriptType, wrapMap, getAll, setGlobalEval ) {
-
-"use strict";
-
-var rhtml = /<|&#?\w+;/;
-
-function buildFragment( elems, context, scripts, selection, ignored ) {
-	var elem, tmp, tag, wrap, contains, j,
-		fragment = context.createDocumentFragment(),
-		nodes = [],
-		i = 0,
-		l = elems.length;
-
-	for ( ; i < l; i++ ) {
-		elem = elems[ i ];
-
-		if ( elem || elem === 0 ) {
-
-			// Add nodes directly
-			if ( jQuery.type( elem ) === "object" ) {
-
-				// Support: Android <=4.0 only, PhantomJS 1 only
-				// push.apply(_, arraylike) throws on ancient WebKit
-				jQuery.merge( nodes, elem.nodeType ? [ elem ] : elem );
-
-			// Convert non-html into a text node
-			} else if ( !rhtml.test( elem ) ) {
-				nodes.push( context.createTextNode( elem ) );
-
-			// Convert html into DOM nodes
-			} else {
-				tmp = tmp || fragment.appendChild( context.createElement( "div" ) );
-
-				// Deserialize a standard representation
-				tag = ( rtagName.exec( elem ) || [ "", "" ] )[ 1 ].toLowerCase();
-				wrap = wrapMap[ tag ] || wrapMap._default;
-				tmp.innerHTML = wrap[ 1 ] + jQuery.htmlPrefilter( elem ) + wrap[ 2 ];
-
-				// Descend through wrappers to the right content
-				j = wrap[ 0 ];
-				while ( j-- ) {
-					tmp = tmp.lastChild;
-				}
-
-				// Support: Android <=4.0 only, PhantomJS 1 only
-				// push.apply(_, arraylike) throws on ancient WebKit
-				jQuery.merge( nodes, tmp.childNodes );
-
-				// Remember the top-level container
-				tmp = fragment.firstChild;
-
-				// Ensure the created nodes are orphaned (#12392)
-				tmp.textContent = "";
-			}
-		}
-	}
-
-	// Remove wrapper from fragment
-	fragment.textContent = "";
-
-	i = 0;
-	while ( ( elem = nodes[ i++ ] ) ) {
-
-		// Skip elements already in the context collection (trac-4087)
-		if ( selection && jQuery.inArray( elem, selection ) > -1 ) {
-			if ( ignored ) {
-				ignored.push( elem );
-			}
-			continue;
-		}
-
-		contains = jQuery.contains( elem.ownerDocument, elem );
-
-		// Append to fragment
-		tmp = getAll( fragment.appendChild( elem ), "script" );
-
-		// Preserve script evaluation history
-		if ( contains ) {
-			setGlobalEval( tmp );
-		}
-
-		// Capture executables
-		if ( scripts ) {
-			j = 0;
-			while ( ( elem = tmp[ j++ ] ) ) {
-				if ( rscriptType.test( elem.type || "" ) ) {
-					scripts.push( elem );
-				}
-			}
-		}
-	}
-
-	return fragment;
-}
-
-return buildFragment;
-} );
-;
-define( 'jquery/src/manipulation/setGlobalEval',[
-	"../data/var/dataPriv"
-], function( dataPriv ) {
-
-"use strict";
-
-// Mark scripts as having already been evaluated
-function setGlobalEval( elems, refElements ) {
-	var i = 0,
-		l = elems.length;
-
-	for ( ; i < l; i++ ) {
-		dataPriv.set(
-			elems[ i ],
-			"globalEval",
-			!refElements || dataPriv.get( refElements[ i ], "globalEval" )
-		);
-	}
-}
-
-return setGlobalEval;
-} );
-;
-define( 'jquery/src/manipulation/getAll',[
-	"../core"
-], function( jQuery ) {
-
-"use strict";
-
-function getAll( context, tag ) {
-
-	// Support: IE <=9 - 11 only
-	// Use typeof to avoid zero-argument method invocation on host objects (#15151)
-	var ret;
-
-	if ( typeof context.getElementsByTagName !== "undefined" ) {
-		ret = context.getElementsByTagName( tag || "*" );
-
-	} else if ( typeof context.querySelectorAll !== "undefined" ) {
-		ret = context.querySelectorAll( tag || "*" );
-
-	} else {
-		ret = [];
-	}
-
-	if ( tag === undefined || tag && jQuery.nodeName( context, tag ) ) {
-		return jQuery.merge( [ context ], ret );
-	}
-
-	return ret;
-}
-
-return getAll;
-} );
-;
-define( 'jquery/src/manipulation/wrapMap',[],function() {
-
-"use strict";
-
-// We have to close these tags to support XHTML (#13200)
-var wrapMap = {
-
-	// Support: IE <=9 only
-	option: [ 1, "<select multiple='multiple'>", "</select>" ],
-
-	// XHTML parsers do not magically insert elements in the
-	// same way that tag soup parsers do. So we cannot shorten
-	// this by omitting <tbody> or other required elements.
-	thead: [ 1, "<table>", "</table>" ],
-	col: [ 2, "<table><colgroup>", "</colgroup></table>" ],
-	tr: [ 2, "<table><tbody>", "</tbody></table>" ],
-	td: [ 3, "<table><tbody><tr>", "</tr></tbody></table>" ],
-
-	_default: [ 0, "", "" ]
-};
-
-// Support: IE <=9 only
-wrapMap.optgroup = wrapMap.option;
-
-wrapMap.tbody = wrapMap.tfoot = wrapMap.colgroup = wrapMap.caption = wrapMap.thead;
-wrapMap.th = wrapMap.td;
-
-return wrapMap;
-} );
-;
-define( 'jquery/src/manipulation/var/rscriptType',[],function() {
-	"use strict";
-
-	return ( /^$|\/(?:java|ecma)script/i );
-} );
-;
-define( 'jquery/src/manipulation/var/rtagName',[],function() {
-	"use strict";
-
-	return ( /<([a-z][^\/\0>\x20\t\r\n\f]+)/i );
-} );
-;
-define( 'jquery/src/manipulation/var/rcheckableType',[],function() {
-	"use strict";
-
-	return ( /^(?:checkbox|radio)$/i );
-} );
-;
-define( 'jquery/src/core/access',[
-	"../core"
-], function( jQuery ) {
-
-"use strict";
-
-// Multifunctional method to get and set values of a collection
-// The value/s can optionally be executed if it's a function
-var access = function( elems, fn, key, value, chainable, emptyGet, raw ) {
-	var i = 0,
-		len = elems.length,
-		bulk = key == null;
-
-	// Sets many values
-	if ( jQuery.type( key ) === "object" ) {
-		chainable = true;
-		for ( i in key ) {
-			access( elems, fn, i, key[ i ], true, emptyGet, raw );
-		}
-
-	// Sets one value
-	} else if ( value !== undefined ) {
-		chainable = true;
-
-		if ( !jQuery.isFunction( value ) ) {
-			raw = true;
-		}
-
-		if ( bulk ) {
-
-			// Bulk operations run against the entire set
-			if ( raw ) {
-				fn.call( elems, value );
-				fn = null;
-
-			// ...except when executing function values
-			} else {
-				bulk = fn;
-				fn = function( elem, key, value ) {
-					return bulk.call( jQuery( elem ), value );
-				};
-			}
-		}
-
-		if ( fn ) {
-			for ( ; i < len; i++ ) {
-				fn(
-					elems[ i ], key, raw ?
-					value :
-					value.call( elems[ i ], i, fn( elems[ i ], key ) )
-				);
-			}
-		}
-	}
-
-	if ( chainable ) {
-		return elems;
-	}
-
-	// Gets
-	if ( bulk ) {
-		return fn.call( elems );
-	}
-
-	return len ? fn( elems[ 0 ], key ) : emptyGet;
-};
-
-return access;
-
-} );
-;
-define( 'jquery/src/traversing',[
-	"./core",
-	"./var/indexOf",
-	"./traversing/var/dir",
-	"./traversing/var/siblings",
-	"./traversing/var/rneedsContext",
-	"./core/init",
-	"./traversing/findFilter",
-	"./selector"
-], function( jQuery, indexOf, dir, siblings, rneedsContext ) {
-
-"use strict";
-
-var rparentsprev = /^(?:parents|prev(?:Until|All))/,
-
-	// Methods guaranteed to produce a unique set when starting from a unique set
-	guaranteedUnique = {
-		children: true,
-		contents: true,
-		next: true,
-		prev: true
-	};
-
-jQuery.fn.extend( {
-	has: function( target ) {
-		var targets = jQuery( target, this ),
-			l = targets.length;
-
-		return this.filter( function() {
-			var i = 0;
-			for ( ; i < l; i++ ) {
-				if ( jQuery.contains( this, targets[ i ] ) ) {
-					return true;
-				}
-			}
-		} );
-	},
-
-	closest: function( selectors, context ) {
-		var cur,
-			i = 0,
-			l = this.length,
-			matched = [],
-			targets = typeof selectors !== "string" && jQuery( selectors );
-
-		// Positional selectors never match, since there's no _selection_ context
-		if ( !rneedsContext.test( selectors ) ) {
-			for ( ; i < l; i++ ) {
-				for ( cur = this[ i ]; cur && cur !== context; cur = cur.parentNode ) {
-
-					// Always skip document fragments
-					if ( cur.nodeType < 11 && ( targets ?
-						targets.index( cur ) > -1 :
-
-						// Don't pass non-elements to Sizzle
-						cur.nodeType === 1 &&
-							jQuery.find.matchesSelector( cur, selectors ) ) ) {
-
-						matched.push( cur );
-						break;
-					}
-				}
-			}
-		}
-
-		return this.pushStack( matched.length > 1 ? jQuery.uniqueSort( matched ) : matched );
-	},
-
-	// Determine the position of an element within the set
-	index: function( elem ) {
-
-		// No argument, return index in parent
-		if ( !elem ) {
-			return ( this[ 0 ] && this[ 0 ].parentNode ) ? this.first().prevAll().length : -1;
-		}
-
-		// Index in selector
-		if ( typeof elem === "string" ) {
-			return indexOf.call( jQuery( elem ), this[ 0 ] );
-		}
-
-		// Locate the position of the desired element
-		return indexOf.call( this,
-
-			// If it receives a jQuery object, the first element is used
-			elem.jquery ? elem[ 0 ] : elem
-		);
-	},
-
-	add: function( selector, context ) {
-		return this.pushStack(
-			jQuery.uniqueSort(
-				jQuery.merge( this.get(), jQuery( selector, context ) )
-			)
-		);
-	},
-
-	addBack: function( selector ) {
-		return this.add( selector == null ?
-			this.prevObject : this.prevObject.filter( selector )
-		);
-	}
-} );
-
-function sibling( cur, dir ) {
-	while ( ( cur = cur[ dir ] ) && cur.nodeType !== 1 ) {}
-	return cur;
-}
-
-jQuery.each( {
-	parent: function( elem ) {
-		var parent = elem.parentNode;
-		return parent && parent.nodeType !== 11 ? parent : null;
-	},
-	parents: function( elem ) {
-		return dir( elem, "parentNode" );
-	},
-	parentsUntil: function( elem, i, until ) {
-		return dir( elem, "parentNode", until );
-	},
-	next: function( elem ) {
-		return sibling( elem, "nextSibling" );
-	},
-	prev: function( elem ) {
-		return sibling( elem, "previousSibling" );
-	},
-	nextAll: function( elem ) {
-		return dir( elem, "nextSibling" );
-	},
-	prevAll: function( elem ) {
-		return dir( elem, "previousSibling" );
-	},
-	nextUntil: function( elem, i, until ) {
-		return dir( elem, "nextSibling", until );
-	},
-	prevUntil: function( elem, i, until ) {
-		return dir( elem, "previousSibling", until );
-	},
-	siblings: function( elem ) {
-		return siblings( ( elem.parentNode || {} ).firstChild, elem );
-	},
-	children: function( elem ) {
-		return siblings( elem.firstChild );
-	},
-	contents: function( elem ) {
-		return elem.contentDocument || jQuery.merge( [], elem.childNodes );
-	}
-}, function( name, fn ) {
-	jQuery.fn[ name ] = function( until, selector ) {
-		var matched = jQuery.map( this, fn, until );
-
-		if ( name.slice( -5 ) !== "Until" ) {
-			selector = until;
-		}
-
-		if ( selector && typeof selector === "string" ) {
-			matched = jQuery.filter( selector, matched );
-		}
-
-		if ( this.length > 1 ) {
-
-			// Remove duplicates
-			if ( !guaranteedUnique[ name ] ) {
-				jQuery.uniqueSort( matched );
-			}
-
-			// Reverse order for parents* and prev-derivatives
-			if ( rparentsprev.test( name ) ) {
-				matched.reverse();
-			}
-		}
-
-		return this.pushStack( matched );
-	};
-} );
-
-return jQuery;
-} );
-;
-define( 'jquery/src/traversing/var/siblings',[],function() {
-
-"use strict";
-
-return function( n, elem ) {
-	var matched = [];
-
-	for ( ; n; n = n.nextSibling ) {
-		if ( n.nodeType === 1 && n !== elem ) {
-			matched.push( n );
-		}
-	}
-
-	return matched;
-};
-
-} );
-;
-define( 'jquery/src/traversing/var/dir',[
-	"../../core"
-], function( jQuery ) {
-
-"use strict";
-
-return function( elem, dir, until ) {
-	var matched = [],
-		truncate = until !== undefined;
-
-	while ( ( elem = elem[ dir ] ) && elem.nodeType !== 9 ) {
-		if ( elem.nodeType === 1 ) {
-			if ( truncate && jQuery( elem ).is( until ) ) {
-				break;
-			}
-			matched.push( elem );
-		}
-	}
-	return matched;
-};
-
-} );
-;
-define( 'jquery/src/deferred',[
-	"./core",
-	"./var/slice",
-	"./callbacks"
-], function( jQuery, slice ) {
-
-"use strict";
-
-function Identity( v ) {
-	return v;
-}
-function Thrower( ex ) {
-	throw ex;
-}
-
-function adoptValue( value, resolve, reject ) {
-	var method;
-
-	try {
-
-		// Check for promise aspect first to privilege synchronous behavior
-		if ( value && jQuery.isFunction( ( method = value.promise ) ) ) {
-			method.call( value ).done( resolve ).fail( reject );
-
-		// Other thenables
-		} else if ( value && jQuery.isFunction( ( method = value.then ) ) ) {
-			method.call( value, resolve, reject );
-
-		// Other non-thenables
-		} else {
-
-			// Support: Android 4.0 only
-			// Strict mode functions invoked without .call/.apply get global-object context
-			resolve.call( undefined, value );
-		}
-
-	// For Promises/A+, convert exceptions into rejections
-	// Since jQuery.when doesn't unwrap thenables, we can skip the extra checks appearing in
-	// Deferred#then to conditionally suppress rejection.
-	} catch ( value ) {
-
-		// Support: Android 4.0 only
-		// Strict mode functions invoked without .call/.apply get global-object context
-		reject.call( undefined, value );
-	}
-}
-
-jQuery.extend( {
-
-	Deferred: function( func ) {
-		var tuples = [
-
-				// action, add listener, callbacks,
-				// ... .then handlers, argument index, [final state]
-				[ "notify", "progress", jQuery.Callbacks( "memory" ),
-					jQuery.Callbacks( "memory" ), 2 ],
-				[ "resolve", "done", jQuery.Callbacks( "once memory" ),
-					jQuery.Callbacks( "once memory" ), 0, "resolved" ],
-				[ "reject", "fail", jQuery.Callbacks( "once memory" ),
-					jQuery.Callbacks( "once memory" ), 1, "rejected" ]
-			],
-			state = "pending",
-			promise = {
-				state: function() {
-					return state;
-				},
-				always: function() {
-					deferred.done( arguments ).fail( arguments );
-					return this;
-				},
-				"catch": function( fn ) {
-					return promise.then( null, fn );
-				},
-
-				// Keep pipe for back-compat
-				pipe: function( /* fnDone, fnFail, fnProgress */ ) {
-					var fns = arguments;
-
-					return jQuery.Deferred( function( newDefer ) {
-						jQuery.each( tuples, function( i, tuple ) {
-
-							// Map tuples (progress, done, fail) to arguments (done, fail, progress)
-							var fn = jQuery.isFunction( fns[ tuple[ 4 ] ] ) && fns[ tuple[ 4 ] ];
-
-							// deferred.progress(function() { bind to newDefer or newDefer.notify })
-							// deferred.done(function() { bind to newDefer or newDefer.resolve })
-							// deferred.fail(function() { bind to newDefer or newDefer.reject })
-							deferred[ tuple[ 1 ] ]( function() {
-								var returned = fn && fn.apply( this, arguments );
-								if ( returned && jQuery.isFunction( returned.promise ) ) {
-									returned.promise()
-										.progress( newDefer.notify )
-										.done( newDefer.resolve )
-										.fail( newDefer.reject );
-								} else {
-									newDefer[ tuple[ 0 ] + "With" ](
-										this,
-										fn ? [ returned ] : arguments
-									);
-								}
-							} );
-						} );
-						fns = null;
-					} ).promise();
-				},
-				then: function( onFulfilled, onRejected, onProgress ) {
-					var maxDepth = 0;
-					function resolve( depth, deferred, handler, special ) {
-						return function() {
-							var that = this,
-								args = arguments,
-								mightThrow = function() {
-									var returned, then;
-
-									// Support: Promises/A+ section 2.3.3.3.3
-									// https://promisesaplus.com/#point-59
-									// Ignore double-resolution attempts
-									if ( depth < maxDepth ) {
-										return;
-									}
-
-									returned = handler.apply( that, args );
-
-									// Support: Promises/A+ section 2.3.1
-									// https://promisesaplus.com/#point-48
-									if ( returned === deferred.promise() ) {
-										throw new TypeError( "Thenable self-resolution" );
-									}
-
-									// Support: Promises/A+ sections 2.3.3.1, 3.5
-									// https://promisesaplus.com/#point-54
-									// https://promisesaplus.com/#point-75
-									// Retrieve `then` only once
-									then = returned &&
-
-										// Support: Promises/A+ section 2.3.4
-										// https://promisesaplus.com/#point-64
-										// Only check objects and functions for thenability
-										( typeof returned === "object" ||
-											typeof returned === "function" ) &&
-										returned.then;
-
-									// Handle a returned thenable
-									if ( jQuery.isFunction( then ) ) {
-
-										// Special processors (notify) just wait for resolution
-										if ( special ) {
-											then.call(
-												returned,
-												resolve( maxDepth, deferred, Identity, special ),
-												resolve( maxDepth, deferred, Thrower, special )
-											);
-
-										// Normal processors (resolve) also hook into progress
-										} else {
-
-											// ...and disregard older resolution values
-											maxDepth++;
-
-											then.call(
-												returned,
-												resolve( maxDepth, deferred, Identity, special ),
-												resolve( maxDepth, deferred, Thrower, special ),
-												resolve( maxDepth, deferred, Identity,
-													deferred.notifyWith )
-											);
-										}
-
-									// Handle all other returned values
-									} else {
-
-										// Only substitute handlers pass on context
-										// and multiple values (non-spec behavior)
-										if ( handler !== Identity ) {
-											that = undefined;
-											args = [ returned ];
-										}
-
-										// Process the value(s)
-										// Default process is resolve
-										( special || deferred.resolveWith )( that, args );
-									}
-								},
-
-								// Only normal processors (resolve) catch and reject exceptions
-								process = special ?
-									mightThrow :
-									function() {
-										try {
-											mightThrow();
-										} catch ( e ) {
-
-											if ( jQuery.Deferred.exceptionHook ) {
-												jQuery.Deferred.exceptionHook( e,
-													process.stackTrace );
-											}
-
-											// Support: Promises/A+ section 2.3.3.3.4.1
-											// https://promisesaplus.com/#point-61
-											// Ignore post-resolution exceptions
-											if ( depth + 1 >= maxDepth ) {
-
-												// Only substitute handlers pass on context
-												// and multiple values (non-spec behavior)
-												if ( handler !== Thrower ) {
-													that = undefined;
-													args = [ e ];
-												}
-
-												deferred.rejectWith( that, args );
-											}
-										}
-									};
-
-							// Support: Promises/A+ section 2.3.3.3.1
-							// https://promisesaplus.com/#point-57
-							// Re-resolve promises immediately to dodge false rejection from
-							// subsequent errors
-							if ( depth ) {
-								process();
-							} else {
-
-								// Call an optional hook to record the stack, in case of exception
-								// since it's otherwise lost when execution goes async
-								if ( jQuery.Deferred.getStackHook ) {
-									process.stackTrace = jQuery.Deferred.getStackHook();
-								}
-								window.setTimeout( process );
-							}
-						};
-					}
-
-					return jQuery.Deferred( function( newDefer ) {
-
-						// progress_handlers.add( ... )
-						tuples[ 0 ][ 3 ].add(
-							resolve(
-								0,
-								newDefer,
-								jQuery.isFunction( onProgress ) ?
-									onProgress :
-									Identity,
-								newDefer.notifyWith
-							)
-						);
-
-						// fulfilled_handlers.add( ... )
-						tuples[ 1 ][ 3 ].add(
-							resolve(
-								0,
-								newDefer,
-								jQuery.isFunction( onFulfilled ) ?
-									onFulfilled :
-									Identity
-							)
-						);
-
-						// rejected_handlers.add( ... )
-						tuples[ 2 ][ 3 ].add(
-							resolve(
-								0,
-								newDefer,
-								jQuery.isFunction( onRejected ) ?
-									onRejected :
-									Thrower
-							)
-						);
-					} ).promise();
-				},
-
-				// Get a promise for this deferred
-				// If obj is provided, the promise aspect is added to the object
-				promise: function( obj ) {
-					return obj != null ? jQuery.extend( obj, promise ) : promise;
-				}
-			},
-			deferred = {};
-
-		// Add list-specific methods
-		jQuery.each( tuples, function( i, tuple ) {
-			var list = tuple[ 2 ],
-				stateString = tuple[ 5 ];
-
-			// promise.progress = list.add
-			// promise.done = list.add
-			// promise.fail = list.add
-			promise[ tuple[ 1 ] ] = list.add;
-
-			// Handle state
-			if ( stateString ) {
-				list.add(
-					function() {
-
-						// state = "resolved" (i.e., fulfilled)
-						// state = "rejected"
-						state = stateString;
-					},
-
-					// rejected_callbacks.disable
-					// fulfilled_callbacks.disable
-					tuples[ 3 - i ][ 2 ].disable,
-
-					// progress_callbacks.lock
-					tuples[ 0 ][ 2 ].lock
-				);
-			}
-
-			// progress_handlers.fire
-			// fulfilled_handlers.fire
-			// rejected_handlers.fire
-			list.add( tuple[ 3 ].fire );
-
-			// deferred.notify = function() { deferred.notifyWith(...) }
-			// deferred.resolve = function() { deferred.resolveWith(...) }
-			// deferred.reject = function() { deferred.rejectWith(...) }
-			deferred[ tuple[ 0 ] ] = function() {
-				deferred[ tuple[ 0 ] + "With" ]( this === deferred ? undefined : this, arguments );
-				return this;
-			};
-
-			// deferred.notifyWith = list.fireWith
-			// deferred.resolveWith = list.fireWith
-			// deferred.rejectWith = list.fireWith
-			deferred[ tuple[ 0 ] + "With" ] = list.fireWith;
-		} );
-
-		// Make the deferred a promise
-		promise.promise( deferred );
-
-		// Call given func if any
-		if ( func ) {
-			func.call( deferred, deferred );
-		}
-
-		// All done!
-		return deferred;
-	},
-
-	// Deferred helper
-	when: function( singleValue ) {
-		var
-
-			// count of uncompleted subordinates
-			remaining = arguments.length,
-
-			// count of unprocessed arguments
-			i = remaining,
-
-			// subordinate fulfillment data
-			resolveContexts = Array( i ),
-			resolveValues = slice.call( arguments ),
-
-			// the master Deferred
-			master = jQuery.Deferred(),
-
-			// subordinate callback factory
-			updateFunc = function( i ) {
-				return function( value ) {
-					resolveContexts[ i ] = this;
-					resolveValues[ i ] = arguments.length > 1 ? slice.call( arguments ) : value;
-					if ( !( --remaining ) ) {
-						master.resolveWith( resolveContexts, resolveValues );
-					}
-				};
-			};
-
-		// Single- and empty arguments are adopted like Promise.resolve
-		if ( remaining <= 1 ) {
-			adoptValue( singleValue, master.done( updateFunc( i ) ).resolve, master.reject );
-
-			// Use .then() to unwrap secondary thenables (cf. gh-3000)
-			if ( master.state() === "pending" ||
-				jQuery.isFunction( resolveValues[ i ] && resolveValues[ i ].then ) ) {
-
-				return master.then();
-			}
-		}
-
-		// Multiple arguments are aggregated like Promise.all array elements
-		while ( i-- ) {
-			adoptValue( resolveValues[ i ], updateFunc( i ), master.reject );
-		}
-
-		return master.promise();
-	}
-} );
-
-return jQuery;
-} );
-;
-define( 'jquery/src/callbacks',[
-	"./core",
-	"./var/rnotwhite"
-], function( jQuery, rnotwhite ) {
-
-"use strict";
-
-// Convert String-formatted options into Object-formatted ones
-function createOptions( options ) {
-	var object = {};
-	jQuery.each( options.match( rnotwhite ) || [], function( _, flag ) {
-		object[ flag ] = true;
-	} );
-	return object;
-}
-
-/*
- * Create a callback list using the following parameters:
- *
- *	options: an optional list of space-separated options that will change how
- *			the callback list behaves or a more traditional option object
- *
- * By default a callback list will act like an event callback list and can be
- * "fired" multiple times.
- *
- * Possible options:
- *
- *	once:			will ensure the callback list can only be fired once (like a Deferred)
- *
- *	memory:			will keep track of previous values and will call any callback added
- *					after the list has been fired right away with the latest "memorized"
- *					values (like a Deferred)
- *
- *	unique:			will ensure a callback can only be added once (no duplicate in the list)
- *
- *	stopOnFalse:	interrupt callings when a callback returns false
- *
- */
-jQuery.Callbacks = function( options ) {
-
-	// Convert options from String-formatted to Object-formatted if needed
-	// (we check in cache first)
-	options = typeof options === "string" ?
-		createOptions( options ) :
-		jQuery.extend( {}, options );
-
-	var // Flag to know if list is currently firing
-		firing,
-
-		// Last fire value for non-forgettable lists
-		memory,
-
-		// Flag to know if list was already fired
-		fired,
-
-		// Flag to prevent firing
-		locked,
-
-		// Actual callback list
-		list = [],
-
-		// Queue of execution data for repeatable lists
-		queue = [],
-
-		// Index of currently firing callback (modified by add/remove as needed)
-		firingIndex = -1,
-
-		// Fire callbacks
-		fire = function() {
-
-			// Enforce single-firing
-			locked = options.once;
-
-			// Execute callbacks for all pending executions,
-			// respecting firingIndex overrides and runtime changes
-			fired = firing = true;
-			for ( ; queue.length; firingIndex = -1 ) {
-				memory = queue.shift();
-				while ( ++firingIndex < list.length ) {
-
-					// Run callback and check for early termination
-					if ( list[ firingIndex ].apply( memory[ 0 ], memory[ 1 ] ) === false &&
-						options.stopOnFalse ) {
-
-						// Jump to end and forget the data so .add doesn't re-fire
-						firingIndex = list.length;
-						memory = false;
-					}
-				}
-			}
-
-			// Forget the data if we're done with it
-			if ( !options.memory ) {
-				memory = false;
-			}
-
-			firing = false;
-
-			// Clean up if we're done firing for good
-			if ( locked ) {
-
-				// Keep an empty list if we have data for future add calls
-				if ( memory ) {
-					list = [];
-
-				// Otherwise, this object is spent
-				} else {
-					list = "";
-				}
-			}
-		},
-
-		// Actual Callbacks object
-		self = {
-
-			// Add a callback or a collection of callbacks to the list
-			add: function() {
-				if ( list ) {
-
-					// If we have memory from a past run, we should fire after adding
-					if ( memory && !firing ) {
-						firingIndex = list.length - 1;
-						queue.push( memory );
-					}
-
-					( function add( args ) {
-						jQuery.each( args, function( _, arg ) {
-							if ( jQuery.isFunction( arg ) ) {
-								if ( !options.unique || !self.has( arg ) ) {
-									list.push( arg );
-								}
-							} else if ( arg && arg.length && jQuery.type( arg ) !== "string" ) {
-
-								// Inspect recursively
-								add( arg );
-							}
-						} );
-					} )( arguments );
-
-					if ( memory && !firing ) {
-						fire();
-					}
-				}
-				return this;
-			},
-
-			// Remove a callback from the list
-			remove: function() {
-				jQuery.each( arguments, function( _, arg ) {
-					var index;
-					while ( ( index = jQuery.inArray( arg, list, index ) ) > -1 ) {
-						list.splice( index, 1 );
-
-						// Handle firing indexes
-						if ( index <= firingIndex ) {
-							firingIndex--;
-						}
-					}
-				} );
-				return this;
-			},
-
-			// Check if a given callback is in the list.
-			// If no argument is given, return whether or not list has callbacks attached.
-			has: function( fn ) {
-				return fn ?
-					jQuery.inArray( fn, list ) > -1 :
-					list.length > 0;
-			},
-
-			// Remove all callbacks from the list
-			empty: function() {
-				if ( list ) {
-					list = [];
-				}
-				return this;
-			},
-
-			// Disable .fire and .add
-			// Abort any current/pending executions
-			// Clear all callbacks and values
-			disable: function() {
-				locked = queue = [];
-				list = memory = "";
-				return this;
-			},
-			disabled: function() {
-				return !list;
-			},
-
-			// Disable .fire
-			// Also disable .add unless we have memory (since it would have no effect)
-			// Abort any pending executions
-			lock: function() {
-				locked = queue = [];
-				if ( !memory && !firing ) {
-					list = memory = "";
-				}
-				return this;
-			},
-			locked: function() {
-				return !!locked;
-			},
-
-			// Call all callbacks with the given context and arguments
-			fireWith: function( context, args ) {
-				if ( !locked ) {
-					args = args || [];
-					args = [ context, args.slice ? args.slice() : args ];
-					queue.push( args );
-					if ( !firing ) {
-						fire();
-					}
-				}
-				return this;
-			},
-
-			// Call all the callbacks with the given arguments
-			fire: function() {
-				self.fireWith( this, arguments );
-				return this;
-			},
-
-			// To know if the callbacks have already been called at least once
-			fired: function() {
-				return !!fired;
-			}
-		};
-
-	return self;
-};
-
-return jQuery;
-} );
-;
-define( 'jquery/src/queue',[
-	"./core",
-	"./data/var/dataPriv",
-	"./deferred",
-	"./callbacks"
-], function( jQuery, dataPriv ) {
-
-"use strict";
-
-jQuery.extend( {
-	queue: function( elem, type, data ) {
-		var queue;
-
-		if ( elem ) {
-			type = ( type || "fx" ) + "queue";
-			queue = dataPriv.get( elem, type );
-
-			// Speed up dequeue by getting out quickly if this is just a lookup
-			if ( data ) {
-				if ( !queue || jQuery.isArray( data ) ) {
-					queue = dataPriv.access( elem, type, jQuery.makeArray( data ) );
-				} else {
-					queue.push( data );
-				}
-			}
-			return queue || [];
-		}
-	},
-
-	dequeue: function( elem, type ) {
-		type = type || "fx";
-
-		var queue = jQuery.queue( elem, type ),
-			startLength = queue.length,
-			fn = queue.shift(),
-			hooks = jQuery._queueHooks( elem, type ),
-			next = function() {
-				jQuery.dequeue( elem, type );
-			};
-
-		// If the fx queue is dequeued, always remove the progress sentinel
-		if ( fn === "inprogress" ) {
-			fn = queue.shift();
-			startLength--;
-		}
-
-		if ( fn ) {
-
-			// Add a progress sentinel to prevent the fx queue from being
-			// automatically dequeued
-			if ( type === "fx" ) {
-				queue.unshift( "inprogress" );
-			}
-
-			// Clear up the last queue stop function
-			delete hooks.stop;
-			fn.call( elem, next, hooks );
-		}
-
-		if ( !startLength && hooks ) {
-			hooks.empty.fire();
-		}
-	},
-
-	// Not public - generate a queueHooks object, or return the current one
-	_queueHooks: function( elem, type ) {
-		var key = type + "queueHooks";
-		return dataPriv.get( elem, key ) || dataPriv.access( elem, key, {
-			empty: jQuery.Callbacks( "once memory" ).add( function() {
-				dataPriv.remove( elem, [ type + "queue", key ] );
-			} )
-		} );
-	}
-} );
-
-jQuery.fn.extend( {
-	queue: function( type, data ) {
-		var setter = 2;
-
-		if ( typeof type !== "string" ) {
-			data = type;
-			type = "fx";
-			setter--;
-		}
-
-		if ( arguments.length < setter ) {
-			return jQuery.queue( this[ 0 ], type );
-		}
-
-		return data === undefined ?
-			this :
-			this.each( function() {
-				var queue = jQuery.queue( this, type, data );
-
-				// Ensure a hooks for this queue
-				jQuery._queueHooks( this, type );
-
-				if ( type === "fx" && queue[ 0 ] !== "inprogress" ) {
-					jQuery.dequeue( this, type );
-				}
-			} );
-	},
-	dequeue: function( type ) {
-		return this.each( function() {
-			jQuery.dequeue( this, type );
-		} );
-	},
-	clearQueue: function( type ) {
-		return this.queue( type || "fx", [] );
-	},
-
-	// Get a promise resolved when queues of a certain type
-	// are emptied (fx is the type by default)
-	promise: function( type, obj ) {
-		var tmp,
-			count = 1,
-			defer = jQuery.Deferred(),
-			elements = this,
-			i = this.length,
-			resolve = function() {
-				if ( !( --count ) ) {
-					defer.resolveWith( elements, [ elements ] );
-				}
-			};
-
-		if ( typeof type !== "string" ) {
-			obj = type;
-			type = undefined;
-		}
-		type = type || "fx";
-
-		while ( i-- ) {
-			tmp = dataPriv.get( elements[ i ], type + "queueHooks" );
-			if ( tmp && tmp.empty ) {
-				count++;
-				tmp.empty.add( resolve );
-			}
-		}
-		resolve();
-		return defer.promise( obj );
-	}
-} );
-
-return jQuery;
-} );
-;
-define( 'jquery/src/css/showHide',[
-	"../core",
-	"../data/var/dataPriv",
-	"../css/var/isHiddenWithinTree"
-], function( jQuery, dataPriv, isHiddenWithinTree ) {
-
-"use strict";
-
-var defaultDisplayMap = {};
-
-function getDefaultDisplay( elem ) {
-	var temp,
-		doc = elem.ownerDocument,
-		nodeName = elem.nodeName,
-		display = defaultDisplayMap[ nodeName ];
-
-	if ( display ) {
-		return display;
-	}
-
-	temp = doc.body.appendChild( doc.createElement( nodeName ) );
-	display = jQuery.css( temp, "display" );
-
-	temp.parentNode.removeChild( temp );
-
-	if ( display === "none" ) {
-		display = "block";
-	}
-	defaultDisplayMap[ nodeName ] = display;
-
-	return display;
-}
-
-function showHide( elements, show ) {
-	var display, elem,
-		values = [],
-		index = 0,
-		length = elements.length;
-
-	// Determine new display value for elements that need to change
-	for ( ; index < length; index++ ) {
-		elem = elements[ index ];
-		if ( !elem.style ) {
-			continue;
-		}
-
-		display = elem.style.display;
-		if ( show ) {
-
-			// Since we force visibility upon cascade-hidden elements, an immediate (and slow)
-			// check is required in this first loop unless we have a nonempty display value (either
-			// inline or about-to-be-restored)
-			if ( display === "none" ) {
-				values[ index ] = dataPriv.get( elem, "display" ) || null;
-				if ( !values[ index ] ) {
-					elem.style.display = "";
-				}
-			}
-			if ( elem.style.display === "" && isHiddenWithinTree( elem ) ) {
-				values[ index ] = getDefaultDisplay( elem );
-			}
-		} else {
-			if ( display !== "none" ) {
-				values[ index ] = "none";
-
-				// Remember what we're overwriting
-				dataPriv.set( elem, "display", display );
-			}
-		}
-	}
-
-	// Set the display of the elements in a second loop to avoid constant reflow
-	for ( index = 0; index < length; index++ ) {
-		if ( values[ index ] != null ) {
-			elements[ index ].style.display = values[ index ];
-		}
-	}
-
-	return elements;
-}
-
-jQuery.fn.extend( {
-	show: function() {
-		return showHide( this, true );
-	},
-	hide: function() {
-		return showHide( this );
-	},
-	toggle: function( state ) {
-		if ( typeof state === "boolean" ) {
-			return state ? this.show() : this.hide();
-		}
-
-		return this.each( function() {
-			if ( isHiddenWithinTree( this ) ) {
-				jQuery( this ).show();
-			} else {
-				jQuery( this ).hide();
-			}
-		} );
-	}
-} );
-
-return showHide;
-} );
-;
-define( 'jquery/src/css/adjustCSS',[
-	"../core",
-	"../var/rcssNum"
-], function( jQuery, rcssNum ) {
-
-"use strict";
-
-function adjustCSS( elem, prop, valueParts, tween ) {
-	var adjusted,
-		scale = 1,
-		maxIterations = 20,
-		currentValue = tween ?
-			function() {
-				return tween.cur();
-			} :
-			function() {
-				return jQuery.css( elem, prop, "" );
-			},
-		initial = currentValue(),
-		unit = valueParts && valueParts[ 3 ] || ( jQuery.cssNumber[ prop ] ? "" : "px" ),
-
-		// Starting value computation is required for potential unit mismatches
-		initialInUnit = ( jQuery.cssNumber[ prop ] || unit !== "px" && +initial ) &&
-			rcssNum.exec( jQuery.css( elem, prop ) );
-
-	if ( initialInUnit && initialInUnit[ 3 ] !== unit ) {
-
-		// Trust units reported by jQuery.css
-		unit = unit || initialInUnit[ 3 ];
-
-		// Make sure we update the tween properties later on
-		valueParts = valueParts || [];
-
-		// Iteratively approximate from a nonzero starting point
-		initialInUnit = +initial || 1;
-
-		do {
-
-			// If previous iteration zeroed out, double until we get *something*.
-			// Use string for doubling so we don't accidentally see scale as unchanged below
-			scale = scale || ".5";
-
-			// Adjust and apply
-			initialInUnit = initialInUnit / scale;
-			jQuery.style( elem, prop, initialInUnit + unit );
-
-		// Update scale, tolerating zero or NaN from tween.cur()
-		// Break the loop if scale is unchanged or perfect, or if we've just had enough.
-		} while (
-			scale !== ( scale = currentValue() / initial ) && scale !== 1 && --maxIterations
-		);
-	}
-
-	if ( valueParts ) {
-		initialInUnit = +initialInUnit || +initial || 0;
-
-		// Apply relative offset (+=/-=) if specified
-		adjusted = valueParts[ 1 ] ?
-			initialInUnit + ( valueParts[ 1 ] + 1 ) * valueParts[ 2 ] :
-			+valueParts[ 2 ];
-		if ( tween ) {
-			tween.unit = unit;
-			tween.start = initialInUnit;
-			tween.end = adjusted;
-		}
-	}
-	return adjusted;
-}
-
-return adjustCSS;
-} );
-;
-define( 'jquery/src/css/var/swap',[],function() {
-
-"use strict";
-
-// A method for quickly swapping in/out CSS properties to get correct calculations.
-return function( elem, options, callback, args ) {
-	var ret, name,
-		old = {};
-
-	// Remember the old values, and insert the new ones
-	for ( name in options ) {
-		old[ name ] = elem.style[ name ];
-		elem.style[ name ] = options[ name ];
-	}
-
-	ret = callback.apply( elem, args || [] );
-
-	// Revert the old values
-	for ( name in options ) {
-		elem.style[ name ] = old[ name ];
-	}
-
-	return ret;
-};
-
-} );
-;
-define( 'jquery/src/css/var/isHiddenWithinTree',[
-	"../../core",
-	"../../selector"
-
-	// css is assumed
-], function( jQuery ) {
-	"use strict";
-
-	// isHiddenWithinTree reports if an element has a non-"none" display style (inline and/or
-	// through the CSS cascade), which is useful in deciding whether or not to make it visible.
-	// It differs from the :hidden selector (jQuery.expr.pseudos.hidden) in two important ways:
-	// * A hidden ancestor does not force an element to be classified as hidden.
-	// * Being disconnected from the document does not force an element to be classified as hidden.
-	// These differences improve the behavior of .toggle() et al. when applied to elements that are
-	// detached or contained within hidden ancestors (gh-2404, gh-2863).
-	return function( elem, el ) {
-
-		// isHiddenWithinTree might be called from jQuery#filter function;
-		// in that case, element will be second argument
-		elem = el || elem;
-
-		// Inline style trumps all
-		return elem.style.display === "none" ||
-			elem.style.display === "" &&
-
-			// Otherwise, check computed style
-			// Support: Firefox <=43 - 45
-			// Disconnected elements can have computed display: none, so first confirm that elem is
-			// in the document.
-			jQuery.contains( elem.ownerDocument, elem ) &&
-
-			jQuery.css( elem, "display" ) === "none";
-	};
-} );
-;
-define( 'jquery/src/css/var/cssExpand',[],function() {
-	"use strict";
-
-	return [ "Top", "Right", "Bottom", "Left" ];
-} );
-;
-define( 'jquery/src/var/rcssNum',[
-	"../var/pnum"
-], function( pnum ) {
-
-"use strict";
-
-return new RegExp( "^(?:([+-])=|)(" + pnum + ")([a-z%]*)$", "i" );
-
-} );
-;
-define( 'jquery/src/var/pnum',[],function() {
-	"use strict";
-
-	return ( /[+-]?(?:\d*\.|)\d+(?:[eE][+-]?\d+|)/ ).source;
 } );
 ;
 define( 'jquery/src/css',[
@@ -12745,6 +10813,14 @@ return support;
 
 } );
 ;
+define( 'jquery/src/var/documentElement',[
+	"./document"
+], function( document ) {
+	"use strict";
+
+	return document.documentElement;
+} );
+;
 define( 'jquery/src/css/addGetHookIf',[],function() {
 
 "use strict";
@@ -12862,6 +10938,2815 @@ define( 'jquery/src/css/var/rmargin',[],function() {
 	"use strict";
 
 	return ( /^margin/ );
+} );
+;
+define( 'jquery/src/core/access',[
+	"../core"
+], function( jQuery ) {
+
+"use strict";
+
+// Multifunctional method to get and set values of a collection
+// The value/s can optionally be executed if it's a function
+var access = function( elems, fn, key, value, chainable, emptyGet, raw ) {
+	var i = 0,
+		len = elems.length,
+		bulk = key == null;
+
+	// Sets many values
+	if ( jQuery.type( key ) === "object" ) {
+		chainable = true;
+		for ( i in key ) {
+			access( elems, fn, i, key[ i ], true, emptyGet, raw );
+		}
+
+	// Sets one value
+	} else if ( value !== undefined ) {
+		chainable = true;
+
+		if ( !jQuery.isFunction( value ) ) {
+			raw = true;
+		}
+
+		if ( bulk ) {
+
+			// Bulk operations run against the entire set
+			if ( raw ) {
+				fn.call( elems, value );
+				fn = null;
+
+			// ...except when executing function values
+			} else {
+				bulk = fn;
+				fn = function( elem, key, value ) {
+					return bulk.call( jQuery( elem ), value );
+				};
+			}
+		}
+
+		if ( fn ) {
+			for ( ; i < len; i++ ) {
+				fn(
+					elems[ i ], key, raw ?
+					value :
+					value.call( elems[ i ], i, fn( elems[ i ], key ) )
+				);
+			}
+		}
+	}
+
+	if ( chainable ) {
+		return elems;
+	}
+
+	// Gets
+	if ( bulk ) {
+		return fn.call( elems );
+	}
+
+	return len ? fn( elems[ 0 ], key ) : emptyGet;
+};
+
+return access;
+
+} );
+;
+define( 'jquery/src/var/pnum',[],function() {
+	"use strict";
+
+	return ( /[+-]?(?:\d*\.|)\d+(?:[eE][+-]?\d+|)/ ).source;
+} );
+;
+define( 'jquery/src/manipulation',[
+	"./core",
+	"./var/concat",
+	"./var/push",
+	"./core/access",
+	"./manipulation/var/rcheckableType",
+	"./manipulation/var/rtagName",
+	"./manipulation/var/rscriptType",
+	"./manipulation/wrapMap",
+	"./manipulation/getAll",
+	"./manipulation/setGlobalEval",
+	"./manipulation/buildFragment",
+	"./manipulation/support",
+
+	"./data/var/dataPriv",
+	"./data/var/dataUser",
+	"./data/var/acceptData",
+	"./core/DOMEval",
+
+	"./core/init",
+	"./traversing",
+	"./selector",
+	"./event"
+], function( jQuery, concat, push, access,
+	rcheckableType, rtagName, rscriptType,
+	wrapMap, getAll, setGlobalEval, buildFragment, support,
+	dataPriv, dataUser, acceptData, DOMEval ) {
+
+"use strict";
+
+var
+
+	/* eslint-disable max-len */
+
+	// See https://github.com/eslint/eslint/issues/3229
+	rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([a-z][^\/\0>\x20\t\r\n\f]*)[^>]*)\/>/gi,
+
+	/* eslint-enable */
+
+	// Support: IE <=10 - 11, Edge 12 - 13
+	// In IE/Edge using regex groups here causes severe slowdowns.
+	// See https://connect.microsoft.com/IE/feedback/details/1736512/
+	rnoInnerhtml = /<script|<style|<link/i,
+
+	// checked="checked" or checked
+	rchecked = /checked\s*(?:[^=]|=\s*.checked.)/i,
+	rscriptTypeMasked = /^true\/(.*)/,
+	rcleanScript = /^\s*<!(?:\[CDATA\[|--)|(?:\]\]|--)>\s*$/g;
+
+function manipulationTarget( elem, content ) {
+	if ( jQuery.nodeName( elem, "table" ) &&
+		jQuery.nodeName( content.nodeType !== 11 ? content : content.firstChild, "tr" ) ) {
+
+		return elem.getElementsByTagName( "tbody" )[ 0 ] || elem;
+	}
+
+	return elem;
+}
+
+// Replace/restore the type attribute of script elements for safe DOM manipulation
+function disableScript( elem ) {
+	elem.type = ( elem.getAttribute( "type" ) !== null ) + "/" + elem.type;
+	return elem;
+}
+function restoreScript( elem ) {
+	var match = rscriptTypeMasked.exec( elem.type );
+
+	if ( match ) {
+		elem.type = match[ 1 ];
+	} else {
+		elem.removeAttribute( "type" );
+	}
+
+	return elem;
+}
+
+function cloneCopyEvent( src, dest ) {
+	var i, l, type, pdataOld, pdataCur, udataOld, udataCur, events;
+
+	if ( dest.nodeType !== 1 ) {
+		return;
+	}
+
+	// 1. Copy private data: events, handlers, etc.
+	if ( dataPriv.hasData( src ) ) {
+		pdataOld = dataPriv.access( src );
+		pdataCur = dataPriv.set( dest, pdataOld );
+		events = pdataOld.events;
+
+		if ( events ) {
+			delete pdataCur.handle;
+			pdataCur.events = {};
+
+			for ( type in events ) {
+				for ( i = 0, l = events[ type ].length; i < l; i++ ) {
+					jQuery.event.add( dest, type, events[ type ][ i ] );
+				}
+			}
+		}
+	}
+
+	// 2. Copy user data
+	if ( dataUser.hasData( src ) ) {
+		udataOld = dataUser.access( src );
+		udataCur = jQuery.extend( {}, udataOld );
+
+		dataUser.set( dest, udataCur );
+	}
+}
+
+// Fix IE bugs, see support tests
+function fixInput( src, dest ) {
+	var nodeName = dest.nodeName.toLowerCase();
+
+	// Fails to persist the checked state of a cloned checkbox or radio button.
+	if ( nodeName === "input" && rcheckableType.test( src.type ) ) {
+		dest.checked = src.checked;
+
+	// Fails to return the selected option to the default selected state when cloning options
+	} else if ( nodeName === "input" || nodeName === "textarea" ) {
+		dest.defaultValue = src.defaultValue;
+	}
+}
+
+function domManip( collection, args, callback, ignored ) {
+
+	// Flatten any nested arrays
+	args = concat.apply( [], args );
+
+	var fragment, first, scripts, hasScripts, node, doc,
+		i = 0,
+		l = collection.length,
+		iNoClone = l - 1,
+		value = args[ 0 ],
+		isFunction = jQuery.isFunction( value );
+
+	// We can't cloneNode fragments that contain checked, in WebKit
+	if ( isFunction ||
+			( l > 1 && typeof value === "string" &&
+				!support.checkClone && rchecked.test( value ) ) ) {
+		return collection.each( function( index ) {
+			var self = collection.eq( index );
+			if ( isFunction ) {
+				args[ 0 ] = value.call( this, index, self.html() );
+			}
+			domManip( self, args, callback, ignored );
+		} );
+	}
+
+	if ( l ) {
+		fragment = buildFragment( args, collection[ 0 ].ownerDocument, false, collection, ignored );
+		first = fragment.firstChild;
+
+		if ( fragment.childNodes.length === 1 ) {
+			fragment = first;
+		}
+
+		// Require either new content or an interest in ignored elements to invoke the callback
+		if ( first || ignored ) {
+			scripts = jQuery.map( getAll( fragment, "script" ), disableScript );
+			hasScripts = scripts.length;
+
+			// Use the original fragment for the last item
+			// instead of the first because it can end up
+			// being emptied incorrectly in certain situations (#8070).
+			for ( ; i < l; i++ ) {
+				node = fragment;
+
+				if ( i !== iNoClone ) {
+					node = jQuery.clone( node, true, true );
+
+					// Keep references to cloned scripts for later restoration
+					if ( hasScripts ) {
+
+						// Support: Android <=4.0 only, PhantomJS 1 only
+						// push.apply(_, arraylike) throws on ancient WebKit
+						jQuery.merge( scripts, getAll( node, "script" ) );
+					}
+				}
+
+				callback.call( collection[ i ], node, i );
+			}
+
+			if ( hasScripts ) {
+				doc = scripts[ scripts.length - 1 ].ownerDocument;
+
+				// Reenable scripts
+				jQuery.map( scripts, restoreScript );
+
+				// Evaluate executable scripts on first document insertion
+				for ( i = 0; i < hasScripts; i++ ) {
+					node = scripts[ i ];
+					if ( rscriptType.test( node.type || "" ) &&
+						!dataPriv.access( node, "globalEval" ) &&
+						jQuery.contains( doc, node ) ) {
+
+						if ( node.src ) {
+
+							// Optional AJAX dependency, but won't run scripts if not present
+							if ( jQuery._evalUrl ) {
+								jQuery._evalUrl( node.src );
+							}
+						} else {
+							DOMEval( node.textContent.replace( rcleanScript, "" ), doc );
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return collection;
+}
+
+function remove( elem, selector, keepData ) {
+	var node,
+		nodes = selector ? jQuery.filter( selector, elem ) : elem,
+		i = 0;
+
+	for ( ; ( node = nodes[ i ] ) != null; i++ ) {
+		if ( !keepData && node.nodeType === 1 ) {
+			jQuery.cleanData( getAll( node ) );
+		}
+
+		if ( node.parentNode ) {
+			if ( keepData && jQuery.contains( node.ownerDocument, node ) ) {
+				setGlobalEval( getAll( node, "script" ) );
+			}
+			node.parentNode.removeChild( node );
+		}
+	}
+
+	return elem;
+}
+
+jQuery.extend( {
+	htmlPrefilter: function( html ) {
+		return html.replace( rxhtmlTag, "<$1></$2>" );
+	},
+
+	clone: function( elem, dataAndEvents, deepDataAndEvents ) {
+		var i, l, srcElements, destElements,
+			clone = elem.cloneNode( true ),
+			inPage = jQuery.contains( elem.ownerDocument, elem );
+
+		// Fix IE cloning issues
+		if ( !support.noCloneChecked && ( elem.nodeType === 1 || elem.nodeType === 11 ) &&
+				!jQuery.isXMLDoc( elem ) ) {
+
+			// We eschew Sizzle here for performance reasons: https://jsperf.com/getall-vs-sizzle/2
+			destElements = getAll( clone );
+			srcElements = getAll( elem );
+
+			for ( i = 0, l = srcElements.length; i < l; i++ ) {
+				fixInput( srcElements[ i ], destElements[ i ] );
+			}
+		}
+
+		// Copy the events from the original to the clone
+		if ( dataAndEvents ) {
+			if ( deepDataAndEvents ) {
+				srcElements = srcElements || getAll( elem );
+				destElements = destElements || getAll( clone );
+
+				for ( i = 0, l = srcElements.length; i < l; i++ ) {
+					cloneCopyEvent( srcElements[ i ], destElements[ i ] );
+				}
+			} else {
+				cloneCopyEvent( elem, clone );
+			}
+		}
+
+		// Preserve script evaluation history
+		destElements = getAll( clone, "script" );
+		if ( destElements.length > 0 ) {
+			setGlobalEval( destElements, !inPage && getAll( elem, "script" ) );
+		}
+
+		// Return the cloned set
+		return clone;
+	},
+
+	cleanData: function( elems ) {
+		var data, elem, type,
+			special = jQuery.event.special,
+			i = 0;
+
+		for ( ; ( elem = elems[ i ] ) !== undefined; i++ ) {
+			if ( acceptData( elem ) ) {
+				if ( ( data = elem[ dataPriv.expando ] ) ) {
+					if ( data.events ) {
+						for ( type in data.events ) {
+							if ( special[ type ] ) {
+								jQuery.event.remove( elem, type );
+
+							// This is a shortcut to avoid jQuery.event.remove's overhead
+							} else {
+								jQuery.removeEvent( elem, type, data.handle );
+							}
+						}
+					}
+
+					// Support: Chrome <=35 - 45+
+					// Assign undefined instead of using delete, see Data#remove
+					elem[ dataPriv.expando ] = undefined;
+				}
+				if ( elem[ dataUser.expando ] ) {
+
+					// Support: Chrome <=35 - 45+
+					// Assign undefined instead of using delete, see Data#remove
+					elem[ dataUser.expando ] = undefined;
+				}
+			}
+		}
+	}
+} );
+
+jQuery.fn.extend( {
+	detach: function( selector ) {
+		return remove( this, selector, true );
+	},
+
+	remove: function( selector ) {
+		return remove( this, selector );
+	},
+
+	text: function( value ) {
+		return access( this, function( value ) {
+			return value === undefined ?
+				jQuery.text( this ) :
+				this.empty().each( function() {
+					if ( this.nodeType === 1 || this.nodeType === 11 || this.nodeType === 9 ) {
+						this.textContent = value;
+					}
+				} );
+		}, null, value, arguments.length );
+	},
+
+	append: function() {
+		return domManip( this, arguments, function( elem ) {
+			if ( this.nodeType === 1 || this.nodeType === 11 || this.nodeType === 9 ) {
+				var target = manipulationTarget( this, elem );
+				target.appendChild( elem );
+			}
+		} );
+	},
+
+	prepend: function() {
+		return domManip( this, arguments, function( elem ) {
+			if ( this.nodeType === 1 || this.nodeType === 11 || this.nodeType === 9 ) {
+				var target = manipulationTarget( this, elem );
+				target.insertBefore( elem, target.firstChild );
+			}
+		} );
+	},
+
+	before: function() {
+		return domManip( this, arguments, function( elem ) {
+			if ( this.parentNode ) {
+				this.parentNode.insertBefore( elem, this );
+			}
+		} );
+	},
+
+	after: function() {
+		return domManip( this, arguments, function( elem ) {
+			if ( this.parentNode ) {
+				this.parentNode.insertBefore( elem, this.nextSibling );
+			}
+		} );
+	},
+
+	empty: function() {
+		var elem,
+			i = 0;
+
+		for ( ; ( elem = this[ i ] ) != null; i++ ) {
+			if ( elem.nodeType === 1 ) {
+
+				// Prevent memory leaks
+				jQuery.cleanData( getAll( elem, false ) );
+
+				// Remove any remaining nodes
+				elem.textContent = "";
+			}
+		}
+
+		return this;
+	},
+
+	clone: function( dataAndEvents, deepDataAndEvents ) {
+		dataAndEvents = dataAndEvents == null ? false : dataAndEvents;
+		deepDataAndEvents = deepDataAndEvents == null ? dataAndEvents : deepDataAndEvents;
+
+		return this.map( function() {
+			return jQuery.clone( this, dataAndEvents, deepDataAndEvents );
+		} );
+	},
+
+	html: function( value ) {
+		return access( this, function( value ) {
+			var elem = this[ 0 ] || {},
+				i = 0,
+				l = this.length;
+
+			if ( value === undefined && elem.nodeType === 1 ) {
+				return elem.innerHTML;
+			}
+
+			// See if we can take a shortcut and just use innerHTML
+			if ( typeof value === "string" && !rnoInnerhtml.test( value ) &&
+				!wrapMap[ ( rtagName.exec( value ) || [ "", "" ] )[ 1 ].toLowerCase() ] ) {
+
+				value = jQuery.htmlPrefilter( value );
+
+				try {
+					for ( ; i < l; i++ ) {
+						elem = this[ i ] || {};
+
+						// Remove element nodes and prevent memory leaks
+						if ( elem.nodeType === 1 ) {
+							jQuery.cleanData( getAll( elem, false ) );
+							elem.innerHTML = value;
+						}
+					}
+
+					elem = 0;
+
+				// If using innerHTML throws an exception, use the fallback method
+				} catch ( e ) {}
+			}
+
+			if ( elem ) {
+				this.empty().append( value );
+			}
+		}, null, value, arguments.length );
+	},
+
+	replaceWith: function() {
+		var ignored = [];
+
+		// Make the changes, replacing each non-ignored context element with the new content
+		return domManip( this, arguments, function( elem ) {
+			var parent = this.parentNode;
+
+			if ( jQuery.inArray( this, ignored ) < 0 ) {
+				jQuery.cleanData( getAll( this ) );
+				if ( parent ) {
+					parent.replaceChild( elem, this );
+				}
+			}
+
+		// Force callback invocation
+		}, ignored );
+	}
+} );
+
+jQuery.each( {
+	appendTo: "append",
+	prependTo: "prepend",
+	insertBefore: "before",
+	insertAfter: "after",
+	replaceAll: "replaceWith"
+}, function( name, original ) {
+	jQuery.fn[ name ] = function( selector ) {
+		var elems,
+			ret = [],
+			insert = jQuery( selector ),
+			last = insert.length - 1,
+			i = 0;
+
+		for ( ; i <= last; i++ ) {
+			elems = i === last ? this : this.clone( true );
+			jQuery( insert[ i ] )[ original ]( elems );
+
+			// Support: Android <=4.0 only, PhantomJS 1 only
+			// .get() because push.apply(_, arraylike) throws on ancient WebKit
+			push.apply( ret, elems.get() );
+		}
+
+		return this.pushStack( ret );
+	};
+} );
+
+return jQuery;
+} );
+;
+define( 'jquery/src/event',[
+	"./core",
+	"./var/document",
+	"./var/documentElement",
+	"./var/rnothtmlwhite",
+	"./var/slice",
+	"./data/var/dataPriv",
+
+	"./core/init",
+	"./selector"
+], function( jQuery, document, documentElement, rnothtmlwhite, slice, dataPriv ) {
+
+"use strict";
+
+var
+	rkeyEvent = /^key/,
+	rmouseEvent = /^(?:mouse|pointer|contextmenu|drag|drop)|click/,
+	rtypenamespace = /^([^.]*)(?:\.(.+)|)/;
+
+function returnTrue() {
+	return true;
+}
+
+function returnFalse() {
+	return false;
+}
+
+// Support: IE <=9 only
+// See #13393 for more info
+function safeActiveElement() {
+	try {
+		return document.activeElement;
+	} catch ( err ) { }
+}
+
+function on( elem, types, selector, data, fn, one ) {
+	var origFn, type;
+
+	// Types can be a map of types/handlers
+	if ( typeof types === "object" ) {
+
+		// ( types-Object, selector, data )
+		if ( typeof selector !== "string" ) {
+
+			// ( types-Object, data )
+			data = data || selector;
+			selector = undefined;
+		}
+		for ( type in types ) {
+			on( elem, type, selector, data, types[ type ], one );
+		}
+		return elem;
+	}
+
+	if ( data == null && fn == null ) {
+
+		// ( types, fn )
+		fn = selector;
+		data = selector = undefined;
+	} else if ( fn == null ) {
+		if ( typeof selector === "string" ) {
+
+			// ( types, selector, fn )
+			fn = data;
+			data = undefined;
+		} else {
+
+			// ( types, data, fn )
+			fn = data;
+			data = selector;
+			selector = undefined;
+		}
+	}
+	if ( fn === false ) {
+		fn = returnFalse;
+	} else if ( !fn ) {
+		return elem;
+	}
+
+	if ( one === 1 ) {
+		origFn = fn;
+		fn = function( event ) {
+
+			// Can use an empty set, since event contains the info
+			jQuery().off( event );
+			return origFn.apply( this, arguments );
+		};
+
+		// Use same guid so caller can remove using origFn
+		fn.guid = origFn.guid || ( origFn.guid = jQuery.guid++ );
+	}
+	return elem.each( function() {
+		jQuery.event.add( this, types, fn, data, selector );
+	} );
+}
+
+/*
+ * Helper functions for managing events -- not part of the public interface.
+ * Props to Dean Edwards' addEvent library for many of the ideas.
+ */
+jQuery.event = {
+
+	global: {},
+
+	add: function( elem, types, handler, data, selector ) {
+
+		var handleObjIn, eventHandle, tmp,
+			events, t, handleObj,
+			special, handlers, type, namespaces, origType,
+			elemData = dataPriv.get( elem );
+
+		// Don't attach events to noData or text/comment nodes (but allow plain objects)
+		if ( !elemData ) {
+			return;
+		}
+
+		// Caller can pass in an object of custom data in lieu of the handler
+		if ( handler.handler ) {
+			handleObjIn = handler;
+			handler = handleObjIn.handler;
+			selector = handleObjIn.selector;
+		}
+
+		// Ensure that invalid selectors throw exceptions at attach time
+		// Evaluate against documentElement in case elem is a non-element node (e.g., document)
+		if ( selector ) {
+			jQuery.find.matchesSelector( documentElement, selector );
+		}
+
+		// Make sure that the handler has a unique ID, used to find/remove it later
+		if ( !handler.guid ) {
+			handler.guid = jQuery.guid++;
+		}
+
+		// Init the element's event structure and main handler, if this is the first
+		if ( !( events = elemData.events ) ) {
+			events = elemData.events = {};
+		}
+		if ( !( eventHandle = elemData.handle ) ) {
+			eventHandle = elemData.handle = function( e ) {
+
+				// Discard the second event of a jQuery.event.trigger() and
+				// when an event is called after a page has unloaded
+				return typeof jQuery !== "undefined" && jQuery.event.triggered !== e.type ?
+					jQuery.event.dispatch.apply( elem, arguments ) : undefined;
+			};
+		}
+
+		// Handle multiple events separated by a space
+		types = ( types || "" ).match( rnothtmlwhite ) || [ "" ];
+		t = types.length;
+		while ( t-- ) {
+			tmp = rtypenamespace.exec( types[ t ] ) || [];
+			type = origType = tmp[ 1 ];
+			namespaces = ( tmp[ 2 ] || "" ).split( "." ).sort();
+
+			// There *must* be a type, no attaching namespace-only handlers
+			if ( !type ) {
+				continue;
+			}
+
+			// If event changes its type, use the special event handlers for the changed type
+			special = jQuery.event.special[ type ] || {};
+
+			// If selector defined, determine special event api type, otherwise given type
+			type = ( selector ? special.delegateType : special.bindType ) || type;
+
+			// Update special based on newly reset type
+			special = jQuery.event.special[ type ] || {};
+
+			// handleObj is passed to all event handlers
+			handleObj = jQuery.extend( {
+				type: type,
+				origType: origType,
+				data: data,
+				handler: handler,
+				guid: handler.guid,
+				selector: selector,
+				needsContext: selector && jQuery.expr.match.needsContext.test( selector ),
+				namespace: namespaces.join( "." )
+			}, handleObjIn );
+
+			// Init the event handler queue if we're the first
+			if ( !( handlers = events[ type ] ) ) {
+				handlers = events[ type ] = [];
+				handlers.delegateCount = 0;
+
+				// Only use addEventListener if the special events handler returns false
+				if ( !special.setup ||
+					special.setup.call( elem, data, namespaces, eventHandle ) === false ) {
+
+					if ( elem.addEventListener ) {
+						elem.addEventListener( type, eventHandle );
+					}
+				}
+			}
+
+			if ( special.add ) {
+				special.add.call( elem, handleObj );
+
+				if ( !handleObj.handler.guid ) {
+					handleObj.handler.guid = handler.guid;
+				}
+			}
+
+			// Add to the element's handler list, delegates in front
+			if ( selector ) {
+				handlers.splice( handlers.delegateCount++, 0, handleObj );
+			} else {
+				handlers.push( handleObj );
+			}
+
+			// Keep track of which events have ever been used, for event optimization
+			jQuery.event.global[ type ] = true;
+		}
+
+	},
+
+	// Detach an event or set of events from an element
+	remove: function( elem, types, handler, selector, mappedTypes ) {
+
+		var j, origCount, tmp,
+			events, t, handleObj,
+			special, handlers, type, namespaces, origType,
+			elemData = dataPriv.hasData( elem ) && dataPriv.get( elem );
+
+		if ( !elemData || !( events = elemData.events ) ) {
+			return;
+		}
+
+		// Once for each type.namespace in types; type may be omitted
+		types = ( types || "" ).match( rnothtmlwhite ) || [ "" ];
+		t = types.length;
+		while ( t-- ) {
+			tmp = rtypenamespace.exec( types[ t ] ) || [];
+			type = origType = tmp[ 1 ];
+			namespaces = ( tmp[ 2 ] || "" ).split( "." ).sort();
+
+			// Unbind all events (on this namespace, if provided) for the element
+			if ( !type ) {
+				for ( type in events ) {
+					jQuery.event.remove( elem, type + types[ t ], handler, selector, true );
+				}
+				continue;
+			}
+
+			special = jQuery.event.special[ type ] || {};
+			type = ( selector ? special.delegateType : special.bindType ) || type;
+			handlers = events[ type ] || [];
+			tmp = tmp[ 2 ] &&
+				new RegExp( "(^|\\.)" + namespaces.join( "\\.(?:.*\\.|)" ) + "(\\.|$)" );
+
+			// Remove matching events
+			origCount = j = handlers.length;
+			while ( j-- ) {
+				handleObj = handlers[ j ];
+
+				if ( ( mappedTypes || origType === handleObj.origType ) &&
+					( !handler || handler.guid === handleObj.guid ) &&
+					( !tmp || tmp.test( handleObj.namespace ) ) &&
+					( !selector || selector === handleObj.selector ||
+						selector === "**" && handleObj.selector ) ) {
+					handlers.splice( j, 1 );
+
+					if ( handleObj.selector ) {
+						handlers.delegateCount--;
+					}
+					if ( special.remove ) {
+						special.remove.call( elem, handleObj );
+					}
+				}
+			}
+
+			// Remove generic event handler if we removed something and no more handlers exist
+			// (avoids potential for endless recursion during removal of special event handlers)
+			if ( origCount && !handlers.length ) {
+				if ( !special.teardown ||
+					special.teardown.call( elem, namespaces, elemData.handle ) === false ) {
+
+					jQuery.removeEvent( elem, type, elemData.handle );
+				}
+
+				delete events[ type ];
+			}
+		}
+
+		// Remove data and the expando if it's no longer used
+		if ( jQuery.isEmptyObject( events ) ) {
+			dataPriv.remove( elem, "handle events" );
+		}
+	},
+
+	dispatch: function( nativeEvent ) {
+
+		// Make a writable jQuery.Event from the native event object
+		var event = jQuery.event.fix( nativeEvent );
+
+		var i, j, ret, matched, handleObj, handlerQueue,
+			args = new Array( arguments.length ),
+			handlers = ( dataPriv.get( this, "events" ) || {} )[ event.type ] || [],
+			special = jQuery.event.special[ event.type ] || {};
+
+		// Use the fix-ed jQuery.Event rather than the (read-only) native event
+		args[ 0 ] = event;
+
+		for ( i = 1; i < arguments.length; i++ ) {
+			args[ i ] = arguments[ i ];
+		}
+
+		event.delegateTarget = this;
+
+		// Call the preDispatch hook for the mapped type, and let it bail if desired
+		if ( special.preDispatch && special.preDispatch.call( this, event ) === false ) {
+			return;
+		}
+
+		// Determine handlers
+		handlerQueue = jQuery.event.handlers.call( this, event, handlers );
+
+		// Run delegates first; they may want to stop propagation beneath us
+		i = 0;
+		while ( ( matched = handlerQueue[ i++ ] ) && !event.isPropagationStopped() ) {
+			event.currentTarget = matched.elem;
+
+			j = 0;
+			while ( ( handleObj = matched.handlers[ j++ ] ) &&
+				!event.isImmediatePropagationStopped() ) {
+
+				// Triggered event must either 1) have no namespace, or 2) have namespace(s)
+				// a subset or equal to those in the bound event (both can have no namespace).
+				if ( !event.rnamespace || event.rnamespace.test( handleObj.namespace ) ) {
+
+					event.handleObj = handleObj;
+					event.data = handleObj.data;
+
+					ret = ( ( jQuery.event.special[ handleObj.origType ] || {} ).handle ||
+						handleObj.handler ).apply( matched.elem, args );
+
+					if ( ret !== undefined ) {
+						if ( ( event.result = ret ) === false ) {
+							event.preventDefault();
+							event.stopPropagation();
+						}
+					}
+				}
+			}
+		}
+
+		// Call the postDispatch hook for the mapped type
+		if ( special.postDispatch ) {
+			special.postDispatch.call( this, event );
+		}
+
+		return event.result;
+	},
+
+	handlers: function( event, handlers ) {
+		var i, handleObj, sel, matchedHandlers, matchedSelectors,
+			handlerQueue = [],
+			delegateCount = handlers.delegateCount,
+			cur = event.target;
+
+		// Find delegate handlers
+		if ( delegateCount &&
+
+			// Support: IE <=9
+			// Black-hole SVG <use> instance trees (trac-13180)
+			cur.nodeType &&
+
+			// Support: Firefox <=42
+			// Suppress spec-violating clicks indicating a non-primary pointer button (trac-3861)
+			// https://www.w3.org/TR/DOM-Level-3-Events/#event-type-click
+			// Support: IE 11 only
+			// ...but not arrow key "clicks" of radio inputs, which can have `button` -1 (gh-2343)
+			!( event.type === "click" && event.button >= 1 ) ) {
+
+			for ( ; cur !== this; cur = cur.parentNode || this ) {
+
+				// Don't check non-elements (#13208)
+				// Don't process clicks on disabled elements (#6911, #8165, #11382, #11764)
+				if ( cur.nodeType === 1 && !( event.type === "click" && cur.disabled === true ) ) {
+					matchedHandlers = [];
+					matchedSelectors = {};
+					for ( i = 0; i < delegateCount; i++ ) {
+						handleObj = handlers[ i ];
+
+						// Don't conflict with Object.prototype properties (#13203)
+						sel = handleObj.selector + " ";
+
+						if ( matchedSelectors[ sel ] === undefined ) {
+							matchedSelectors[ sel ] = handleObj.needsContext ?
+								jQuery( sel, this ).index( cur ) > -1 :
+								jQuery.find( sel, this, null, [ cur ] ).length;
+						}
+						if ( matchedSelectors[ sel ] ) {
+							matchedHandlers.push( handleObj );
+						}
+					}
+					if ( matchedHandlers.length ) {
+						handlerQueue.push( { elem: cur, handlers: matchedHandlers } );
+					}
+				}
+			}
+		}
+
+		// Add the remaining (directly-bound) handlers
+		cur = this;
+		if ( delegateCount < handlers.length ) {
+			handlerQueue.push( { elem: cur, handlers: handlers.slice( delegateCount ) } );
+		}
+
+		return handlerQueue;
+	},
+
+	addProp: function( name, hook ) {
+		Object.defineProperty( jQuery.Event.prototype, name, {
+			enumerable: true,
+			configurable: true,
+
+			get: jQuery.isFunction( hook ) ?
+				function() {
+					if ( this.originalEvent ) {
+							return hook( this.originalEvent );
+					}
+				} :
+				function() {
+					if ( this.originalEvent ) {
+							return this.originalEvent[ name ];
+					}
+				},
+
+			set: function( value ) {
+				Object.defineProperty( this, name, {
+					enumerable: true,
+					configurable: true,
+					writable: true,
+					value: value
+				} );
+			}
+		} );
+	},
+
+	fix: function( originalEvent ) {
+		return originalEvent[ jQuery.expando ] ?
+			originalEvent :
+			new jQuery.Event( originalEvent );
+	},
+
+	special: {
+		load: {
+
+			// Prevent triggered image.load events from bubbling to window.load
+			noBubble: true
+		},
+		focus: {
+
+			// Fire native event if possible so blur/focus sequence is correct
+			trigger: function() {
+				if ( this !== safeActiveElement() && this.focus ) {
+					this.focus();
+					return false;
+				}
+			},
+			delegateType: "focusin"
+		},
+		blur: {
+			trigger: function() {
+				if ( this === safeActiveElement() && this.blur ) {
+					this.blur();
+					return false;
+				}
+			},
+			delegateType: "focusout"
+		},
+		click: {
+
+			// For checkbox, fire native event so checked state will be right
+			trigger: function() {
+				if ( this.type === "checkbox" && this.click && jQuery.nodeName( this, "input" ) ) {
+					this.click();
+					return false;
+				}
+			},
+
+			// For cross-browser consistency, don't fire native .click() on links
+			_default: function( event ) {
+				return jQuery.nodeName( event.target, "a" );
+			}
+		},
+
+		beforeunload: {
+			postDispatch: function( event ) {
+
+				// Support: Firefox 20+
+				// Firefox doesn't alert if the returnValue field is not set.
+				if ( event.result !== undefined && event.originalEvent ) {
+					event.originalEvent.returnValue = event.result;
+				}
+			}
+		}
+	}
+};
+
+jQuery.removeEvent = function( elem, type, handle ) {
+
+	// This "if" is needed for plain objects
+	if ( elem.removeEventListener ) {
+		elem.removeEventListener( type, handle );
+	}
+};
+
+jQuery.Event = function( src, props ) {
+
+	// Allow instantiation without the 'new' keyword
+	if ( !( this instanceof jQuery.Event ) ) {
+		return new jQuery.Event( src, props );
+	}
+
+	// Event object
+	if ( src && src.type ) {
+		this.originalEvent = src;
+		this.type = src.type;
+
+		// Events bubbling up the document may have been marked as prevented
+		// by a handler lower down the tree; reflect the correct value.
+		this.isDefaultPrevented = src.defaultPrevented ||
+				src.defaultPrevented === undefined &&
+
+				// Support: Android <=2.3 only
+				src.returnValue === false ?
+			returnTrue :
+			returnFalse;
+
+		// Create target properties
+		// Support: Safari <=6 - 7 only
+		// Target should not be a text node (#504, #13143)
+		this.target = ( src.target && src.target.nodeType === 3 ) ?
+			src.target.parentNode :
+			src.target;
+
+		this.currentTarget = src.currentTarget;
+		this.relatedTarget = src.relatedTarget;
+
+	// Event type
+	} else {
+		this.type = src;
+	}
+
+	// Put explicitly provided properties onto the event object
+	if ( props ) {
+		jQuery.extend( this, props );
+	}
+
+	// Create a timestamp if incoming event doesn't have one
+	this.timeStamp = src && src.timeStamp || jQuery.now();
+
+	// Mark it as fixed
+	this[ jQuery.expando ] = true;
+};
+
+// jQuery.Event is based on DOM3 Events as specified by the ECMAScript Language Binding
+// https://www.w3.org/TR/2003/WD-DOM-Level-3-Events-20030331/ecma-script-binding.html
+jQuery.Event.prototype = {
+	constructor: jQuery.Event,
+	isDefaultPrevented: returnFalse,
+	isPropagationStopped: returnFalse,
+	isImmediatePropagationStopped: returnFalse,
+	isSimulated: false,
+
+	preventDefault: function() {
+		var e = this.originalEvent;
+
+		this.isDefaultPrevented = returnTrue;
+
+		if ( e && !this.isSimulated ) {
+			e.preventDefault();
+		}
+	},
+	stopPropagation: function() {
+		var e = this.originalEvent;
+
+		this.isPropagationStopped = returnTrue;
+
+		if ( e && !this.isSimulated ) {
+			e.stopPropagation();
+		}
+	},
+	stopImmediatePropagation: function() {
+		var e = this.originalEvent;
+
+		this.isImmediatePropagationStopped = returnTrue;
+
+		if ( e && !this.isSimulated ) {
+			e.stopImmediatePropagation();
+		}
+
+		this.stopPropagation();
+	}
+};
+
+// Includes all common event props including KeyEvent and MouseEvent specific props
+jQuery.each( {
+	altKey: true,
+	bubbles: true,
+	cancelable: true,
+	changedTouches: true,
+	ctrlKey: true,
+	detail: true,
+	eventPhase: true,
+	metaKey: true,
+	pageX: true,
+	pageY: true,
+	shiftKey: true,
+	view: true,
+	"char": true,
+	charCode: true,
+	key: true,
+	keyCode: true,
+	button: true,
+	buttons: true,
+	clientX: true,
+	clientY: true,
+	offsetX: true,
+	offsetY: true,
+	pointerId: true,
+	pointerType: true,
+	screenX: true,
+	screenY: true,
+	targetTouches: true,
+	toElement: true,
+	touches: true,
+
+	which: function( event ) {
+		var button = event.button;
+
+		// Add which for key events
+		if ( event.which == null && rkeyEvent.test( event.type ) ) {
+			return event.charCode != null ? event.charCode : event.keyCode;
+		}
+
+		// Add which for click: 1 === left; 2 === middle; 3 === right
+		if ( !event.which && button !== undefined && rmouseEvent.test( event.type ) ) {
+			if ( button & 1 ) {
+				return 1;
+			}
+
+			if ( button & 2 ) {
+				return 3;
+			}
+
+			if ( button & 4 ) {
+				return 2;
+			}
+
+			return 0;
+		}
+
+		return event.which;
+	}
+}, jQuery.event.addProp );
+
+// Create mouseenter/leave events using mouseover/out and event-time checks
+// so that event delegation works in jQuery.
+// Do the same for pointerenter/pointerleave and pointerover/pointerout
+//
+// Support: Safari 7 only
+// Safari sends mouseenter too often; see:
+// https://bugs.chromium.org/p/chromium/issues/detail?id=470258
+// for the description of the bug (it existed in older Chrome versions as well).
+jQuery.each( {
+	mouseenter: "mouseover",
+	mouseleave: "mouseout",
+	pointerenter: "pointerover",
+	pointerleave: "pointerout"
+}, function( orig, fix ) {
+	jQuery.event.special[ orig ] = {
+		delegateType: fix,
+		bindType: fix,
+
+		handle: function( event ) {
+			var ret,
+				target = this,
+				related = event.relatedTarget,
+				handleObj = event.handleObj;
+
+			// For mouseenter/leave call the handler if related is outside the target.
+			// NB: No relatedTarget if the mouse left/entered the browser window
+			if ( !related || ( related !== target && !jQuery.contains( target, related ) ) ) {
+				event.type = handleObj.origType;
+				ret = handleObj.handler.apply( this, arguments );
+				event.type = fix;
+			}
+			return ret;
+		}
+	};
+} );
+
+jQuery.fn.extend( {
+
+	on: function( types, selector, data, fn ) {
+		return on( this, types, selector, data, fn );
+	},
+	one: function( types, selector, data, fn ) {
+		return on( this, types, selector, data, fn, 1 );
+	},
+	off: function( types, selector, fn ) {
+		var handleObj, type;
+		if ( types && types.preventDefault && types.handleObj ) {
+
+			// ( event )  dispatched jQuery.Event
+			handleObj = types.handleObj;
+			jQuery( types.delegateTarget ).off(
+				handleObj.namespace ?
+					handleObj.origType + "." + handleObj.namespace :
+					handleObj.origType,
+				handleObj.selector,
+				handleObj.handler
+			);
+			return this;
+		}
+		if ( typeof types === "object" ) {
+
+			// ( types-object [, selector] )
+			for ( type in types ) {
+				this.off( type, selector, types[ type ] );
+			}
+			return this;
+		}
+		if ( selector === false || typeof selector === "function" ) {
+
+			// ( types [, fn] )
+			fn = selector;
+			selector = undefined;
+		}
+		if ( fn === false ) {
+			fn = returnFalse;
+		}
+		return this.each( function() {
+			jQuery.event.remove( this, types, fn, selector );
+		} );
+	}
+} );
+
+return jQuery;
+} );
+;
+define( 'jquery/src/data/var/dataUser',[
+	"../Data"
+], function( Data ) {
+	"use strict";
+
+	return new Data();
+} );
+;
+define( 'jquery/src/manipulation/support',[
+	"../var/document",
+	"../var/support"
+], function( document, support ) {
+
+"use strict";
+
+( function() {
+	var fragment = document.createDocumentFragment(),
+		div = fragment.appendChild( document.createElement( "div" ) ),
+		input = document.createElement( "input" );
+
+	// Support: Android 4.0 - 4.3 only
+	// Check state lost if the name is set (#11217)
+	// Support: Windows Web Apps (WWA)
+	// `name` and `type` must use .setAttribute for WWA (#14901)
+	input.setAttribute( "type", "radio" );
+	input.setAttribute( "checked", "checked" );
+	input.setAttribute( "name", "t" );
+
+	div.appendChild( input );
+
+	// Support: Android <=4.1 only
+	// Older WebKit doesn't clone checked state correctly in fragments
+	support.checkClone = div.cloneNode( true ).cloneNode( true ).lastChild.checked;
+
+	// Support: IE <=11 only
+	// Make sure textarea (and checkbox) defaultValue is properly cloned
+	div.innerHTML = "<textarea>x</textarea>";
+	support.noCloneChecked = !!div.cloneNode( true ).lastChild.defaultValue;
+} )();
+
+return support;
+
+} );
+;
+define( 'jquery/src/manipulation/buildFragment',[
+	"../core",
+	"./var/rtagName",
+	"./var/rscriptType",
+	"./wrapMap",
+	"./getAll",
+	"./setGlobalEval"
+], function( jQuery, rtagName, rscriptType, wrapMap, getAll, setGlobalEval ) {
+
+"use strict";
+
+var rhtml = /<|&#?\w+;/;
+
+function buildFragment( elems, context, scripts, selection, ignored ) {
+	var elem, tmp, tag, wrap, contains, j,
+		fragment = context.createDocumentFragment(),
+		nodes = [],
+		i = 0,
+		l = elems.length;
+
+	for ( ; i < l; i++ ) {
+		elem = elems[ i ];
+
+		if ( elem || elem === 0 ) {
+
+			// Add nodes directly
+			if ( jQuery.type( elem ) === "object" ) {
+
+				// Support: Android <=4.0 only, PhantomJS 1 only
+				// push.apply(_, arraylike) throws on ancient WebKit
+				jQuery.merge( nodes, elem.nodeType ? [ elem ] : elem );
+
+			// Convert non-html into a text node
+			} else if ( !rhtml.test( elem ) ) {
+				nodes.push( context.createTextNode( elem ) );
+
+			// Convert html into DOM nodes
+			} else {
+				tmp = tmp || fragment.appendChild( context.createElement( "div" ) );
+
+				// Deserialize a standard representation
+				tag = ( rtagName.exec( elem ) || [ "", "" ] )[ 1 ].toLowerCase();
+				wrap = wrapMap[ tag ] || wrapMap._default;
+				tmp.innerHTML = wrap[ 1 ] + jQuery.htmlPrefilter( elem ) + wrap[ 2 ];
+
+				// Descend through wrappers to the right content
+				j = wrap[ 0 ];
+				while ( j-- ) {
+					tmp = tmp.lastChild;
+				}
+
+				// Support: Android <=4.0 only, PhantomJS 1 only
+				// push.apply(_, arraylike) throws on ancient WebKit
+				jQuery.merge( nodes, tmp.childNodes );
+
+				// Remember the top-level container
+				tmp = fragment.firstChild;
+
+				// Ensure the created nodes are orphaned (#12392)
+				tmp.textContent = "";
+			}
+		}
+	}
+
+	// Remove wrapper from fragment
+	fragment.textContent = "";
+
+	i = 0;
+	while ( ( elem = nodes[ i++ ] ) ) {
+
+		// Skip elements already in the context collection (trac-4087)
+		if ( selection && jQuery.inArray( elem, selection ) > -1 ) {
+			if ( ignored ) {
+				ignored.push( elem );
+			}
+			continue;
+		}
+
+		contains = jQuery.contains( elem.ownerDocument, elem );
+
+		// Append to fragment
+		tmp = getAll( fragment.appendChild( elem ), "script" );
+
+		// Preserve script evaluation history
+		if ( contains ) {
+			setGlobalEval( tmp );
+		}
+
+		// Capture executables
+		if ( scripts ) {
+			j = 0;
+			while ( ( elem = tmp[ j++ ] ) ) {
+				if ( rscriptType.test( elem.type || "" ) ) {
+					scripts.push( elem );
+				}
+			}
+		}
+	}
+
+	return fragment;
+}
+
+return buildFragment;
+} );
+;
+define( 'jquery/src/manipulation/setGlobalEval',[
+	"../data/var/dataPriv"
+], function( dataPriv ) {
+
+"use strict";
+
+// Mark scripts as having already been evaluated
+function setGlobalEval( elems, refElements ) {
+	var i = 0,
+		l = elems.length;
+
+	for ( ; i < l; i++ ) {
+		dataPriv.set(
+			elems[ i ],
+			"globalEval",
+			!refElements || dataPriv.get( refElements[ i ], "globalEval" )
+		);
+	}
+}
+
+return setGlobalEval;
+} );
+;
+define( 'jquery/src/manipulation/getAll',[
+	"../core"
+], function( jQuery ) {
+
+"use strict";
+
+function getAll( context, tag ) {
+
+	// Support: IE <=9 - 11 only
+	// Use typeof to avoid zero-argument method invocation on host objects (#15151)
+	var ret;
+
+	if ( typeof context.getElementsByTagName !== "undefined" ) {
+		ret = context.getElementsByTagName( tag || "*" );
+
+	} else if ( typeof context.querySelectorAll !== "undefined" ) {
+		ret = context.querySelectorAll( tag || "*" );
+
+	} else {
+		ret = [];
+	}
+
+	if ( tag === undefined || tag && jQuery.nodeName( context, tag ) ) {
+		return jQuery.merge( [ context ], ret );
+	}
+
+	return ret;
+}
+
+return getAll;
+} );
+;
+define( 'jquery/src/manipulation/wrapMap',[],function() {
+
+"use strict";
+
+// We have to close these tags to support XHTML (#13200)
+var wrapMap = {
+
+	// Support: IE <=9 only
+	option: [ 1, "<select multiple='multiple'>", "</select>" ],
+
+	// XHTML parsers do not magically insert elements in the
+	// same way that tag soup parsers do. So we cannot shorten
+	// this by omitting <tbody> or other required elements.
+	thead: [ 1, "<table>", "</table>" ],
+	col: [ 2, "<table><colgroup>", "</colgroup></table>" ],
+	tr: [ 2, "<table><tbody>", "</tbody></table>" ],
+	td: [ 3, "<table><tbody><tr>", "</tr></tbody></table>" ],
+
+	_default: [ 0, "", "" ]
+};
+
+// Support: IE <=9 only
+wrapMap.optgroup = wrapMap.option;
+
+wrapMap.tbody = wrapMap.tfoot = wrapMap.colgroup = wrapMap.caption = wrapMap.thead;
+wrapMap.th = wrapMap.td;
+
+return wrapMap;
+} );
+;
+define( 'jquery/src/manipulation/var/rscriptType',[],function() {
+	"use strict";
+
+	return ( /^$|\/(?:java|ecma)script/i );
+} );
+;
+define( 'jquery/src/manipulation/var/rtagName',[],function() {
+	"use strict";
+
+	return ( /<([a-z][^\/\0>\x20\t\r\n\f]+)/i );
+} );
+;
+define( 'jquery/src/manipulation/var/rcheckableType',[],function() {
+	"use strict";
+
+	return ( /^(?:checkbox|radio)$/i );
+} );
+;
+define( 'jquery/src/traversing',[
+	"./core",
+	"./var/indexOf",
+	"./traversing/var/dir",
+	"./traversing/var/siblings",
+	"./traversing/var/rneedsContext",
+	"./core/init",
+	"./traversing/findFilter",
+	"./selector"
+], function( jQuery, indexOf, dir, siblings, rneedsContext ) {
+
+"use strict";
+
+var rparentsprev = /^(?:parents|prev(?:Until|All))/,
+
+	// Methods guaranteed to produce a unique set when starting from a unique set
+	guaranteedUnique = {
+		children: true,
+		contents: true,
+		next: true,
+		prev: true
+	};
+
+jQuery.fn.extend( {
+	has: function( target ) {
+		var targets = jQuery( target, this ),
+			l = targets.length;
+
+		return this.filter( function() {
+			var i = 0;
+			for ( ; i < l; i++ ) {
+				if ( jQuery.contains( this, targets[ i ] ) ) {
+					return true;
+				}
+			}
+		} );
+	},
+
+	closest: function( selectors, context ) {
+		var cur,
+			i = 0,
+			l = this.length,
+			matched = [],
+			targets = typeof selectors !== "string" && jQuery( selectors );
+
+		// Positional selectors never match, since there's no _selection_ context
+		if ( !rneedsContext.test( selectors ) ) {
+			for ( ; i < l; i++ ) {
+				for ( cur = this[ i ]; cur && cur !== context; cur = cur.parentNode ) {
+
+					// Always skip document fragments
+					if ( cur.nodeType < 11 && ( targets ?
+						targets.index( cur ) > -1 :
+
+						// Don't pass non-elements to Sizzle
+						cur.nodeType === 1 &&
+							jQuery.find.matchesSelector( cur, selectors ) ) ) {
+
+						matched.push( cur );
+						break;
+					}
+				}
+			}
+		}
+
+		return this.pushStack( matched.length > 1 ? jQuery.uniqueSort( matched ) : matched );
+	},
+
+	// Determine the position of an element within the set
+	index: function( elem ) {
+
+		// No argument, return index in parent
+		if ( !elem ) {
+			return ( this[ 0 ] && this[ 0 ].parentNode ) ? this.first().prevAll().length : -1;
+		}
+
+		// Index in selector
+		if ( typeof elem === "string" ) {
+			return indexOf.call( jQuery( elem ), this[ 0 ] );
+		}
+
+		// Locate the position of the desired element
+		return indexOf.call( this,
+
+			// If it receives a jQuery object, the first element is used
+			elem.jquery ? elem[ 0 ] : elem
+		);
+	},
+
+	add: function( selector, context ) {
+		return this.pushStack(
+			jQuery.uniqueSort(
+				jQuery.merge( this.get(), jQuery( selector, context ) )
+			)
+		);
+	},
+
+	addBack: function( selector ) {
+		return this.add( selector == null ?
+			this.prevObject : this.prevObject.filter( selector )
+		);
+	}
+} );
+
+function sibling( cur, dir ) {
+	while ( ( cur = cur[ dir ] ) && cur.nodeType !== 1 ) {}
+	return cur;
+}
+
+jQuery.each( {
+	parent: function( elem ) {
+		var parent = elem.parentNode;
+		return parent && parent.nodeType !== 11 ? parent : null;
+	},
+	parents: function( elem ) {
+		return dir( elem, "parentNode" );
+	},
+	parentsUntil: function( elem, i, until ) {
+		return dir( elem, "parentNode", until );
+	},
+	next: function( elem ) {
+		return sibling( elem, "nextSibling" );
+	},
+	prev: function( elem ) {
+		return sibling( elem, "previousSibling" );
+	},
+	nextAll: function( elem ) {
+		return dir( elem, "nextSibling" );
+	},
+	prevAll: function( elem ) {
+		return dir( elem, "previousSibling" );
+	},
+	nextUntil: function( elem, i, until ) {
+		return dir( elem, "nextSibling", until );
+	},
+	prevUntil: function( elem, i, until ) {
+		return dir( elem, "previousSibling", until );
+	},
+	siblings: function( elem ) {
+		return siblings( ( elem.parentNode || {} ).firstChild, elem );
+	},
+	children: function( elem ) {
+		return siblings( elem.firstChild );
+	},
+	contents: function( elem ) {
+		return elem.contentDocument || jQuery.merge( [], elem.childNodes );
+	}
+}, function( name, fn ) {
+	jQuery.fn[ name ] = function( until, selector ) {
+		var matched = jQuery.map( this, fn, until );
+
+		if ( name.slice( -5 ) !== "Until" ) {
+			selector = until;
+		}
+
+		if ( selector && typeof selector === "string" ) {
+			matched = jQuery.filter( selector, matched );
+		}
+
+		if ( this.length > 1 ) {
+
+			// Remove duplicates
+			if ( !guaranteedUnique[ name ] ) {
+				jQuery.uniqueSort( matched );
+			}
+
+			// Reverse order for parents* and prev-derivatives
+			if ( rparentsprev.test( name ) ) {
+				matched.reverse();
+			}
+		}
+
+		return this.pushStack( matched );
+	};
+} );
+
+return jQuery;
+} );
+;
+define( 'jquery/src/traversing/var/siblings',[],function() {
+
+"use strict";
+
+return function( n, elem ) {
+	var matched = [];
+
+	for ( ; n; n = n.nextSibling ) {
+		if ( n.nodeType === 1 && n !== elem ) {
+			matched.push( n );
+		}
+	}
+
+	return matched;
+};
+
+} );
+;
+define( 'jquery/src/traversing/var/dir',[
+	"../../core"
+], function( jQuery ) {
+
+"use strict";
+
+return function( elem, dir, until ) {
+	var matched = [],
+		truncate = until !== undefined;
+
+	while ( ( elem = elem[ dir ] ) && elem.nodeType !== 9 ) {
+		if ( elem.nodeType === 1 ) {
+			if ( truncate && jQuery( elem ).is( until ) ) {
+				break;
+			}
+			matched.push( elem );
+		}
+	}
+	return matched;
+};
+
+} );
+;
+define( 'jquery/src/deferred',[
+	"./core",
+	"./var/slice",
+	"./callbacks"
+], function( jQuery, slice ) {
+
+"use strict";
+
+function Identity( v ) {
+	return v;
+}
+function Thrower( ex ) {
+	throw ex;
+}
+
+function adoptValue( value, resolve, reject ) {
+	var method;
+
+	try {
+
+		// Check for promise aspect first to privilege synchronous behavior
+		if ( value && jQuery.isFunction( ( method = value.promise ) ) ) {
+			method.call( value ).done( resolve ).fail( reject );
+
+		// Other thenables
+		} else if ( value && jQuery.isFunction( ( method = value.then ) ) ) {
+			method.call( value, resolve, reject );
+
+		// Other non-thenables
+		} else {
+
+			// Support: Android 4.0 only
+			// Strict mode functions invoked without .call/.apply get global-object context
+			resolve.call( undefined, value );
+		}
+
+	// For Promises/A+, convert exceptions into rejections
+	// Since jQuery.when doesn't unwrap thenables, we can skip the extra checks appearing in
+	// Deferred#then to conditionally suppress rejection.
+	} catch ( value ) {
+
+		// Support: Android 4.0 only
+		// Strict mode functions invoked without .call/.apply get global-object context
+		reject.call( undefined, value );
+	}
+}
+
+jQuery.extend( {
+
+	Deferred: function( func ) {
+		var tuples = [
+
+				// action, add listener, callbacks,
+				// ... .then handlers, argument index, [final state]
+				[ "notify", "progress", jQuery.Callbacks( "memory" ),
+					jQuery.Callbacks( "memory" ), 2 ],
+				[ "resolve", "done", jQuery.Callbacks( "once memory" ),
+					jQuery.Callbacks( "once memory" ), 0, "resolved" ],
+				[ "reject", "fail", jQuery.Callbacks( "once memory" ),
+					jQuery.Callbacks( "once memory" ), 1, "rejected" ]
+			],
+			state = "pending",
+			promise = {
+				state: function() {
+					return state;
+				},
+				always: function() {
+					deferred.done( arguments ).fail( arguments );
+					return this;
+				},
+				"catch": function( fn ) {
+					return promise.then( null, fn );
+				},
+
+				// Keep pipe for back-compat
+				pipe: function( /* fnDone, fnFail, fnProgress */ ) {
+					var fns = arguments;
+
+					return jQuery.Deferred( function( newDefer ) {
+						jQuery.each( tuples, function( i, tuple ) {
+
+							// Map tuples (progress, done, fail) to arguments (done, fail, progress)
+							var fn = jQuery.isFunction( fns[ tuple[ 4 ] ] ) && fns[ tuple[ 4 ] ];
+
+							// deferred.progress(function() { bind to newDefer or newDefer.notify })
+							// deferred.done(function() { bind to newDefer or newDefer.resolve })
+							// deferred.fail(function() { bind to newDefer or newDefer.reject })
+							deferred[ tuple[ 1 ] ]( function() {
+								var returned = fn && fn.apply( this, arguments );
+								if ( returned && jQuery.isFunction( returned.promise ) ) {
+									returned.promise()
+										.progress( newDefer.notify )
+										.done( newDefer.resolve )
+										.fail( newDefer.reject );
+								} else {
+									newDefer[ tuple[ 0 ] + "With" ](
+										this,
+										fn ? [ returned ] : arguments
+									);
+								}
+							} );
+						} );
+						fns = null;
+					} ).promise();
+				},
+				then: function( onFulfilled, onRejected, onProgress ) {
+					var maxDepth = 0;
+					function resolve( depth, deferred, handler, special ) {
+						return function() {
+							var that = this,
+								args = arguments,
+								mightThrow = function() {
+									var returned, then;
+
+									// Support: Promises/A+ section 2.3.3.3.3
+									// https://promisesaplus.com/#point-59
+									// Ignore double-resolution attempts
+									if ( depth < maxDepth ) {
+										return;
+									}
+
+									returned = handler.apply( that, args );
+
+									// Support: Promises/A+ section 2.3.1
+									// https://promisesaplus.com/#point-48
+									if ( returned === deferred.promise() ) {
+										throw new TypeError( "Thenable self-resolution" );
+									}
+
+									// Support: Promises/A+ sections 2.3.3.1, 3.5
+									// https://promisesaplus.com/#point-54
+									// https://promisesaplus.com/#point-75
+									// Retrieve `then` only once
+									then = returned &&
+
+										// Support: Promises/A+ section 2.3.4
+										// https://promisesaplus.com/#point-64
+										// Only check objects and functions for thenability
+										( typeof returned === "object" ||
+											typeof returned === "function" ) &&
+										returned.then;
+
+									// Handle a returned thenable
+									if ( jQuery.isFunction( then ) ) {
+
+										// Special processors (notify) just wait for resolution
+										if ( special ) {
+											then.call(
+												returned,
+												resolve( maxDepth, deferred, Identity, special ),
+												resolve( maxDepth, deferred, Thrower, special )
+											);
+
+										// Normal processors (resolve) also hook into progress
+										} else {
+
+											// ...and disregard older resolution values
+											maxDepth++;
+
+											then.call(
+												returned,
+												resolve( maxDepth, deferred, Identity, special ),
+												resolve( maxDepth, deferred, Thrower, special ),
+												resolve( maxDepth, deferred, Identity,
+													deferred.notifyWith )
+											);
+										}
+
+									// Handle all other returned values
+									} else {
+
+										// Only substitute handlers pass on context
+										// and multiple values (non-spec behavior)
+										if ( handler !== Identity ) {
+											that = undefined;
+											args = [ returned ];
+										}
+
+										// Process the value(s)
+										// Default process is resolve
+										( special || deferred.resolveWith )( that, args );
+									}
+								},
+
+								// Only normal processors (resolve) catch and reject exceptions
+								process = special ?
+									mightThrow :
+									function() {
+										try {
+											mightThrow();
+										} catch ( e ) {
+
+											if ( jQuery.Deferred.exceptionHook ) {
+												jQuery.Deferred.exceptionHook( e,
+													process.stackTrace );
+											}
+
+											// Support: Promises/A+ section 2.3.3.3.4.1
+											// https://promisesaplus.com/#point-61
+											// Ignore post-resolution exceptions
+											if ( depth + 1 >= maxDepth ) {
+
+												// Only substitute handlers pass on context
+												// and multiple values (non-spec behavior)
+												if ( handler !== Thrower ) {
+													that = undefined;
+													args = [ e ];
+												}
+
+												deferred.rejectWith( that, args );
+											}
+										}
+									};
+
+							// Support: Promises/A+ section 2.3.3.3.1
+							// https://promisesaplus.com/#point-57
+							// Re-resolve promises immediately to dodge false rejection from
+							// subsequent errors
+							if ( depth ) {
+								process();
+							} else {
+
+								// Call an optional hook to record the stack, in case of exception
+								// since it's otherwise lost when execution goes async
+								if ( jQuery.Deferred.getStackHook ) {
+									process.stackTrace = jQuery.Deferred.getStackHook();
+								}
+								window.setTimeout( process );
+							}
+						};
+					}
+
+					return jQuery.Deferred( function( newDefer ) {
+
+						// progress_handlers.add( ... )
+						tuples[ 0 ][ 3 ].add(
+							resolve(
+								0,
+								newDefer,
+								jQuery.isFunction( onProgress ) ?
+									onProgress :
+									Identity,
+								newDefer.notifyWith
+							)
+						);
+
+						// fulfilled_handlers.add( ... )
+						tuples[ 1 ][ 3 ].add(
+							resolve(
+								0,
+								newDefer,
+								jQuery.isFunction( onFulfilled ) ?
+									onFulfilled :
+									Identity
+							)
+						);
+
+						// rejected_handlers.add( ... )
+						tuples[ 2 ][ 3 ].add(
+							resolve(
+								0,
+								newDefer,
+								jQuery.isFunction( onRejected ) ?
+									onRejected :
+									Thrower
+							)
+						);
+					} ).promise();
+				},
+
+				// Get a promise for this deferred
+				// If obj is provided, the promise aspect is added to the object
+				promise: function( obj ) {
+					return obj != null ? jQuery.extend( obj, promise ) : promise;
+				}
+			},
+			deferred = {};
+
+		// Add list-specific methods
+		jQuery.each( tuples, function( i, tuple ) {
+			var list = tuple[ 2 ],
+				stateString = tuple[ 5 ];
+
+			// promise.progress = list.add
+			// promise.done = list.add
+			// promise.fail = list.add
+			promise[ tuple[ 1 ] ] = list.add;
+
+			// Handle state
+			if ( stateString ) {
+				list.add(
+					function() {
+
+						// state = "resolved" (i.e., fulfilled)
+						// state = "rejected"
+						state = stateString;
+					},
+
+					// rejected_callbacks.disable
+					// fulfilled_callbacks.disable
+					tuples[ 3 - i ][ 2 ].disable,
+
+					// progress_callbacks.lock
+					tuples[ 0 ][ 2 ].lock
+				);
+			}
+
+			// progress_handlers.fire
+			// fulfilled_handlers.fire
+			// rejected_handlers.fire
+			list.add( tuple[ 3 ].fire );
+
+			// deferred.notify = function() { deferred.notifyWith(...) }
+			// deferred.resolve = function() { deferred.resolveWith(...) }
+			// deferred.reject = function() { deferred.rejectWith(...) }
+			deferred[ tuple[ 0 ] ] = function() {
+				deferred[ tuple[ 0 ] + "With" ]( this === deferred ? undefined : this, arguments );
+				return this;
+			};
+
+			// deferred.notifyWith = list.fireWith
+			// deferred.resolveWith = list.fireWith
+			// deferred.rejectWith = list.fireWith
+			deferred[ tuple[ 0 ] + "With" ] = list.fireWith;
+		} );
+
+		// Make the deferred a promise
+		promise.promise( deferred );
+
+		// Call given func if any
+		if ( func ) {
+			func.call( deferred, deferred );
+		}
+
+		// All done!
+		return deferred;
+	},
+
+	// Deferred helper
+	when: function( singleValue ) {
+		var
+
+			// count of uncompleted subordinates
+			remaining = arguments.length,
+
+			// count of unprocessed arguments
+			i = remaining,
+
+			// subordinate fulfillment data
+			resolveContexts = Array( i ),
+			resolveValues = slice.call( arguments ),
+
+			// the master Deferred
+			master = jQuery.Deferred(),
+
+			// subordinate callback factory
+			updateFunc = function( i ) {
+				return function( value ) {
+					resolveContexts[ i ] = this;
+					resolveValues[ i ] = arguments.length > 1 ? slice.call( arguments ) : value;
+					if ( !( --remaining ) ) {
+						master.resolveWith( resolveContexts, resolveValues );
+					}
+				};
+			};
+
+		// Single- and empty arguments are adopted like Promise.resolve
+		if ( remaining <= 1 ) {
+			adoptValue( singleValue, master.done( updateFunc( i ) ).resolve, master.reject );
+
+			// Use .then() to unwrap secondary thenables (cf. gh-3000)
+			if ( master.state() === "pending" ||
+				jQuery.isFunction( resolveValues[ i ] && resolveValues[ i ].then ) ) {
+
+				return master.then();
+			}
+		}
+
+		// Multiple arguments are aggregated like Promise.all array elements
+		while ( i-- ) {
+			adoptValue( resolveValues[ i ], updateFunc( i ), master.reject );
+		}
+
+		return master.promise();
+	}
+} );
+
+return jQuery;
+} );
+;
+define( 'jquery/src/callbacks',[
+	"./core",
+	"./var/rnothtmlwhite"
+], function( jQuery, rnothtmlwhite ) {
+
+"use strict";
+
+// Convert String-formatted options into Object-formatted ones
+function createOptions( options ) {
+	var object = {};
+	jQuery.each( options.match( rnothtmlwhite ) || [], function( _, flag ) {
+		object[ flag ] = true;
+	} );
+	return object;
+}
+
+/*
+ * Create a callback list using the following parameters:
+ *
+ *	options: an optional list of space-separated options that will change how
+ *			the callback list behaves or a more traditional option object
+ *
+ * By default a callback list will act like an event callback list and can be
+ * "fired" multiple times.
+ *
+ * Possible options:
+ *
+ *	once:			will ensure the callback list can only be fired once (like a Deferred)
+ *
+ *	memory:			will keep track of previous values and will call any callback added
+ *					after the list has been fired right away with the latest "memorized"
+ *					values (like a Deferred)
+ *
+ *	unique:			will ensure a callback can only be added once (no duplicate in the list)
+ *
+ *	stopOnFalse:	interrupt callings when a callback returns false
+ *
+ */
+jQuery.Callbacks = function( options ) {
+
+	// Convert options from String-formatted to Object-formatted if needed
+	// (we check in cache first)
+	options = typeof options === "string" ?
+		createOptions( options ) :
+		jQuery.extend( {}, options );
+
+	var // Flag to know if list is currently firing
+		firing,
+
+		// Last fire value for non-forgettable lists
+		memory,
+
+		// Flag to know if list was already fired
+		fired,
+
+		// Flag to prevent firing
+		locked,
+
+		// Actual callback list
+		list = [],
+
+		// Queue of execution data for repeatable lists
+		queue = [],
+
+		// Index of currently firing callback (modified by add/remove as needed)
+		firingIndex = -1,
+
+		// Fire callbacks
+		fire = function() {
+
+			// Enforce single-firing
+			locked = options.once;
+
+			// Execute callbacks for all pending executions,
+			// respecting firingIndex overrides and runtime changes
+			fired = firing = true;
+			for ( ; queue.length; firingIndex = -1 ) {
+				memory = queue.shift();
+				while ( ++firingIndex < list.length ) {
+
+					// Run callback and check for early termination
+					if ( list[ firingIndex ].apply( memory[ 0 ], memory[ 1 ] ) === false &&
+						options.stopOnFalse ) {
+
+						// Jump to end and forget the data so .add doesn't re-fire
+						firingIndex = list.length;
+						memory = false;
+					}
+				}
+			}
+
+			// Forget the data if we're done with it
+			if ( !options.memory ) {
+				memory = false;
+			}
+
+			firing = false;
+
+			// Clean up if we're done firing for good
+			if ( locked ) {
+
+				// Keep an empty list if we have data for future add calls
+				if ( memory ) {
+					list = [];
+
+				// Otherwise, this object is spent
+				} else {
+					list = "";
+				}
+			}
+		},
+
+		// Actual Callbacks object
+		self = {
+
+			// Add a callback or a collection of callbacks to the list
+			add: function() {
+				if ( list ) {
+
+					// If we have memory from a past run, we should fire after adding
+					if ( memory && !firing ) {
+						firingIndex = list.length - 1;
+						queue.push( memory );
+					}
+
+					( function add( args ) {
+						jQuery.each( args, function( _, arg ) {
+							if ( jQuery.isFunction( arg ) ) {
+								if ( !options.unique || !self.has( arg ) ) {
+									list.push( arg );
+								}
+							} else if ( arg && arg.length && jQuery.type( arg ) !== "string" ) {
+
+								// Inspect recursively
+								add( arg );
+							}
+						} );
+					} )( arguments );
+
+					if ( memory && !firing ) {
+						fire();
+					}
+				}
+				return this;
+			},
+
+			// Remove a callback from the list
+			remove: function() {
+				jQuery.each( arguments, function( _, arg ) {
+					var index;
+					while ( ( index = jQuery.inArray( arg, list, index ) ) > -1 ) {
+						list.splice( index, 1 );
+
+						// Handle firing indexes
+						if ( index <= firingIndex ) {
+							firingIndex--;
+						}
+					}
+				} );
+				return this;
+			},
+
+			// Check if a given callback is in the list.
+			// If no argument is given, return whether or not list has callbacks attached.
+			has: function( fn ) {
+				return fn ?
+					jQuery.inArray( fn, list ) > -1 :
+					list.length > 0;
+			},
+
+			// Remove all callbacks from the list
+			empty: function() {
+				if ( list ) {
+					list = [];
+				}
+				return this;
+			},
+
+			// Disable .fire and .add
+			// Abort any current/pending executions
+			// Clear all callbacks and values
+			disable: function() {
+				locked = queue = [];
+				list = memory = "";
+				return this;
+			},
+			disabled: function() {
+				return !list;
+			},
+
+			// Disable .fire
+			// Also disable .add unless we have memory (since it would have no effect)
+			// Abort any pending executions
+			lock: function() {
+				locked = queue = [];
+				if ( !memory && !firing ) {
+					list = memory = "";
+				}
+				return this;
+			},
+			locked: function() {
+				return !!locked;
+			},
+
+			// Call all callbacks with the given context and arguments
+			fireWith: function( context, args ) {
+				if ( !locked ) {
+					args = args || [];
+					args = [ context, args.slice ? args.slice() : args ];
+					queue.push( args );
+					if ( !firing ) {
+						fire();
+					}
+				}
+				return this;
+			},
+
+			// Call all the callbacks with the given arguments
+			fire: function() {
+				self.fireWith( this, arguments );
+				return this;
+			},
+
+			// To know if the callbacks have already been called at least once
+			fired: function() {
+				return !!fired;
+			}
+		};
+
+	return self;
+};
+
+return jQuery;
+} );
+;
+define( 'jquery/src/queue',[
+	"./core",
+	"./data/var/dataPriv",
+	"./deferred",
+	"./callbacks"
+], function( jQuery, dataPriv ) {
+
+"use strict";
+
+jQuery.extend( {
+	queue: function( elem, type, data ) {
+		var queue;
+
+		if ( elem ) {
+			type = ( type || "fx" ) + "queue";
+			queue = dataPriv.get( elem, type );
+
+			// Speed up dequeue by getting out quickly if this is just a lookup
+			if ( data ) {
+				if ( !queue || jQuery.isArray( data ) ) {
+					queue = dataPriv.access( elem, type, jQuery.makeArray( data ) );
+				} else {
+					queue.push( data );
+				}
+			}
+			return queue || [];
+		}
+	},
+
+	dequeue: function( elem, type ) {
+		type = type || "fx";
+
+		var queue = jQuery.queue( elem, type ),
+			startLength = queue.length,
+			fn = queue.shift(),
+			hooks = jQuery._queueHooks( elem, type ),
+			next = function() {
+				jQuery.dequeue( elem, type );
+			};
+
+		// If the fx queue is dequeued, always remove the progress sentinel
+		if ( fn === "inprogress" ) {
+			fn = queue.shift();
+			startLength--;
+		}
+
+		if ( fn ) {
+
+			// Add a progress sentinel to prevent the fx queue from being
+			// automatically dequeued
+			if ( type === "fx" ) {
+				queue.unshift( "inprogress" );
+			}
+
+			// Clear up the last queue stop function
+			delete hooks.stop;
+			fn.call( elem, next, hooks );
+		}
+
+		if ( !startLength && hooks ) {
+			hooks.empty.fire();
+		}
+	},
+
+	// Not public - generate a queueHooks object, or return the current one
+	_queueHooks: function( elem, type ) {
+		var key = type + "queueHooks";
+		return dataPriv.get( elem, key ) || dataPriv.access( elem, key, {
+			empty: jQuery.Callbacks( "once memory" ).add( function() {
+				dataPriv.remove( elem, [ type + "queue", key ] );
+			} )
+		} );
+	}
+} );
+
+jQuery.fn.extend( {
+	queue: function( type, data ) {
+		var setter = 2;
+
+		if ( typeof type !== "string" ) {
+			data = type;
+			type = "fx";
+			setter--;
+		}
+
+		if ( arguments.length < setter ) {
+			return jQuery.queue( this[ 0 ], type );
+		}
+
+		return data === undefined ?
+			this :
+			this.each( function() {
+				var queue = jQuery.queue( this, type, data );
+
+				// Ensure a hooks for this queue
+				jQuery._queueHooks( this, type );
+
+				if ( type === "fx" && queue[ 0 ] !== "inprogress" ) {
+					jQuery.dequeue( this, type );
+				}
+			} );
+	},
+	dequeue: function( type ) {
+		return this.each( function() {
+			jQuery.dequeue( this, type );
+		} );
+	},
+	clearQueue: function( type ) {
+		return this.queue( type || "fx", [] );
+	},
+
+	// Get a promise resolved when queues of a certain type
+	// are emptied (fx is the type by default)
+	promise: function( type, obj ) {
+		var tmp,
+			count = 1,
+			defer = jQuery.Deferred(),
+			elements = this,
+			i = this.length,
+			resolve = function() {
+				if ( !( --count ) ) {
+					defer.resolveWith( elements, [ elements ] );
+				}
+			};
+
+		if ( typeof type !== "string" ) {
+			obj = type;
+			type = undefined;
+		}
+		type = type || "fx";
+
+		while ( i-- ) {
+			tmp = dataPriv.get( elements[ i ], type + "queueHooks" );
+			if ( tmp && tmp.empty ) {
+				count++;
+				tmp.empty.add( resolve );
+			}
+		}
+		resolve();
+		return defer.promise( obj );
+	}
+} );
+
+return jQuery;
+} );
+;
+define( 'jquery/src/css/showHide',[
+	"../core",
+	"../data/var/dataPriv",
+	"../css/var/isHiddenWithinTree"
+], function( jQuery, dataPriv, isHiddenWithinTree ) {
+
+"use strict";
+
+var defaultDisplayMap = {};
+
+function getDefaultDisplay( elem ) {
+	var temp,
+		doc = elem.ownerDocument,
+		nodeName = elem.nodeName,
+		display = defaultDisplayMap[ nodeName ];
+
+	if ( display ) {
+		return display;
+	}
+
+	temp = doc.body.appendChild( doc.createElement( nodeName ) );
+	display = jQuery.css( temp, "display" );
+
+	temp.parentNode.removeChild( temp );
+
+	if ( display === "none" ) {
+		display = "block";
+	}
+	defaultDisplayMap[ nodeName ] = display;
+
+	return display;
+}
+
+function showHide( elements, show ) {
+	var display, elem,
+		values = [],
+		index = 0,
+		length = elements.length;
+
+	// Determine new display value for elements that need to change
+	for ( ; index < length; index++ ) {
+		elem = elements[ index ];
+		if ( !elem.style ) {
+			continue;
+		}
+
+		display = elem.style.display;
+		if ( show ) {
+
+			// Since we force visibility upon cascade-hidden elements, an immediate (and slow)
+			// check is required in this first loop unless we have a nonempty display value (either
+			// inline or about-to-be-restored)
+			if ( display === "none" ) {
+				values[ index ] = dataPriv.get( elem, "display" ) || null;
+				if ( !values[ index ] ) {
+					elem.style.display = "";
+				}
+			}
+			if ( elem.style.display === "" && isHiddenWithinTree( elem ) ) {
+				values[ index ] = getDefaultDisplay( elem );
+			}
+		} else {
+			if ( display !== "none" ) {
+				values[ index ] = "none";
+
+				// Remember what we're overwriting
+				dataPriv.set( elem, "display", display );
+			}
+		}
+	}
+
+	// Set the display of the elements in a second loop to avoid constant reflow
+	for ( index = 0; index < length; index++ ) {
+		if ( values[ index ] != null ) {
+			elements[ index ].style.display = values[ index ];
+		}
+	}
+
+	return elements;
+}
+
+jQuery.fn.extend( {
+	show: function() {
+		return showHide( this, true );
+	},
+	hide: function() {
+		return showHide( this );
+	},
+	toggle: function( state ) {
+		if ( typeof state === "boolean" ) {
+			return state ? this.show() : this.hide();
+		}
+
+		return this.each( function() {
+			if ( isHiddenWithinTree( this ) ) {
+				jQuery( this ).show();
+			} else {
+				jQuery( this ).hide();
+			}
+		} );
+	}
+} );
+
+return showHide;
+} );
+;
+define( 'jquery/src/css/adjustCSS',[
+	"../core",
+	"../var/rcssNum"
+], function( jQuery, rcssNum ) {
+
+"use strict";
+
+function adjustCSS( elem, prop, valueParts, tween ) {
+	var adjusted,
+		scale = 1,
+		maxIterations = 20,
+		currentValue = tween ?
+			function() {
+				return tween.cur();
+			} :
+			function() {
+				return jQuery.css( elem, prop, "" );
+			},
+		initial = currentValue(),
+		unit = valueParts && valueParts[ 3 ] || ( jQuery.cssNumber[ prop ] ? "" : "px" ),
+
+		// Starting value computation is required for potential unit mismatches
+		initialInUnit = ( jQuery.cssNumber[ prop ] || unit !== "px" && +initial ) &&
+			rcssNum.exec( jQuery.css( elem, prop ) );
+
+	if ( initialInUnit && initialInUnit[ 3 ] !== unit ) {
+
+		// Trust units reported by jQuery.css
+		unit = unit || initialInUnit[ 3 ];
+
+		// Make sure we update the tween properties later on
+		valueParts = valueParts || [];
+
+		// Iteratively approximate from a nonzero starting point
+		initialInUnit = +initial || 1;
+
+		do {
+
+			// If previous iteration zeroed out, double until we get *something*.
+			// Use string for doubling so we don't accidentally see scale as unchanged below
+			scale = scale || ".5";
+
+			// Adjust and apply
+			initialInUnit = initialInUnit / scale;
+			jQuery.style( elem, prop, initialInUnit + unit );
+
+		// Update scale, tolerating zero or NaN from tween.cur()
+		// Break the loop if scale is unchanged or perfect, or if we've just had enough.
+		} while (
+			scale !== ( scale = currentValue() / initial ) && scale !== 1 && --maxIterations
+		);
+	}
+
+	if ( valueParts ) {
+		initialInUnit = +initialInUnit || +initial || 0;
+
+		// Apply relative offset (+=/-=) if specified
+		adjusted = valueParts[ 1 ] ?
+			initialInUnit + ( valueParts[ 1 ] + 1 ) * valueParts[ 2 ] :
+			+valueParts[ 2 ];
+		if ( tween ) {
+			tween.unit = unit;
+			tween.start = initialInUnit;
+			tween.end = adjusted;
+		}
+	}
+	return adjusted;
+}
+
+return adjustCSS;
+} );
+;
+define( 'jquery/src/css/var/swap',[],function() {
+
+"use strict";
+
+// A method for quickly swapping in/out CSS properties to get correct calculations.
+return function( elem, options, callback, args ) {
+	var ret, name,
+		old = {};
+
+	// Remember the old values, and insert the new ones
+	for ( name in options ) {
+		old[ name ] = elem.style[ name ];
+		elem.style[ name ] = options[ name ];
+	}
+
+	ret = callback.apply( elem, args || [] );
+
+	// Revert the old values
+	for ( name in options ) {
+		elem.style[ name ] = old[ name ];
+	}
+
+	return ret;
+};
+
+} );
+;
+define( 'jquery/src/css/var/isHiddenWithinTree',[
+	"../../core",
+	"../../selector"
+
+	// css is assumed
+], function( jQuery ) {
+	"use strict";
+
+	// isHiddenWithinTree reports if an element has a non-"none" display style (inline and/or
+	// through the CSS cascade), which is useful in deciding whether or not to make it visible.
+	// It differs from the :hidden selector (jQuery.expr.pseudos.hidden) in two important ways:
+	// * A hidden ancestor does not force an element to be classified as hidden.
+	// * Being disconnected from the document does not force an element to be classified as hidden.
+	// These differences improve the behavior of .toggle() et al. when applied to elements that are
+	// detached or contained within hidden ancestors (gh-2404, gh-2863).
+	return function( elem, el ) {
+
+		// isHiddenWithinTree might be called from jQuery#filter function;
+		// in that case, element will be second argument
+		elem = el || elem;
+
+		// Inline style trumps all
+		return elem.style.display === "none" ||
+			elem.style.display === "" &&
+
+			// Otherwise, check computed style
+			// Support: Firefox <=43 - 45
+			// Disconnected elements can have computed display: none, so first confirm that elem is
+			// in the document.
+			jQuery.contains( elem.ownerDocument, elem ) &&
+
+			jQuery.css( elem, "display" ) === "none";
+	};
+} );
+;
+define( 'jquery/src/css/var/cssExpand',[],function() {
+	"use strict";
+
+	return [ "Top", "Right", "Bottom", "Left" ];
+} );
+;
+define( 'jquery/src/var/rcssNum',[
+	"../var/pnum"
+], function( pnum ) {
+
+"use strict";
+
+return new RegExp( "^(?:([+-])=|)(" + pnum + ")([a-z%]*)$", "i" );
+
 } );
 ;
 /** @module delite/StoreMap */
@@ -15141,8 +16026,10 @@ define('delite/on',[],function () {
 	return function (node, type, callback) {
 		var capture = false;
 
-		// Shim support for focusin/focusout.
-		var captures = { focusin: "focus", focusout: "blur" };
+		// Shim support for focusin/focusout where necessary.
+		// Don't shim on IE since IE supports focusin/focusout natively, and conversely
+		// focus and blur events have a problem that relatedTarget isn't set.
+		var captures = "onfocusin" in node ? {} : { focusin: "focus", focusout: "blur" };
 		if (type in captures) {
 			type = captures[type];
 			capture = true;
@@ -15203,7 +16090,8 @@ define('delite/on',[],function () {
 			}
 		};
 	};
-});;
+});
+;
 /** @module decor/Stateful */
 define('decor/Stateful',[
 	"dcl/advise",
@@ -20278,6 +21166,299 @@ define('delite/FormValueWidget',[
 	});
 });
 ;
+/**
+ * Tracks which widgets are currently "active".
+ * A widget is considered active if it or a descendant widget has focus,
+ * or if a non-focusable node of this widget or a descendant was the most recent node
+ * to get a touchstart/mousedown/pointerdown event.
+ *
+ * Emits non-bubbling `delite-activated` and `delite-deactivated` events on widgets
+ * as they become active, or stop being active, as defined above.
+ *
+ * Call `activationTracker.on("active-widget-stack", callback)` to track the stack of currently active widgets.
+ *
+ * Call `activationTracker.on("deactivated", func)` or `activationTracker.on("activated", ...)` to monitor when
+ * when widgets become active/inactive.
+ *
+ * @module delite/activationTracker
+ * */
+define('delite/activationTracker',[
+	"dcl/advise",
+	"dcl/dcl",
+	"requirejs-dplugins/jquery!attributes/classes",	// hasClass()
+	"decor/Evented",
+	"dpointer/events",		// so can just monitor for "pointerdown"
+	"requirejs-domready/domReady!"
+], function (advise, dcl, $, Evented) {
+
+	// Time of the last touch/mouse and focusin events
+	var lastPointerDownTime;
+	var lastFocusinTime;
+
+	// Last node that got pointerdown or focusin event, and the time it happened.
+	var lastPointerDownOrFocusInNode;
+	var lastPointerDownOrFocusInTime;
+
+	var ActivationTracker = dcl(Evented, /** @lends module:delite/activationTracker */ {
+		/**
+		 * List of currently active widgets (focused widget and its ancestors).
+		 * @property {Element[]} activeStack
+		 */
+		activeStack: [],
+
+		/**
+		 * Registers listeners on the specified iframe so that any pointerdown
+		 * or focus event on that iframe (or anything in it) is reported
+		 * as a focus/pointerdown event on the `<iframe>` itself.
+		 *
+		 * In dijit this was only used by editor; perhaps it should be removed.
+		 *
+		 * @param {HTMLIframeElement} iframe
+		 * @returns {Object} Handle with `remove()` method to deregister.
+		 */
+		registerIframe: function (iframe) {
+			return this.registerWin(iframe.contentWindow, iframe);
+		},
+
+		/**
+		 * Registers listeners on the specified window (either the main
+		 * window or an iframe's window) to detect when the user has touched / mouse-downed /
+		 * focused somewhere.
+		 *
+		 * Users should call registerIframe() instead of this method.
+		 *
+		 * @param {Window} [targetWindow] - If specified this is the window associated with the iframe,
+		 *       i.e. iframe.contentWindow.
+		 * @param {Element} [effectiveNode] - If specified, report any focus events inside targetWindow as
+		 *       an event on effectiveNode, rather than on evt.target.
+		 * @returns {Object} Handle with `remove()` method to deregister.
+		 * @private
+		 */
+		registerWin: function (targetWindow, effectiveNode) {
+			// Listen for blur and focus events on targetWindow's document.
+			var _this = this,
+				doc = targetWindow.document,
+				body = doc && doc.body;
+
+			function pointerDownHandler(evt) {
+				// workaround weird IE bug where the click is on an orphaned node
+				// (first time clicking a Select/DropDownButton inside a TooltipDialog).
+				// actually, strangely this is happening on latest chrome too.
+				if (evt && evt.target && evt.target.parentNode == null) {
+					return;
+				}
+
+				lastPointerDownTime = (new Date()).getTime();
+
+				_this._pointerDownOrFocusHandler(effectiveNode || evt.target, "mouse");
+			}
+
+			function focusHandler(evt) {
+				// When you refocus the browser window, IE gives an event with an empty srcElement
+				if (!evt.target.tagName) {
+					return;
+				}
+
+				// IE reports that nodes like <body> have gotten focus, even though they don't have a
+				// tabindex setting.  Ignore those events.
+				var tag = evt.target.tagName.toLowerCase();
+				if (tag === "#document" || tag === "body") {
+					return;
+				}
+
+				_this._focusHandler(effectiveNode || evt.target);
+			}
+
+			function blurHandler(evt) {
+				_this._blurHandler(effectiveNode || evt.target);
+			}
+
+			if (body) {
+				// Listen for touches or mousedowns.
+				body.addEventListener("pointerdown", pointerDownHandler, true);
+				body.addEventListener("focus", focusHandler, true);	// need true since focus doesn't bubble
+				body.addEventListener("blur", blurHandler, true);	// need true since blur doesn't bubble
+
+				return {
+					remove: function () {
+						body.removeEventListener("pointerdown", pointerDownHandler, true);
+						body.removeEventListener("focus", focusHandler, true);
+						body.removeEventListener("blur", blurHandler, true);
+					}
+				};
+			}
+		},
+
+		/**
+		 * Called when focus leaves a node.
+		 * Usually ignored, _unless_ it *isn't* followed by touching another node,
+		 * which indicates that we tabbed off the last field on the page,
+		 * in which case every widget is marked inactive.
+		 * @param {Element} node
+		 * @private
+		 */
+		_blurHandler: function (node) { // jshint unused: vars
+			var now = (new Date()).getTime();
+
+			// IE9+ and chrome have a problem where focusout events come after the corresponding focusin event.
+			// For chrome problem see https://bugs.dojotoolkit.org/ticket/17668.
+			// IE problem happens when moving focus from the Editor's <iframe> to a normal DOMNode.
+			if (now < lastFocusinTime + 100) {
+				return;
+			}
+
+			// Unset timer to zero-out widget stack; we'll reset it below if appropriate.
+			if (this._clearActiveWidgetsTimer) {
+				clearTimeout(this._clearActiveWidgetsTimer);
+			}
+
+			if (now < lastPointerDownOrFocusInTime + 500) {
+				// This blur event is coming late (after the call to _pointerDownOrFocusHandler() rather than before.
+				// So let _pointerDownOrFocusHandler() handle setting the widget stack.
+				// See https://bugs.dojotoolkit.org/ticket/17668
+				return;
+			}
+
+			// If the blur event isn't followed (or preceded) by a focus or pointerdown event,
+			// mark all widgets as inactive.
+			this._clearActiveWidgetsTimer = setTimeout(function () {
+				delete this._clearActiveWidgetsTimer;
+				this._setStack([]);
+			}.bind(this), 0);
+		},
+
+		/**
+		 * Callback when node is focused or pointerdown'd.
+		 * @param {Element} node - The node.
+		 * @param {string} by - "mouse" if the focus/pointerdown was caused by a mouse down event.
+		 * @private
+		 */
+		_pointerDownOrFocusHandler: function (node, by) {
+			if (this._clearActiveWidgetsTimer) {
+				// forget the recent blur event
+				clearTimeout(this._clearActiveWidgetsTimer);
+				delete this._clearActiveWidgetsTimer;
+			}
+
+			// compute stack of active widgets (ex: ComboButton --> Menu --> MenuItem)
+			var newStack = [];
+			try {
+				while (node) {
+					if (node._popupParent) {
+						node = node._popupParent;
+					} else if (node.tagName && node.tagName.toLowerCase() === "body") {
+						// is this the root of the document or just the root of an iframe?
+						if (node === document.body) {
+							// node is the root of the main document
+							break;
+						}
+						// otherwise, find the iframe this node refers to (can't access it via parentNode,
+						// need to do this trick instead). window.frameElement is supported in IE/FF/Webkit
+						node = node.ownerDocument.defaultView.frameElement;
+					} else {
+						// if this node is the root node of a widget, then add widget id to stack,
+						// except ignore clicks on disabled widgets (actually focusing a disabled widget still works,
+						// to support MenuItem)
+						if (node.render && !(by === "mouse" && node.disabled)) {
+							newStack.unshift(node);
+						}
+						node = node.parentNode;
+					}
+				}
+			} catch (e) { /* squelch */
+			}
+
+			this._setStack(newStack, by);
+
+			// Keep track of most recent focusin or pointerdown event.
+			lastPointerDownOrFocusInTime = (new Date()).getTime();
+			lastPointerDownOrFocusInNode = node;
+		},
+
+		/**
+		 * Callback when node is focused.
+		 * @param {Element} node
+		 * @private
+		 */
+		_focusHandler: function (node) {
+			if (!node) {
+				return;
+			}
+
+			if (node.nodeType === 9) {
+				// Ignore focus events on the document itself.  This is here so that
+				// (for example) clicking the up/down arrows of a spinner
+				// (which don't get focus) won't cause that widget to blur. (FF issue)
+				return;
+			}
+
+			// Keep track of time of last focusin event.
+			lastFocusinTime = (new Date()).getTime();
+
+			// Also, if clicking a node causes its ancestor to be focused, ignore the focus event.
+			// Example in the activationTracker.html functional test on IE, where clicking the spinner buttons
+			// focuses the <fieldset> holding the spinner.
+			if ((new Date()).getTime() < lastPointerDownTime + 100 &&
+					node.contains(lastPointerDownOrFocusInNode.parentNode)) {
+				return;
+			}
+
+			// There was probably a blur event right before this event, but since we have a new focus,
+			// forget about the blur
+			if (this._clearFocusTimer) {
+				clearTimeout(this._clearFocusTimer);
+				delete this._clearFocusTimer;
+			}
+
+			this._pointerDownOrFocusHandler(node);
+		},
+
+		/**
+		 * The stack of active widgets has changed.  Send out appropriate events and records new stack.
+		 * @param {module:delite/Widget[]} newStack - Array of widgets, starting from the top (outermost) widget.
+		 * @param {string} by - "mouse" if the focus/pointerdown was caused by a mouse down event.
+		 * @private
+		 */
+		_setStack: function (newStack, by) {
+			var oldStack = this.activeStack, lastOldIdx = oldStack.length - 1, lastNewIdx = newStack.length - 1;
+
+			if (newStack[lastNewIdx] === oldStack[lastOldIdx]) {
+				// no changes, return now to avoid spurious notifications about changes to activeStack
+				return;
+			}
+
+			this.activeStack = newStack;
+			this.emit("active-widget-stack", newStack);
+
+			var widget, i;
+
+			// for all elements that have gone out of focus, set focused=false
+			for (i = lastOldIdx; i >= 0 && oldStack[i] !== newStack[i]; i--) {
+				widget = oldStack[i];
+				if (widget) {
+					widget.emit("delite-deactivated", {bubbles: false, by: by});
+					this.emit("deactivated", widget, by);
+				}
+			}
+
+			// for all element that have come into focus, set focused=true
+			for (i++; i <= lastNewIdx; i++) {
+				widget = newStack[i];
+				if (widget) {
+					widget.emit("delite-activated", {bubbles: false, by: by});
+					this.emit("activated", widget, by);
+				}
+			}
+		}
+	});
+
+	// Create singleton for top window
+	var singleton = new ActivationTracker();
+	singleton.registerWin(window);
+
+	return singleton;
+});
+;
 /** @module delite/FormWidget */
 define('delite/FormWidget',[
 	"dcl/dcl",
@@ -22479,7 +23660,7 @@ define('deliteful/Switch/bidi/Switch',[
 });
 ;
 define('delite/handlebars!deliteful/ToggleButton/ToggleButton.html',["delite/handlebars"], function(handlebars){
-	return handlebars.compile("<template role=\"button\" attach-point=\"focusNode\" aria-pressed=\"{{this.checked ? 'true' : 'false'}}\" on-click=\"{{toggle}}\">\n    <span attach-point=\"iconNode\" aria-hidden=\"true\" class=\"d-icon {{this.checked &amp;&amp; this.checkedIconClass ? this.checkedIconClass : (this.iconClass ? this.iconClass : 'd-hidden')}}\"></span><span attach-point=\"labelNode\" d-shown=\"{{this.showLabel}}\">{{this.checked &amp;&amp; this.checkedLabel ? this.checkedLabel : this.label}}</span>\n</template>");
+	return handlebars.compile("<template role=\"button\" type=\"button\" attach-point=\"focusNode\" aria-pressed=\"{{this.checked ? 'true' : 'false'}}\" on-click=\"{{toggle}}\">\n    <span attach-point=\"iconNode\" aria-hidden=\"true\" class=\"d-icon {{this.checked &amp;&amp; this.checkedIconClass ? this.checkedIconClass : (this.iconClass ? this.iconClass : 'd-hidden')}}\"></span><span attach-point=\"labelNode\" d-shown=\"{{this.showLabel}}\">{{this.checked &amp;&amp; this.checkedLabel ? this.checkedLabel : this.label}}</span>\n</template>");
 });;
 /** @module deliteful/ToggleButton */
 define('deliteful/ToggleButton',[
@@ -23747,17 +24928,6 @@ define('deliteful/Combobox',[
 				// events, triggered when pressing ENTER. This would also fit for Chrome/Android,
 				// where pressing the search key of the virtual keyboard also triggers a
 				// change event. But there's no equivalent on Safari / iOS...
-				if (this.opened && !this.filteringInProgress) {
-					this.filteringInProgress = true;
-					this.closeDropDown();
-				}
-				// this.filter() call will fire a query-success event. After that, the popup can be opened again.
-				this.own(this.list.on("query-success", function () {
-					if (this.filteringInProgress) {
-						this.filteringInProgress = false;
-						this.openDropDown();
-					}
-				}.bind(this)));
 
 				this.filter(inputElement.value);
 				// Stop the spurious "input" events emitted while the user types
@@ -23901,41 +25071,37 @@ define('deliteful/Combobox',[
 		closeDropDown: dcl.superCall(function (sup) {
 			return function () {
 
-				// if a filtering operation is not in progress
-				if (!this.filteringInProgress) {
-					// cleanup
-					this._selectedItems = null;
+				// cleanup
+				this._selectedItems = null;
 
-					var input = this._popupInput || this.inputNode;
-					input.removeAttribute("aria-activedescendant");
+				var input = this._popupInput || this.inputNode;
+				input.removeAttribute("aria-activedescendant");
 
-					if (this.opened) {
-						// Using the flag `opened` (managed by delite/HasDropDown), avoid
-						// emitting a new change event if closeDropDown is closed more than once
-						// for a closed dropdown.
+				if (this.opened) {
+					// Using the flag `opened` (managed by delite/HasDropDown), avoid
+					// emitting a new change event if closeDropDown is closed more than once
+					// for a closed dropdown.
 
-						// Closing the dropdown represents a commit interaction
-						this.handleOnChange(this.value); // emit "change" event
+					// Closing the dropdown represents a commit interaction
+					this.handleOnChange(this.value); // emit "change" event
 
-						// Reinit the query. Necessary such that after closing the dropdown
-						// in autoFilter mode with a text in the input field not matching
-						// any item, when the dropdown will be reopen it shows all items
-						// instead of being empty
-						this.list.query = {};
+					// Reinit the query. Necessary such that after closing the dropdown
+					// in autoFilter mode with a text in the input field not matching
+					// any item, when the dropdown will be reopen it shows all items
+					// instead of being empty
+					this.list.query = {};
 
-						if (this.selectionMode === "single" && this.autoFilter) {
-							// In autoFilter mode, reset the content of the inputNode when
-							// closing the dropdown, such that next time the dropdown is opened
-							// it doesn't show the text the user may have entered for filtering
-							var selItem = this.list.selectedItem;
-							if (selItem) {
-								(this._popupInput || this.inputNode).value =
-									this._getItemLabel(this.list.selectedItem);
-							}
+					if (this.selectionMode === "single" && this.autoFilter) {
+						// In autoFilter mode, reset the content of the inputNode when
+						// closing the dropdown, such that next time the dropdown is opened
+						// it doesn't show the text the user may have entered for filtering
+						var selItem = this.list.selectedItem;
+						if (selItem) {
+							(this._popupInput || this.inputNode).value =
+								this._getItemLabel(this.list.selectedItem);
 						}
 					}
 				}
-
 				sup.apply(this, arguments);
 			};
 		}),
@@ -24988,13 +26154,14 @@ define('delite/HasDropDown',[
 define('delite/popup',[
 	"dcl/advise",
 	"dcl/dcl",
+	"requirejs-dplugins/jquery!attributes/classes",	// addClass(), removeClass(), hasClass()
 	"./BackgroundIframe",
 	"./DialogUnderlay",
 	"./features", // has("config-bgIframe")
 	"./place",
 	"./Viewport",
 	"./theme!" // d-popup class
-], function (advise, dcl, BackgroundIframe, DialogUnderlay, has, place, Viewport) {
+], function (advise, dcl, $, BackgroundIframe, DialogUnderlay, has, place, Viewport) {
 
 	function isDocLtr(doc) {
 		return !(/^rtl$/i).test(doc.body.dir || doc.documentElement.dir);
@@ -25006,6 +26173,12 @@ define('delite/popup',[
 	document.addEventListener("pointerdown", function () {
 		document.body.scrollTop = document.body.scrollTop;
 	}, true);
+
+	/**
+	 * Dispatched on a popup after the popup is shown.
+	 * @event module:delite/popup#popup-after-show
+	 */
+
 
 	/**
 	 * Arguments to `delite/popup#open()` method.
@@ -25107,13 +26280,19 @@ define('delite/popup',[
 		},
 
 		/**
-		 * Reposition all the popups due to viewport size change.
+		 * Reposition all the popups. It may need to be called when popup's content changes.
+		 * @param {boolean} measureSize force to calculate natural height and width of the popup.
 		 * @private
+		 * @fires module:delite/popup#delite-repositioned
 		 */
-		_repositionAll: function () {
+		_repositionAll: function (measureSize) {
 			this._stack.forEach(function (args) {
-				this._size(args);
+				this._size(args, measureSize);
 				this._position(args);
+				var nativeEvent = args.popup.ownerDocument.createEvent("HTMLEvents");
+				nativeEvent.initEvent("delite-repositioned", true, true);
+				nativeEvent.args = args;
+				args.popup.dispatchEvent(nativeEvent);
 			}, this);
 		},
 
@@ -25155,6 +26334,16 @@ define('delite/popup',[
 				wrapper.appendChild(widget);
 				widget.attachedCallback();
 
+				// Original popup widget might be hidden (so user doesn't see it prematurely).
+				// Clear that CSS now.  The wrapper itself is hidden.
+				if (widget.style.display === "none") {
+					widget.style.display = "";
+				}
+				if (widget.style.visibility === "hidden") {
+					widget.style.visibility = "";
+				}
+				$(widget).removeClass("d-hidden d-invisible d-offscreen");
+
 				widget._popupWrapper = wrapper;
 				advise.after(widget, "destroy", destroyWrapper);
 			}
@@ -25171,19 +26360,9 @@ define('delite/popup',[
 		moveOffScreen: function (widget) {
 			// Create wrapper if not already there, then besides setting visibility:hidden,
 			// move it out of the viewport, see #5776, #10111, #13604
-			var wrapper = this._createWrapper(widget),
-				style = wrapper.style,
-				ltr = isDocLtr(widget.ownerDocument);
-
-			// TODO: move to CSS class (d-offscreen?), but need to know direction of widget or at least page
-			dcl.mix(style, {
-				visibility: "hidden",
-				top: "-9999px",
-				display: ""
-			});
-			style[ltr ? "left" : "right"] = "-9999px";
-			style[ltr ? "right" : "left"] = "auto";
-
+			var wrapper = this._createWrapper(widget);
+			wrapper.style.display = "";
+			$(wrapper).addClass("d-offscreen");
 			return wrapper;
 		},
 
@@ -25254,7 +26433,11 @@ define('delite/popup',[
 		open: function (args) {
 			this._prepareToOpen(args);
 			this._size(args, true);
-			return this._position(args);
+			var position = this._position(args);
+
+			args.popup.emit("popup-after-show", position);
+
+			return position;
 		},
 
 		/**
@@ -25345,6 +26528,10 @@ define('delite/popup',[
 				handlers.push(widget.on("change", args.onExecute));
 			}
 
+			handlers.push(widget.on("delite-size-change", function () {
+				this._repositionAll(true);
+			}.bind(this)));
+
 			var stackEntry = Object.create(args);
 			stackEntry.wrapper = wrapper;
 			stackEntry.handlers = handlers;
@@ -25405,10 +26592,6 @@ define('delite/popup',[
 
 				wrapper.style.height = args._naturalHeight > maxHeight ? maxHeight + "px" : "auto";
 			}
-
-			// Workaround for android < 4.4 bug where popup overflows from wrapper.
-			// Probably this code can be removed when/if we get rid of the wrapper div.
-			widget.style.height = wrapper.style.height;
 		},
 
 		/**
@@ -30784,10 +31967,7 @@ define('xapp/manager/Context',[
 
         },
         wireScope: function (scope) {
-
-
             debugWire && console.log('wire scope');
-
             var allGroups = scope.allGroups(),
                 thiz = this,
                 delegate = thiz.delegate || {},
@@ -31050,6 +32230,7 @@ define('xapp/manager/Context',[
                 });
             }else{
                 this.application.onReady();
+                this.application.publishVariables();
             }
             /*
             this.loadAppModule(settings.item).then(function(){
@@ -31082,6 +32263,7 @@ define('xapp/manager/Context',[
                     thiz.publish(types.EVENTS.ON_APP_READY, {
                         context: thiz
                     });
+                    thiz.application.publishVariables();
                 }, 1000);
             });
             if(has('debug')) {
@@ -31261,28 +32443,49 @@ define('xapp/manager/Context',[
 });
 ;
 define('xcf/factory/Blocks',[
-    'dojo/_base/lang',
     'xblox/factory/Blocks',
     "xcf/model/Command",
     "xblox/model/functions/CallBlock",
+    "xblox/model/functions/StopBlock",
+    "xblox/model/functions/PauseBlock",
     "xide/factory"
-
-], function (lang,Blocks,Command,CallBlock,factory)
-{
+], function (Blocks,Command,CallBlock,StopBlock,PauseBlock,factory){
     if(Blocks) {
         Blocks._getCommandBlocks = function (scope, owner, target, group) {
-
             var items = [];
             items.push({
                 name: 'Commands',
                 iconClass: 'el-icon-random',
-                /*dstItem:dstItem,*/
                 items: [
                     {
                         name: 'Call Command',
                         owner: owner,
                         iconClass: 'el-icon-video',
                         proto: CallBlock,
+                        target: target,
+                        ctrArgs: {
+                            scope: scope,
+                            group: group,
+                            condition: ""
+                        }
+                    },
+                    {
+                        name: 'Stop Command',
+                        owner: owner,
+                        iconClass: 'el-icon-video',
+                        proto: StopBlock,
+                        target: target,
+                        ctrArgs: {
+                            scope: scope,
+                            group: group,
+                            condition: ""
+                        }
+                    },
+                    {
+                        name: 'Pause Command',
+                        owner: owner,
+                        iconClass: 'el-icon-video',
+                        proto: PauseBlock,
                         target: target,
                         ctrArgs: {
                             scope: scope,
@@ -31307,34 +32510,19 @@ define('xcf/factory/Blocks',[
             });
             return items;
         };
-
-
         return Blocks;
     }else{
         return factory;
     }
-
 });;
-define('xide/factory',[
-],function(){
-    return {
-
-    }
-});;
-define('xblox/model/functions/CallBlock',[
+/** @module xblox/model/functions/PauseBlock **/
+define('xblox/model/functions/PauseBlock',[
     'dcl/dcl',
     'xide/utils',
     'xide/types',
     'dojo/Deferred',
     "xblox/model/Block"
 ], function(dcl,utils,types,Deferred,Block){
-
-    // summary:
-    //		The Call Block model.
-    //      This block makes calls to another blocks in the same scope by action name
-
-    // module:
-    //		xblox.model.functions.CallBlock
     /**
      * @augments module:xide/mixins/EventedMixin
      * @extends module:xblox/model/Block_UI
@@ -31342,59 +32530,27 @@ define('xblox/model/functions/CallBlock',[
      * @extends module:xblox/model/ModelBase
      */
     return dcl(Block,{
-        declaredClass:"xblox.model.functions.CallBlock",
-        //command: (String)
-        //  block action name
+        declaredClass:"xblox.model.functions.PauseBlock",
         command:'Select command please',
-
         icon:'',
-
         args:null,
-
         _timeout:100,
-
         /***
          * Returns the block run result
          * @param scope
          */
         solve:function(scope,settings) {
-
-            var timeout = this._timeout || 50;
-
-            var dfd = new Deferred();
-
-            setTimeout(function(){
-
-
-                if (this.command){
-                    var _args = null;
-                    if(this.args){
-                        settings.override = settings.override || {};
-                        var args = scope.expressionModel.replaceVariables(scope,this.args,false,false,null,null,{
-                            begin:"%%",
-                            end:"%%"
-                        });
-
-                        _args = utils.fromJson(args);
-                        settings.override['args']=[args];
-                        settings.override['mixin']=_args;
-                    }
-                    //console.log('solve command');
-                    var res = scope.solveBlock(this.command,settings);
-                    if(res){
-                        this.onSuccess(this,settings);
-                    }else{
-                        this.onFailed(this,settings);
-                    }
-
-
-                    dfd.resolve(res);
-
-                    return res;
+            if (this.command){
+                var _args = null;
+                var block = scope.resolveBlock(this.command);
+                if(block && block.pause){
+                    var res = block.pause();
+                    this.onSuccess(this,settings);
+                }else{
+                    this.onFailed(this,settings);
                 }
-            }.bind(this),timeout);
-
-            return dfd;
+                return res;
+            }
         },
         hasInlineEdits:true,
         /**
@@ -31407,22 +32563,15 @@ define('xblox/model/functions/CallBlock',[
          * @returns {string}
          */
         makeEditable:function(field,pos,type,title,mode,options,value){
-
             var optionsString = "";
-            if(options){
-
-            }
-
             return "<a " + optionsString + "  tabIndex=\"-1\" pos='" + pos +"' display-mode='" + (mode||'popup') + "' display-type='" + (type || 'text') +"' data-prop='" + field + "' data-title='" + title + "' class='editable editable-click'  href='#'>" + this[field] +"</a>";
         },
         getFieldOptions:function(field){
-
             if(field ==="command"){
                 return this.scope.getCommandsAsOptions("text");
             }
         },
         toText:function(){
-
             var text = 'Unknown';
             var block = this.scope.getBlock(this.command);
             if(block){
@@ -31431,19 +32580,15 @@ define('xblox/model/functions/CallBlock',[
             if(this.command.indexOf('://')!==-1) {
                 text = '<span class="text-info">' +this.scope.toFriendlyName(this,this.command) + '</span>';
             }
-            //var _out = this.getBlockIcon('D') + 'Call Command : ' + this.makeEditable('command','bottom','select','Enter a unique name','inline');
-            var _out = this.getBlockIcon('D') + 'Call Command : ' + text;
+            var _out = this.getBlockIcon('D') + 'Pause Command : ' + text;
             return _out;
         },
         onChangeField:function(what,value){
-            //debugger;
         },
         //  standard call for editing
         getFields:function(){
-
             var fields = this.inherited(arguments) || this.getDefaultFields();
             var thiz=this;
-
             var title = 'Command';
             if(this.command.indexOf('://')){
                 title = this.scope.toFriendlyName(this,this.command);
@@ -31457,13 +32602,6 @@ define('xblox/model/functions/CallBlock',[
                     pickerType:'command',
                     value:this.command
             }));
-
-            fields.push(utils.createCI('arguments',27,this.args,{
-                group:'Arguments',
-                title:'Arguments',
-                dst:'args'
-            }));
-
             return fields;
         }
     });
@@ -32704,6 +33842,228 @@ define('xblox/model/ModelBase',[
         }
     });
 });;
+/** @module xblox/model/functions/StopBlock **/
+define('xblox/model/functions/StopBlock',[
+    'dcl/dcl',
+    'xide/utils',
+    'xide/types',
+    'dojo/Deferred',
+    "xblox/model/Block"
+], function(dcl,utils,types,Deferred,Block){
+    /**
+     * @augments module:xide/mixins/EventedMixin
+     * @extends module:xblox/model/Block_UI
+     * @extends module:xblox/model/Block
+     * @extends module:xblox/model/ModelBase
+     */
+    return dcl(Block,{
+        declaredClass:"xblox.model.functions.StopBlock",
+        command:'Select command please',
+        icon:'',
+        args:null,
+        _timeout:100,
+        /***
+         * Returns the block run result
+         * @param scope
+         */
+        solve:function(scope,settings) {
+            if (this.command){
+                var _args = null;
+                var block = scope.resolveBlock(this.command);
+                if(block && block.stop){
+                    var res = block.stop();
+                    this.onSuccess(this,settings);
+                }else{
+                    this.onFailed(this,settings);
+                }
+                return res;
+            }
+        },
+        hasInlineEdits:true,
+        /**
+         *
+         * @param field
+         * @param pos
+         * @param type
+         * @param title
+         * @param mode: inline | popup
+         * @returns {string}
+         */
+        makeEditable:function(field,pos,type,title,mode,options,value){
+            var optionsString = "";
+            return "<a " + optionsString + "  tabIndex=\"-1\" pos='" + pos +"' display-mode='" + (mode||'popup') + "' display-type='" + (type || 'text') +"' data-prop='" + field + "' data-title='" + title + "' class='editable editable-click'  href='#'>" + this[field] +"</a>";
+        },
+        getFieldOptions:function(field){
+            if(field ==="command"){
+                return this.scope.getCommandsAsOptions("text");
+            }
+        },
+        toText:function(){
+            var text = 'Unknown';
+            var block = this.scope.getBlock(this.command);
+            if(block){
+                text = block.name;
+            }
+            if(this.command.indexOf('://')!==-1) {
+                text = '<span class="text-info">' +this.scope.toFriendlyName(this,this.command) + '</span>';
+            }
+            var _out = this.getBlockIcon('D') + 'Stop Command : ' + text;
+            return _out;
+        },
+        onChangeField:function(what,value){
+        },
+        //  standard call for editing
+        getFields:function(){
+            var fields = this.inherited(arguments) || this.getDefaultFields();
+            var thiz=this;
+            var title = 'Command';
+            if(this.command.indexOf('://')){
+                title = this.scope.toFriendlyName(this,this.command);
+            }
+            fields.push(utils.createCI('value','xcf.widgets.CommandPicker',this.command,{
+                    group:'General',
+                    title:'Command',
+                    dst:'command',
+                    options:this.scope.getCommandsAsOptions(),
+                    block:this,
+                    pickerType:'command',
+                    value:this.command
+            }));
+            return fields;
+        }
+    });
+});;
+define('xblox/model/functions/CallBlock',[
+    'dcl/dcl',
+    'xide/utils',
+    'xide/types',
+    'dojo/Deferred',
+    "xblox/model/Block"
+], function(dcl,utils,types,Deferred,Block){
+
+    // summary:
+    //		The Call Block model.
+    //      This block makes calls to another blocks in the same scope by action name
+
+    // module:
+    //		xblox.model.functions.CallBlock
+    /**
+     * @augments module:xide/mixins/EventedMixin
+     * @extends module:xblox/model/Block_UI
+     * @extends module:xblox/model/Block
+     * @extends module:xblox/model/ModelBase
+     */
+    return dcl(Block,{
+        declaredClass:"xblox.model.functions.CallBlock",
+        //command: (String)
+        //  block action name
+        command:'Select command please',
+
+        icon:'',
+
+        args:null,
+
+        _timeout:100,
+
+        /***
+         * Returns the block run result
+         * @param scope
+         */
+        solve:function(scope,settings) {
+            var timeout = this._timeout || 50;
+            var dfd = new Deferred();
+            setTimeout(function(){
+                if (this.command){
+                    var _args = null;
+                    if(this.args){
+                        settings.override = settings.override || {};
+                        var args = scope.expressionModel.replaceVariables(scope,this.args,false,false,null,null,{
+                            begin:"%%",
+                            end:"%%"
+                        });
+
+                        try {
+                            _args = utils.fromJson(args);
+                        }catch(e){
+                            _args = args;
+                        }
+
+                        settings.override['args']=[args];
+                        settings.override['mixin']=_args;
+                    }
+                    var res = scope.solveBlock(this.command,settings);
+                    if(res){
+                        this.onSuccess(this,settings);
+                    }else{
+                        this.onFailed(this,settings);
+                    }
+                    dfd.resolve(res);
+                    return res;
+                }
+            }.bind(this),timeout);
+            return dfd;
+        },
+        hasInlineEdits:true,
+        /**
+         *
+         * @param field
+         * @param pos
+         * @param type
+         * @param title
+         * @param mode: inline | popup
+         * @returns {string}
+         */
+        makeEditable:function(field,pos,type,title,mode,options,value){
+            var optionsString = "";
+            return "<a " + optionsString + "  tabIndex=\"-1\" pos='" + pos +"' display-mode='" + (mode||'popup') + "' display-type='" + (type || 'text') +"' data-prop='" + field + "' data-title='" + title + "' class='editable editable-click'  href='#'>" + this[field] +"</a>";
+        },
+        getFieldOptions:function(field){
+            if(field ==="command"){
+                return this.scope.getCommandsAsOptions("text");
+            }
+        },
+        toText:function(){
+            var text = 'Unknown';
+            var block = this.scope.getBlock(this.command);
+            if(block){
+                text = block.name;
+            }
+            if(this.command.indexOf('://')!==-1) {
+                text = '<span class="text-info">' +this.scope.toFriendlyName(this,this.command) + '</span>';
+            }
+            var _out = this.getBlockIcon('D') + 'Call Command : ' + text;
+            return _out;
+        },
+        onChangeField:function(what,value){
+            //debugger;
+        },
+        //  standard call for editing
+        getFields:function(){
+            var fields = this.inherited(arguments) || this.getDefaultFields();
+            var thiz=this;
+
+            var title = 'Command';
+            if(this.command.indexOf('://')){
+                title = this.scope.toFriendlyName(this,this.command);
+            }
+            fields.push(utils.createCI('value','xcf.widgets.CommandPicker',this.command,{
+                    group:'General',
+                    title:'Command',
+                    dst:'command',
+                    options:this.scope.getCommandsAsOptions(),
+                    block:this,
+                    pickerType:'command',
+                    value:this.command
+            }));
+            fields.push(utils.createCI('arguments',27,this.args,{
+                group:'Arguments',
+                title:'Arguments',
+                dst:'args'
+            }));
+            return fields;
+        }
+    });
+});;
 define('xblox/factory/Blocks',[
     'xide/factory',
     'xide/utils',
@@ -32713,6 +34073,8 @@ define('xblox/factory/Blocks',[
     "xblox/model/logic/CaseBlock",
     "xblox/model/Block",
     "xblox/model/functions/CallBlock",
+    "xblox/model/functions/StopBlock",
+    "xblox/model/functions/PauseBlock",
     "xblox/model/functions/SetProperties",
     "xblox/model/code/CallMethod",
     "xblox/model/code/RunScript",
@@ -32739,6 +34101,8 @@ define('xblox/factory/Blocks',[
              CaseBlock,
              Block,
              CallBlock,
+             StopBlock,
+             PauseBlock,
              SetProperties,
              CallMethod,
              RunScript,
@@ -32838,7 +34202,6 @@ define('xblox/factory/Blocks',[
         var items = factory._getFlowBlocks(scope,owner,target,group);
         items = items.concat(factory._getLoopBlocks(scope,owner,target,group));
         items = items.concat(factory._getCommandBlocks(scope,owner,target,group));
-
         items = items.concat(factory._getCodeBlocks(scope,owner,target,group));
         items = items.concat(factory._getEventBlocks(scope,owner,target,group));
         items = items.concat(factory._getLoggingBlocks(scope,owner,target,group));
@@ -33932,360 +35295,6 @@ define('dojo/promise/Promise',[
 			return "[object Promise]";
 		}
 	});
-});
-;
-define('dojo/_base/array',["./kernel", "../has", "./lang"], function(dojo, has, lang){
-	// module:
-	//		dojo/_base/array
-
-	// our old simple function builder stuff
-	var cache = {}, u;
-
-	function buildFn(fn){
-		return cache[fn] = new Function("item", "index", "array", fn); // Function
-	}
-	// magic snippet: if(typeof fn == "string") fn = cache[fn] || buildFn(fn);
-
-	// every & some
-
-	function everyOrSome(some){
-		var every = !some;
-		return function(a, fn, o){
-			var i = 0, l = a && a.length || 0, result;
-			if(l && typeof a == "string") a = a.split("");
-			if(typeof fn == "string") fn = cache[fn] || buildFn(fn);
-			if(o){
-				for(; i < l; ++i){
-					result = !fn.call(o, a[i], i, a);
-					if(some ^ result){
-						return !result;
-					}
-				}
-			}else{
-				for(; i < l; ++i){
-					result = !fn(a[i], i, a);
-					if(some ^ result){
-						return !result;
-					}
-				}
-			}
-			return every; // Boolean
-		};
-	}
-
-	// indexOf, lastIndexOf
-
-	function index(up){
-		var delta = 1, lOver = 0, uOver = 0;
-		if(!up){
-			delta = lOver = uOver = -1;
-		}
-		return function(a, x, from, last){
-			if(last && delta > 0){
-				// TODO: why do we use a non-standard signature? why do we need "last"?
-				return array.lastIndexOf(a, x, from);
-			}
-			var l = a && a.length || 0, end = up ? l + uOver : lOver, i;
-			if(from === u){
-				i = up ? lOver : l + uOver;
-			}else{
-				if(from < 0){
-					i = l + from;
-					if(i < 0){
-						i = lOver;
-					}
-				}else{
-					i = from >= l ? l + uOver : from;
-				}
-			}
-			if(l && typeof a == "string") a = a.split("");
-			for(; i != end; i += delta){
-				if(a[i] == x){
-					return i; // Number
-				}
-			}
-			return -1; // Number
-		};
-	}
-
-	var array = {
-		// summary:
-		//		The Javascript v1.6 array extensions.
-
-		every: everyOrSome(false),
-		/*=====
-		 every: function(arr, callback, thisObject){
-			 // summary:
-			 //		Determines whether or not every item in arr satisfies the
-			 //		condition implemented by callback.
-			 // arr: Array|String
-			 //		the array to iterate on. If a string, operates on individual characters.
-			 // callback: Function|String
-			 //		a function is invoked with three arguments: item, index,
-			 //		and array and returns true if the condition is met.
-			 // thisObject: Object?
-			 //		may be used to scope the call to callback
-			 // returns: Boolean
-			 // description:
-			 //		This function corresponds to the JavaScript 1.6 Array.every() method, with one difference: when
-			 //		run over sparse arrays, this implementation passes the "holes" in the sparse array to
-			 //		the callback function with a value of undefined. JavaScript 1.6's every skips the holes in the sparse array.
-			 //		For more details, see:
-			 //		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/every
-			 // example:
-			 //	|	// returns false
-			 //	|	array.every([1, 2, 3, 4], function(item){ return item>1; });
-			 // example:
-			 //	|	// returns true
-			 //	|	array.every([1, 2, 3, 4], function(item){ return item>0; });
-		 },
-		 =====*/
-
-		some: everyOrSome(true),
-		/*=====
-		some: function(arr, callback, thisObject){
-			// summary:
-			//		Determines whether or not any item in arr satisfies the
-			//		condition implemented by callback.
-			// arr: Array|String
-			//		the array to iterate over. If a string, operates on individual characters.
-			// callback: Function|String
-			//		a function is invoked with three arguments: item, index,
-			//		and array and returns true if the condition is met.
-			// thisObject: Object?
-			//		may be used to scope the call to callback
-			// returns: Boolean
-			// description:
-			//		This function corresponds to the JavaScript 1.6 Array.some() method, with one difference: when
-			//		run over sparse arrays, this implementation passes the "holes" in the sparse array to
-			//		the callback function with a value of undefined. JavaScript 1.6's some skips the holes in the sparse array.
-			//		For more details, see:
-			//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/some
-			// example:
-			//	| // is true
-			//	| array.some([1, 2, 3, 4], function(item){ return item>1; });
-			// example:
-			//	| // is false
-			//	| array.some([1, 2, 3, 4], function(item){ return item<1; });
-		},
-		=====*/
-
-		indexOf: index(true),
-		/*=====
-		indexOf: function(arr, value, fromIndex, findLast){
-			// summary:
-			//		locates the first index of the provided value in the
-			//		passed array. If the value is not found, -1 is returned.
-			// description:
-			//		This method corresponds to the JavaScript 1.6 Array.indexOf method, with two differences:
-			//
-			//		1. when run over sparse arrays, the Dojo function invokes the callback for every index
-			//		   whereas JavaScript 1.6's indexOf skips the holes in the sparse array.
-			//		2. uses equality (==) rather than strict equality (===)
-			//
-			//		For details on this method, see:
-			//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/indexOf
-			// arr: Array
-			// value: Object
-			// fromIndex: Integer?
-			// findLast: Boolean?
-			//		Makes indexOf() work like lastIndexOf().  Used internally; not meant for external usage.
-			// returns: Number
-		},
-		=====*/
-
-		lastIndexOf: index(false),
-		/*=====
-		lastIndexOf: function(arr, value, fromIndex){
-			// summary:
-			//		locates the last index of the provided value in the passed
-			//		array. If the value is not found, -1 is returned.
-			// description:
-		 	//		This method corresponds to the JavaScript 1.6 Array.lastIndexOf method, with two differences:
-		 	//
-		 	//		1. when run over sparse arrays, the Dojo function invokes the callback for every index
-		 	//		   whereas JavaScript 1.6's lasIndexOf skips the holes in the sparse array.
-		 	//		2. uses equality (==) rather than strict equality (===)
-		 	//
-		 	//		For details on this method, see:
-		 	//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/lastIndexOf
-			// arr: Array,
-			// value: Object,
-			// fromIndex: Integer?
-			// returns: Number
-		},
-		=====*/
-
-		forEach: function(arr, callback, thisObject){
-			// summary:
-			//		for every item in arr, callback is invoked. Return values are ignored.
-			//		If you want to break out of the loop, consider using array.every() or array.some().
-			//		forEach does not allow breaking out of the loop over the items in arr.
-			// arr:
-			//		the array to iterate over. If a string, operates on individual characters.
-			// callback:
-			//		a function is invoked with three arguments: item, index, and array
-			// thisObject:
-			//		may be used to scope the call to callback
-			// description:
-			//		This function corresponds to the JavaScript 1.6 Array.forEach() method, with one difference: when
-			//		run over sparse arrays, this implementation passes the "holes" in the sparse array to
-			//		the callback function with a value of undefined. JavaScript 1.6's forEach skips the holes in the sparse array.
-			//		For more details, see:
-			//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/forEach
-			// example:
-			//	| // log out all members of the array:
-			//	| array.forEach(
-			//	|		[ "thinger", "blah", "howdy", 10 ],
-			//	|		function(item){
-			//	|			console.log(item);
-			//	|		}
-			//	| );
-			// example:
-			//	| // log out the members and their indexes
-			//	| array.forEach(
-			//	|		[ "thinger", "blah", "howdy", 10 ],
-			//	|		function(item, idx, arr){
-			//	|			console.log(item, "at index:", idx);
-			//	|		}
-			//	| );
-			// example:
-			//	| // use a scoped object member as the callback
-			//	|
-			//	| var obj = {
-			//	|		prefix: "logged via obj.callback:",
-			//	|		callback: function(item){
-			//	|			console.log(this.prefix, item);
-			//	|		}
-			//	| };
-			//	|
-			//	| // specifying the scope function executes the callback in that scope
-			//	| array.forEach(
-			//	|		[ "thinger", "blah", "howdy", 10 ],
-			//	|		obj.callback,
-			//	|		obj
-			//	| );
-			//	|
-			//	| // alternately, we can accomplish the same thing with lang.hitch()
-			//	| array.forEach(
-			//	|		[ "thinger", "blah", "howdy", 10 ],
-			//	|		lang.hitch(obj, "callback")
-			//	| );
-			// arr: Array|String
-			// callback: Function|String
-			// thisObject: Object?
-
-			var i = 0, l = arr && arr.length || 0;
-			if(l && typeof arr == "string") arr = arr.split("");
-			if(typeof callback == "string") callback = cache[callback] || buildFn(callback);
-			if(thisObject){
-				for(; i < l; ++i){
-					callback.call(thisObject, arr[i], i, arr);
-				}
-			}else{
-				for(; i < l; ++i){
-                    if(!callback || typeof callback !=="function"){
-                        console.error('array error');
-                    }
-					callback(arr[i], i, arr);
-				}
-			}
-		},
-
-		map: function(arr, callback, thisObject, Ctr){
-			// summary:
-			//		applies callback to each element of arr and returns
-			//		an Array with the results
-			// arr: Array|String
-			//		the array to iterate on. If a string, operates on
-			//		individual characters.
-			// callback: Function|String
-			//		a function is invoked with three arguments, (item, index,
-			//		array),	 and returns a value
-			// thisObject: Object?
-			//		may be used to scope the call to callback
-			// returns: Array
-			// description:
-			//		This function corresponds to the JavaScript 1.6 Array.map() method, with one difference: when
-			//		run over sparse arrays, this implementation passes the "holes" in the sparse array to
-			//		the callback function with a value of undefined. JavaScript 1.6's map skips the holes in the sparse array.
-			//		For more details, see:
-			//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/map
-			// example:
-			//	| // returns [2, 3, 4, 5]
-			//	| array.map([1, 2, 3, 4], function(item){ return item+1 });
-
-			// TODO: why do we have a non-standard signature here? do we need "Ctr"?
-			var i = 0, l = arr && arr.length || 0, out = new (Ctr || Array)(l);
-			if(l && typeof arr == "string") arr = arr.split("");
-			if(typeof callback == "string") callback = cache[callback] || buildFn(callback);
-			if(thisObject){
-				for(; i < l; ++i){
-					out[i] = callback.call(thisObject, arr[i], i, arr);
-				}
-			}else{
-				for(; i < l; ++i){
-					out[i] = callback(arr[i], i, arr);
-				}
-			}
-			return out; // Array
-		},
-
-		filter: function(arr, callback, thisObject){
-			// summary:
-			//		Returns a new Array with those items from arr that match the
-			//		condition implemented by callback.
-			// arr: Array
-			//		the array to iterate over.
-			// callback: Function|String
-			//		a function that is invoked with three arguments (item,
-			//		index, array). The return of this function is expected to
-			//		be a boolean which determines whether the passed-in item
-			//		will be included in the returned array.
-			// thisObject: Object?
-			//		may be used to scope the call to callback
-			// returns: Array
-			// description:
-			//		This function corresponds to the JavaScript 1.6 Array.filter() method, with one difference: when
-			//		run over sparse arrays, this implementation passes the "holes" in the sparse array to
-			//		the callback function with a value of undefined. JavaScript 1.6's filter skips the holes in the sparse array.
-			//		For more details, see:
-			//		https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Objects/Array/filter
-			// example:
-			//	| // returns [2, 3, 4]
-			//	| array.filter([1, 2, 3, 4], function(item){ return item>1; });
-
-			// TODO: do we need "Ctr" here like in map()?
-			var i = 0, l = arr && arr.length || 0, out = [], value;
-			if(l && typeof arr == "string") arr = arr.split("");
-			if(typeof callback == "string") callback = cache[callback] || buildFn(callback);
-			if(thisObject){
-				for(; i < l; ++i){
-					value = arr[i];
-					if(callback.call(thisObject, value, i, arr)){
-						out.push(value);
-					}
-				}
-			}else{
-				for(; i < l; ++i){
-					value = arr[i];
-					if(callback(value, i, arr)){
-						out.push(value);
-					}
-				}
-			}
-			return out; // Array
-		},
-
-		clearCache: function(){
-			cache = {};
-		}
-	};
-
-
-	has("extend-dojo") && lang.mixin(dojo, array);
-
-	return array;
 });
 ;
 /** @module xblox/model/mqtt/Subscribe **/
@@ -40871,23 +41880,17 @@ define('xcf/model/Command',[
         __started:false,
         isCommand:true,
         getItems:function(outletType){
-
             var items = this.items;
-
             if(!outletType){
                 return items;
             }
-
             var result = [];
-
             _.each(items,function(item){
                 if(item.outlet & outletType){
                     result.push(item);
                 }
             });
-
             return result;
-
         },
         /**
          * onCommandFinish will be excecuted which a driver did run a command
@@ -40932,18 +41935,15 @@ define('xcf/model/Command',[
             }
         },
         /**
-         * onCommandFinish will be excecuted which a driver did run a command
+         * onCommandPaused
          * @param msg {object}
          * @param msg.id {string} the command job id
          * @param msg.src {string} the source id, which is this block id
          * @param msg.cmd {string} the command string being sent
          */
-        onCommandProgress:function(msg){
+        onCommandPaused:function(msg){
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
-
-            //console.log('onCommandProgress ' + this.send);
-
             var result = {};
             if(msg.params && msg.params.id){
                 this._emit('cmd:'+msg.cmd + '_' + msg.params.id,{
@@ -40960,12 +41960,71 @@ define('xcf/model/Command',[
                 }
             }
 
-            var items = this.getItems(types.BLOCK_OUTLET.PROGRESS);
+            var items = this.getItems(types.BLOCK_OUTLET.PAUSED);
             if(items.length) {
-                console.log('progress, run : '+items.length,this._lastSettings);
                 this.runFrom(items,0,this._lastSettings);
             }
+        },
+        /**
+         * onCommandPaused
+         * @param msg {object}
+         * @param msg.id {string} the command job id
+         * @param msg.src {string} the source id, which is this block id
+         * @param msg.cmd {string} the command string being sent
+         */
+        onCommandStopped:function(msg){
+            var scope = this.getScope();
+            var context = scope.getContext();//driver instance
+            var result = {};
+            if(msg.params && msg.params.id){
+                this._emit('cmd:'+msg.cmd + '_' + msg.params.id,{
+                    msg:msg
+                });
+                if(msg.lastResponse){
+                    var data = utils.getJson(msg.lastResponse);
+                    if(data && data.result && _.isString(data.result)){
+                        var _lastResult = utils.getJson(data.result);
+                        if(_lastResult){
+                            this._lastResult = result = _lastResult;
+                        }
+                    }
+                }
+            }
 
+            var items = this.getItems(types.BLOCK_OUTLET.STOPPED);
+            if(items.length) {
+                this.runFrom(items,0,this._lastSettings);
+            }
+        },
+        /**
+         * onCommandFinish will be excecuted which a driver did run a command
+         * @param msg {object}
+         * @param msg.id {string} the command job id
+         * @param msg.src {string} the source id, which is this block id
+         * @param msg.cmd {string} the command string being sent
+         */
+        onCommandProgress:function(msg){
+            var scope = this.getScope();
+            var context = scope.getContext();//driver instance
+            var result = {};
+            if(msg.params && msg.params.id){
+                this._emit('cmd:'+msg.cmd + '_' + msg.params.id,{
+                    msg:msg
+                });
+                if(msg.lastResponse){
+                    var data = utils.getJson(msg.lastResponse);
+                    if(data && data.result && _.isString(data.result)){
+                        var _lastResult = utils.getJson(data.result);
+                        if(_lastResult){
+                            this._lastResult = result = _lastResult;
+                        }
+                    }
+                }
+            }
+            var items = this.getItems(types.BLOCK_OUTLET.PROGRESS);
+            if(items.length) {
+                this.runFrom(items,0,this._lastSettings);
+            }
         },
         resolve:function(data){
             data = data || this._lastResult;
@@ -40981,15 +42040,12 @@ define('xcf/model/Command',[
                 this._emit('cmd:'+msg.cmd + '_' + msg.params.id,msg);
             }
             this.onFailed(this, this._settings);
-
         },
         sendToDevice:function(msg,settings,stop,pause,id){
-
             msg = this.replaceAll("'",'',msg);
             id = id || utils.createUUID();
             var self = this;
             var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
-
             this.lastCommand = '' + msg;
 
             if(this.scope.instance){
@@ -41037,6 +42093,44 @@ define('xcf/model/Command',[
                 this._solving  = {};
             }
             return this._solving[id];
+        },
+        _resolve:function(string,settings){
+            var scope = this.scope;
+            var value = string || this._get('send');
+            var parse = !(this.flags & types.CIFLAG.DONT_PARSE);
+            var isExpression = (this.flags & types.CIFLAG.EXPRESSION);
+            var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
+
+            if(this.flags & types.CIFLAG.TO_HEX){
+                value = utils.to_hex(value);
+            }
+
+            if(parse!==false){
+                value = utils.convertAllEscapes(value,"none");
+            }
+
+
+            settings = settings || this._lastSettings || {};
+
+            var override = settings.override || this.override;
+
+            var _overrides = (override && override.variables) ? override.variables : null;
+            if(_overrides){
+                for(var prop in _overrides){
+                    if(_.isNumber(_overrides[prop])){
+                        _overrides[prop] = Math.round(_overrides[prop]);
+                    }
+                }
+            }
+
+            var res =  parse ? scope.parseExpression(value) : value;
+            if(/*(this.isScript(value) && parse!==false) || */isExpression && parse!==false){
+                res = scope.parseExpression(value,null,_overrides,null,null,null,override.args);
+            }else{
+                res = '' + value;
+            }
+
+            return res;
         },
         /***
          * Solves the command
@@ -41091,7 +42185,8 @@ define('xcf/model/Command',[
             if(this.items && this.items.length>0){
 
                 if(value && value.length>0){
-                    var res =  parse ? scope.parseExpression(value) : value;
+
+                    var res = this._resolve(this.send,settings);
                     if(res && res.length>0){
                         if(!this.sendToDevice(res,settings)){
                             this.onFailed(this, settings);
@@ -41119,22 +42214,7 @@ define('xcf/model/Command',[
 
             }else if(value.length>0){
 
-                var override = settings.override || this.override;
-
-                var _overrides = (override && override.variables) ? override.variables : null;
-                if(_overrides){
-                    for(var prop in _overrides){
-                        if(_.isNumber(_overrides[prop])){
-                            _overrides[prop] = Math.round(_overrides[prop]);
-                        }
-                    }
-                }
-                var res='';
-                if(/*(this.isScript(value) && parse!==false) || */isExpression && parse!==false){
-                    res = scope.parseExpression(value,null,_overrides,null,null,null,override.args);
-                }else{
-                    res = '' + value;
-                }
+                var res = this._resolve(this.send,settings);
                 if(res && res.length>0){
                     if(!this.sendToDevice(res,settings,null,null,id)) {
                         this.onFailed(this, settings);
@@ -41234,15 +42314,6 @@ define('xcf/model/Command',[
                 dst:'interval',
                 order:197
             }));
-
-            /*
-            fields.push(this.utils.createCI('waitForResponse',0,this.waitForResponse,{
-                group:'General',
-                title:'%%Has Response',
-                dst:'waitForResponse',
-                order:195
-            }));
-            */
 
             fields.push(this.utils.createCI('send',types.ECIType.EXPRESSION_EDITOR,this.send,{
                 group:'Send',
@@ -41345,7 +42416,7 @@ define('xcf/model/Command',[
             this.reset();
         },
         pause:function(){
-            var last = this.lastCommand;
+            var last = this.lastCommand || this._resolve(this.send,this._lastSettings);
             if(last) {
                 this.sendToDevice(last, this._lastSettings, false, true);
             }
@@ -41355,7 +42426,7 @@ define('xcf/model/Command',[
                 highlight:true
             });
             this.resolve('');
-            var last = this.lastCommand;
+            var last = this.lastCommand || this._resolve(this.send,this._lastSettings);
             if(last) {
                 this.sendToDevice(last, this._lastSettings, true, false);
             }
@@ -57884,9 +58955,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
              Deferred,ReloadMixin,EventedMixin,require,Variable,_console) {
 
 
-
-    
-
     var isServer = has('host-node'),
         isIDE = has('xcf-ui'),
         runDrivers = true;
@@ -58257,6 +59325,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     var _var = scope.getVariable(variable.name);
                     if(_var){
                         _var.value = variable.value;
+                        //instance.setVariable(_var,variable.value);
                     }
                 });
             }
@@ -58488,6 +59557,40 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 var block = scope.getBlockById(params.src);
                 if(block && block.onCommandProgress){
                     block.onCommandProgress(message);
+                }
+            }
+        },
+        onCommandPaused:function(deviceData,message){
+            var driverInstance = this.getDriverInstance(deviceData, true);
+            if (!driverInstance) {
+                return;
+            }
+
+            var deviceInfo  = deviceData;
+            var device = this.getDeviceStoreItem(deviceInfo);
+            var params = message.params || {};
+            if(params.src && params.id){
+                var scope = driverInstance.blockScope;
+                var block = scope.getBlockById(params.src);
+                if(block && block.onCommandPaused){
+                    block.onCommandPaused(message);
+                }
+            }
+        },
+        onCommandStopped:function(deviceData,message){
+            var driverInstance = this.getDriverInstance(deviceData, true);
+            if (!driverInstance) {
+                return;
+            }
+
+            var deviceInfo  = deviceData;
+            var device = this.getDeviceStoreItem(deviceInfo);
+            var params = message.params || {};
+            if(params.src && params.id){
+                var scope = driverInstance.blockScope;
+                var block = scope.getBlockById(params.src);
+                if(block && block.onCommandStopped){
+                    block.onCommandStopped(message);
                 }
             }
         },
@@ -59125,6 +60228,14 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                             }
                             if (msg && msg.data && msg.data.deviceMessage && msg.data.deviceMessage.event === types.EVENTS.ON_COMMAND_PROGRESS) {
                                 thiz.onCommandProgress(msg.data.device,msg.data.deviceMessage);
+                                return;
+                            }
+                            if (msg && msg.data && msg.data.deviceMessage && msg.data.deviceMessage.event === types.EVENTS.ON_COMMAND_PAUSED) {
+                                thiz.onCommandPaused(msg.data.device,msg.data.deviceMessage);
+                                return;
+                            }
+                            if (msg && msg.data && msg.data.deviceMessage && msg.data.deviceMessage.event === types.EVENTS.ON_COMMAND_STOPPED) {
+                                thiz.onCommandStopped(msg.data.device,msg.data.deviceMessage);
                                 return;
                             }
                             if (msg.data && msg.data.deviceMessage && msg.data.deviceMessage.event === types.EVENTS.ON_COMMAND_ERROR) {
@@ -60914,6 +62025,8 @@ define('xcf/types/Types',[
         ON_DEVICE_MESSAGE_EXT: 'onDeviceMessageExt',
         ON_COMMAND_FINISH:'onCommandFinish',
         ON_COMMAND_PROGRESS:'onCommandProgress',
+        ON_COMMAND_PAUSED:'onCommandPaused',
+        ON_COMMAND_STOPPED:'onCommandStopped',
         ON_COMMAND_ERROR:'onCommandError',
         ON_DEVICE_DISCONNECTED: 'onDeviceDisconnected',
         ON_DEVICE_CONNECTED:'onDeviceConnected',
@@ -67845,491 +68958,6 @@ define('xapp/manager/_WidgetPickerMixin',[
 
         });
     });;
-define('xide/types',[
-    "dcl/dcl"
-],function(dcl){
-    return dcl(null,{
-        declaredClass:"xide/types"
-    });
-});;
-/** @module xide/mixins/EventedMixin **/
-define('xide/mixins/EventedMixin',[
-    "dojo/_base/array",
-    "dcl/dcl",
-    "xdojo/declare",
-    "xdojo/has",
-    'xide/types',
-    'xide/factory'
-], function (array,dcl,declare, has, types, factory) {
-
-    var toString = Object.prototype.toString;
-    /**
-     * Adds convenient functions for events to the consumer, generalizing dojo.subscribe/publish or dojo.on.
-     * This mixin can be applied to anything dijit/_Widget based or custom functional classes(needs to call destroy!)
-     *
-     * Check online-documentation {@link http://rawgit.com/mc007/xjs/dgrid_update/src/lib/xide/out/xide/0.1.1-dev/EventedMixin.html|here}
-     *
-     * @class module:xide/mixins/EventedMixin
-     */
-    var Impl = {
-
-        _didRegisterSubscribers:false,
-
-        subscribers:null,
-        /**
-         * Subscription filter map
-         * @type {Object.<string,boolean}
-         */
-        subscribes: {},
-        /**
-         * Emit filter map
-         * @type {Object.<string,boolean}
-         */
-        emits: {},
-        /**
-         * Array of dojo subscribe/on handles, destroyed on this.destroy();
-         * @private
-         * @type {Object[]}
-         */
-        __events: null,
-        /**
-         * Add emit filter
-         * @param type
-         * @param data
-         */
-        addPublishFilter:function(type,data){
-            if(type){
-                if(data!=null){
-                    this.emits[type]=data;
-                }else if(type in this.emits){
-                    delete this.emits[type];
-                }
-            }
-        },
-        /**
-         * Simple filter function to block subscriptions.
-         * @param key
-         * @returns {boolean}
-         */
-        filterSubscribe: function (key) {
-
-            if (this.subscribes) {
-                return this.subscribes[key] !== false;
-            }
-            return true;
-        },
-        /**
-         * Simple filter function to block publishing.
-         * @param key
-         * @returns {boolean}
-         */
-        filterPublish: function (key) {
-            if (this.emits) {
-                return this.emits[key] !== false;
-            }
-            return true;
-        },
-        /**
-         * Subscribe to an event or multiple events. Attention, this is NOT checking for duplicates!
-         *
-         * @example
-         *
-         * // widget case with event callback delegation to 'this', code is written inside a custom widget or whatever
-         * // class subclassing from this mixin:
-         * // pre-requisites for dijit/dojox widgets: lang.extend(dijit.Button,EventedMixin.prototype);
-         *
-         * //simple example #1
-         * var button = new dijit.Button({});
-         * button.subscribe('click',this.onButtonClick,this);//calls this.onButtonClick with scope this
-         *
-         * //simple example #2
-         * var button = new dijit.Button({});
-         * button.subscribe('click',null,this);//calls this.click with scope this
-         *
-         * //multi-event example #1
-         * var button = new dijit.Button({});
-         * button.subscribe(['click','dblclick'],null,this);//calls this.click and this.dblclick with scope this
-         *
-         * // custom events (using dojo-publish/subscribe or dojo.topic)
-         * // assuming you want listen to the events of dijit/layout/TabContainer or any other StackContainer. Notice,
-         * // that stack-containers will publish events like this: topic.publish(this.id + "-removeChild", page);
-         *
-         * var tabContainerId = 'tabContainer';
-         *
-         * this.subscribe(tabContainerId + 'addChild',this.childAdded);//notice that the scope is set here automatically!
-         *
-         * //multi-event version, this will call this['tabContainerId-addChild'] and this['tabContainerId-removeChild']
-         *
-         * this.subscribe([tabContainerId + 'addChild',tabContainerId + 'removeChild']);
-         *
-         *
-         *
-         *
-         *
-         *
-         * @param keys {String|String[]} : The event key(s), given as single string or an array of strings, holding all
-         * event keys for publishing multiple events in one row.
-         *
-         * @param cb {Function} : callback, by the default the callback's scope will 'this'
-         *
-         * @param to {Object} : override 'this' scope to something else
-         */
-        subscribe: function (keys, cb, to) {
-            if (!this.__events) {
-                this.__events = {};
-            }
-            var self = this,
-                events = factory.subscribe(keys, cb, to || self, self.filterSubscribe.bind(self)),
-                container = self.__events;
-
-            //replay on local tracking map
-            for(var i=0, l=events.length; i<l ; i++){
-                var _type = events[i].type;
-                if(!container[_type]){
-                    container[_type]=[];
-                }
-                container[_type].push(events[i]);
-            }
-            return events;
-
-        },
-        /**
-         * Publish an event (uses dojo.publish)
-         *
-         * @param keys {String|String[]} : The event key, given as string or array for publishing multiple events in one row
-         *
-         * @param data {Object|null} : The actual event data.
-         *
-         * @param from {Object|null} : Send event 'as' this source. By default, its using 'this' as sender.
-         *
-         * @param delay {Number|null} : Send event with a delay, otherwise call now
-         *
-         */
-        publish: function (keys, data, from, delay) {
-            var self = this;
-            if (delay > 0) {
-                setTimeout(function () {
-                    factory.publish(keys, data, from || self, self.filterPublish.bind(self));
-                }.bind(self), delay);
-            } else {
-                factory.publish(keys, data, from || self, self.filterPublish.bind(self));
-            }
-        },
-        /**
-         * @TODO: deal with unsubscribe in _EventedMixin
-         * @param key
-         * @private
-         */
-        _destroyHandle: function (key) {},
-        /**
-         * Turns the lights off, kills all event handles.
-         * @private
-         * @returns void
-         */
-        _destroyHandles: function () {
-            if (this.__events) {
-                for(var type in this.__events){
-                    array.forEach(this.__events[type], function(item){
-                        if(item && item.remove){
-                            item.remove();
-                        }
-                    });
-                }
-                delete this.__events;
-            }
-        },
-        /**
-         * When using subscribe, all event subscription handles are stored in this.__events.
-         * This function will remove all the event handles, using this._destroyHandles()
-         */
-        destroy: function () {
-            this.inherited && this.inherited(arguments);
-            this._destroyHandles();
-        },
-        /**
-         * Adds a one time listener for the event. This listener is invoked only the
-         * next time the event is fired, after which it is removed.
-         *
-         * @name emitter.once(event, listener)
-         * @param {String} event- The event name/id to listen for
-         * @param {Function} listener - The function to bind to the event
-         * @api public
-         *
-         * ```javascript
-         * db.once('unauthorized', function (req) {
-         *     // this event listener will fire once, then be unbound
-         * });
-         * ```
-         */
-        once : function(type, listener) {
-            var self = this;
-            function wrapped() {
-                self.unsubscribe(type, listener);
-                return listener.apply(self, arguments);
-            }
-            wrapped.listener = listener;
-            self._on(type, wrapped);
-            return this;
-        },
-        /**
-         * Execute each of the listeners in order with the supplied arguments.
-         *
-         * @name emitter.emit(event, [arg1], [arg2], [...])
-         * @param {String} event - The event name/id to fire
-         * @api public
-         */
-        _emit:function(type) {
-            if (!this.__events)
-                return;
-
-            if(!this._didRegisterSubscribers && this.subscribers){
-                for(var i=0;i<this.subscribers.length ; i++){
-                    var subscriber = this.subscribers[i];
-                    this._on(subscriber.event,subscriber.handler,subscriber.owner);
-                }
-                this._didRegisterSubscribers = true;
-            }
-
-            if (arguments[2] === true)
-                throw new Error("Please use emit.sticky() instead of passing sticky=true for event: " + type);
-
-            var handler = this.__events[type],
-                eventArgs = arguments.length>1 ? arguments[2] : null;
-
-            if (!handler)
-                return;
-
-            var returnValue;
-
-            if (typeof handler == 'function') {
-                switch (arguments.length) {
-                    // fast cases
-                    case 1:
-                        return handler.call(this);
-                    case 2:
-                        return handler.call(this, arguments[1]);
-                    case 3:
-                        return handler.call(this, arguments[1], arguments[2]);
-                    // slower
-                    default:
-                        var args = Array.prototype.slice.call(arguments, 1);
-                        returnValue = handler.apply(this, args);
-                }
-            }
-
-            else if (_.isArray(handler)) {
-                var args = Array.prototype.slice.call(arguments, 1);
-                var listeners = handler.slice(), temp;
-                var _listener = null;
-                var who = null;
-
-                for (var i = 0, l = listeners.length; i < l; i++) {
-
-                    _listener = listeners[i];
-                    who = _listener.owner|| this;
-                    args && args[0] && (args[0].owner =args[0] ? args[0].owner || who : null);
-
-                    _listener.handler && (temp = _listener.handler.apply(who, args));
-                    if (temp !== undefined)
-                        returnValue = temp;
-                }
-            }
-
-            //forward to global
-            eventArgs && eventArgs['public']===true && this.publish(type,args);
-
-            return returnValue;
-        },
-        /**
-         * Remove a listener from the listener array for the specified event. Caution:
-         * changes array indices in the listener array behind the listener.
-         *
-         * @name emitter.removeListener(event, listener)
-         * @param {String} event - The event name/id to remove the listener from
-         * @param {Function} listener - The listener function to remove
-         * @api public
-         *
-         * ```javascript
-         * var callback = function (init) {
-         *     console.log('duality app loaded');
-         * };
-         * devents.on('init', callback);
-         * // ...
-         * devents.removeListener('init', callback);
-         * ```
-         */
-        unsubscribe:function(type,listener){
-
-            // does not use listeners(), so no side effect of creating __events[type]
-            if (!this.__events || !this.__events[type]) return this;
-
-            // no listener given, unsubscribe all per type
-            if (('function' !== typeof listener || !listener)) {
-                array.forEach(this.__events[type], dojo.unsubscribe);
-                delete this.__events[type];
-                this.__events[type] = [];
-                return this;
-            }
-            var list = this.__events[type];
-            if (_.isArray(list)) {
-                var _remove =[];
-                _.each(list,function(handle,a,b){
-                    var which= handle.handler == listener ? handle.handler : handle.handler.listener == listener ? handle.handler.listener : null;
-                    if(which) {
-                        _remove.push(handle);
-                    }
-                });
-                _.each(_remove,function(handler){
-                    handler.remove();
-                });
-                if (list.length === 0) {
-                    delete this.__events[type];
-                }
-            }else if ((this.__events[type].listener || this.__events[type]) === listener) {
-                delete this.__events[type];
-            }
-            return this;
-        },
-        /**
-         * Returns an array of listeners for the specified event. This array can be
-         * manipulated, e.g. to remove listeners.
-         *
-         * @name emitter.listeners(event)
-         * @param {String} events - The event name/id to return listeners for
-         * @api public
-         *
-         * ```javascript
-         * session.on('change', function (stream) {
-         *     console.log('session changed');
-         * });
-         * console.log(util.inspect(session.listeners('change'))); // [ [Function] ]
-         * ```
-         */
-        listeners:function(type) {
-            if (!this.__events) this.__events = {};
-            if (!this.__events[type]) this.__events[type] = [];
-            if (!isArray(this.__events[type])) {
-                this.__events[type] = [this.__events[type]];
-            }
-            return this.__events[type];
-        },
-        /**
-         *
-         * @param type
-         * @param handle
-         * @returns {*}
-         */
-        addHandle:function(type,handle){
-            if(!this.__events){
-                this.__events = {}
-            }
-            if(!this.__events[type]){
-                this.__events[type]=[];
-            }
-            handle.type = type;
-            this.__events[type].push(handle);
-            return handle;
-        },
-        /**
-         * jQuery sub
-         * @param element
-         * @param type
-         * @param selector
-         * @param handler
-         * @returns {{handler: *, owner: (exports|module.exports|module:xide/mixins/EventedMixin), type: *, element: (*|jQuery|HTMLElement), selector: *, remove: _handle.remove}}
-         */
-        __on:function(element,type,selector,handler){
-
-            var _handler = handler;
-
-            if(typeof selector =='function' && !handler){
-                //no selector given
-                handler = selector;
-                selector = null;
-            }
-
-            element = element.jquery ? element : $(element);
-            element.on(type,selector,handler);
-
-            if (!this.__events) this.__events = {};
-            if (!this.__events[type]) {
-                this.__events[type] = [];
-            }
-            var eventList = this.__events[type];
-            var _handle = {
-                handler: _handler,
-                owner: this,
-                type: type,
-                element:element,
-                selector:selector,
-                remove: function () {
-                    eventList.remove(this);
-                    this.element.off(this.type,this.selector,this.handler);
-                }
-            };
-            eventList.push(_handle);
-            return _handle;
-
-        },
-        /**
-         * Dojo based sub
-         * @param type
-         * @param listener
-         * @param owner
-         * @returns {*}
-         * @private
-         */
-        _on: function(type, listener,owner) {
-            try {
-                if (!this.__events) this.__events = {};
-
-                if (!this.__events[type]) {
-                    this.__events[type] = [];
-                }
-
-                var eventList = this.__events[type];
-
-                if (!eventList) {
-                    // Optimize the case of one listener. Don't need the extra array object.
-                    this.__events[type] = listener;
-                }
-                else if (_.isArray(eventList)) {
-
-                    if (eventList.indexOf(listener) != -1)
-                       return console.warn("adding same listener twice", type);
-
-                    // If we've already got an array, just append.
-                    var _handle = {
-                        handler: listener,
-                        owner: owner || this,
-                        type: type,
-                        remove: function () {
-                            eventList.remove(this);
-                            this.owner = null;
-                            this.handler = null;
-                            delete this.type;
-                        }
-                    };
-                    eventList.push(_handle);
-                    return _handle;
-                }
-            }catch(e){
-                logError(e);
-            }
-            return this;
-        }
-    };
-
-    //package via declare
-    var Module = declare(null, Impl);
-    //static access to Impl.
-    Module.Impl = Impl;
-    Module.dcl = dcl(null,Impl);
-    dcl.chainAfter(Module.dcl,'destroy');
-    return Module;
-});
-
-;
 /** @module xide/manager/ResourceManager **/
 define('xide/manager/ResourceManager',[
     'dcl/dcl',
@@ -68812,6 +69440,42 @@ define('xapp/manager/Application',[
                 src:url
             }, query('head')[0]);*/
         },
+        publishVariables:function(){
+
+            var deviceManager = this.ctx.getDeviceManager();
+            if(deviceManager){
+                var deviceInstances = deviceManager.deviceInstances;
+                for (var i in deviceInstances) {
+
+                    var instance = deviceInstances[i];
+                    var instanceOptions = instance.options;
+                    if (!instanceOptions) {
+                        continue;
+                    }
+
+                    if(instance.blockScope){
+
+                        var basicVariables = instance.blockScope.getVariables({
+                            group: types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES
+                        });
+
+                        var out = [];
+                        for (var i = 0; i < basicVariables.length; i++) {
+                            var variable = basicVariables[i];
+
+                            this.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, {
+                                item: variable,
+                                scope: instance.blockScope,
+                                owner: this,
+                                save: false,                         //dont save it
+                                source: types.MESSAGE_SOURCE.DEVICE,  //for prioritizing
+                                refresh:true
+                            });
+                        }
+                    }
+                }
+            }
+        },
         onReady:function(){
             
             debugBootstrap && console.log('   Checkpoint 5.3 managers ready');
@@ -68820,7 +69484,6 @@ define('xapp/manager/Application',[
                 application:this,
                 delegate:this.delegate
             });
-
         },
         onXBloxReady:function() {
             var _re = require,

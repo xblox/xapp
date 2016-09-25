@@ -319,10 +319,7 @@ define([
 
         },
         wireScope: function (scope) {
-
-
             debugWire && console.log('wire scope');
-
             var allGroups = scope.allGroups(),
                 thiz = this,
                 delegate = thiz.delegate || {},
@@ -585,6 +582,7 @@ define([
                 });
             }else{
                 this.application.onReady();
+                this.application.publishVariables();
             }
             /*
             this.loadAppModule(settings.item).then(function(){
@@ -617,6 +615,7 @@ define([
                     thiz.publish(types.EVENTS.ON_APP_READY, {
                         context: thiz
                     });
+                    thiz.application.publishVariables();
                 }, 1000);
             });
             if(has('debug')) {

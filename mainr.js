@@ -71,6 +71,7 @@ define([
     "deliteful/list/List",
     "dojo/selector/_loader",
     "xdeliteful/TabBar",
+    "xdeliteful/MediaPlayer",
     "deliteful/Accordion",
     "requirejs-domready/domReady"
 ], function(Button,RunScript,register){

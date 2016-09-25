@@ -29,6 +29,7 @@ define([
         "deliteful/ToggleButton",
         "deliteful/ViewStack",
         "xdeliteful/TabBar",
+        "xdeliteful/MediaPlayer",
         "deliteful/Accordion",
         "deliteful/Panel",
         'xblox/model/html/SetState',
