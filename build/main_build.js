@@ -41945,25 +41945,40 @@ define('xcf/model/Command',[
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
             var result = {};
-            if(msg.params && msg.params.id){
-                this._emit('cmd:'+msg.cmd + '_' + msg.params.id,{
+            var params = msg.params;
+
+            if(params && params.id){
+                this._emit('cmd:'+msg.cmd + '_' + params.id,{
                     msg:msg
                 });
-                if(msg.lastResponse){
-                    var data = utils.getJson(msg.lastResponse);
-                    if(data && data.result && _.isString(data.result)){
-                        var _lastResult = utils.getJson(data.result);
-                        if(_lastResult){
-                            this._lastResult = result = _lastResult;
-                        }
-                    }
-                }
+                msg.lastResponse && this.storeResult(msg.lastResponse);
             }
-
             var items = this.getItems(types.BLOCK_OUTLET.PAUSED);
             if(items.length) {
                 this.runFrom(items,0,this._lastSettings);
             }
+        },
+        storeResult:function (lastResponse) {
+            var data = utils.getJson(lastResponse);
+            var result = null;
+            if(data && data.result && _.isString(data.result)){
+                var str = data.result;
+                var isJSON = str.indexOf('{') !==-1 || str.indexOf('[') !==-1;
+                var lastResult = str;
+                if(isJSON){
+                    var tmp = utils.getJson(str,true,false);
+                    if(tmp){
+                        lastResult = tmp;
+                    }
+                }
+                if(lastResult!==null){
+                    this._lastResult = result = lastResult;
+                }else{
+                    this._lastResult = null;
+                }
+            }
+
+            return result;
         },
         /**
          * onCommandPaused
@@ -41976,19 +41991,12 @@ define('xcf/model/Command',[
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
             var result = {};
-            if(msg.params && msg.params.id){
-                this._emit('cmd:'+msg.cmd + '_' + msg.params.id,{
+            var params = msg.params;
+            if(params && params.id){
+                this._emit('cmd:'+msg.cmd + '_' + params.id,{
                     msg:msg
                 });
-                if(msg.lastResponse){
-                    var data = utils.getJson(msg.lastResponse);
-                    if(data && data.result && _.isString(data.result)){
-                        var _lastResult = utils.getJson(data.result);
-                        if(_lastResult){
-                            this._lastResult = result = _lastResult;
-                        }
-                    }
-                }
+                msg.lastResponse && this.storeResult(msg.lastResponse);
             }
 
             var items = this.getItems(types.BLOCK_OUTLET.STOPPED);
@@ -42007,19 +42015,12 @@ define('xcf/model/Command',[
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
             var result = {};
-            if(msg.params && msg.params.id){
-                this._emit('cmd:'+msg.cmd + '_' + msg.params.id,{
+            var params = msg.params;
+            if(params && params.id){
+                this._emit('cmd:'+msg.cmd + '_' + params.id,{
                     msg:msg
                 });
-                if(msg.lastResponse){
-                    var data = utils.getJson(msg.lastResponse);
-                    if(data && data.result && _.isString(data.result)){
-                        var _lastResult = utils.getJson(data.result);
-                        if(_lastResult){
-                            this._lastResult = result = _lastResult;
-                        }
-                    }
-                }
+                msg.lastResponse && this.storeResult(msg.lastResponse);
             }
             var items = this.getItems(types.BLOCK_OUTLET.PROGRESS);
             if(items.length) {
@@ -42035,24 +42036,28 @@ define('xcf/model/Command',[
         onCommandError:function(msg){
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
-            debug && console.log('onCommandError',msg);
-            if(msg.params && msg.params.id){
-                this._emit('cmd:'+msg.cmd + '_' + msg.params.id,msg);
+            var params = msg.params;
+            if(params.id){
+                this._emit('cmd:'+msg.cmd + '_' + params.id,msg);
             }
             this.onFailed(this, this._settings);
+            var items = this.getItems(types.BLOCK_OUTLET.ERROR);
+            if(items.length) {
+                this.runFrom(items,0,this._lastSettings);
+            }
         },
         sendToDevice:function(msg,settings,stop,pause,id){
             msg = this.replaceAll("'",'',msg);
             id = id || utils.createUUID();
             var self = this;
+
             var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
+
             this.lastCommand = '' + msg;
 
             if(this.scope.instance){
-
                 if(wait){
                     this._on('cmd:'+msg + '_' + id,function(msg){
-                        console.log('-cmd done');
                         if(msg.error){
                             self.onFailed(self, settings);
                         }else {
@@ -42109,11 +42114,8 @@ define('xcf/model/Command',[
                 value = utils.convertAllEscapes(value,"none");
             }
 
-
             settings = settings || this._lastSettings || {};
-
             var override = settings.override || this.override;
-
             var _overrides = (override && override.variables) ? override.variables : null;
             if(_overrides){
                 for(var prop in _overrides){
@@ -42172,20 +42174,18 @@ define('xcf/model/Command',[
             if(isInterface ==true && this._loop){
                 this.reset();
             }
+
             if(wait!==true) {
                 this.onRun(this,settings);
             }else{
-
                 this.onRun(this,settings,{
                     timeout:false
                 });
                 dfd = this.addDeferred(id);
-                //this._runningDfd = dfd;
             }
             if(this.items && this.items.length>0){
 
                 if(value && value.length>0){
-
                     var res = this._resolve(this.send,settings);
                     if(res && res.length>0){
                         if(!this.sendToDevice(res,settings)){
@@ -42201,9 +42201,7 @@ define('xcf/model/Command',[
                 }
 
                 var ret=[];
-
-                for(var n = 0; n < this.items.length ; n++)
-                {
+                for(var n = 0; n < this.items.length ; n++){
                     var block = this.items[n];
                     if(block.enabled) {
                         ret.push(block.solve(scope, settings));
@@ -42213,7 +42211,6 @@ define('xcf/model/Command',[
                 return ret;
 
             }else if(value.length>0){
-
                 var res = this._resolve(this.send,settings);
                 if(res && res.length>0){
                     if(!this.sendToDevice(res,settings,null,null,id)) {
@@ -42281,9 +42278,29 @@ define('xcf/model/Command',[
             }
 
         },
+        getDriverFields:function(fields){
+
+            var DriverModule = null;
+            var instance = this.getInstance();
+            if(instance){
+                DriverModule = instance.Module;
+            }else{
+                var driver = this.getScope().driver;
+                if(driver && driver.Module){
+                    DriverModule  = driver.Module;
+                }
+            }
+
+            var result = [];
+            if(DriverModule && DriverModule.getFields){
+                result = DriverModule.getFields(this,fields);
+            }
+            return result;
+        },
         getFields:function(){
 
             var fields = this.inherited(arguments) || this.getDefaultFields();
+
             var thiz=this;
 
             fields.push(this.utils.createCI('name',13,this.name,{
@@ -42292,15 +42309,12 @@ define('xcf/model/Command',[
                 dst:'name',
                 order:200
             }));
-
             fields.push(this.utils.createCI('startup',0,this.startup,{
                 group:'General',
                 title:'Send on Startup',
                 dst:'startup',
                 order:199
             }));
-
-
             fields.push(this.utils.createCI('auto',0,this.auto,{
                 group:'General',
                 title:'Auto Send',
@@ -42343,8 +42357,6 @@ define('xcf/model/Command',[
                 }
             }));
 
-
-
             fields.push(this.utils.createCI('flags',5,this.flags,{
                 group:'General',
                 title:'Flags',
@@ -42371,7 +42383,9 @@ define('xcf/model/Command',[
                 }
 
             }));
-            
+
+            fields = fields.concat(this.getDriverFields(fields));
+
             return fields;
         },
         icon:'fa-exclamation',
@@ -42384,10 +42398,11 @@ define('xcf/model/Command',[
         canEdit:function(){
             return true;
         },
-        onChangeField:function(field,newValue,cis){
+        onChangeField:function(field,newValue,cis){            
+            var interval = this.getInterval();            
             if(field=='auto'){
                 if(newValue==true){
-                    this.getInterval()>0 && this.scope.loopBlock(this);
+                    interval>0 && this.scope.loopBlock(this);
                 }else{
                     if(this._loop){
                         this.reset();
@@ -42398,13 +42413,13 @@ define('xcf/model/Command',[
                 if(newValue==false){
                     this.reset();
                 }else{
-                    if(this.getInterval()){
+                    if(interval){
                         this.scope.loopBlock(this);
                     }
                 }
             }
             if(field=='interval'){
-                if(this.getInterval()>0 && this.auto){
+                if(interval>0 && this.auto){
                     this.scope.loopBlock(this);
                 }else{
                     this.reset();
@@ -52300,17 +52315,11 @@ define('xcf/manager/DeviceManager',[
 
         },
         getDevice:function(mixed){
-            
             var result = mixed;
             if(_.isString(mixed)){                
                 var byId = this.getItemById(mixed);                
                 if(byId){
                     result = byId;
-                }else{
-                    var byPath = this.store.getSync(mixed);
-                    if(byPath){
-                        result = byPath;
-                    }
                 }
             }
             return result;
@@ -52358,9 +52367,7 @@ define('xcf/manager/DeviceManager',[
          * @returns {*}
          */
         getStore:function(scope){
-            if(!scope || scope==='system_devices') {
-                return this.store;
-            }
+            scope = scope || 'system_devices';
             var store = this.stores[scope];
             if(store){
                 return store;
@@ -53098,10 +53105,7 @@ define('xcf/manager/DeviceManager',[
             return this.callMethodEx(null, 'getDriverContent', [scope, path], readyCB, true);
         },
         createStore:function(data,scope,track){
-
-            var storeClass = declare('deviceStore',[TreeMemory,Trackable,ObservableStore],{
-
-            });
+            var storeClass = declare('deviceStore',[TreeMemory,Trackable,ObservableStore],{});
             var store = new storeClass({
                 data: data.items,
                 idProperty: 'path',
@@ -53115,12 +53119,9 @@ define('xcf/manager/DeviceManager',[
                     "enabled"
                 ]
             });
-            if(scope && !this.stores[scope] && track!==false){
-                this.stores[scope] = store;
-            }
 
-            if(!this.store && scope ==='system_devices' && track!==false){
-                this.store = store;
+            if(scope && track!==false){
+                this.setStore(scope,store);
             }
             return store;
         },
@@ -53373,12 +53374,6 @@ define('xcf/manager/DeviceManager',[
                     }
                 };
 
-                if(!result['user_drivers']){
-                    //debugger;
-                    var mount = this.ctx.getMount('user_drivers');
-                    //console.log('have no mounts');
-                }
-
                 result.hash = MD5(JSON.stringify({
                     host: host,
                     port: port,
@@ -53413,11 +53408,6 @@ define('xcf/manager/DeviceManager',[
          * @returns {module:xcf/model/Device} The device
          */
         getItemById: function (itemId) {
-            if(!this.store || !this.store.data){
-                _debug && console.error('Device Manager::getItemById : have no valid store');
-                return null;
-            }
-            
             function search(store){
                 var data = store.data,
                     device = _.find(data,{
@@ -53642,23 +53632,15 @@ define('xcf/manager/DeviceManager',[
          * @param scope{string}
          * @returns {Deferred}
          */
-        ls: function (scope,silent) {
-
-
+        ls: function (scope,track) {
             var dfd = new Deferred();
-
             function data(data) {
                 try {
-                    var store = this.createStore(data, scope, silent);
-                    if (scope === 'system_devices') {
-                        this.store = store;
-                    }
+                    var store = this.createStore(data, scope, track === true ? false : true);
 
-                    silent!==true && (this.stores[scope] = store);
-
+                    track!==false && this.setStore(scope,store);
                     this.onStoreReady(store);
-
-                    silent!==true && this.publish(types.EVENTS.ON_STORE_CREATED, {
+                    track!==false && this.publish(types.EVENTS.ON_STORE_CREATED, {
                         data: data,
                         owner: this,
                         store: store,
@@ -53694,124 +53676,6 @@ define('xcf/manager/DeviceManager',[
          */
         hasStore:function(scope){
             return this.stores[scope];
-        },
-        /**
-         * 
-         * @param device
-         * @param target
-         * @returns {*}
-         */
-        cloneDevice : function (device, target) {
-            var dfd = new Deferred();
-            var self = this;
-            var ctx = this.ctx;
-            var fileManager = ctx.getFileManager();
-            
-            this.getFile(target).then(function (parentFolder) {
-    
-                self.getFile(device).then(function (sourceDeviceFile) {
-    
-                    if (sourceDeviceFile) {
-    
-                        var srcParentFolder = sourceDeviceFile.getParent();
-    
-                        if (srcParentFolder) {
-    
-                            var sourceFileStore = srcParentFolder._store;
-                            var targetFileStore = parentFolder._store;
-    
-    
-                            //neighbour items
-                            var items = targetFileStore.getChildren(parentFolder);
-    
-                            var newName = fileManager.getNewName(sourceDeviceFile, parentFolder.children);
-    
-                            fileManager.getContent(sourceDeviceFile.mount, sourceDeviceFile.path, function (content) {
-                                // update meta data
-                                var cis = utils.getJson(content);
-                                var DEVICE_PROPERTY = types.DEVICE_PROPERTY;
-                                var meta = cis['inputs'];
-                                var idCI = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_ID);
-                                utils.setCIValueByField(idCI, 'value', utils.createUUID());
-                                var titleCI = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_TITLE);
-                                utils.setCIValueByField(titleCI, 'value', newName.replace('.meta.json', ''));
-    
-                                //store it as new file
-                                var newPath = parentFolder.path + '/' + newName;
-                                fileManager.mkfile(parentFolder.mount, newPath).then(function () {
-    
-                                    fileManager.setContent(parentFolder.mount, newPath, JSON.stringify(cis, null, 2), function () {
-    
-    
-                                        //create a temporary store and move it to the originating
-                                        self.ls(target.scope, true).then(function (store) {
-                                            var _device = store.query({
-                                                id: idCI.value
-                                            })[0];
-    
-                                            if (_device) {
-    
-    
-                                                //remove it from temp store
-                                                store.removeSync(_device.path);
-    
-                                                //remove it from target store (wtf?)
-                                                target._store.removeSync(_device.path);
-    
-                                                //set to the target's store
-                                                _device._store = target._store;
-    
-                                                //add it to the target store
-    
-                                                _device  = target._store.addSync(_device);
-    
-                                                //trigger some events
-                                                _device.refresh();
-    
-                                                //trigger some events
-                                                /*
-                                                 device._store.emit('added', {
-                                                 target: _device
-                                                 });
-                                                 */
-    
-                                                target._store.emit('added', {
-                                                    target: _device
-                                                });
-    
-    
-                                                var CIS = _device.user;
-    
-                                                //complete CIS
-                                                _.each(CIS.inputs,function(ci) {
-                                                    ci.device = _device;
-                                                    ci.actionTarget = ctx.mainView.getToolbar();
-                                                    ci.ctx = ctx;
-                                                });
-    
-    
-                                                var driverId = self.getMetaValue(_device, types.DEVICE_PROPERTY.CF_DEVICE_DRIVER);
-                                                if (!driverId) {
-                                                    console.error('device has no driver id!');
-                                                }
-                                                var driver = self.ctx.getDriverManager().getItemById(driverId);
-    
-                                                if (driver) {
-                                                    self.completeDevice(_device._store,_device, driver);
-                                                }
-                                                dfd.resolve(_device);
-                                            }
-                                        });
-                                    });
-                                });
-                            }, false);
-                        }
-                    } else {
-                        dfd.reject("Cant get file object for device");
-                    }
-                });
-            });
-            return dfd;
         }
     });
 });
@@ -59145,6 +59009,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
             return dfd;
         },
+        
         /**
          * Creates a driver instance per device
          * @param deviceInfo {module:xide/types~DeviceInfo} The device info
@@ -59165,11 +59030,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
 
             var requirePath = decodeURIComponent(packageUrl) + deviceInfo.driver;
-
             //var baseUrl = decodeURIComponent(require.toUrl(driverPrefix));
-
             requirePath = requirePath.replace('', '').trim();
-
             var thiz = this,
                 ctx = thiz.ctx,
                 meta = device['user'],
@@ -59218,6 +59080,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     driverInstance.utils = utils;
                     driverInstance.types = types;
                     driverInstance.device = device;
+                    driverInstance.Module = driverProtoInstance;
                     
                     driverInstance.getDevice = function(){
                         return this.device;
@@ -60300,16 +60163,47 @@ define('xcf/manager/BeanManager',[
     'xide/types',
     'xide/utils',
     'xide/manager/BeanManager',
+    "dojo/Deferred",
     'xdojo/has!xcf-ui?xide/views/ActionDialog',
     'xdojo/has!xcf-ui?xide/views/CIActionDialog',
     'xdojo/has!xcf-ui?xide/views/CIGroupedSettingsView'
-], function (dcl,declare,lang,types, utils, BeanManager,registry,ActionDialog, CIActionDialog, CIGroupedSettingsView){
+], function (dcl,declare,lang,types, utils, BeanManager,Deferred,registry,ActionDialog, CIActionDialog, CIGroupedSettingsView){
     /**
      * @class module:xcf/manager/BeanManager
      * @extends module:xide/manager/BeanManager
      */
     return dcl(BeanManager, {
         declaredClass:"xcf.manager.BeanManager",
+        setStore:function(scope,store){
+            var current = this.stores[scope];
+            if(current){
+                current.destroy();
+                delete this.stores[scope];
+            }
+
+            this.stores[scope] = store;
+
+            return store;
+        },
+        /**
+         * 
+         * @param bean
+         * @returns {*}
+         */
+        getFile:function(bean){
+            var dfd = new Deferred();
+            var ctx = this.ctx;
+            var fileManager = ctx.getFileManager();
+            var fileStore = fileManager.getStore(bean.scope);
+            fileStore.initRoot().then(function(){
+                fileStore._loadPath('.',true).then(function(){
+                    fileStore.getItem(bean.path,true).then(function (item) {
+                        dfd.resolve(item);
+                    });
+                });
+            });
+            return dfd;
+        },
         /**
          * Url generator for device/driver/[command|block|variable]
          *
@@ -60811,12 +60705,16 @@ define('xcf/manager/DriverManager',[
     'xcf/model/Driver',
     "xide/manager/ServerActionBase",
     "xide/data/Reference",
-    'xdojo/has!xcf-ui?./DriverManager_UI'
+    'dojo/Deferred',
+    'xide/mixins/ReloadMixin',
+    'xide/mixins/EventedMixin',
+    'xdojo/has!xcf-ui?./DriverManager_UI',
+    'xdojo/has!xcf-ui?xide/views/_CIDialog',
 ], function (dcl,declare, lang,json,types,fTypes,utils,
              BeanManager,Variable, DriverManager_Server,
              TreeMemory,ObservableStore,Trackable,
              has,Driver,
-             ServerActionBase,Reference,DriverManager_UI) {
+             ServerActionBase,Reference,Deferred,ReloadMixin,EventedMixin,DriverManager_UI,_CIDialog) {
 
     var bases = [
         ServerActionBase,
@@ -60826,14 +60724,612 @@ define('xcf/manager/DriverManager',[
     debug = false,
     isServer = !has('host-browser'),
     runDrivers = has('runDrivers'),
-    debugDeviceMessages = true;
+    debugDeviceMessages = false;
 
     has('xcf-ui') && bases.push(DriverManager_UI);
 
+    function cloneDeviceTesting(){
 
+        var ctx = window.sctx;
+
+        var fileManager = ctx.getFileManager();
+        var deviceManager = ctx.getDeviceManager();
+
+        var user_devices = deviceManager.getStore('user_devices');
+
+        var testUserDevice = deviceManager.getDevice('4b51aec8-dea8-cc45-e0e7-05744db8b690');
+        var testUserDeviceMPD = deviceManager.getDevice('d17658b6-e5f5-ae5c-eff1-d7a2344ba17d');
+
+        var testSystemDevice = deviceManager.getDevice('2a34a9e0-2db1-7023-6bac-106845427c73');
+
+
+        var parentObject = testUserDevice.getParent();
+
+        var targetDevice = testSystemDevice;
+
+        var targetParentObject = targetDevice.getParent();
+
+
+
+        var deviceTreeView = ctx.getApplication().deviceTreeView;
+
+        deviceManager.cloneDevice = function (device, target) {
+
+            var dfd = new Deferred();
+            var self = this;
+            var ctx = this.ctx;
+            this.getFile(target).then(function (parentFolder) {
+
+                self.getFile(device).then(function (sourceDeviceFile) {
+
+                    if (sourceDeviceFile) {
+
+                        var srcParentFolder = sourceDeviceFile.getParent();
+
+                        if (srcParentFolder) {
+
+                            var sourceFileStore = srcParentFolder._store;
+                            var targetFileStore = parentFolder._store;
+
+
+                            //neighbour items
+                            var items = targetFileStore.getChildren(parentFolder);
+
+                            var newName = fileManager.getNewName(sourceDeviceFile, parentFolder.children);
+
+                            fileManager.getContent(sourceDeviceFile.mount, sourceDeviceFile.path, function (content) {
+                                // update meta data
+                                var cis = utils.getJson(content);
+                                var DEVICE_PROPERTY = types.DEVICE_PROPERTY;
+                                var meta = cis['inputs'];
+                                var idCI = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_ID);
+                                utils.setCIValueByField(idCI, 'value', utils.createUUID());
+                                var titleCI = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_TITLE);
+                                utils.setCIValueByField(titleCI, 'value', newName.replace('.meta.json', ''));
+
+                                //store it as new file
+                                var newPath = parentFolder.path + '/' + newName;
+                                fileManager.mkfile(parentFolder.mount, newPath).then(function () {
+
+                                    fileManager.setContent(parentFolder.mount, newPath, JSON.stringify(cis, null, 2), function () {
+
+
+                                        //create a temporary store and move it to the originating
+                                        self.ls(target.scope, true).then(function (store) {
+                                            var _device = store.query({
+                                                id: idCI.value
+                                            })[0];
+
+                                            if (_device) {
+
+
+                                                //remove it from temp store
+                                                store.removeSync(_device.path);
+
+                                                //remove it from target store (wtf?)
+                                                target._store.removeSync(_device.path);
+
+                                                //set to the target's store
+                                                _device._store = target._store;
+
+                                                //add it to the target store
+
+                                                _device  = target._store.addSync(_device);
+
+                                                //trigger some events
+                                                _device.refresh();
+
+                                                //trigger some events
+                                                /*
+                                                 device._store.emit('added', {
+                                                 target: _device
+                                                 });
+                                                 */
+
+                                                target._store.emit('added', {
+                                                    target: _device
+                                                });
+
+
+                                                var CIS = _device.user;
+
+                                                //complete CIS
+                                                _.each(CIS.inputs,function(ci) {
+                                                    ci.device = _device;
+                                                    ci.actionTarget = ctx.mainView.getToolbar();
+                                                    ci.ctx = ctx;
+                                                });
+
+
+                                                var driverId = self.getMetaValue(_device, types.DEVICE_PROPERTY.CF_DEVICE_DRIVER);
+                                                if (!driverId) {
+                                                    console.error('device has no driver id!');
+                                                }
+                                                var driver = self.ctx.getDriverManager().getItemById(driverId);
+
+                                                if (driver) {
+                                                    self.completeDevice(_device._store,_device, driver);
+                                                }
+                                                dfd.resolve(_device);
+                                            }
+                                        });
+                                    });
+                                });
+                            }, false);
+                        }
+                    } else {
+                        dfd.reject("Cant get file object for device");
+                    }
+                });
+            });
+            return dfd;
+        }
+
+        deviceTreeView.clipboardPaste = function (items,target) {
+            var dfd = new Deferred();
+            var isCut = this.currentCutSelection,
+                self = this,
+                defaultDfdArgs = {
+                    focus: true,
+                    append: false
+                };
+
+            items = items || isCut ? this.currentCutSelection : this.currentCopySelection;
+
+            var allDfds = [], newItems = [];
+            var head = new Deferred();
+            target = target || this.getSelectedItem() || {};
+
+            if(target.isDevice){
+                target = target.getParent();
+            }
+
+            if(!target || !target.isDir){
+                head.resolve();
+                return head;
+            }
+
+
+            items = items.filter(function(item){
+                return item.isDevice
+            });
+
+            if(!items || !items.length){
+                head.resolve();
+                return head;
+            }
+
+
+            for (var i = 0; i < items.length; i++) {
+                var sub = self.delegate.cloneDevice(items[i],target);
+                //collect new items
+                sub.then(function(newItem){
+                    newItems.push(newItem);
+                });
+                allDfds.push(sub);
+            }
+            all(allDfds).then(function(sub){
+                defaultDfdArgs.select = newItems;
+                head.resolve(defaultDfdArgs);
+            });
+            return head;
+        };
+
+        //console.error(deviceTreeView);
+        //deviceManager.cloneDevice(testUserDevice, targetParentObject);
+    }
+
+    var _testDriverModule = false;
+    if (_testDriverModule) {
+
+        console.clear();
+
+        var ctx = window.sctx;
+        if(!ctx){
+            return;
+        }
+
+
+
+        var driverManager = ctx.getDriverManager();
+        if(!driverManager){
+            return;
+        }
+
+        var testUserDriver = driverManager.getDriverById('9db866a4-bb3e-137b-ae23-793b729c44f8');
+
+
+
+
+        driverManager.loadDriverModule=function(driver){
+
+
+            console.log('load driver module '+driver.scope,driver);
+
+            var baseDriverPrefix = this.driverScopes['system_drivers'],
+                baseDriverRequire = baseDriverPrefix + 'DriverBase';
+
+            var urlBase = require.toUrl(this.driverScopes['system_drivers']);
+
+            var url = decodeURIComponent(urlBase) + "/DriverBase";
+
+            var self = this;
+
+            var ctx = self.ctx,
+                dfd = new Deferred();
+
+            require([baseDriverRequire], function (baseDriver) {
+                //baseDriver.prototype.declaredClass = baseDriverRequire;
+                var driverPrefix = self.driverScopes[driver.scope],
+                    isRequireJS = !require.cache;
+
+                if(isRequireJS){
+                    require({
+                        config:{
+                            urlArgs:null
+                        }
+                    });
+                }else{
+                    require({
+                        cacheBust: null
+                    });
+                }
+
+                var packageUrl = require.toUrl(driverPrefix);
+                if(isRequireJS){
+                    packageUrl = packageUrl.replace('/.js','/');
+                }
+
+
+                var driverMeta = driver['user'];
+                var script = utils.getCIInputValueByName(driverMeta, types.DRIVER_PROPERTY.CF_DRIVER_CLASS);
+                var requirePath = decodeURIComponent(packageUrl) + script;
+                requirePath = requirePath.replace('', '').trim();
+                try {
+                    require.undef(requirePath);
+                    require([requirePath], function (driverProtoInstance) {
+                        var baseClass = baseDriver,
+                            baseClasses = [baseClass];
+
+                        var driverProto = dcl([baseClass, EventedMixin.dcl, ReloadMixin.dcl, driverProtoInstance], {});
+                        dfd.resolve(driverProto);
+                    });
+                }catch(e){
+                    
+                }
+
+            });
+            return dfd;
+        }
+
+        driverManager.loadDriverModule(testUserDriver);
+
+
+    }
+
+    var _testDriver = false;
+    if (_testDriver) {
+
+        console.clear();
+
+        var ctx = window.sctx;
+
+        var fileManager = ctx.getFileManager();
+        var deviceManager = ctx.getDeviceManager();
+        var driverManager = ctx.getDriverManager();
+
+        var user_devices = deviceManager.getStore('user_devices');
+        var user_drivers = driverManager.getStore('user_drivers');
+
+        var testUserDriver = driverManager.getDriverById('9db866a4-bb3e-137b-ae23-793b729c44f8');
+        var testSystemDriver = driverManager.getDriverById('52f4b5dd-889d-a5c9-0221-edaa0dce1a6a');
+
+        var parentObject = testUserDriver.getParent();
+        var targetDriver = testSystemDriver;
+        var targetParentObject = targetDriver.getParent();
+
+        var deviceTreeView = ctx.getApplication().deviceTreeView;
+        var driverTreeView = ctx.getApplication().driverTreeView;
+
+
+        //console.log(driverTreeView);
+
+        driverManager.getFile=function(driver){
+            var dfd = new Deferred();
+            var ctx = this.ctx;
+            var fileManager = ctx.getFileManager();
+            var fileStore = fileManager.getStore(driver.scope);
+            fileStore.initRoot().then(function(){
+                fileStore._loadPath('.',true).then(function(){
+                    fileStore.getItem(driver.path,true).then(function (item) {
+                        dfd.resolve(item);
+                    });
+                });
+            });
+            return dfd;
+        };
+
+
+        driverManager._cloneDriver = function (driver, target) {
+
+            var dfd = new Deferred();
+            var self = this;
+            var ctx = this.ctx;
+            var fileManager = ctx.getFileManager();
+
+            this.getFile(target).then(function (parentFolder) {
+
+                self.getFile(driver).then(function (sourceDriverFile) {
+                    if (sourceDriverFile) {
+                        var srcParentFolder = sourceDriverFile.getParent();
+                        if (srcParentFolder) {
+
+                            var sourceFileStore = srcParentFolder._store;
+                            var targetFileStore = parentFolder._store;
+
+                            //neighbour items
+                            var items = targetFileStore.getChildren(parentFolder);
+
+                            var newName = fileManager.getNewName(sourceDriverFile, parentFolder.children);
+                            var newName2 = newName.replace('.meta.json', '');
+                            var cis = [
+                                utils.createCI('Title', 13, newName2, {
+                                    group: 'Common'
+                                })
+                            ];
+
+
+                            function proceed(newName){
+                                fileManager.getContent(sourceDriverFile.mount, sourceDriverFile.path, function (content) {
+                                    // update meta data
+                                    var cis = utils.getJson(content);
+                                    var DRIVER_PROPERTY = types.DRIVER_PROPERTY;
+                                    var meta = cis['inputs'];
+
+                                    var idCI = utils.getCIByChainAndName(meta, 0, DRIVER_PROPERTY.CF_DRIVER_ID);
+                                    utils.setCIValueByField(idCI, 'value', utils.createUUID());
+                                    var titleCI = utils.getCIByChainAndName(meta, 0, DRIVER_PROPERTY.CF_DRIVER_NAME);
+                                    utils.setCIValueByField(titleCI, 'value', newName);
+
+                                    var driverClass = utils.getCIByChainAndName(meta, 0, DRIVER_PROPERTY.CF_DRIVER_CLASS);
+                                    utils.setCIValueByField(driverClass, 'value',parentFolder.path + '/' + newName + '.js');
+
+                                    //store it as new file
+                                    var newPath = parentFolder.path + '/' + newName + '.meta.json';
+
+                                    var sourceScriptPath = sourceDriverFile.path.replace('.meta.json','.js');
+                                    var targetScriptPath = parentFolder.path + '/' + newName + '.js';
+                                    
+                                    var sourceBloxFilePath = sourceDriverFile.path.replace('.meta.json','.xblox');
+                                    var targetBloxFilePath = parentFolder.path + '/' + newName + '.xblox';
+                                    var targetScriptFilePath = parentFolder.path + '/' + newName + '.js';
+
+                                    //xblox
+                                    fileManager.getContent(sourceDriverFile.mount, sourceBloxFilePath, function (content) {
+                                        fileManager.mkfile(parentFolder.mount, targetBloxFilePath).then(function () {
+                                            fileManager.setContent(parentFolder.mount, targetBloxFilePath, content, function () {
+
+                                                //script
+                                                fileManager.getContent(sourceDriverFile.mount, sourceScriptPath, function (content) {
+                                                    fileManager.mkfile(parentFolder.mount, targetScriptPath).then(function () {
+                                                        fileManager.setContent(parentFolder.mount, targetScriptPath, content, function () {
+                                                        
+                                                            //meta
+                                                            fileManager.mkfile(parentFolder.mount, newPath).then(function () {
+                                                                fileManager.setContent(parentFolder.mount, newPath, JSON.stringify(cis, null, 2), function () {
+
+
+
+                                                                    //create a temporary store and move it to the originating
+                                                                    self.ls(target.scope, false).then(function (store) {
+
+                                                                        if(!store){
+                                                                            return;
+                                                                        }
+
+                                                                        var _driver = store.query({
+                                                                            id: idCI.value
+                                                                        })[0];
+
+                                                                        if (_driver) {
+
+
+                                                                            
+                                                                            //remove it from temp store
+                                                                            store.removeSync(_driver.path);
+
+                                                                            //remove it from target store (wtf?)
+                                                                            target._store.removeSync(_driver.path);
+
+                                                                            //set to the target's store
+                                                                            _driver._store = target._store;
+
+                                                                            //add it to the target store
+
+                                                                            _driver  = target._store.addSync(_driver);
+
+
+                                                                            //trigger some events
+                                                                            _driver.refresh();
+
+                                                                            target._store.emit('added', {
+                                                                                target: _driver
+                                                                            });
+
+
+
+                                                                            store = target._store;
+
+                                                                            self.onDriverCreated(store);
+
+                                                                            self.completeDriver(store, _driver, _driver);
+
+                                                                            self.publish(types.EVENTS.ON_STORE_CHANGED, {
+                                                                                owner: self,
+                                                                                store: store,
+                                                                                item: _driver
+                                                                            });
+                                                                            
+                                                                            dfd.resolve(_driver);
+                                                                        }
+                                                                    });
+                                                                });
+                                                            });
+                                                        });
+                                                    });
+                                                });
+                                            });
+                                        });
+                                    });
+                                    
+                                }, false);
+                            }
+
+                            var useDialog = true;
+                            if(useDialog) {
+                                var actionDialog = new _CIDialog({
+                                    title: 'New Name',
+                                    resizable: true,
+                                    onOk: function (data) {
+                                        var options = utils.toOptions(data);
+                                        proceed(utils.getInputCIByName(cis, "Title").value)
+                                    },
+                                    delegate: {},
+                                    cis: cis
+                                });
+                                actionDialog.show();
+                            }else{
+                                proceed(newName);
+                            }
+                        }
+                    } else {
+                        dfd.reject("Cant get file object for device");
+                    }
+                });
+            });
+            return dfd;
+        }
+
+        driverTreeView.clipboardPaste = function (items,target) {
+            var dfd = new Deferred();
+            var isCut = this.currentCutSelection,
+                self = this,
+                defaultDfdArgs = {
+                    focus: true,
+                    append: false
+                };
+
+            items = items || isCut ? this.currentCutSelection : this.currentCopySelection;
+
+            var allDfds = [], newItems = [];
+            var head = new Deferred();
+            target = target || this.getSelectedItem() || {};
+
+            if(target.isDevice){
+                target = target.getParent();
+            }
+
+            if(!target || !target.isDir){
+                head.resolve();
+                return head;
+            }
+
+
+            items = items.filter(function(item){
+                return item.isDevice
+            });
+
+            if(!items || !items.length){
+                head.resolve();
+                return head;
+            }
+
+
+            for (var i = 0; i < items.length; i++) {
+                var sub = self.delegate.cloneDevice(items[i],target);
+                //collect new items
+                sub.then(function(newItem){
+                    newItems.push(newItem);
+                });
+                allDfds.push(sub);
+            }
+            all(allDfds).then(function(sub){
+                defaultDfdArgs.select = newItems;
+                head.resolve(defaultDfdArgs);
+            });
+            return head;
+        };
+
+
+        //console.error(deviceTreeView);
+        //driverManager.cloneDriver(testUserDriver, targetParentObject);
+    }
 
 
     return dcl(bases, {
+        loadDriverModule:function(driver){
+            var baseDriverPrefix = this.driverScopes['system_drivers'],
+                baseDriverRequire = baseDriverPrefix + 'DriverBase';
+
+            var urlBase = require.toUrl(this.driverScopes['system_drivers']);
+            var url = decodeURIComponent(urlBase) + "/DriverBase";
+            var self = this;
+            var ctx = self.ctx,
+                dfd = new Deferred(),
+                _require = require;
+
+            _require([baseDriverRequire], function (baseDriver) {
+                var driverPrefix = self.driverScopes[driver.scope],
+                    isRequireJS = !require.cache;
+
+                if(isRequireJS){
+                    require({
+                        config:{
+                            urlArgs:null
+                        }
+                    });
+                }else{
+                    require({
+                        cacheBust: null
+                    });
+                }
+
+                var packageUrl = require.toUrl(driverPrefix);
+                if(isRequireJS){
+                    packageUrl = packageUrl.replace('/.js','/');
+                }
+                var driverMeta = driver['user'];
+                var script = utils.getCIInputValueByName(driverMeta, types.DRIVER_PROPERTY.CF_DRIVER_CLASS);
+
+                script = script.replace('./','');
+                script = script.replace('.js','');
+                script = driver.scope + '/' + script;
+                //console.log('require : '+script);                
+                var requirePath = decodeURIComponent(packageUrl) + script;
+
+                requirePath = requirePath.replace('', '').trim();
+                script = script.replace('', '').trim();
+                try {
+                    _require.undef(script);
+                    _require([script], function (driverProtoInstance) {
+                        driverProtoInstance.declaredClass = script;
+                        var driverProto = dcl([baseDriver, EventedMixin.dcl, ReloadMixin.dcl, driverProtoInstance], {});
+                        driverProto.getFields = driverProtoInstance.getFields;
+                        function onReloaded(newModule,oldModule){
+                            driverProtoInstance.getFields = newModule.getFields;
+                            newModule.onReloaded = onReloaded;
+                            oldModule.onReloaded = onReloaded;
+                        }
+                        driverProtoInstance.onReloaded = onReloaded;
+                        dfd.resolve(driverProtoInstance);
+                    });
+                }catch(e){
+
+                }
+
+            });
+            return dfd;
+        },
         getBlock:function(url){
             var parts = utils.parse_url(url);
             parts = utils.urlArgs(parts.host);//go on with query string
@@ -61390,20 +61886,6 @@ define('xcf/manager/DriverManager',[
 
         getItemById: function (itemId) {
             return this.getDriverById(itemId);
-
-            if(!this.store || !this.store.data){
-                debug && console.error('Driver Manager::getItemById : have no valid store');
-                return null;
-            }
-            var data = this.store.data,
-                driver = _.find(data,{
-                    id: itemId
-                });
-
-            if(!driver){
-                debug && console.error('Driver Manager::getItemById : cant find driver with id: ' + itemId,data);
-            }
-            return driver;
         },
         /////////////////////////////////////////////////////////////////////////////////////
         //
@@ -61458,26 +61940,24 @@ define('xcf/manager/DriverManager',[
          * @returns {xide.data.TreeMemory}
          */
         createStore:function(data,scope,track){
+            
             var storeClass = declare('driverStore',[TreeMemory,Trackable,ObservableStore],{});
             var store = new storeClass({
                 data: data.items,
                 Model:Driver,
                 idProperty: 'path',
-                //parentField:'path',
                 scope:scope,
+                id:utils.createUUID(),
                 observedProperties:[
                     "name",
                     "enabled"
                 ]
             });
 
-            if(scope && !this.stores[scope] && track!==false){
-                this.stores[scope] = store;
+            if(scope && track!==false){
+                this.setStore(scope,store);
             }
 
-            if(!this.store && scope ==='system_drivers'){
-                this.store = store;
-            }
             return store;
         },
         /***
@@ -61485,58 +61965,62 @@ define('xcf/manager/DriverManager',[
          * @param data
          * @returns {xide.data.TreeMemory}
          */
-        initStore:function(data,scope){
-            var store = this.createStore(data,scope);
+        initStore:function(data,scope,track){
+            var store = this.createStore(data,scope,track);
             return store;
         },
         getStore:function(scope){
-            if(!scope || scope==='system_drivers') {
-                return this.store;
-            }
-
+            scope = scope || 'system_drivers'
             var store = this.stores[scope];
             if(store){
                 return store;
             }
-
-            if(scope){
-                return this.ls(scope);
-            }
+            return this.ls(scope);
         },
         /***
          * ls is enumerating all drivers in a given scope
          * @param scope{string}
          * @returns {Deferred}
          */
-        ls: function (scope) {
+        ls: function (scope,track) {
+
+            var dfd = new Deferred();
             function data(data) {
                 try {
-                    var store = this.initStore(data, scope);
-                    if (scope === 'system_drivers') {
-                        this.store = store;
-                    }
-                    this.stores[scope] = store;
+
+                    var store = this.createStore(data, scope,track);
+                    track!==false && this.setStore(scope,store);
+
                     this.onStoreReady(store);
-                    this.publish(types.EVENTS.ON_STORE_CREATED, {
+
+                    track!==false && this.publish(types.EVENTS.ON_STORE_CREATED, {
                         data: data,
                         owner: this,
                         store: store,
                         type: this.itemType
                     });
+
+                    dfd.resolve(store);
+
                 } catch (e) {
                     logError(e, 'error ls drivers');
                 }
             }
 
             if(has('php')) {
-                return this.runDeferred(null, 'ls', [scope]).then(data.bind(this));
+                this.runDeferred(null, 'ls', [scope]).then(data.bind(this));
             }else{
-                var def = this._getText(require.toUrl(scope).replace('main.js','') + scope + '.json',{
-                    sync: false,
-                    handleAs: 'json'
-                }).then(data.bind(this));
-                return def;
+                if(!isServer) {
+                    var def = this._getText(require.toUrl(scope).replace('main.js', '') + scope + '.json', {
+                        sync: false,
+                        handleAs: 'json'
+                    }).then(data.bind(this));
+                }else {
+                    dfd.resolve({items:[]});
+                }
             }
+
+            return dfd;
         },
         /***
          * Common manager function, called by the context of the application
@@ -72966,6 +73450,7 @@ define('xide/manager/Context',[
 
                     try {
                         _require([_module], function (moduleLoaded) {
+                            
                             _require({
                                 cacheBust: null
                             });
@@ -72982,6 +73467,10 @@ define('xide/manager/Context',[
                                 if (obj.prototype && obj.prototype._onReloaded) {
                                     obj.prototype._onReloaded(moduleLoaded);
                                 }
+                            }
+
+                            if(oldModule && oldModule.onReloaded){
+                                oldModule.onReloaded(moduleLoaded,oldModule);
                             }
 
                             thiz.publish(types.EVENTS.ON_MODULE_RELOADED, {
