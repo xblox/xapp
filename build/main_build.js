@@ -5513,7 +5513,7 @@ define('requirejs-dplugins/has',["module"], function (module) {
 	return has;
 });
 ;
-define('delite/handlebars!xdeliteful/MediaPlayer/template.html',["delite/handlebars","xdeliteful/Button","xblox/RunScript"], function(handlebars){
+define('delite/handlebars!xdeliteful/MediaPlayer/template.html',["delite/handlebars","deliteful/ToggleButton","xdeliteful/Button","xblox/RunScript","deliteful/Slider"], function(handlebars){
 	return handlebars.compile("<template attach-point=\"focusNode\" style=\"position: relative;display: inherit;width: 300px;height: 300px;min-width:300px;min-height:300px\">\n\n<button class=\"mediaPlayerLabel\" is=\"d-button\" title=\"Default Label\" label=\"Position\" style=\"position: absolute; left: 18px; top: 61px;\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"label\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=2219d68b-862f-92ab-de5d-b7a847930a7a\" script=\"Current Position\" style=\"position: relative;\"></d-xscript>\n</button>\n<button class=\"mediaPlayerLabel\" attach-point=\"btnCurrentTrack\" is=\"d-button\" title=\"Default Label\" label=\"Current Track\" style=\"position: absolute; left: 19px; top: 158px;\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"label\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=e76f0b30-4443-47ae-0cef-2c4c9e4acffd\" style=\"position: relative;\"></d-xscript>\n</button>\n<d-slider class=\"mediaPlayerSlider\" attach-point=\"slider\" max=\"1\" step=\"0.01\" style=\"position: absolute; width: 202px; height: 3px; left: 14px; top: 106px;\" value=\"0.2\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"value\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=2219d68b-862f-92ab-de5d-b7a847930a7a\" style=\"position: relative;\"></d-xscript>\n</d-slider>\n<button class=\"mediaPlayerButton\" attach-point=\"btnStop\" is=\"d-button\" title=\"Default Label\" label=\" \" iconclass=\"fa fa-stop \" style=\"position: absolute; left: 63px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=418f48fc-9d4d-9c8c-fc19-4674848fa55c\" script=\"Stop\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnPause\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-pause\" style=\"position: absolute; left: 109.53125px; width: 38px; height: 34px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=a3c0e8d7-e517-18a2-1405-0a46e6182aef\" script=\"Pause\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnPlay\" is=\"d-button\" title=\"Default Label\" style=\"position: absolute; left: 155px; width: 38px; height: 34px; top: 17px;\" iconclass=\"fa fa-play\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=126d4b91-f6de-bce2-d150-932a1f5334ed\" script=\"Play\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnNext\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-caret-right\" style=\"position: absolute; left: 203px; width: 38px; height: 34px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=49936bba-e005-053f-b88d-48ec88688b8b\" script=\"Next\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnPrev\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-caret-left\" style=\"position: absolute; left: 15.015625px; width: 38px; height: 34px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=ab927f79-8968-ff46-44a8-e5fbe5bbfdbe\" script=\"Prev\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnOpenFolder\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-folder-open\" style=\"position: absolute; left: 254px; top: 17px;\"></button>\n\n<button class=\"mediaPlayerLabel\" is=\"d-button\" label=\"Default Label\" title=\"Default Label\" style=\"position: absolute; left: 19px; top: 236px;\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"label\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=9673fd4c-15f5-cebb-82a0-8500ec7b52e6\" style=\"position: relative;\"></d-xscript>\n</button>\n\n<d-slider class=\"mediaPlayerSlider\" attach-point=\"volume\" value=\"100\" sliderange=\"true\" vertical=\"true\" style=\"position: absolute; left: 354px; top: 5px; width: 4px; height: 104px;\" id=\"mediaPlayerVolume\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"value\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=3879e1cd-7a17-71d2-59d4-6e825658194b\" script=\"Current Volume\" style=\"position: relative;\"></d-xscript>\n</d-slider>\n\n<button attach-point=\"mute\" is=\"d-toggle-button\" checkediconclass=\"fa fa-volume-down\" iconclass=\"fa fa-volume-up\" style=\"position: absolute; left: 203px; top: 61px;display: none\" checked=\"false\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"checked\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=cabd937b-28b7-3985-6a10-d456dbe74374\" script=\"Muted\" style=\"position: relative;\"></d-xscript>\n</button>\n\n</template>");
 });;
 /** @module deliteful/TabBar */
@@ -5680,6 +5680,9 @@ define('xdeliteful/MediaPlayer',[
                                 $(combo.list).css('width','800px');
                                 $(combo.list).empty();
                                 $(combo.list).append(gridNode);
+
+
+
                                 this._openRet = popup.open({
                                     popup: this.popup,
                                     parent: this,
@@ -5689,11 +5692,23 @@ define('xdeliteful/MediaPlayer',[
                                 });
 
                                 this.open = true;
+
                                 picker._parent = combo.list;
 
+                                picker.startup();
+
                                 $(gridNode).css('height','100%');
-                                $(gridNode).css('width','100%');
+                                //$(gridNode).css('width','100%');
+                                //$(gridNode).css('min-height','100%');
+                                $(gridNode).css('min-width','100%');
+
                                 picker.resize();
+
+                                $(combo.list).css('height','inherit');
+                                //$(combo.list).css('width','100%');
+
+
+
                                 function refreshGrid(fileGrid,collection){
 
                                     picker.resize();
@@ -5708,8 +5723,8 @@ define('xdeliteful/MediaPlayer',[
                                 }
                                 
                                 setTimeout(function() {
+                                    //$(combo.list).css('width','100%');
                                     refreshGrid(picker.leftGrid,picker.leftStore);
-
                                     setTimeout(function() {
                                         refreshGrid(picker.rightGrid,picker.rightStore);
 
@@ -5739,7 +5754,12 @@ define('xdeliteful/MediaPlayer',[
                             permissions: permissions,
                             leftStore: createStore("/*"),
                             rightStore: createStore("/*")
-                        }, {}), this, $('BODY')[0], true);
+                        }, {}), this, $('BODY')[0], false);
+
+                        $(picker.domNode).addClass('MediaPlayerFilePicker');
+
+                        $(picker.domNode).css('height','600px');
+
                         createPickerPopup(btn, picker, Popup);
                     });
 
@@ -44700,7 +44720,10 @@ define('xide/data/ObservableStore',[
                 if (!_item._store) {
                     _item._store = thiz;
                 }
-                _item._onCreated();
+                _item._onCreated && _item._onCreated();
+                if(!_item._onCreated && _debug){
+                    console.warn('item doesnt have _onCreated',_item);
+                }
                 _item.onAdd && _item.onAdd(_item);
             });
         },
