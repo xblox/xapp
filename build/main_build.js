@@ -6576,9 +6576,6 @@ define('dojo/_base/array',["./kernel", "../has", "./lang"], function(dojo, has, 
 				}
 			}else{
 				for(; i < l; ++i){
-                    if(!callback || typeof callback !=="function"){
-                        console.error('array error');
-                    }
 					callback(arr[i], i, arr);
 				}
 			}
@@ -6984,53 +6981,64 @@ define('xdeliteful/Bar',[
     });
 });;
 define('dojo/selector/_loader',["../has", "require"],
-		function(has, require){
+	function(has, require){
 
-"use strict";
-var doc = typeof document !== 'undefined' ? document : null;
-var testDiv = doc.createElement("div");
-has.add("dom-qsa2.1", !!testDiv.querySelectorAll);
-has.add("dom-qsa3", function(){
-			// test to see if we have a reasonable native selector engine available
-			try{
-				testDiv.innerHTML = "<p class='TEST'></p>"; // test kind of from sizzle
-				// Safari can't handle uppercase or unicode characters when
-				// in quirks mode, IE8 can't handle pseudos like :empty
-				return testDiv.querySelectorAll(".TEST:empty").length == 1;
-			}catch(e){}
-		});
-var fullEngine;
-var acme = "./acme", lite = "./lite";
-return {
-	// summary:
-	//		This module handles loading the appropriate selector engine for the given browser
+		"use strict";
+		if (typeof document !== "undefined") {
+			var testDiv = document.createElement("div");
+			has.add("dom-qsa2.1", !!testDiv.querySelectorAll);
+			has.add("dom-qsa3", function(){
+				// test to see if we have a reasonable native selector engine available
+				try{
+					testDiv.innerHTML = "<p class='TEST'></p>"; // test kind of from sizzle
+					// Safari can't handle uppercase or unicode characters when
+					// in quirks mode, IE8 can't handle pseudos like :empty
+					return testDiv.querySelectorAll(".TEST:empty").length == 1;
+				}catch(e){}
+			});
+		}
 
-	load: function(id, parentRequire, loaded, config){
-		var req = require;
-		// here we implement the default logic for choosing a selector engine
-		id = id == "default" ? has("config-selectorEngine") || "css3" : id;
-		id = id == "css2" || id == "lite" ? lite :
-				id == "css2.1" ? has("dom-qsa2.1") ? lite : acme :
-				id == "css3" ? has("dom-qsa3") ? lite : acme :
-				id == "acme" ? acme : (req = parentRequire) && id;
-		if(id.charAt(id.length-1) == '?'){
-			id = id.substring(0,id.length - 1);
-			var optionalLoad = true;
-		}
-		// the query engine is optional, only load it if a native one is not available or existing one has not been loaded
-		if(optionalLoad && (has("dom-compliant-qsa") || fullEngine)){
-			return loaded(fullEngine);
-		}
-		// load the referenced selector engine
-		req([id], function(engine){
-			if(id != "./lite"){
-				fullEngine = engine;
+		var fullEngine;
+		var acme = "./acme", lite = "./lite";
+		return {
+			// summary:
+			//		This module handles loading the appropriate selector engine for the given browser
+
+			load: function(id, parentRequire, loaded, config){
+				if (config && config.isBuild) {
+					//Indicate that the optimizer should not wait
+					//for this resource any more and complete optimization.
+					//This resource will be resolved dynamically during
+					//run time in the web browser.
+					loaded();
+					return;
+				}
+
+				var req = require;
+				// here we implement the default logic for choosing a selector engine
+				id = id == "default" ? has("config-selectorEngine") || "css3" : id;
+				id = id == "css2" || id == "lite" ? lite :
+					id == "css2.1" ? has("dom-qsa2.1") ? lite : acme :
+						id == "css3" ? has("dom-qsa3") ? lite : acme :
+							id == "acme" ? acme : (req = parentRequire) && id;
+				if(id.charAt(id.length-1) == '?'){
+					id = id.substring(0,id.length - 1);
+					var optionalLoad = true;
+				}
+				// the query engine is optional, only load it if a native one is not available or existing one has not been loaded
+				if(optionalLoad && (has("dom-compliant-qsa") || fullEngine)){
+					return loaded(fullEngine);
+				}
+				// load the referenced selector engine
+				req([id], function(engine){
+					if(id != "./lite"){
+						fullEngine = engine;
+					}
+					loaded(engine);
+				});
 			}
-			loaded(engine);
-		});
-	}
-};
-});
+		};
+	});
 ;
 define('delite/handlebars!deliteful/list/List/List.html',["delite/handlebars","deliteful/ProgressIndicator"], function(handlebars){
 	return handlebars.compile("<template>\n\t<div class=\"d-list-container\" attach-point=\"containerNode\" aria-busy=\"{{_busy}}\" role=\"{{type}}\" d-shown=\"{{this._displayedPanel === 'list'}}\" on-click=\"{{handleSelection}}\" tabindex=\"{{tabIndex}}\"></div>\n\t<div class=\"d-list-no-items\" d-shown=\"{{this._displayedPanel === 'no-items'}}\" attach-point=\"noItemsNode\">\n\t\t<div class=\"d-list-no-item-info\">{{noItemsInfo}}</div>\n\t</div>\n\t<div class=\"d-list-loading-panel\" attach-point=\"loadingIndicatorNode\" d-shown=\"{{this._displayedPanel === 'loading-panel'}}\" aria-hidden=\"{{!this._busy}}\" aria-labelledby=\"loadingIndicatorLabel-{{widgetId}}\">\n\t\t<div class=\"d-list-loading-panel-info\">\n\t\t\t<d-progress-indicator active=\"{{_busy}}\"></d-progress-indicator>\n\t\t\t<div class=\"d-list-loading-panel-info-label\" id=\"loadingIndicatorLabel-{{widgetId}}\" attach-point=\"loadingIndicatorLabel\">{{loadingMessage}}</div>\n\t\t</div>\n\t</div>\n</template>");
@@ -39470,6 +39478,7 @@ define('xblox/model/variables/VariableAssignmentBlock',[
 
         solve:function(scope,settings) {
             var value = this.value;
+            var changed = false;
             if(!value){
                 var _value = this.getArgs();
                 if(_value.length>0){
@@ -39477,6 +39486,7 @@ define('xblox/model/variables/VariableAssignmentBlock',[
                 }
             }
             if (this.variable && value!==null){
+
                 this.onRun(this,settings);
                 //var _variable = scope.getVariable(this.variable).value = scope.parseExpression(this.value);
                 var _variable = this.variable.indexOf('://')!==-1 ? this.scope.resolveBlock(this.variable) : scope.getVariableById(this.variable);
@@ -39499,12 +39509,20 @@ define('xblox/model/variables/VariableAssignmentBlock',[
                     //_variable.value = scope.parseExpression(_value);
                     //_variable.value = this.replaceAll("'",'',_variable.value);
 
+                    if(_variable.value!==_parsed){
+                        changed = true;
+                    }
+
                 }else{
+                    if(_variable.value!==_value){
+                        changed = true;
+                    }
                     _variable.value = _value;
                     _parsed = _value;
                 }
 
-                _variable.set('value',_parsed);
+
+                changed && _variable.set('value',_parsed);
 
                 var publish = false;
 
@@ -39513,20 +39531,19 @@ define('xblox/model/variables/VariableAssignmentBlock',[
                 if(context) {
                     var device = context.device;
                     if(device && device.info && isServer && device.info.serverSide) {
-
                         if (this.flags & types.VARIABLE_FLAGS.PUBLISH_IF_SERVER) {
                             publish = true;
-
                         }else{
-                            //console.log('dont publish');
                             publish=false;
                         }
                     }
                 }
-                if(this.flags & types.VARIABLE_FLAGS.PUBLISH){
+
+                if(this.flags & types.VARIABLE_FLAGS.PUBLISH && changed){
                     publish = true;
                 }
-                factory.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED,{
+
+                changed && factory.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED,{
                     item:_variable,
                     scope:this.scope,
                     save:false,
@@ -41902,7 +41919,6 @@ define('xcf/model/Command',[
         onCommandFinish:function(msg){
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
-
             var result = {};
             var dfd = null;
             if(msg.params && msg.params.id){
@@ -41913,16 +41929,7 @@ define('xcf/model/Command',[
                 this._emit('cmd:'+msg.cmd + '_' + id,{
                     msg:msg
                 });
-
-                if(msg.lastResponse){
-                    var data = utils.getJson(msg.lastResponse);
-                    if(data && data.result && _.isString(data.result)){
-                        var _lastResult = utils.getJson(data.result);
-                        if(_lastResult){
-                            this._lastResult = result = _lastResult;
-                        }
-                    }
-                }
+                msg.lastResponse && this.storeResult(msg.lastResponse);
             }
             var items = this.getItems(types.BLOCK_OUTLET.FINISH);
             if(items.length) {
@@ -42100,6 +42107,7 @@ define('xcf/model/Command',[
             return this._solving[id];
         },
         _resolve:function(string,settings){
+
             var scope = this.scope;
             var value = string || this._get('send');
             var parse = !(this.flags & types.CIFLAG.DONT_PARSE);
@@ -42125,11 +42133,24 @@ define('xcf/model/Command',[
                 }
             }
 
-            var res =  parse ? scope.parseExpression(value) : value;
+            //var res =  parse ? scope.parseExpression(value) : value;
+            //var res =  parse ? scope.parseExpression(value) : value;
+
+            var res = "";
+
+            var DriverModule = this.getDriverModule();
+            if(DriverModule && DriverModule.resolveBefore){
+                value = DriverModule.resolveBefore(this,value);
+            }
+
             if(/*(this.isScript(value) && parse!==false) || */isExpression && parse!==false){
                 res = scope.parseExpression(value,null,_overrides,null,null,null,override.args);
             }else{
                 res = '' + value;
+            }
+
+            if(DriverModule && DriverModule.resolveAfter){
+                res = DriverModule.resolveAfter(this,res);
             }
 
             return res;
@@ -42278,8 +42299,11 @@ define('xcf/model/Command',[
             }
 
         },
-        getDriverFields:function(fields){
-
+        /**
+         * Return the driver's code module
+         * @returns {module:xcf/driver/DriverBase|null}
+         */
+        getDriverModule:function(){
             var DriverModule = null;
             var instance = this.getInstance();
             if(instance){
@@ -42290,10 +42314,13 @@ define('xcf/model/Command',[
                     DriverModule  = driver.Module;
                 }
             }
-
+            return DriverModule;
+        },
+        getDriverFields:function(fields){
+            var DriverModule = this.getDriverModule();
             var result = [];
             if(DriverModule && DriverModule.getFields){
-                result = DriverModule.getFields(this,fields);
+                result = DriverModule.getFields(this,fields) || [];
             }
             return result;
         },
@@ -48900,8 +48927,8 @@ define('dojo/_base/xhr',[
 
 			if(result && has("dom-qsa2.1") && !result.querySelectorAll && has("dom-parser")){
 				// http://bugs.dojotoolkit.org/ticket/15631
-				// IE9 supports a CSS3 querySelectorAll implementation, but the DOM implementation 
-				// returned by IE9 xhr.responseXML does not. Manually create the XML DOM to gain 
+				// IE9 supports a CSS3 querySelectorAll implementation, but the DOM implementation
+				// returned by IE9 xhr.responseXML does not. Manually create the XML DOM to gain
 				// the fuller-featured implementation and avoid bugs caused by the inconsistency
 				result = new DOMParser().parseFromString(xhr.responseText, "application/xml");
 			}
@@ -49630,9 +49657,9 @@ define('dojo/request/util',[
 	exports.parseArgs = function parseArgs(url, options, skipData){
 		var data = options.data,
 			query = options.query;
-		
+
 		if(data && !skipData){
-			if(typeof data === 'object'){
+			if(typeof data === 'object' && !(data instanceof ArrayBuffer || data instanceof Blob )){
 				options.data = ioQuery.objectToQuery(data);
 			}
 		}
@@ -52317,9 +52344,14 @@ define('xcf/manager/DeviceManager',[
         getDevice:function(mixed){
             var result = mixed;
             if(_.isString(mixed)){                
-                var byId = this.getItemById(mixed);                
+                var byId = this.getItemById(mixed);
                 if(byId){
                     result = byId;
+                }else{
+                    var byPath = this.getItemByPath(mixed);
+                    if(byPath) {
+                        result = byPath;
+                    }
                 }
             }
             return result;
@@ -53408,11 +53440,12 @@ define('xcf/manager/DeviceManager',[
          * @returns {module:xcf/model/Device} The device
          */
         getItemById: function (itemId) {
+
             function search(store){
-                var data = store.data,
-                    device = _.find(data,{
-                        id: itemId
-                    });
+                var data = store.data;
+                var device = _.find(data,{
+                    id: itemId
+                });
                 if(!device){
                     return null;
                 }
@@ -53427,6 +53460,24 @@ define('xcf/manager/DeviceManager',[
                 }
             }
             _debug && console.error('Device Manager::getItemById : cant find device with id: ' + itemId);
+        },
+        /**
+         * Return device model item by device id
+         * @param itemId
+         * @returns {module:xcf/model/Device} The device
+         */
+        getItemByPath: function (path) {
+            function search(store){
+                return store.getSync(path);
+            }
+            for(var scope in this.stores){
+                var store = this.stores[scope];
+                var result = search(store);
+                if(result){
+                    return result;
+                }
+            }
+            _debug && console.error('Device Manager::getItemByPath : cant find device with path: ' + path);
         },
         /**
          *
@@ -59924,7 +59975,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             
             var device = this.getDevice(options.id);
 
-            if(!device){
+
+            if(!device || !_.isObject(device)){
                 console.error('invalid device');
                 return;
             }
@@ -60709,7 +60761,7 @@ define('xcf/manager/DriverManager',[
     'xide/mixins/ReloadMixin',
     'xide/mixins/EventedMixin',
     'xdojo/has!xcf-ui?./DriverManager_UI',
-    'xdojo/has!xcf-ui?xide/views/_CIDialog',
+    'xdojo/has!xcf-ui?xide/views/_CIDialog'
 ], function (dcl,declare, lang,json,types,fTypes,utils,
              BeanManager,Variable, DriverManager_Server,
              TreeMemory,ObservableStore,Trackable,
@@ -60725,547 +60777,8 @@ define('xcf/manager/DriverManager',[
     isServer = !has('host-browser'),
     runDrivers = has('runDrivers'),
     debugDeviceMessages = false;
-
     has('xcf-ui') && bases.push(DriverManager_UI);
-
-    function cloneDeviceTesting(){
-
-        var ctx = window.sctx;
-
-        var fileManager = ctx.getFileManager();
-        var deviceManager = ctx.getDeviceManager();
-
-        var user_devices = deviceManager.getStore('user_devices');
-
-        var testUserDevice = deviceManager.getDevice('4b51aec8-dea8-cc45-e0e7-05744db8b690');
-        var testUserDeviceMPD = deviceManager.getDevice('d17658b6-e5f5-ae5c-eff1-d7a2344ba17d');
-
-        var testSystemDevice = deviceManager.getDevice('2a34a9e0-2db1-7023-6bac-106845427c73');
-
-
-        var parentObject = testUserDevice.getParent();
-
-        var targetDevice = testSystemDevice;
-
-        var targetParentObject = targetDevice.getParent();
-
-
-
-        var deviceTreeView = ctx.getApplication().deviceTreeView;
-
-        deviceManager.cloneDevice = function (device, target) {
-
-            var dfd = new Deferred();
-            var self = this;
-            var ctx = this.ctx;
-            this.getFile(target).then(function (parentFolder) {
-
-                self.getFile(device).then(function (sourceDeviceFile) {
-
-                    if (sourceDeviceFile) {
-
-                        var srcParentFolder = sourceDeviceFile.getParent();
-
-                        if (srcParentFolder) {
-
-                            var sourceFileStore = srcParentFolder._store;
-                            var targetFileStore = parentFolder._store;
-
-
-                            //neighbour items
-                            var items = targetFileStore.getChildren(parentFolder);
-
-                            var newName = fileManager.getNewName(sourceDeviceFile, parentFolder.children);
-
-                            fileManager.getContent(sourceDeviceFile.mount, sourceDeviceFile.path, function (content) {
-                                // update meta data
-                                var cis = utils.getJson(content);
-                                var DEVICE_PROPERTY = types.DEVICE_PROPERTY;
-                                var meta = cis['inputs'];
-                                var idCI = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_ID);
-                                utils.setCIValueByField(idCI, 'value', utils.createUUID());
-                                var titleCI = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_TITLE);
-                                utils.setCIValueByField(titleCI, 'value', newName.replace('.meta.json', ''));
-
-                                //store it as new file
-                                var newPath = parentFolder.path + '/' + newName;
-                                fileManager.mkfile(parentFolder.mount, newPath).then(function () {
-
-                                    fileManager.setContent(parentFolder.mount, newPath, JSON.stringify(cis, null, 2), function () {
-
-
-                                        //create a temporary store and move it to the originating
-                                        self.ls(target.scope, true).then(function (store) {
-                                            var _device = store.query({
-                                                id: idCI.value
-                                            })[0];
-
-                                            if (_device) {
-
-
-                                                //remove it from temp store
-                                                store.removeSync(_device.path);
-
-                                                //remove it from target store (wtf?)
-                                                target._store.removeSync(_device.path);
-
-                                                //set to the target's store
-                                                _device._store = target._store;
-
-                                                //add it to the target store
-
-                                                _device  = target._store.addSync(_device);
-
-                                                //trigger some events
-                                                _device.refresh();
-
-                                                //trigger some events
-                                                /*
-                                                 device._store.emit('added', {
-                                                 target: _device
-                                                 });
-                                                 */
-
-                                                target._store.emit('added', {
-                                                    target: _device
-                                                });
-
-
-                                                var CIS = _device.user;
-
-                                                //complete CIS
-                                                _.each(CIS.inputs,function(ci) {
-                                                    ci.device = _device;
-                                                    ci.actionTarget = ctx.mainView.getToolbar();
-                                                    ci.ctx = ctx;
-                                                });
-
-
-                                                var driverId = self.getMetaValue(_device, types.DEVICE_PROPERTY.CF_DEVICE_DRIVER);
-                                                if (!driverId) {
-                                                    console.error('device has no driver id!');
-                                                }
-                                                var driver = self.ctx.getDriverManager().getItemById(driverId);
-
-                                                if (driver) {
-                                                    self.completeDevice(_device._store,_device, driver);
-                                                }
-                                                dfd.resolve(_device);
-                                            }
-                                        });
-                                    });
-                                });
-                            }, false);
-                        }
-                    } else {
-                        dfd.reject("Cant get file object for device");
-                    }
-                });
-            });
-            return dfd;
-        }
-
-        deviceTreeView.clipboardPaste = function (items,target) {
-            var dfd = new Deferred();
-            var isCut = this.currentCutSelection,
-                self = this,
-                defaultDfdArgs = {
-                    focus: true,
-                    append: false
-                };
-
-            items = items || isCut ? this.currentCutSelection : this.currentCopySelection;
-
-            var allDfds = [], newItems = [];
-            var head = new Deferred();
-            target = target || this.getSelectedItem() || {};
-
-            if(target.isDevice){
-                target = target.getParent();
-            }
-
-            if(!target || !target.isDir){
-                head.resolve();
-                return head;
-            }
-
-
-            items = items.filter(function(item){
-                return item.isDevice
-            });
-
-            if(!items || !items.length){
-                head.resolve();
-                return head;
-            }
-
-
-            for (var i = 0; i < items.length; i++) {
-                var sub = self.delegate.cloneDevice(items[i],target);
-                //collect new items
-                sub.then(function(newItem){
-                    newItems.push(newItem);
-                });
-                allDfds.push(sub);
-            }
-            all(allDfds).then(function(sub){
-                defaultDfdArgs.select = newItems;
-                head.resolve(defaultDfdArgs);
-            });
-            return head;
-        };
-
-        //console.error(deviceTreeView);
-        //deviceManager.cloneDevice(testUserDevice, targetParentObject);
-    }
-
-    var _testDriverModule = false;
-    if (_testDriverModule) {
-
-        console.clear();
-
-        var ctx = window.sctx;
-        if(!ctx){
-            return;
-        }
-
-
-
-        var driverManager = ctx.getDriverManager();
-        if(!driverManager){
-            return;
-        }
-
-        var testUserDriver = driverManager.getDriverById('9db866a4-bb3e-137b-ae23-793b729c44f8');
-
-
-
-
-        driverManager.loadDriverModule=function(driver){
-
-
-            console.log('load driver module '+driver.scope,driver);
-
-            var baseDriverPrefix = this.driverScopes['system_drivers'],
-                baseDriverRequire = baseDriverPrefix + 'DriverBase';
-
-            var urlBase = require.toUrl(this.driverScopes['system_drivers']);
-
-            var url = decodeURIComponent(urlBase) + "/DriverBase";
-
-            var self = this;
-
-            var ctx = self.ctx,
-                dfd = new Deferred();
-
-            require([baseDriverRequire], function (baseDriver) {
-                //baseDriver.prototype.declaredClass = baseDriverRequire;
-                var driverPrefix = self.driverScopes[driver.scope],
-                    isRequireJS = !require.cache;
-
-                if(isRequireJS){
-                    require({
-                        config:{
-                            urlArgs:null
-                        }
-                    });
-                }else{
-                    require({
-                        cacheBust: null
-                    });
-                }
-
-                var packageUrl = require.toUrl(driverPrefix);
-                if(isRequireJS){
-                    packageUrl = packageUrl.replace('/.js','/');
-                }
-
-
-                var driverMeta = driver['user'];
-                var script = utils.getCIInputValueByName(driverMeta, types.DRIVER_PROPERTY.CF_DRIVER_CLASS);
-                var requirePath = decodeURIComponent(packageUrl) + script;
-                requirePath = requirePath.replace('', '').trim();
-                try {
-                    require.undef(requirePath);
-                    require([requirePath], function (driverProtoInstance) {
-                        var baseClass = baseDriver,
-                            baseClasses = [baseClass];
-
-                        var driverProto = dcl([baseClass, EventedMixin.dcl, ReloadMixin.dcl, driverProtoInstance], {});
-                        dfd.resolve(driverProto);
-                    });
-                }catch(e){
-                    
-                }
-
-            });
-            return dfd;
-        }
-
-        driverManager.loadDriverModule(testUserDriver);
-
-
-    }
-
-    var _testDriver = false;
-    if (_testDriver) {
-
-        console.clear();
-
-        var ctx = window.sctx;
-
-        var fileManager = ctx.getFileManager();
-        var deviceManager = ctx.getDeviceManager();
-        var driverManager = ctx.getDriverManager();
-
-        var user_devices = deviceManager.getStore('user_devices');
-        var user_drivers = driverManager.getStore('user_drivers');
-
-        var testUserDriver = driverManager.getDriverById('9db866a4-bb3e-137b-ae23-793b729c44f8');
-        var testSystemDriver = driverManager.getDriverById('52f4b5dd-889d-a5c9-0221-edaa0dce1a6a');
-
-        var parentObject = testUserDriver.getParent();
-        var targetDriver = testSystemDriver;
-        var targetParentObject = targetDriver.getParent();
-
-        var deviceTreeView = ctx.getApplication().deviceTreeView;
-        var driverTreeView = ctx.getApplication().driverTreeView;
-
-
-        //console.log(driverTreeView);
-
-        driverManager.getFile=function(driver){
-            var dfd = new Deferred();
-            var ctx = this.ctx;
-            var fileManager = ctx.getFileManager();
-            var fileStore = fileManager.getStore(driver.scope);
-            fileStore.initRoot().then(function(){
-                fileStore._loadPath('.',true).then(function(){
-                    fileStore.getItem(driver.path,true).then(function (item) {
-                        dfd.resolve(item);
-                    });
-                });
-            });
-            return dfd;
-        };
-
-
-        driverManager._cloneDriver = function (driver, target) {
-
-            var dfd = new Deferred();
-            var self = this;
-            var ctx = this.ctx;
-            var fileManager = ctx.getFileManager();
-
-            this.getFile(target).then(function (parentFolder) {
-
-                self.getFile(driver).then(function (sourceDriverFile) {
-                    if (sourceDriverFile) {
-                        var srcParentFolder = sourceDriverFile.getParent();
-                        if (srcParentFolder) {
-
-                            var sourceFileStore = srcParentFolder._store;
-                            var targetFileStore = parentFolder._store;
-
-                            //neighbour items
-                            var items = targetFileStore.getChildren(parentFolder);
-
-                            var newName = fileManager.getNewName(sourceDriverFile, parentFolder.children);
-                            var newName2 = newName.replace('.meta.json', '');
-                            var cis = [
-                                utils.createCI('Title', 13, newName2, {
-                                    group: 'Common'
-                                })
-                            ];
-
-
-                            function proceed(newName){
-                                fileManager.getContent(sourceDriverFile.mount, sourceDriverFile.path, function (content) {
-                                    // update meta data
-                                    var cis = utils.getJson(content);
-                                    var DRIVER_PROPERTY = types.DRIVER_PROPERTY;
-                                    var meta = cis['inputs'];
-
-                                    var idCI = utils.getCIByChainAndName(meta, 0, DRIVER_PROPERTY.CF_DRIVER_ID);
-                                    utils.setCIValueByField(idCI, 'value', utils.createUUID());
-                                    var titleCI = utils.getCIByChainAndName(meta, 0, DRIVER_PROPERTY.CF_DRIVER_NAME);
-                                    utils.setCIValueByField(titleCI, 'value', newName);
-
-                                    var driverClass = utils.getCIByChainAndName(meta, 0, DRIVER_PROPERTY.CF_DRIVER_CLASS);
-                                    utils.setCIValueByField(driverClass, 'value',parentFolder.path + '/' + newName + '.js');
-
-                                    //store it as new file
-                                    var newPath = parentFolder.path + '/' + newName + '.meta.json';
-
-                                    var sourceScriptPath = sourceDriverFile.path.replace('.meta.json','.js');
-                                    var targetScriptPath = parentFolder.path + '/' + newName + '.js';
-                                    
-                                    var sourceBloxFilePath = sourceDriverFile.path.replace('.meta.json','.xblox');
-                                    var targetBloxFilePath = parentFolder.path + '/' + newName + '.xblox';
-                                    var targetScriptFilePath = parentFolder.path + '/' + newName + '.js';
-
-                                    //xblox
-                                    fileManager.getContent(sourceDriverFile.mount, sourceBloxFilePath, function (content) {
-                                        fileManager.mkfile(parentFolder.mount, targetBloxFilePath).then(function () {
-                                            fileManager.setContent(parentFolder.mount, targetBloxFilePath, content, function () {
-
-                                                //script
-                                                fileManager.getContent(sourceDriverFile.mount, sourceScriptPath, function (content) {
-                                                    fileManager.mkfile(parentFolder.mount, targetScriptPath).then(function () {
-                                                        fileManager.setContent(parentFolder.mount, targetScriptPath, content, function () {
-                                                        
-                                                            //meta
-                                                            fileManager.mkfile(parentFolder.mount, newPath).then(function () {
-                                                                fileManager.setContent(parentFolder.mount, newPath, JSON.stringify(cis, null, 2), function () {
-
-
-
-                                                                    //create a temporary store and move it to the originating
-                                                                    self.ls(target.scope, false).then(function (store) {
-
-                                                                        if(!store){
-                                                                            return;
-                                                                        }
-
-                                                                        var _driver = store.query({
-                                                                            id: idCI.value
-                                                                        })[0];
-
-                                                                        if (_driver) {
-
-
-                                                                            
-                                                                            //remove it from temp store
-                                                                            store.removeSync(_driver.path);
-
-                                                                            //remove it from target store (wtf?)
-                                                                            target._store.removeSync(_driver.path);
-
-                                                                            //set to the target's store
-                                                                            _driver._store = target._store;
-
-                                                                            //add it to the target store
-
-                                                                            _driver  = target._store.addSync(_driver);
-
-
-                                                                            //trigger some events
-                                                                            _driver.refresh();
-
-                                                                            target._store.emit('added', {
-                                                                                target: _driver
-                                                                            });
-
-
-
-                                                                            store = target._store;
-
-                                                                            self.onDriverCreated(store);
-
-                                                                            self.completeDriver(store, _driver, _driver);
-
-                                                                            self.publish(types.EVENTS.ON_STORE_CHANGED, {
-                                                                                owner: self,
-                                                                                store: store,
-                                                                                item: _driver
-                                                                            });
-                                                                            
-                                                                            dfd.resolve(_driver);
-                                                                        }
-                                                                    });
-                                                                });
-                                                            });
-                                                        });
-                                                    });
-                                                });
-                                            });
-                                        });
-                                    });
-                                    
-                                }, false);
-                            }
-
-                            var useDialog = true;
-                            if(useDialog) {
-                                var actionDialog = new _CIDialog({
-                                    title: 'New Name',
-                                    resizable: true,
-                                    onOk: function (data) {
-                                        var options = utils.toOptions(data);
-                                        proceed(utils.getInputCIByName(cis, "Title").value)
-                                    },
-                                    delegate: {},
-                                    cis: cis
-                                });
-                                actionDialog.show();
-                            }else{
-                                proceed(newName);
-                            }
-                        }
-                    } else {
-                        dfd.reject("Cant get file object for device");
-                    }
-                });
-            });
-            return dfd;
-        }
-
-        driverTreeView.clipboardPaste = function (items,target) {
-            var dfd = new Deferred();
-            var isCut = this.currentCutSelection,
-                self = this,
-                defaultDfdArgs = {
-                    focus: true,
-                    append: false
-                };
-
-            items = items || isCut ? this.currentCutSelection : this.currentCopySelection;
-
-            var allDfds = [], newItems = [];
-            var head = new Deferred();
-            target = target || this.getSelectedItem() || {};
-
-            if(target.isDevice){
-                target = target.getParent();
-            }
-
-            if(!target || !target.isDir){
-                head.resolve();
-                return head;
-            }
-
-
-            items = items.filter(function(item){
-                return item.isDevice
-            });
-
-            if(!items || !items.length){
-                head.resolve();
-                return head;
-            }
-
-
-            for (var i = 0; i < items.length; i++) {
-                var sub = self.delegate.cloneDevice(items[i],target);
-                //collect new items
-                sub.then(function(newItem){
-                    newItems.push(newItem);
-                });
-                allDfds.push(sub);
-            }
-            all(allDfds).then(function(sub){
-                defaultDfdArgs.select = newItems;
-                head.resolve(defaultDfdArgs);
-            });
-            return head;
-        };
-
-
-        //console.error(deviceTreeView);
-        //driverManager.cloneDriver(testUserDriver, targetParentObject);
-    }
-
-
+    
     return dcl(bases, {
         loadDriverModule:function(driver){
             var baseDriverPrefix = this.driverScopes['system_drivers'],
@@ -61304,10 +60817,8 @@ define('xcf/manager/DriverManager',[
                 script = script.replace('./','');
                 script = script.replace('.js','');
                 script = driver.scope + '/' + script;
-                //console.log('require : '+script);                
-                var requirePath = decodeURIComponent(packageUrl) + script;
-
-                requirePath = requirePath.replace('', '').trim();
+                //var requirePath = decodeURIComponent(packageUrl) + script;
+                //requirePath = requirePath.replace('', '').trim();
                 script = script.replace('', '').trim();
                 try {
                     _require.undef(script);
@@ -65546,11 +65057,7 @@ var connect = {
 		//		the return value of the dojo.connect call that created the connection.
 
 		if(handle){
-            if(handle.remove) {
-                handle.remove();
-            }else{
-                console.error('have no remove!');
-            }
+			handle.remove();
 		}
 	},
 
@@ -66275,10 +65782,6 @@ define('dojo/dom-geometry',["./sniff", "./_base/window","./dom", "./dom-style"],
 		// TABLE and BUTTON (and INPUT type=button) are always border-box by default.
 		// If you have assigned a different box to either one via CSS then
 		// box functions will break.
-
-        if(!node){
-            debugger;
-        }
 
 		return geom.boxModel == "border-box" || node.tagName.toLowerCase() == "table" || isButtonTag(node); // boolean
 	}
@@ -67257,7 +66760,7 @@ define('dojo/dom-class',["./_base/lang", "./_base/array", "./dom"], function(lan
 			//		A string class name to look for.
 			// example:
 			//		Do something if a node with id="someNode" has class="aSillyClassName" present
-			//	|	if(dojo.hasClass("someNode","aSillyClassName")){ ... }
+			//	|	if(domClass.contains("someNode","aSillyClassName")){ ... }
 
 			return ((" " + dom.byId(node)[className] + " ").indexOf(" " + classStr + " ") >= 0); // Boolean
 		},
@@ -70709,19 +70212,17 @@ define('xfile/manager/FileManager',[
     'xide/encoding/SHA1',
     'xide/manager/RPCService',
     'dojo/Deferred',
-    'dojo/has',
+    'xdojo/has',
     'xfile/manager/FileManagerActions',
     'require',
-    'xfile/factory/Store'
-], function (dcl,lang, ServerActionBase, types, fTypes, utils, SHA1, RPCService, Deferred,has,FileManagerActions,require,StoreFactory) {
-
+    'xfile/factory/Store',
+    'xdojo/has!electron?xfile/manager/Electron'
+], function (dcl,lang, ServerActionBase, types, fTypes, utils, SHA1, RPCService, Deferred,has,FileManagerActions,require,StoreFactory,Electron) {
     var bases = [ServerActionBase, FileManagerActions];
-    if(has('electronx')){
-        //console.error('add electron');
-        ///bases.push(Electron);
+    if(has('electronx') && Electron){
+        bases.push(Electron);
     };
-
-    var debug = true;
+    var debug = false;
     /**
      * @class module:xfile.manager.FileManager
      * @extends module:xide.manager.ServerActionBase
@@ -71163,14 +70664,12 @@ define('xfile/manager/FileManager',[
             }
         },
         getContent: function (mount, path, readyCB, emit) {
-            /*
             if(this.getContentE){
-
-                debug && console.log('use electron');
-                return this.getContentE.apply(this,arguments);
+                var res = this.getContentE.apply(this,arguments);
+                if(res){
+                    return res;
+                }
             }
-            */
-
             if(has('php')) {
                 var _path = this.serviceObject.base64_encode(utils.buildPath(mount, path, true));
                 return this.callMethod(types.OPERATION.GET_CONTENT, [_path, false, false], readyCB, false);
@@ -71191,7 +70690,7 @@ define('xfile/manager/FileManager',[
             }
         },
         setContent: function (mount, path, content, readyCB) {
-
+            
             this.publish(types.EVENTS.ON_CHANGED_CONTENT, {
                 'mount': mount,
                 'path': path,
@@ -71200,11 +70699,18 @@ define('xfile/manager/FileManager',[
 
             this.publish(types.EVENTS.ON_STATUS_MESSAGE, {
                 text: "Did save file : " + mount + '://' + path
-            })
+            });
+
+            if(this.setContentE){
+                var res = this.setContentE.apply(this,arguments);
+                if(res){
+                    return res;
+                }
+            }
+            
             return this.callMethod(types.OPERATION.SET_CONTENT, [mount, path, content], readyCB, true);
         },
         onMessages: function (res) {
-
             var events = utils.getJson(res.events);
             if (events && lang.isArray(events)) {
                 for (var i = 0; i < events.length; i++) {
@@ -71227,7 +70733,6 @@ define('xfile/manager/FileManager',[
         //
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         callMethodEx: function (serverClassIn, method, args, readyCB, omitError) {
-
             /***
              * Check we the RPC method is in the SMD
              */
@@ -71288,7 +70793,6 @@ define('xfile/manager/FileManager',[
 
         },
         callMethod: function (method, args, readyCB, omitError) {
-
             /***
              * Check we the RPC method is in the SMD
              */
@@ -71360,8 +70864,6 @@ define('xfile/manager/FileManager',[
                 thiz.onError(e);
                 logError(e,'error ');
             }
-
-
         },
         _initService: function () {
             this.filesToUpload = [];
@@ -71372,6 +70874,156 @@ define('xfile/manager/FileManager',[
         }
     });
 });;
+define('xfile/manager/Electron',[
+    'dcl/dcl',
+    'xdojo/has',
+    'xide/utils',
+    'dojo/Deferred'
+],function(dcl,has,utils,Deferred){
+
+    var electron = has('electronx');
+    var Module =  dcl(null,{
+        declaredClass:"xfile.manager.Electron",
+        require:function(){
+            return window['eRequire'].apply(null,arguments);
+        },
+        srequire:function(){
+            return this.require('electron').remote.require.apply(null,arguments);
+        },
+        remote:function(){
+            var _require = window['eRequire'];
+            var remote = _require('electron').remote;
+            return remote;
+        },
+        getContentE:function(_mount,_path,readyCB,emit){
+
+            var thiz = this,
+                item = {
+                    path:_path,
+                    mount:_mount
+                },
+                ctx = thiz.ctx || sctx,
+                resourceManager = ctx.getResourceManager(),
+                vfsConfig = resourceManager.getVariable('VFS_CONFIG') || {},
+                dfd = new Deferred();
+
+            var os = this.require('os');
+            var shell = this.require('electron').shell;
+            var path = this.require("path");
+            var fs = this.require("fs");
+
+            var mount = item.mount.replace('/','');
+            if(!vfsConfig[mount]){
+                console.error('open in os failed: have no VFS config for ' + mount);
+                return;
+            }
+
+            mount = vfsConfig[mount];
+            
+            if(!mount){
+                console.error('cant resolve file ' + mount + '/'+ _path);
+                return false;
+            }
+            
+            mount = utils.replaceAll(' ','',mount);
+
+            var itemPath = item.path.replace('./','/');
+            itemPath = utils.replaceAll('/',path.sep,itemPath);
+
+            var realPath = path.resolve(mount + path.sep + itemPath);//"/PMaster/projects/x4mm/build/electron-template" in debug version;
+
+            realPath = utils.replaceAll(' ','',realPath);
+
+            if(fs.existsSync(realPath)){
+                
+                var size = fs.statSync(realPath).size,
+                    buf = new Buffer(size),
+                    fd = fs.openSync(realPath, 'r');
+                if (!size)
+                    return "";
+
+                fs.readSync(fd, buf, 0, size, 0);
+                fs.closeSync(fd);
+                var res = buf.toString();
+                dfd.resolve(res);
+                if(readyCB){
+                    readyCB(res);
+                }
+
+            }else{
+                console.error('path ' + realPath + ' doesnt exists');
+                return false;
+            }
+            return dfd;
+        },
+        __setContent: function (mount, path, content, readyCB) {
+            this.publish(types.EVENTS.ON_CHANGED_CONTENT, {
+                'mount': mount,
+                'path': path,
+                'content': content
+            });
+
+            this.publish(types.EVENTS.ON_STATUS_MESSAGE, {
+                text: "Did save file : " + mount + '://' + path
+            })
+            return this.callMethod(types.OPERATION.SET_CONTENT, [mount, path, content], readyCB, true);
+        },
+        setContentE:function(_mount,_path,content,readyCB){
+
+            var thiz = this,
+                item = {
+                    path:_path,
+                    mount:_mount
+                },
+                ctx = thiz.ctx || sctx,
+                resourceManager = ctx.getResourceManager(),
+                vfsConfig = resourceManager.getVariable('VFS_CONFIG') || {},
+                dfd = new Deferred();
+
+            var os = this.require('os');
+            var shell = this.require('electron').shell;
+            var path = this.require("path");
+            var fs = this.require("fs");
+            var mount = item.mount.replace('/','');
+            if(!vfsConfig[mount]){
+                console.error('open in os failed: have no VFS config for ' + mount);
+                return;
+            }
+            mount = vfsConfig[mount];
+            if(!mount){
+                console.error('cant resolve file ' + mount + '/'+ _path);
+                return false;
+            }
+            mount = utils.replaceAll(' ','',mount);
+            var itemPath = item.path.replace('./','/');
+            itemPath = utils.replaceAll('/',path.sep,itemPath);
+            var realPath = path.resolve(mount + path.sep + itemPath);
+            realPath = utils.replaceAll(' ','',realPath);
+            if(fs.existsSync(realPath)){
+                try {
+                    fs.writeFileSync(realPath, content);
+
+                    if(readyCB){
+                        readyCB();
+                    }
+                    dfd.resolve();
+
+                }catch(e){
+                    console.error('error saving file ' + realPath);
+                    return false;
+                }
+            }else{
+                console.error('path ' + realPath + ' doesnt exists');
+                return false;
+            }
+            return dfd;
+        }
+    });
+
+    return Module;
+});
+
+;
 define('xfile/factory/Store',[
     'xide/types',
     'xide/factory',
@@ -73291,17 +72943,13 @@ define('xide/manager/Context',[
                                 modulePath = 'user_drivers/' + libPath;
                             }
                         }
-
-
-
-
                         modulePath = utils.replaceAll('.', '/', modulePath);
-                        setTimeout(function () {
-                            if(!isServer) {
-                                debugModuleReload && console.log('reloading module '+modulePath);
+                        if(modulePath.indexOf('/build/')===-1 && !isServer) {
+                            setTimeout(function () {
+                                debugModuleReload && console.log('reloading module ' + modulePath);
                                 thiz._reloadModule(modulePath, true);
-                            }
-                        }, 400);
+                            }, 400);
+                        }
                     }
                 }
             }
@@ -81702,18 +81350,15 @@ define('dojo/has',["require", "module"], function(require, module){
 		}
 	};
 
-	
-	
 	return has;
 });
 ;
 define('dojo/Deferred',[
-	"./has",
-	"./_base/lang",
 	"./errors/CancelError",
-	"./promise/Promise",
-	"./has!config-deferredInstrumentation?./promise/instrumentation"
-], function(has, lang, CancelError, Promise, instrumentation){
+	"./promise/Promise"
+], function(CancelError, Promise, instrumentation){
+	//,
+	//"./has!config-deferredInstrumentation?./promise/instrumentation"
 	"use strict";
 
 	// module:
@@ -81727,12 +81372,6 @@ define('dojo/Deferred',[
 	var freezeObject = Object.freeze || function(){};
 
 	var signalWaiting = function(waiting, type, result, rejection, deferred){
-		if(has("config-deferredInstrumentation")){
-			if(type === REJECTED && Deferred.instrumentRejected && waiting.length === 0){
-				Deferred.instrumentRejected(result, false, rejection, deferred);
-			}
-		}
-
 		for(var i = 0; i < waiting.length; i++){
 			signalListener(waiting[i], type, result, rejection);
 		}
@@ -81767,11 +81406,6 @@ define('dojo/Deferred',[
 			signalDeferred(deferred, type, result);
 		}
 
-		if(has("config-deferredInstrumentation")){
-			if(type === REJECTED && Deferred.instrumentRejected){
-				Deferred.instrumentRejected(result, !!func, rejection, deferred.promise);
-			}
-		}
 	};
 
 	var makeDeferredSignaler = function(deferred, type){
@@ -81819,11 +81453,6 @@ define('dojo/Deferred',[
 		var fulfilled, result, rejection;
 		var canceled = false;
 		var waiting = [];
-
-		if(has("config-deferredInstrumentation") && Error.captureStackTrace){
-			Error.captureStackTrace(deferred, Deferred);
-			Error.captureStackTrace(promise, Deferred);
-		}
 
 		this.isResolved = promise.isResolved = function(){
 			// summary:
@@ -81922,9 +81551,6 @@ define('dojo/Deferred',[
 			//		Returns the original promise for the deferred.
 
 			if(!fulfilled){
-				if(has("config-deferredInstrumentation") && Error.captureStackTrace){
-					Error.captureStackTrace(rejection = {}, reject);
-				}
 				signalWaiting(waiting, fulfilled = REJECTED, result = error, rejection, deferred);
 				waiting = null;
 				return promise;
@@ -82013,18 +81639,12 @@ define('dojo/Deferred',[
 
 		freezeObject(promise);
 	};
-
 	Deferred.prototype.toString = function(){
 		// returns: String
 		//		Returns `[object Deferred]`.
 
 		return "[object Deferred]";
 	};
-
-	if(instrumentation){
-		instrumentation(Deferred);
-	}
-
 	return Deferred;
 });
 ;
@@ -83221,7 +82841,6 @@ define('dojo/_base/lang',["./kernel", "../has", "../sniff"], function(dojo, has)
 				// the (!(name in empty) || empty[name] !== s) condition avoids copying properties in "source"
 				// inherited from Object.prototype.	 For example, if dest has a custom toString() method,
 				// don't overwrite it with the toString() method that source inherited from Object.prototype
-				name == 'keyLocation' && (name = 'location');
 				s = source[name];
 				if(!(name in dest) || (dest[name] !== s && (!(name in empty) || empty[name] !== s))){
 					dest[name] = copyFunc ? copyFunc(s) : s;
@@ -83844,7 +83463,7 @@ define('dojo/_base/kernel',["../has", "./config", "require", "module"], function
 		//		- flag: String: Descriptor flag. If total version is "1.2.0beta1", will be "beta1"
 		//		- revision: Number: The Git rev from which dojo was pulled
 
-		major: 1, minor: 12, patch: 0, flag: "-pre",
+		major: 1, minor: 11, patch: 3, flag: "-pre",
 		revision: rev ? rev[0] : NaN,
 		toString: function(){
 			var v = dojo.version;
@@ -83908,7 +83527,10 @@ define('dojo/_base/kernel',["../has", "./config", "require", "module"], function
 
 	if(has("dojo-guarantee-console")){
 		// IE 9 bug: https://bugs.dojotoolkit.org/ticket/18197
-		has.add("console-as-object", Function.prototype.bind && console && typeof console.log === "object");
+		has.add("console-as-object", function () {
+			return Function.prototype.bind && console && typeof console.log === "object";
+		});
+
 		typeof console != "undefined" || (console = {});  // intentional assignment
 		//	Be careful to leave 'log' always at the end
 		var cn = [
