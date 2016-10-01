@@ -41880,8 +41880,9 @@ define('xcf/model/Command',[
     'xide/types',
     'dojo/Deferred',
     'module',
-    'require'
-], function(dcl,Block,Contains,utils,types,Deferred,module,require){
+    'require',
+    'xblox/types/Types'
+], function(dcl,Block,Contains,utils,types,Deferred,module,require,BTypes){
     var debug = false;
     /**
      * The command model. A 'command' consists out of a few parameters and a series of
@@ -42495,6 +42496,1165 @@ define('xcf/model/Command',[
             delete this._runningDfd;
         }
     });
+});
+;
+define('xblox/types/Types',[
+    'xide/types/Types',
+    'dojo/_base/lang',
+    'xide/utils'
+],function(types,lang,utils){
+
+        types.BLOCK_MODE = {
+            NORMAL:0,
+            UPDATE_WIDGET_PROPERTY:1
+        };
+
+        types.BLOCK_OUTLET = {
+            NONE:0x00000000,
+            PROGRESS:0x00000001,
+            ERROR:0x00000002,
+            PAUSED:0x00000004,
+            FINISH:0x00000008,
+            STOPPED:0x00000010
+        };
+
+        utils.mixin(types.EVENTS,{
+            ON_RUN_BLOCK:                   'onRunBlock',
+            ON_RUN_BLOCK_FAILED:            'onRunBlockFailed',
+            ON_RUN_BLOCK_SUCCESS:           'onRunBlockSuccess',
+            ON_BLOCK_SELECTED:              'onItemSelected',
+            ON_BLOCK_UNSELECTED:            'onBlockUnSelected',
+            ON_BLOCK_EXPRESSION_FAILED:     'onExpressionFailed',
+            ON_BUILD_BLOCK_INFO_LIST:       'onBuildBlockInfoList',
+            ON_BUILD_BLOCK_INFO_LIST_END:   'onBuildBlockInfoListEnd',
+            ON_BLOCK_PROPERTY_CHANGED:      'onBlockPropertyChanged',
+            ON_SCOPE_CREATED:               'onScopeCreated',
+            ON_VARIABLE_CHANGED:            'onVariableChanged',
+            ON_CREATE_VARIABLE_CI:          'onCreateVariableCI'
+        });
+
+
+        types.BlockType = {
+
+            AssignmentExpression: 'AssignmentExpression',
+            ArrayExpression: 'ArrayExpression',
+            BlockStatement: 'BlockStatement',
+            BinaryExpression: 'BinaryExpression',
+            BreakStatement: 'BreakStatement',
+            CallExpression: 'CallExpression',
+            CatchClause: 'CatchClause',
+            ConditionalExpression: 'ConditionalExpression',
+            ContinueStatement: 'ContinueStatement',
+            DoWhileStatement: 'DoWhileStatement',
+            DebuggerStatement: 'DebuggerStatement',
+            EmptyStatement: 'EmptyStatement',
+            ExpressionStatement: 'ExpressionStatement',
+            ForStatement: 'ForStatement',
+            ForInStatement: 'ForInStatement',
+            FunctionDeclaration: 'FunctionDeclaration',
+            FunctionExpression: 'FunctionExpression',
+            Identifier: 'Identifier',
+            IfStatement: 'IfStatement',
+            Literal: 'Literal',
+            LabeledStatement: 'LabeledStatement',
+            LogicalExpression: 'LogicalExpression',
+            MemberExpression: 'MemberExpression',
+            NewExpression: 'NewExpression',
+            ObjectExpression: 'ObjectExpression',
+            Program: 'Program',
+            Property: 'Property',
+            ReturnStatement: 'ReturnStatement',
+            SequenceExpression: 'SequenceExpression',
+            SwitchStatement: 'SwitchStatement',
+            SwitchCase: 'SwitchCase',
+            ThisExpression: 'ThisExpression',
+            ThrowStatement: 'ThrowStatement',
+            TryStatement: 'TryStatement',
+            UnaryExpression: 'UnaryExpression',
+            UpdateExpression: 'UpdateExpression',
+            VariableDeclaration: 'VariableDeclaration',
+            VariableDeclarator: 'VariableDeclarator',
+            WhileStatement: 'WhileStatement',
+            WithStatement: 'WithStatement'
+        };
+
+        return types;
+});;
+/** @module xide/types
+ *  @description All the package's constants and enums in C style structures.
+ */
+define('xide/types/Types',[
+    'dojo/_base/lang',
+    'xide/types',
+    'dojo/_base/json',
+    'dojo/_base/kernel'
+], function (lang, types, json, dojo) {
+    /**
+     * @TODO:
+     * - apply xide/registry for types
+     * - move mime handling to xfile
+     * - remove ui types
+     * - remove all other things which are part of ui or server only
+     */
+    /**
+     * Custom CI Types, see ECITYPE enumeration. Each enum is mapped to a widget.
+     */
+    if (types['customTypes'] == null) {
+        types['customTypes'] = {};
+    }
+    /**
+     * ECTYPE_ENUM is mapped to and label-value option array
+     */
+    if (types['customEnumerations'] == null) {
+        types['customEnumerations'] = {};
+    }
+    /**
+     * The actual mapping of custom types to widget proto classes
+     */
+    if (types['widgetMappings'] == null) {
+        types['widgetMappings'] = {};
+    }
+    /**
+     * Mixes in new mime icons per ECITYPE & file extensions. Rendered by FontAwesome
+     */
+    if (types['customMimeIcons'] == null) {
+        types['customMimeIcons'] = {};
+    }
+
+    /**
+     * Public ECI_TYPE registry getter
+     * @param type
+     * @returns {*}
+     */
+    types.resolveType = function (type) {
+        if (types['customTypes'][type]) {
+            return types['customTypes'][type];
+        }
+        return null;
+    };
+    /**
+     * Public ECI_TYPE registry setter
+     * @param type
+     * @param map
+     */
+    types.registerType = function (type, map) {
+        types['customTypes'][type] = map;
+    };
+    /**
+     * Public widget-type registry setter
+     * @param type
+     * @param map
+     */
+    types.registerWidgetMapping = function (type, map) {
+        types['widgetMappings'][type] = map;
+    };
+    /**
+     * Public custom enum registry setter
+     * @param type
+     * @param map
+     */
+    types.registerEnumeration = function (type, map) {
+        types['customEnumerations'][type] = map;
+    };
+    /**
+     * Public custom enumeration registry getter
+     * @param type
+     */
+    types.resolveEnumeration = function (type) {
+        if (types['customEnumerations'][type]) {
+            return types['customEnumerations'][type];
+        }
+        return null;
+    };
+    /**
+     * Public type-widget mapping registry setter
+     * @param type
+     */
+    types.resolveWidgetMapping = function (type) {
+        if (types['widgetMappings'][type]) {
+            return types['widgetMappings'][type];
+        }
+        return null;
+    };
+    types.GRID_FEATURE = {
+        KEYBOARD_NAVIGATION: 'KEYBOARD_NAVIGATION',
+        KEYBOARD_SELECT: 'KEYBOARD_SELECT',
+        SELECTION: 'SELECTION',
+        ACTIONS: 'ACTIONS',
+        CONTEXT_MENU: 'CONTEXT_MENU'
+    };
+    types.VIEW_FEATURE = {
+        KEYBOARD_NAVIGATION: 'KEYBOARD_NAVIGATION',
+        KEYBOARD_SELECT: 'KEYBOARD_SELECT',
+        SELECTION: 'SELECTION',
+        ACTIONS: 'ACTIONS',
+        CONTEXT_MENU: 'CONTEXT_MENU'
+    };
+    types.KEYBOARD_PROFILE = {
+        DEFAULT: {
+            prevent_default: true,
+            prevent_repeat: false
+        },
+        PASS_THROUGH: {
+            prevent_default: false,
+            prevent_repeat: false
+        },
+        SEQUENCE: {
+            prevent_default: true,
+            is_sequence: true,
+            prevent_repeat: true
+        }
+    };
+    /////////////////////////////////////////////////////////////////////////////
+    //
+    // CORE TYPES
+    //
+    /////////////////////////////////////////////////////////////////////////////
+    /**
+     * A 'Configurable Information's ("CI") processing state during post or pre-processing.
+     *
+     * @enum {int} module:xide/types/CI_STATE
+     * @memberOf module:xide/types
+     */
+    types.CI_STATE = {
+        /**
+         * Nothing done, could also mean there is nothing to do all
+         * @constant
+         * @type int
+         */
+        NONE: 0x00000000,
+        /**
+         * In pending state. At that time the compiler has accepted additional work and ci flag processing is queued
+         * but not scheduled yet.
+         * @constant
+         * @type int
+         */
+        PENDING: 0x00000001,
+        /**
+         * The processing state.
+         * @constant
+         * @type int
+         */
+        PROCESSING: 0x00000002,
+        /**
+         * The CI has been processed but it failed.
+         * @constant
+         * @type int
+         */
+        FAILED: 0x00000004,
+        /**
+         * The CI was successfully processed.
+         * @constant
+         * @type int
+         */
+        SUCCESSED: 0x00000008,
+        /**
+         * The CI has been processed.
+         * @constant
+         * @type int
+         */
+        PROCESSED: 0x00000010,
+        /**
+         * The CI left the post/pre processor entirly but has not been accepted by the originating source.
+         * This state can happen when the source became invalid and so its sort of orphan.
+         * @constant
+         * @type int
+         */
+        DEQUEUED: 0x00000020,
+        /**
+         * The CI fully resolved and no references except by the source are around.
+         * @constant
+         * @type int
+         */
+        SOLVED: 0x00000040,
+        /**
+         * Flag to mark the core's end of this bitmask, from here its user land
+         * @constant
+         * @type int
+         */
+        END: 0x00000080
+    }
+    /**
+     * A 'Configurable Information's ("CI") type flags for post and pre-processing a value.
+     * This is user configurable and needs to stay in the in integer limit.
+     *
+     * @TODO: 64 bit integers?
+     *
+     * @enum {string} module:xide/types/CIFlag
+     * @memberOf module:xide/types
+     */
+
+    types.CIFLAG = {
+        /**
+         * Instruct for no additional extra processing
+         * @constant
+         * @type int
+         */
+        NONE: 0x00000000,
+        /**
+         * Will instruct the pre/post processor to base-64 decode or encode
+         * @constant
+         * @type int
+         */
+        BASE_64: 0x00000001,
+        /**
+         * Post/Pre process the value with a user function
+         * @constant
+         * @type int
+         */
+        USE_FUNCTION: 0x00000002,
+        /**
+         * Replace variables with local scope's variables during the post/pre process
+         * @constant
+         * @type int
+         */
+        REPLACE_VARIABLES: 0x00000004,
+        /**
+         * Replace variables with local scope's variables during the post/pre process but evaluate the whole string
+         * as Javascript
+         * @constant
+         * @type int
+         */
+        REPLACE_VARIABLES_EVALUATED: 0x00000008,
+        /**
+         * Will instruct the pre/post processor to escpape evaluated or replaced variables or expressions
+         * @constant
+         * @type int
+         */
+        ESCAPE: 0x00000010,
+        /**
+         * Will instruct the pre/post processor to replace block calls with oridinary vanilla script
+         * @constant
+         * @type int
+         */
+        REPLACE_BLOCK_CALLS: 0x00000020,
+        /**
+         * Will instruct the pre/post processor to remove variable delimitters/placeholders from the final string
+         * @constant
+         * @type int
+         */
+        REMOVE_DELIMTTERS: 0x00000040,
+        /**
+         * Will instruct the pre/post processor to remove   "[" ,"]" , "(" , ")" , "{", "}" , "*" , "+" , "."
+         * @constant
+         * @type int
+         */
+        ESCAPE_SPECIAL_CHARS: 0x00000080,
+        /**
+         * Will instruct the pre/post processor to use regular expressions over string substitution
+         * @constant
+         * @type int
+         */
+        USE_REGEX: 0x00000100,
+        /**
+         * Will instruct the pre/post processor to use Filtrex (custom bison parser, needs xexpression) over string substitution
+         * @constant
+         * @type int
+         */
+        USE_FILTREX: 0x00000200,
+        /**
+         * Cascade entry. There are cases where #USE_FUNCTION is not enough or we'd like to avoid further type checking.
+         * @constant
+         * @type int
+         */
+        CASCADE: 0x00000400,
+        /**
+         * Cascade entry. There are cases where #USE_FUNCTION is not enough or we'd like to avoid further type checking.
+         * @constant
+         * @type int
+         */
+        EXPRESSION: 0x00000800,
+        /**
+         * Dont parse anything
+         * @constant
+         * @type int
+         */
+        DONT_PARSE: 0x000001000,
+        /**
+         * Convert to hex
+         * @constant
+         * @type int
+         */
+        TO_HEX: 0x000002000,
+        /**
+         * Convert to hex
+         * @constant
+         * @type int
+         */
+        REPLACE_HEX: 0x000004000,
+        /**
+         * Wait for finish
+         * @constant
+         * @type int
+         */
+        WAIT: 0x000008000,
+        /**
+         * Flag to mark the maximum core bit mask, after here its user land
+         * @constant
+         * @type int
+         */
+        END: 0x000010000
+    }
+    /**
+     * A CI's default post-pre processing order.
+     *
+     * @enum {string} module:xide/types/CI_STATE
+     * @memberOf module:xide/types
+     */
+    types.CI_CORDER = {}
+    /**
+     * A 'Configurable Information's ("CI") type information. Every CI has this information. You can
+     * re-composite new types with ECIType.STRUCTURE. However all 'beans' (rich objects) in the system all displayed through a set of CIs,
+     * also called the CIS (Configurable Information Set). There are many types already :
+     *
+     * Each ECIType has mapped widgets, BOOL : checkbox, STRING: Text-Areay and so forth.
+     *
+     * @enum {string} module:xide/types/ECIType
+     * @memberOf module:xide/types
+     */
+    types.ECIType = {
+        /**
+         * @const
+         * @type { int}
+         */
+        BOOL: 0,
+        /**
+         * @const
+         * @type { int}
+         */
+        BOX: 1,
+        /**
+         * @const
+         * @type { int}
+         */
+        COLOUR: 2,
+        /**
+         * @const
+         * @type { int}
+         */
+        ENUMERATION: 3,
+        /**
+         * @const
+         * @type { int}
+         */
+        FILE: 4,
+        /**
+         * @const
+         * @type { int}
+         */
+        FLAGS: 5,
+        /**
+         * @const
+         * @type { int}
+         */
+        FLOAT: 6,
+        /**
+         * @const
+         * @type { int}
+         */
+        INTEGER: 7,
+        /**
+         * @const
+         * @type { int}
+         */
+        MATRIX: 8,
+        /**
+         * @const
+         * @type { int}
+         */
+        OBJECT: 9,
+        /**
+         * @const
+         * @type { int}
+         */
+        REFERENCE: 10,
+        /**
+         * @const
+         * @type { int}
+         */
+        QUATERNION: 11,
+        /**
+         * @const
+         * @type { int}
+         */
+        RECTANGLE: 12,
+        /**
+         * @const
+         * @type { int}
+         */
+        STRING: 13,
+        /**
+         * @const
+         * @type { int}
+         */
+        VECTOR: 14,
+        /**
+         * @const
+         * @type { int}
+         */
+        VECTOR2D: 15,
+        /**
+         * @const
+         * @type { int}
+         */
+        VECTOR4D: 16,
+        /**
+         * @const
+         * @type { int}
+         */
+        ICON: 17,
+        /**
+         * @const
+         * @type { int}
+         */
+        IMAGE: 18,
+        /**
+         * @const
+         * @type { int}
+         */
+        BANNER: 19,
+        /**
+         * @const
+         * @type { int}
+         */
+        LOGO: 20,
+        /**
+         * @const
+         * @type { int}
+         */
+        STRUCTURE: 21,
+        /**
+         * @const
+         * @type { int}
+         */
+        BANNER2: 22,
+        /**
+         * @const
+         * @type { int}
+         */
+        ICON_SET: 23,
+        /**
+         * @const
+         * @type { int}
+         */
+        SCRIPT: 24,
+        /**
+         * @const
+         * @type { int}
+         */
+        EXPRESSION: 25,
+        /**
+         * @const
+         * @type { int}
+         */
+        RICHTEXT: 26,
+        /**
+         * @const
+         * @type { int}
+         */
+        ARGUMENT: 27,
+        /**
+         * @const
+         * @type { int}
+         */
+        JSON_DATA: 28,
+        /**
+         * @const
+         * @type { int}
+         */
+        EXPRESSION_EDITOR: 29,
+        /**
+         * @const
+         * @type { int}
+         */
+        WIDGET_REFERENCE: 30,
+        /**
+         * @const
+         * @type { int}
+         */
+        DOM_PROPERTIES: 31,
+
+        /**
+         * @const
+         * @type { int}
+         */
+        BLOCK_REFERENCE: 32,
+
+        /**
+         * @const
+         * @type { int}
+         */
+        BLOCK_SETTINGS: 33,
+        /**
+         * @const
+         * @type { int}
+         */
+        FILE_EDITOR: 34,
+        /**
+         * @const
+         * @type { int}
+         */
+        END: 35,
+        /**
+         * @const
+         * @type { int}
+         */
+        UNKNOWN: -1
+    }
+    /**
+     * Stub for registered bean types. This value is needed to let the UI switch between configurations per such type.
+     * At the very root is the bean action context which may include more contexts.
+     * @enum {string} module:xide/types/ITEM_TYPE
+     * @memberOf module:xide/types
+     */
+    types.ITEM_TYPE = {
+        /**
+         * Bean type 'file' is handled by the xfile package
+         * @constant
+         */
+        FILE: 'BTFILE',         //file object
+        /**
+         * Bean type 'widget' is handled by the xide/ve and davinci package
+         * @constant
+         */
+        WIDGET: 'WIDGET',       //ui designer
+        /**
+         * Bean type 'block' is handled by the xblox package
+         * @constant
+         */
+        BLOCK: 'BLOCK',         //xblox
+        /**
+         * Bean type 'text' is used for text editors
+         * @constant
+         */
+        TEXT: 'TEXT',           //xace
+        /**
+         * Bean type 'xexpression' is used for user expressions
+         * @constant
+         */
+        EXPRESSION: 'EXPRESSION'       //xexpression
+    }
+
+    /**
+     * Expression Parser is a map of currently existing parsers
+     * and might be extended by additional modules. Thus, it acts as registry
+     * and is here as stub.
+     *
+     * @enum module:xide/types/EXPRESSION_PARSER
+     * @memberOf module:xide/types
+     */
+    if (!types.EXPRESSION_PARSER) {
+        types.EXPRESSION_PARSER = {}
+    }
+    /**
+     * Component names stub, might be extended by sub-classing applications
+     * @constant xide.types.COMPONENT_NAMES
+     */
+    types.COMPONENT_NAMES = {
+        XIDEVE: 'xideve',
+        XNODE: 'xnode',
+        XBLOX: 'xblox',
+        XFILE: 'xfile',
+        XACE: 'xace',
+        XEXPRESSION: 'xexpression',
+        XCONSOLE: 'xconsole'
+    }
+
+    /**
+     * WIDGET_REFERENCE_MODE enumerates possible modes to resolve a string expression
+     * into instances. There are a few CI based widgets subclassed from xide/widgets/Referenced.
+     * The reference structure consist out of this mode and that expression.
+     *
+     * @constant {Array.<module:xide/types~WidgetReferenceMode>}
+     *     module:xide/types~WIDGET_REFERENCE_MODE
+     */
+    types.WIDGET_REFERENCE_MODE = {
+        BY_ID: 'byid',
+        BY_CLASS: 'byclass',
+        BY_CSS: 'bycss',
+        BY_EXPRESSION: 'expression'
+    }
+    /**
+     * Possible split modes for rich editors with preview or live coding views.
+     *
+     * @constant {Array.<module:xide/types~ViewSplitMode>}
+     *     module:xide/types~VIEW_SPLIT_MODE
+     */
+    types.VIEW_SPLIT_MODE = {
+        DESIGN: 1,
+        SOURCE: 2,
+        SPLIT_VERTICAL: 6,
+        SPLIT_HORIZONTAL: 7
+    }
+
+    /**
+     * All client resources are through variables on the server side. Here the minimum variables for an xjs application.
+     *
+     * @constant {Array.<module:xide/types~RESOURCE_VARIABLES>}
+     *     module:xide/types~RESOURCE_VARIABLES
+     */
+    types.RESOURCE_VARIABLES = {
+        ACE: 'ACE',
+        APP_URL: 'APP_URL',
+        SITE_URL: 'SITE_URL'
+    }
+    /**
+     * Events of xide.*
+     * @enum {string} module:xide/types/EVENTS
+     * @memberOf module:xide/types
+     * @extends xide/types
+     */
+    types.EVENTS = {
+
+        /**
+         * generic
+         */
+        ERROR: 'onError',//xhr
+        STATUS: 'onStatus',//xhr
+        ON_CREATED_MANAGER: 'onCreatedManager',//context
+
+        /**
+         * item events, to be renoved
+         */
+        ON_ITEM_SELECTED: 'onItemSelected',
+        ON_ITEM_REMOVED: 'onItemRemoved',
+        ON_ITEM_CLOSED: 'onItemClosed',
+        ON_ITEM_ADDED: 'onItemAdded',
+        ON_ITEM_MODIFIED: 'onItemModified',
+        ON_NODE_SERVICE_STORE_READY: 'onNodeServiceStoreReady',
+        /**
+         * old, to be removd
+         */
+        ON_FILE_STORE_READY: 'onFileStoreReady',
+        ON_CONTEXT_MENU_OPEN: 'onContextMenuOpen',
+        /**
+         * CI events
+         */
+        ON_CI_UPDATE: 'onCIUpdate',
+
+        /**
+         * widgets
+         */
+        ON_WIDGET_READY: 'onWidgetReady',
+        ON_CREATED_WIDGET: 'onWidgetCreated',
+        RESIZE: 'onResize',
+        /**
+         * Event to notify classes about a reloaded module
+         * @constant
+         * @type string
+         */
+        ON_MODULE_RELOADED: 'onModuleReloaded',
+        ON_MODULE_UPDATED: 'onModuleUpdated',
+
+
+        ON_DID_OPEN_ITEM: 'onDidOpenItem',//remove
+        ON_DID_RENDER_COLLECTION: 'onDidRenderCollection',//move
+
+        ON_PLUGIN_LOADED: 'onPluginLoaded',
+        ON_PLUGIN_READY: 'onPluginReady',
+        ALL_PLUGINS_READY: 'onAllPluginsReady',
+
+        /**
+         * editors
+         */
+        ON_CREATE_EDITOR_BEGIN: 'onCreateEditorBegin',//move to xedit
+        ON_CREATE_EDITOR_END: 'onCreateEditorEnd',//move to xedit
+        REGISTER_EDITOR: 'registerEditor',//move to xedit
+        ON_EXPRESSION_EDITOR_ADD_FUNCTIONS: 'onExpressionEditorAddFunctions',//move to xedit
+        ON_ACE_READY: 'onACEReady',//remove
+
+        /**
+         * Files
+         */
+        ON_UNSAVED_CONTENT: 'onUnSavedContent',
+        ON_FILE_CHANGED: 'fileChanged',
+        ON_FILE_DELETED: 'fileDeleted',
+        IMAGE_LOADED: 'imageLoaded',
+        IMAGE_ERROR: 'imageError',
+        UPLOAD_BEGIN: 'uploadBegin',
+        UPLOAD_PROGRESS: 'uploadProgress',
+        UPLOAD_FINISH: 'uploadFinish',
+        UPLOAD_FAILED: 'uploadFailed',
+        ON_FILE_CONTENT_CHANGED: 'onFileContentChanged',
+        ON_COPY_BEGIN: 'onCopyBegin',
+        ON_COPY_END: 'onCopyEnd',
+        ON_DELETE_BEGIN: 'onDeleteBegin',
+        ON_DELETE_END: 'onDeleteEnd',
+        ON_MOVE_BEGIN: 'onMoveBegin',
+        ON_MOVE_END: 'onMoveEnd',
+        ON_CHANGED_CONTENT: 'onChangedContent',
+        ON_COMPRESS_BEGIN: 'onCompressBegin',
+        ON_COMPRESS_END: 'onCompressEnd',
+
+
+
+        ON_COMPONENT_READY: 'onComponentReady',
+        ON_ALL_COMPONENTS_LOADED: 'onAllComponentsLoaded',
+        ON_APP_READY: 'onAppReady',
+        /**
+         * Store
+         */
+        ON_CREATE_STORE: 'onCreateStore',
+        ON_STORE_CREATED: 'onStoreCreated',
+        ON_STORE_CHANGED: 'onStoreChanged',
+        ON_STATUS_MESSAGE: 'onStatusMessage',
+        /**
+         * layout
+         */
+        SAVE_LAYOUT: 'layoutSave',
+        RESTORE_LAYOUT: 'layoutRestore',
+        /**
+         * views, panels and 'main view'
+         */
+        ON_SHOW_PANEL: 'onShowPanel',
+        ON_PANEL_CLOSED: 'onPanelClosed',
+        ON_PANEL_CREATED: 'onPanelCreated',
+
+        ON_MAIN_VIEW_READY: 'onMainViewReady',
+        ON_MAIN_MENU_READY: 'onMainMenuReady',
+        ON_MAIN_MENU_OPEN: 'onMainMenuOpen',
+        ON_VIEW_REMOVED: 'onViewRemoved',
+        ON_VIEW_SHOW: 'onViewShow',
+        ON_VIEW_HIDE: 'onViewHide',
+        ON_VIEW_ADDED: 'onViewAdded',
+        ON_OPEN_VIEW: 'onOpenView',
+        ON_VIEW_MAXIMIZE_START: 'onViewMaximizeStart',
+        ON_VIEW_MAXIMIZE_END: 'onViewMaximizeEnd',
+        ON_CONTAINER_ADDED: 'onContainerAdded',
+        ON_CONTAINER_REMOVED: 'onContainerRemoved',
+        ON_REMOVE_CONTAINER: 'onRemoveContainer',
+        ON_CONTAINER_REPLACED: 'onContainerReplaced',
+        ON_CONTAINER_SPLIT: 'onContainerSplit'
+    }
+    /**
+     * To be moved
+     * @type {{SIZE_NORMAL: string, SIZE_SMALL: string, SIZE_WIDE: string, SIZE_LARGE: string}}
+     */
+    types.DIALOG_SIZE = {
+        SIZE_NORMAL: 'size-normal',
+        SIZE_SMALL: 'size-small',
+        SIZE_WIDE: 'size-wide',    // size-wide is equal to modal-lg
+        SIZE_LARGE: 'size-large'
+    }
+
+    /**
+     * To be moved
+     * @type {{DEFAULT: string, INFO: string, PRIMARY: string, SUCCESS: string, WARNING: string, DANGER: string}}
+     */
+    types.DIALOG_TYPE = {
+        DEFAULT: 'type-default',
+        INFO: 'type-info',
+        PRIMARY: 'type-primary',
+        SUCCESS: 'type-success',
+        WARNING: 'type-warning',
+        DANGER: 'type-danger'
+    }
+    /**
+     * @TODO: remove, defined in xideve
+     */
+    lang.mixin(types, {
+        LAYOUT_RIGHT_CENTER_BOTTOM: 'LAYOUT_RIGHT_CENTER_BOTTOM',
+        LAYOUT_CENTER_BOTTOM: 'LAYOUT_CENTER_BOTTOM',
+        LAYOUT_CENTER_RIGHT: 'LAYOUT_CENTER_RIGHT',
+        LAYOUT_LEFT_CENTER_RIGHT: 'LAYOUT_LEFT_CENTER_RIGHT',
+        LAYOUT_LEFT_CENTER_RIGHT_BOTTOM: 'LAYOUT_LEFT_CENTER_RIGHT_BOTTOM'
+    })
+
+    /**
+     * Hard Dojo override to catch malformed JSON.
+     * @param js
+     * @returns {*}
+     */
+    dojo.fromJson = function (js, debug) {
+        var res = null;
+        var didFail = false;
+        try {
+            res = eval("(" + js + ")");
+        } catch (e) {
+            didFail = true;
+        }
+        if (didFail) {
+            var js2 = js.substring(js.indexOf('{'), js.lastIndexOf('}') + 1);
+            try {
+                js2 && (res = eval("(" + js2 + ")"));
+            } catch (e) {
+                debug !== false && console.error('error in json parsing! ' + js);
+                if (js.indexOf('error') !== -1) {
+                    return {
+                        "jsonrpc": "2.0",
+                        "result": {
+                            "error": {
+                                "code": 1,
+                                "message": js,
+                                "data": null
+                            }
+                        }, "id": 0
+                    };
+                    return {
+                        error: '1',
+                        message: js
+                    }
+                }
+                throw new Error(js);
+            }
+        }
+        return res;
+    };
+    return types;
+});;
+define('dojo/_base/json',["./kernel", "../json"], function(dojo, json){
+
+// module:
+//		dojo/_base/json
+
+/*=====
+return {
+	// summary:
+	//		This module defines the dojo JSON API.
+};
+=====*/
+
+dojo.fromJson = function(/*String*/ js){
+	// summary:
+	//		Parses a JavaScript expression and returns a JavaScript value.
+	// description:
+	//		Throws for invalid JavaScript expressions. It does not use a strict JSON parser. It
+	//		always delegates to eval(). The content passed to this method must therefore come
+	//		from a trusted source.
+	//		It is recommend that you use dojo/json's parse function for an
+	//		implementation uses the (faster) native JSON parse when available.
+	// js:
+	//		a string literal of a JavaScript expression, for instance:
+	//		`'{ "foo": [ "bar", 1, { "baz": "thud" } ] }'`
+
+	return eval("(" + js + ")"); // Object
+};
+
+/*=====
+dojo._escapeString = function(){
+	// summary:
+	//		Adds escape sequences for non-visual characters, double quote and
+	//		backslash and surrounds with double quotes to form a valid string
+	//		literal.
+};
+=====*/
+dojo._escapeString = json.stringify; // just delegate to json.stringify
+
+dojo.toJsonIndentStr = "\t";
+dojo.toJson = function(/*Object*/ it, /*Boolean?*/ prettyPrint){
+	// summary:
+	//		Returns a [JSON](http://json.org) serialization of an object.
+	// description:
+	//		Returns a [JSON](http://json.org) serialization of an object.
+	//		Note that this doesn't check for infinite recursion, so don't do that!
+	//		It is recommend that you use dojo/json's stringify function for an lighter
+	//		and faster implementation that matches the native JSON API and uses the
+	//		native JSON serializer when available.
+	// it:
+	//		an object to be serialized. Objects may define their own
+	//		serialization via a special "__json__" or "json" function
+	//		property. If a specialized serializer has been defined, it will
+	//		be used as a fallback.
+	//		Note that in 1.6, toJson would serialize undefined, but this no longer supported
+	//		since it is not supported by native JSON serializer.
+	// prettyPrint:
+	//		if true, we indent objects and arrays to make the output prettier.
+	//		The variable `dojo.toJsonIndentStr` is used as the indent string --
+	//		to use something other than the default (tab), change that variable
+	//		before calling dojo.toJson().
+	//		Note that if native JSON support is available, it will be used for serialization,
+	//		and native implementations vary on the exact spacing used in pretty printing.
+	// returns:
+	//		A JSON string serialization of the passed-in object.
+	// example:
+	//		simple serialization of a trivial object
+	//		|	var jsonStr = dojo.toJson({ howdy: "stranger!", isStrange: true });
+	//		|	doh.is('{"howdy":"stranger!","isStrange":true}', jsonStr);
+	// example:
+	//		a custom serializer for an objects of a particular class:
+	//		|	dojo.declare("Furby", null, {
+	//		|		furbies: "are strange",
+	//		|		furbyCount: 10,
+	//		|		__json__: function(){
+	//		|		},
+	//		|	});
+
+	// use dojo/json
+	return json.stringify(it, function(key, value){
+		if(value){
+			var tf = value.__json__||value.json;
+			if(typeof tf == "function"){
+				return tf.call(value);
+			}
+		}
+		return value;
+	}, prettyPrint && dojo.toJsonIndentStr);	// String
+};
+
+return dojo;
+});
+;
+define('dojo/json',["./has"], function(has){
+	"use strict";
+	var hasJSON = typeof JSON != "undefined";
+	has.add("json-parse", hasJSON); // all the parsers work fine
+		// Firefox 3.5/Gecko 1.9 fails to use replacer in stringify properly https://bugzilla.mozilla.org/show_bug.cgi?id=509184
+	has.add("json-stringify", hasJSON && JSON.stringify({a:0}, function(k,v){return v||1;}) == '{"a":1}');
+
+	/*=====
+	return {
+		// summary:
+		//		Functions to parse and serialize JSON
+
+		parse: function(str, strict){
+			// summary:
+			//		Parses a [JSON](http://json.org) string to return a JavaScript object.
+			// description:
+			//		This function follows [native JSON API](https://developer.mozilla.org/en/JSON)
+			//		Throws for invalid JSON strings. This delegates to eval() if native JSON
+			//		support is not available. By default this will evaluate any valid JS expression.
+			//		With the strict parameter set to true, the parser will ensure that only
+			//		valid JSON strings are parsed (otherwise throwing an error). Without the strict
+			//		parameter, the content passed to this method must come
+			//		from a trusted source.
+			// str:
+			//		a string literal of a JSON item, for instance:
+			//		`'{ "foo": [ "bar", 1, { "baz": "thud" } ] }'`
+			// strict:
+			//		When set to true, this will ensure that only valid, secure JSON is ever parsed.
+			//		Make sure this is set to true for untrusted content. Note that on browsers/engines
+			//		without native JSON support, setting this to true will run slower.
+		},
+		stringify: function(value, replacer, spacer){
+			// summary:
+			//		Returns a [JSON](http://json.org) serialization of an object.
+			// description:
+			//		Returns a [JSON](http://json.org) serialization of an object.
+			//		This function follows [native JSON API](https://developer.mozilla.org/en/JSON)
+			//		Note that this doesn't check for infinite recursion, so don't do that!
+			// value:
+			//		A value to be serialized.
+			// replacer:
+			//		A replacer function that is called for each value and can return a replacement
+			// spacer:
+			//		A spacer string to be used for pretty printing of JSON
+			// example:
+			//		simple serialization of a trivial object
+			//	|	define(["dojo/json"], function(JSON){
+			// 	|		var jsonStr = JSON.stringify({ howdy: "stranger!", isStrange: true });
+			//	|		doh.is('{"howdy":"stranger!","isStrange":true}', jsonStr);
+		}
+	};
+	=====*/
+
+	if(has("json-stringify")){
+		return JSON;
+	}else{
+		var escapeString = function(/*String*/str){
+			// summary:
+			//		Adds escape sequences for non-visual characters, double quote and
+			//		backslash and surrounds with double quotes to form a valid string
+			//		literal.
+			return ('"' + str.replace(/(["\\])/g, '\\$1') + '"').
+				replace(/[\f]/g, "\\f").replace(/[\b]/g, "\\b").replace(/[\n]/g, "\\n").
+				replace(/[\t]/g, "\\t").replace(/[\r]/g, "\\r"); // string
+		};
+		return {
+			parse: has("json-parse") ? JSON.parse : function(str, strict){
+				if(strict && !/^([\s\[\{]*(?:"(?:\\.|[^"])*"|-?\d[\d\.]*(?:[Ee][+-]?\d+)?|null|true|false|)[\s\]\}]*(?:,|:|$))+$/.test(str)){
+					throw new SyntaxError("Invalid characters in JSON");
+				}
+				return eval('(' + str + ')');
+			},
+			stringify: function(value, replacer, spacer){
+				var undef;
+				if(typeof replacer == "string"){
+					spacer = replacer;
+					replacer = null;
+				}
+				function stringify(it, indent, key){
+					if(replacer){
+						it = replacer(key, it);
+					}
+					var val, objtype = typeof it;
+					if(objtype == "number"){
+						return isFinite(it) ? it + "" : "null";
+					}
+					if(objtype == "boolean"){
+						return it + "";
+					}
+					if(it === null){
+						return "null";
+					}
+					if(typeof it == "string"){
+						return escapeString(it);
+					}
+					if(objtype == "function" || objtype == "undefined"){
+						return undef; // undefined
+					}
+					// short-circuit for objects that support "json" serialization
+					// if they return "self" then just pass-through...
+					if(typeof it.toJSON == "function"){
+						return stringify(it.toJSON(key), indent, key);
+					}
+					if(it instanceof Date){
+						return '"{FullYear}-{Month+}-{Date}T{Hours}:{Minutes}:{Seconds}Z"'.replace(/\{(\w+)(\+)?\}/g, function(t, prop, plus){
+							var num = it["getUTC" + prop]() + (plus ? 1 : 0);
+							return num < 10 ? "0" + num : num;
+						});
+					}
+					if(it.valueOf() !== it){
+						// primitive wrapper, try again unwrapped:
+						return stringify(it.valueOf(), indent, key);
+					}
+					var nextIndent= spacer ? (indent + spacer) : "";
+					/* we used to test for DOM nodes and throw, but FF serializes them as {}, so cross-browser consistency is probably not efficiently attainable */ 
+				
+					var sep = spacer ? " " : "";
+					var newLine = spacer ? "\n" : "";
+				
+					// array
+					if(it instanceof Array){
+						var itl = it.length, res = [];
+						for(key = 0; key < itl; key++){
+							var obj = it[key];
+							val = stringify(obj, nextIndent, key);
+							if(typeof val != "string"){
+								val = "null";
+							}
+							res.push(newLine + nextIndent + val);
+						}
+						return "[" + res.join(",") + newLine + indent + "]";
+					}
+					// generic object code path
+					var output = [];
+					for(key in it){
+						var keyStr;
+						if(it.hasOwnProperty(key)){
+							if(typeof key == "number"){
+								keyStr = '"' + key + '"';
+							}else if(typeof key == "string"){
+								keyStr = escapeString(key);
+							}else{
+								// skip non-string or number keys
+								continue;
+							}
+							val = stringify(it[key], nextIndent, key);
+							if(typeof val != "string"){
+								// skip non-serializable values
+								continue;
+							}
+							// At this point, the most non-IE browsers don't get in this branch 
+							// (they have native JSON), so push is definitely the way to
+							output.push(newLine + nextIndent + keyStr + ":" + sep + val);
+						}
+					}
+					return "{" + output.join(",") + newLine + indent + "}"; // String
+				}
+				return stringify(value, "", "");
+			}
+		};
+	}
 });
 ;
 define('xcf/model/ModelBase',[
@@ -50258,169 +51418,6 @@ define('dojo/request/handlers',[
 	return handle;
 });
 ;
-define('dojo/json',["./has"], function(has){
-	"use strict";
-	var hasJSON = typeof JSON != "undefined";
-	has.add("json-parse", hasJSON); // all the parsers work fine
-		// Firefox 3.5/Gecko 1.9 fails to use replacer in stringify properly https://bugzilla.mozilla.org/show_bug.cgi?id=509184
-	has.add("json-stringify", hasJSON && JSON.stringify({a:0}, function(k,v){return v||1;}) == '{"a":1}');
-
-	/*=====
-	return {
-		// summary:
-		//		Functions to parse and serialize JSON
-
-		parse: function(str, strict){
-			// summary:
-			//		Parses a [JSON](http://json.org) string to return a JavaScript object.
-			// description:
-			//		This function follows [native JSON API](https://developer.mozilla.org/en/JSON)
-			//		Throws for invalid JSON strings. This delegates to eval() if native JSON
-			//		support is not available. By default this will evaluate any valid JS expression.
-			//		With the strict parameter set to true, the parser will ensure that only
-			//		valid JSON strings are parsed (otherwise throwing an error). Without the strict
-			//		parameter, the content passed to this method must come
-			//		from a trusted source.
-			// str:
-			//		a string literal of a JSON item, for instance:
-			//		`'{ "foo": [ "bar", 1, { "baz": "thud" } ] }'`
-			// strict:
-			//		When set to true, this will ensure that only valid, secure JSON is ever parsed.
-			//		Make sure this is set to true for untrusted content. Note that on browsers/engines
-			//		without native JSON support, setting this to true will run slower.
-		},
-		stringify: function(value, replacer, spacer){
-			// summary:
-			//		Returns a [JSON](http://json.org) serialization of an object.
-			// description:
-			//		Returns a [JSON](http://json.org) serialization of an object.
-			//		This function follows [native JSON API](https://developer.mozilla.org/en/JSON)
-			//		Note that this doesn't check for infinite recursion, so don't do that!
-			// value:
-			//		A value to be serialized.
-			// replacer:
-			//		A replacer function that is called for each value and can return a replacement
-			// spacer:
-			//		A spacer string to be used for pretty printing of JSON
-			// example:
-			//		simple serialization of a trivial object
-			//	|	define(["dojo/json"], function(JSON){
-			// 	|		var jsonStr = JSON.stringify({ howdy: "stranger!", isStrange: true });
-			//	|		doh.is('{"howdy":"stranger!","isStrange":true}', jsonStr);
-		}
-	};
-	=====*/
-
-	if(has("json-stringify")){
-		return JSON;
-	}else{
-		var escapeString = function(/*String*/str){
-			// summary:
-			//		Adds escape sequences for non-visual characters, double quote and
-			//		backslash and surrounds with double quotes to form a valid string
-			//		literal.
-			return ('"' + str.replace(/(["\\])/g, '\\$1') + '"').
-				replace(/[\f]/g, "\\f").replace(/[\b]/g, "\\b").replace(/[\n]/g, "\\n").
-				replace(/[\t]/g, "\\t").replace(/[\r]/g, "\\r"); // string
-		};
-		return {
-			parse: has("json-parse") ? JSON.parse : function(str, strict){
-				if(strict && !/^([\s\[\{]*(?:"(?:\\.|[^"])*"|-?\d[\d\.]*(?:[Ee][+-]?\d+)?|null|true|false|)[\s\]\}]*(?:,|:|$))+$/.test(str)){
-					throw new SyntaxError("Invalid characters in JSON");
-				}
-				return eval('(' + str + ')');
-			},
-			stringify: function(value, replacer, spacer){
-				var undef;
-				if(typeof replacer == "string"){
-					spacer = replacer;
-					replacer = null;
-				}
-				function stringify(it, indent, key){
-					if(replacer){
-						it = replacer(key, it);
-					}
-					var val, objtype = typeof it;
-					if(objtype == "number"){
-						return isFinite(it) ? it + "" : "null";
-					}
-					if(objtype == "boolean"){
-						return it + "";
-					}
-					if(it === null){
-						return "null";
-					}
-					if(typeof it == "string"){
-						return escapeString(it);
-					}
-					if(objtype == "function" || objtype == "undefined"){
-						return undef; // undefined
-					}
-					// short-circuit for objects that support "json" serialization
-					// if they return "self" then just pass-through...
-					if(typeof it.toJSON == "function"){
-						return stringify(it.toJSON(key), indent, key);
-					}
-					if(it instanceof Date){
-						return '"{FullYear}-{Month+}-{Date}T{Hours}:{Minutes}:{Seconds}Z"'.replace(/\{(\w+)(\+)?\}/g, function(t, prop, plus){
-							var num = it["getUTC" + prop]() + (plus ? 1 : 0);
-							return num < 10 ? "0" + num : num;
-						});
-					}
-					if(it.valueOf() !== it){
-						// primitive wrapper, try again unwrapped:
-						return stringify(it.valueOf(), indent, key);
-					}
-					var nextIndent= spacer ? (indent + spacer) : "";
-					/* we used to test for DOM nodes and throw, but FF serializes them as {}, so cross-browser consistency is probably not efficiently attainable */ 
-				
-					var sep = spacer ? " " : "";
-					var newLine = spacer ? "\n" : "";
-				
-					// array
-					if(it instanceof Array){
-						var itl = it.length, res = [];
-						for(key = 0; key < itl; key++){
-							var obj = it[key];
-							val = stringify(obj, nextIndent, key);
-							if(typeof val != "string"){
-								val = "null";
-							}
-							res.push(newLine + nextIndent + val);
-						}
-						return "[" + res.join(",") + newLine + indent + "]";
-					}
-					// generic object code path
-					var output = [];
-					for(key in it){
-						var keyStr;
-						if(it.hasOwnProperty(key)){
-							if(typeof key == "number"){
-								keyStr = '"' + key + '"';
-							}else if(typeof key == "string"){
-								keyStr = escapeString(key);
-							}else{
-								// skip non-string or number keys
-								continue;
-							}
-							val = stringify(it[key], nextIndent, key);
-							if(typeof val != "string"){
-								// skip non-serializable values
-								continue;
-							}
-							// At this point, the most non-IE browsers don't get in this branch 
-							// (they have native JSON), so push is definitely the way to
-							output.push(newLine + nextIndent + keyStr + ":" + sep + val);
-						}
-					}
-					return "{" + output.join(",") + newLine + indent + "}"; // String
-				}
-				return stringify(value, "", "");
-			}
-		};
-	}
-});
-;
 define('dojo/request/watch',[
 	'./util',
 	'../errors/RequestTimeoutError',
@@ -50545,98 +51542,6 @@ define('dojo/errors/RequestTimeoutError',['./create', './RequestError'], functio
 	return create("RequestTimeoutError", null, RequestError, {
 		dojoType: "timeout"
 	});
-});
-;
-define('dojo/_base/json',["./kernel", "../json"], function(dojo, json){
-
-// module:
-//		dojo/_base/json
-
-/*=====
-return {
-	// summary:
-	//		This module defines the dojo JSON API.
-};
-=====*/
-
-dojo.fromJson = function(/*String*/ js){
-	// summary:
-	//		Parses a JavaScript expression and returns a JavaScript value.
-	// description:
-	//		Throws for invalid JavaScript expressions. It does not use a strict JSON parser. It
-	//		always delegates to eval(). The content passed to this method must therefore come
-	//		from a trusted source.
-	//		It is recommend that you use dojo/json's parse function for an
-	//		implementation uses the (faster) native JSON parse when available.
-	// js:
-	//		a string literal of a JavaScript expression, for instance:
-	//		`'{ "foo": [ "bar", 1, { "baz": "thud" } ] }'`
-
-	return eval("(" + js + ")"); // Object
-};
-
-/*=====
-dojo._escapeString = function(){
-	// summary:
-	//		Adds escape sequences for non-visual characters, double quote and
-	//		backslash and surrounds with double quotes to form a valid string
-	//		literal.
-};
-=====*/
-dojo._escapeString = json.stringify; // just delegate to json.stringify
-
-dojo.toJsonIndentStr = "\t";
-dojo.toJson = function(/*Object*/ it, /*Boolean?*/ prettyPrint){
-	// summary:
-	//		Returns a [JSON](http://json.org) serialization of an object.
-	// description:
-	//		Returns a [JSON](http://json.org) serialization of an object.
-	//		Note that this doesn't check for infinite recursion, so don't do that!
-	//		It is recommend that you use dojo/json's stringify function for an lighter
-	//		and faster implementation that matches the native JSON API and uses the
-	//		native JSON serializer when available.
-	// it:
-	//		an object to be serialized. Objects may define their own
-	//		serialization via a special "__json__" or "json" function
-	//		property. If a specialized serializer has been defined, it will
-	//		be used as a fallback.
-	//		Note that in 1.6, toJson would serialize undefined, but this no longer supported
-	//		since it is not supported by native JSON serializer.
-	// prettyPrint:
-	//		if true, we indent objects and arrays to make the output prettier.
-	//		The variable `dojo.toJsonIndentStr` is used as the indent string --
-	//		to use something other than the default (tab), change that variable
-	//		before calling dojo.toJson().
-	//		Note that if native JSON support is available, it will be used for serialization,
-	//		and native implementations vary on the exact spacing used in pretty printing.
-	// returns:
-	//		A JSON string serialization of the passed-in object.
-	// example:
-	//		simple serialization of a trivial object
-	//		|	var jsonStr = dojo.toJson({ howdy: "stranger!", isStrange: true });
-	//		|	doh.is('{"howdy":"stranger!","isStrange":true}', jsonStr);
-	// example:
-	//		a custom serializer for an objects of a particular class:
-	//		|	dojo.declare("Furby", null, {
-	//		|		furbies: "are strange",
-	//		|		furbyCount: 10,
-	//		|		__json__: function(){
-	//		|		},
-	//		|	});
-
-	// use dojo/json
-	return json.stringify(it, function(key, value){
-		if(value){
-			var tf = value.__json__||value.json;
-			if(typeof tf == "function"){
-				return tf.call(value);
-			}
-		}
-		return value;
-	}, prettyPrint && dojo.toJsonIndentStr);	// String
-};
-
-return dojo;
 });
 ;
 define('dojo/_base/config',["../has", "require"], function(has, require){
@@ -52289,18 +53194,18 @@ define('xcf/manager/DeviceManager',[
          */
         onDeviceStarted: function (driverInstance, deviceStoreItem, driver) {
 
-            _debug && console.log('onDeviceStarted');
-
             if (!driverInstance || !deviceStoreItem || !driver) {
                 _debug && console.log('onDeviceStarted failed, invalid params');
                 return;
             }
-
+            
+            
             var info = this.toDeviceControlInfo(deviceStoreItem),
                 serverSide = info.serverSide,
                 isServer = info.isServer;
 
 
+            _debug && console.log('onDeviceStarted ',info.user_drivers);
             /**
              * Post work :
              * 1. Start all commands with the 'startup' flag!
@@ -52902,9 +53807,43 @@ define('xcf/manager/DeviceManager',[
          * @returns {module:xcf/model/Device|null}
          */
         getDeviceById: function (id,store) {
-            var items = utils.queryStore(store,this.getStore(), {
+
+            var self = this;
+            function search(_store){
+                var items = utils.queryStore(_store, {
+                    isDir: false
+                });
+
+                if (items._S) {
+                    items = [items];
+                }
+                for (var i = 0; i < items.length; i++) {
+                    var device = items[i];
+                    var _id = self.getMetaValue(device, DEVICE_PROPERTY.CF_DEVICE_ID);
+                    if(_id == id){
+                        return device;
+                    }
+                }
+                return null;
+            }
+
+            var _store = _.isString(store) ? this.getStore(store) : null;
+            if(_store){
+                return search(_store);
+            }else{
+                for (var scope in this.stores){
+                    var item = search(this.stores[scope]);
+                    if(item){
+                        return item;
+                    }
+                }
+            }
+            /*
+            
+            var items = utils.queryStore(store || this.getStore(), {
                 isDir: false
             });
+            
             if (items._S) {
                 items = [items];
             }
@@ -52915,6 +53854,7 @@ define('xcf/manager/DeviceManager',[
                     return device;
                 }
             }
+            */
             return null;
         },
         /**
@@ -57175,9 +58115,6 @@ define('xide/manager/ServerActionBase',[
             if (!this.serviceClass) {
                 //console.error('have no service class : ' + this.declaredClass);
             }
-            if (!this.serviceUrl) {
-                //console.error('have no service url : ' + this.declaredClass);
-            }
             try {
                 var obj = Singleton;
 
@@ -57192,6 +58129,10 @@ define('xide/manager/ServerActionBase',[
                     }
                 }
                 if (!this.serviceObject) {
+                    if (!this.serviceUrl) {
+                        console.error('have no service url : ' + this.declaredClass);
+                        return;
+                    }
                     var url = decodeURIComponent(this.serviceUrl);
                     this.serviceObject = new RPCService(decodeURIComponent(this.serviceUrl),this.options);
                     this.serviceObject.runDeferred = function(){
@@ -63024,828 +63965,6 @@ define('xide/utils/ObjectUtils',[
         return _.isFunction(it);
     };
     return utils;
-});;
-/** @module xide/types
- *  @description All the package's constants and enums in C style structures.
- */
-define('xide/types/Types',[
-    'dojo/_base/lang',
-    'xide/types',
-    'dojo/_base/json',
-    'dojo/_base/kernel'
-], function (lang, types, json, dojo) {
-    /**
-     * @TODO:
-     * - apply xide/registry for types
-     * - move mime handling to xfile
-     * - remove ui types
-     * - remove all other things which are part of ui or server only
-     */
-    /**
-     * Custom CI Types, see ECITYPE enumeration. Each enum is mapped to a widget.
-     */
-    if (types['customTypes'] == null) {
-        types['customTypes'] = {};
-    }
-    /**
-     * ECTYPE_ENUM is mapped to and label-value option array
-     */
-    if (types['customEnumerations'] == null) {
-        types['customEnumerations'] = {};
-    }
-    /**
-     * The actual mapping of custom types to widget proto classes
-     */
-    if (types['widgetMappings'] == null) {
-        types['widgetMappings'] = {};
-    }
-    /**
-     * Mixes in new mime icons per ECITYPE & file extensions. Rendered by FontAwesome
-     */
-    if (types['customMimeIcons'] == null) {
-        types['customMimeIcons'] = {};
-    }
-
-    /**
-     * Public ECI_TYPE registry getter
-     * @param type
-     * @returns {*}
-     */
-    types.resolveType = function (type) {
-        if (types['customTypes'][type]) {
-            return types['customTypes'][type];
-        }
-        return null;
-    };
-    /**
-     * Public ECI_TYPE registry setter
-     * @param type
-     * @param map
-     */
-    types.registerType = function (type, map) {
-        types['customTypes'][type] = map;
-    };
-    /**
-     * Public widget-type registry setter
-     * @param type
-     * @param map
-     */
-    types.registerWidgetMapping = function (type, map) {
-        types['widgetMappings'][type] = map;
-    };
-    /**
-     * Public custom enum registry setter
-     * @param type
-     * @param map
-     */
-    types.registerEnumeration = function (type, map) {
-        types['customEnumerations'][type] = map;
-    };
-    /**
-     * Public custom enumeration registry getter
-     * @param type
-     */
-    types.resolveEnumeration = function (type) {
-        if (types['customEnumerations'][type]) {
-            return types['customEnumerations'][type];
-        }
-        return null;
-    };
-    /**
-     * Public type-widget mapping registry setter
-     * @param type
-     */
-    types.resolveWidgetMapping = function (type) {
-        if (types['widgetMappings'][type]) {
-            return types['widgetMappings'][type];
-        }
-        return null;
-    };
-    types.GRID_FEATURE = {
-        KEYBOARD_NAVIGATION: 'KEYBOARD_NAVIGATION',
-        KEYBOARD_SELECT: 'KEYBOARD_SELECT',
-        SELECTION: 'SELECTION',
-        ACTIONS: 'ACTIONS',
-        CONTEXT_MENU: 'CONTEXT_MENU'
-    };
-    types.VIEW_FEATURE = {
-        KEYBOARD_NAVIGATION: 'KEYBOARD_NAVIGATION',
-        KEYBOARD_SELECT: 'KEYBOARD_SELECT',
-        SELECTION: 'SELECTION',
-        ACTIONS: 'ACTIONS',
-        CONTEXT_MENU: 'CONTEXT_MENU'
-    };
-    types.KEYBOARD_PROFILE = {
-        DEFAULT: {
-            prevent_default: true,
-            prevent_repeat: false
-        },
-        PASS_THROUGH: {
-            prevent_default: false,
-            prevent_repeat: false
-        },
-        SEQUENCE: {
-            prevent_default: true,
-            is_sequence: true,
-            prevent_repeat: true
-        }
-    };
-    /////////////////////////////////////////////////////////////////////////////
-    //
-    // CORE TYPES
-    //
-    /////////////////////////////////////////////////////////////////////////////
-    /**
-     * A 'Configurable Information's ("CI") processing state during post or pre-processing.
-     *
-     * @enum {int} module:xide/types/CI_STATE
-     * @memberOf module:xide/types
-     */
-    types.CI_STATE = {
-        /**
-         * Nothing done, could also mean there is nothing to do all
-         * @constant
-         * @type int
-         */
-        NONE: 0x00000000,
-        /**
-         * In pending state. At that time the compiler has accepted additional work and ci flag processing is queued
-         * but not scheduled yet.
-         * @constant
-         * @type int
-         */
-        PENDING: 0x00000001,
-        /**
-         * The processing state.
-         * @constant
-         * @type int
-         */
-        PROCESSING: 0x00000002,
-        /**
-         * The CI has been processed but it failed.
-         * @constant
-         * @type int
-         */
-        FAILED: 0x00000004,
-        /**
-         * The CI was successfully processed.
-         * @constant
-         * @type int
-         */
-        SUCCESSED: 0x00000008,
-        /**
-         * The CI has been processed.
-         * @constant
-         * @type int
-         */
-        PROCESSED: 0x00000010,
-        /**
-         * The CI left the post/pre processor entirly but has not been accepted by the originating source.
-         * This state can happen when the source became invalid and so its sort of orphan.
-         * @constant
-         * @type int
-         */
-        DEQUEUED: 0x00000020,
-        /**
-         * The CI fully resolved and no references except by the source are around.
-         * @constant
-         * @type int
-         */
-        SOLVED: 0x00000040,
-        /**
-         * Flag to mark the core's end of this bitmask, from here its user land
-         * @constant
-         * @type int
-         */
-        END: 0x00000080
-    }
-    /**
-     * A 'Configurable Information's ("CI") type flags for post and pre-processing a value.
-     * This is user configurable and needs to stay in the in integer limit.
-     *
-     * @TODO: 64 bit integers?
-     *
-     * @enum {string} module:xide/types/CIFlag
-     * @memberOf module:xide/types
-     */
-
-    types.CIFLAG = {
-        /**
-         * Instruct for no additional extra processing
-         * @constant
-         * @type int
-         */
-        NONE: 0x00000000,
-        /**
-         * Will instruct the pre/post processor to base-64 decode or encode
-         * @constant
-         * @type int
-         */
-        BASE_64: 0x00000001,
-        /**
-         * Post/Pre process the value with a user function
-         * @constant
-         * @type int
-         */
-        USE_FUNCTION: 0x00000002,
-        /**
-         * Replace variables with local scope's variables during the post/pre process
-         * @constant
-         * @type int
-         */
-        REPLACE_VARIABLES: 0x00000004,
-        /**
-         * Replace variables with local scope's variables during the post/pre process but evaluate the whole string
-         * as Javascript
-         * @constant
-         * @type int
-         */
-        REPLACE_VARIABLES_EVALUATED: 0x00000008,
-        /**
-         * Will instruct the pre/post processor to escpape evaluated or replaced variables or expressions
-         * @constant
-         * @type int
-         */
-        ESCAPE: 0x00000010,
-        /**
-         * Will instruct the pre/post processor to replace block calls with oridinary vanilla script
-         * @constant
-         * @type int
-         */
-        REPLACE_BLOCK_CALLS: 0x00000020,
-        /**
-         * Will instruct the pre/post processor to remove variable delimitters/placeholders from the final string
-         * @constant
-         * @type int
-         */
-        REMOVE_DELIMTTERS: 0x00000040,
-        /**
-         * Will instruct the pre/post processor to remove   "[" ,"]" , "(" , ")" , "{", "}" , "*" , "+" , "."
-         * @constant
-         * @type int
-         */
-        ESCAPE_SPECIAL_CHARS: 0x00000080,
-        /**
-         * Will instruct the pre/post processor to use regular expressions over string substitution
-         * @constant
-         * @type int
-         */
-        USE_REGEX: 0x00000100,
-        /**
-         * Will instruct the pre/post processor to use Filtrex (custom bison parser, needs xexpression) over string substitution
-         * @constant
-         * @type int
-         */
-        USE_FILTREX: 0x00000200,
-        /**
-         * Cascade entry. There are cases where #USE_FUNCTION is not enough or we'd like to avoid further type checking.
-         * @constant
-         * @type int
-         */
-        CASCADE: 0x00000400,
-        /**
-         * Cascade entry. There are cases where #USE_FUNCTION is not enough or we'd like to avoid further type checking.
-         * @constant
-         * @type int
-         */
-        EXPRESSION: 0x00000800,
-        /**
-         * Dont parse anything
-         * @constant
-         * @type int
-         */
-        DONT_PARSE: 0x000001000,
-        /**
-         * Convert to hex
-         * @constant
-         * @type int
-         */
-        TO_HEX: 0x000002000,
-        /**
-         * Convert to hex
-         * @constant
-         * @type int
-         */
-        REPLACE_HEX: 0x000004000,
-        /**
-         * Wait for finish
-         * @constant
-         * @type int
-         */
-        WAIT: 0x000008000,
-        /**
-         * Flag to mark the maximum core bit mask, after here its user land
-         * @constant
-         * @type int
-         */
-        END: 0x000010000
-    }
-    /**
-     * A CI's default post-pre processing order.
-     *
-     * @enum {string} module:xide/types/CI_STATE
-     * @memberOf module:xide/types
-     */
-    types.CI_CORDER = {}
-    /**
-     * A 'Configurable Information's ("CI") type information. Every CI has this information. You can
-     * re-composite new types with ECIType.STRUCTURE. However all 'beans' (rich objects) in the system all displayed through a set of CIs,
-     * also called the CIS (Configurable Information Set). There are many types already :
-     *
-     * Each ECIType has mapped widgets, BOOL : checkbox, STRING: Text-Areay and so forth.
-     *
-     * @enum {string} module:xide/types/ECIType
-     * @memberOf module:xide/types
-     */
-    types.ECIType = {
-        /**
-         * @const
-         * @type { int}
-         */
-        BOOL: 0,
-        /**
-         * @const
-         * @type { int}
-         */
-        BOX: 1,
-        /**
-         * @const
-         * @type { int}
-         */
-        COLOUR: 2,
-        /**
-         * @const
-         * @type { int}
-         */
-        ENUMERATION: 3,
-        /**
-         * @const
-         * @type { int}
-         */
-        FILE: 4,
-        /**
-         * @const
-         * @type { int}
-         */
-        FLAGS: 5,
-        /**
-         * @const
-         * @type { int}
-         */
-        FLOAT: 6,
-        /**
-         * @const
-         * @type { int}
-         */
-        INTEGER: 7,
-        /**
-         * @const
-         * @type { int}
-         */
-        MATRIX: 8,
-        /**
-         * @const
-         * @type { int}
-         */
-        OBJECT: 9,
-        /**
-         * @const
-         * @type { int}
-         */
-        REFERENCE: 10,
-        /**
-         * @const
-         * @type { int}
-         */
-        QUATERNION: 11,
-        /**
-         * @const
-         * @type { int}
-         */
-        RECTANGLE: 12,
-        /**
-         * @const
-         * @type { int}
-         */
-        STRING: 13,
-        /**
-         * @const
-         * @type { int}
-         */
-        VECTOR: 14,
-        /**
-         * @const
-         * @type { int}
-         */
-        VECTOR2D: 15,
-        /**
-         * @const
-         * @type { int}
-         */
-        VECTOR4D: 16,
-        /**
-         * @const
-         * @type { int}
-         */
-        ICON: 17,
-        /**
-         * @const
-         * @type { int}
-         */
-        IMAGE: 18,
-        /**
-         * @const
-         * @type { int}
-         */
-        BANNER: 19,
-        /**
-         * @const
-         * @type { int}
-         */
-        LOGO: 20,
-        /**
-         * @const
-         * @type { int}
-         */
-        STRUCTURE: 21,
-        /**
-         * @const
-         * @type { int}
-         */
-        BANNER2: 22,
-        /**
-         * @const
-         * @type { int}
-         */
-        ICON_SET: 23,
-        /**
-         * @const
-         * @type { int}
-         */
-        SCRIPT: 24,
-        /**
-         * @const
-         * @type { int}
-         */
-        EXPRESSION: 25,
-        /**
-         * @const
-         * @type { int}
-         */
-        RICHTEXT: 26,
-        /**
-         * @const
-         * @type { int}
-         */
-        ARGUMENT: 27,
-        /**
-         * @const
-         * @type { int}
-         */
-        JSON_DATA: 28,
-        /**
-         * @const
-         * @type { int}
-         */
-        EXPRESSION_EDITOR: 29,
-        /**
-         * @const
-         * @type { int}
-         */
-        WIDGET_REFERENCE: 30,
-        /**
-         * @const
-         * @type { int}
-         */
-        DOM_PROPERTIES: 31,
-
-        /**
-         * @const
-         * @type { int}
-         */
-        BLOCK_REFERENCE: 32,
-
-        /**
-         * @const
-         * @type { int}
-         */
-        BLOCK_SETTINGS: 33,
-        /**
-         * @const
-         * @type { int}
-         */
-        FILE_EDITOR: 34,
-        /**
-         * @const
-         * @type { int}
-         */
-        END: 35,
-        /**
-         * @const
-         * @type { int}
-         */
-        UNKNOWN: -1
-    }
-    /**
-     * Stub for registered bean types. This value is needed to let the UI switch between configurations per such type.
-     * At the very root is the bean action context which may include more contexts.
-     * @enum {string} module:xide/types/ITEM_TYPE
-     * @memberOf module:xide/types
-     */
-    types.ITEM_TYPE = {
-        /**
-         * Bean type 'file' is handled by the xfile package
-         * @constant
-         */
-        FILE: 'BTFILE',         //file object
-        /**
-         * Bean type 'widget' is handled by the xide/ve and davinci package
-         * @constant
-         */
-        WIDGET: 'WIDGET',       //ui designer
-        /**
-         * Bean type 'block' is handled by the xblox package
-         * @constant
-         */
-        BLOCK: 'BLOCK',         //xblox
-        /**
-         * Bean type 'text' is used for text editors
-         * @constant
-         */
-        TEXT: 'TEXT',           //xace
-        /**
-         * Bean type 'xexpression' is used for user expressions
-         * @constant
-         */
-        EXPRESSION: 'EXPRESSION'       //xexpression
-    }
-
-    /**
-     * Expression Parser is a map of currently existing parsers
-     * and might be extended by additional modules. Thus, it acts as registry
-     * and is here as stub.
-     *
-     * @enum module:xide/types/EXPRESSION_PARSER
-     * @memberOf module:xide/types
-     */
-    if (!types.EXPRESSION_PARSER) {
-        types.EXPRESSION_PARSER = {}
-    }
-    /**
-     * Component names stub, might be extended by sub-classing applications
-     * @constant xide.types.COMPONENT_NAMES
-     */
-    types.COMPONENT_NAMES = {
-        XIDEVE: 'xideve',
-        XNODE: 'xnode',
-        XBLOX: 'xblox',
-        XFILE: 'xfile',
-        XACE: 'xace',
-        XEXPRESSION: 'xexpression',
-        XCONSOLE: 'xconsole'
-    }
-
-    /**
-     * WIDGET_REFERENCE_MODE enumerates possible modes to resolve a string expression
-     * into instances. There are a few CI based widgets subclassed from xide/widgets/Referenced.
-     * The reference structure consist out of this mode and that expression.
-     *
-     * @constant {Array.<module:xide/types~WidgetReferenceMode>}
-     *     module:xide/types~WIDGET_REFERENCE_MODE
-     */
-    types.WIDGET_REFERENCE_MODE = {
-        BY_ID: 'byid',
-        BY_CLASS: 'byclass',
-        BY_CSS: 'bycss',
-        BY_EXPRESSION: 'expression'
-    }
-    /**
-     * Possible split modes for rich editors with preview or live coding views.
-     *
-     * @constant {Array.<module:xide/types~ViewSplitMode>}
-     *     module:xide/types~VIEW_SPLIT_MODE
-     */
-    types.VIEW_SPLIT_MODE = {
-        DESIGN: 1,
-        SOURCE: 2,
-        SPLIT_VERTICAL: 6,
-        SPLIT_HORIZONTAL: 7
-    }
-
-    /**
-     * All client resources are through variables on the server side. Here the minimum variables for an xjs application.
-     *
-     * @constant {Array.<module:xide/types~RESOURCE_VARIABLES>}
-     *     module:xide/types~RESOURCE_VARIABLES
-     */
-    types.RESOURCE_VARIABLES = {
-        ACE: 'ACE',
-        APP_URL: 'APP_URL',
-        SITE_URL: 'SITE_URL'
-    }
-    /**
-     * Events of xide.*
-     * @enum {string} module:xide/types/EVENTS
-     * @memberOf module:xide/types
-     * @extends xide/types
-     */
-    types.EVENTS = {
-
-        /**
-         * generic
-         */
-        ERROR: 'onError',//xhr
-        STATUS: 'onStatus',//xhr
-        ON_CREATED_MANAGER: 'onCreatedManager',//context
-
-        /**
-         * item events, to be renoved
-         */
-        ON_ITEM_SELECTED: 'onItemSelected',
-        ON_ITEM_REMOVED: 'onItemRemoved',
-        ON_ITEM_CLOSED: 'onItemClosed',
-        ON_ITEM_ADDED: 'onItemAdded',
-        ON_ITEM_MODIFIED: 'onItemModified',
-        ON_NODE_SERVICE_STORE_READY: 'onNodeServiceStoreReady',
-        /**
-         * old, to be removd
-         */
-        ON_FILE_STORE_READY: 'onFileStoreReady',
-        ON_CONTEXT_MENU_OPEN: 'onContextMenuOpen',
-        /**
-         * CI events
-         */
-        ON_CI_UPDATE: 'onCIUpdate',
-
-        /**
-         * widgets
-         */
-        ON_WIDGET_READY: 'onWidgetReady',
-        ON_CREATED_WIDGET: 'onWidgetCreated',
-        RESIZE: 'onResize',
-        /**
-         * Event to notify classes about a reloaded module
-         * @constant
-         * @type string
-         */
-        ON_MODULE_RELOADED: 'onModuleReloaded',
-        ON_MODULE_UPDATED: 'onModuleUpdated',
-
-
-        ON_DID_OPEN_ITEM: 'onDidOpenItem',//remove
-        ON_DID_RENDER_COLLECTION: 'onDidRenderCollection',//move
-
-        ON_PLUGIN_LOADED: 'onPluginLoaded',
-        ON_PLUGIN_READY: 'onPluginReady',
-        ALL_PLUGINS_READY: 'onAllPluginsReady',
-
-        /**
-         * editors
-         */
-        ON_CREATE_EDITOR_BEGIN: 'onCreateEditorBegin',//move to xedit
-        ON_CREATE_EDITOR_END: 'onCreateEditorEnd',//move to xedit
-        REGISTER_EDITOR: 'registerEditor',//move to xedit
-        ON_EXPRESSION_EDITOR_ADD_FUNCTIONS: 'onExpressionEditorAddFunctions',//move to xedit
-        ON_ACE_READY: 'onACEReady',//remove
-
-        /**
-         * Files
-         */
-        ON_UNSAVED_CONTENT: 'onUnSavedContent',
-        ON_FILE_CHANGED: 'fileChanged',
-        ON_FILE_DELETED: 'fileDeleted',
-        IMAGE_LOADED: 'imageLoaded',
-        IMAGE_ERROR: 'imageError',
-        UPLOAD_BEGIN: 'uploadBegin',
-        UPLOAD_PROGRESS: 'uploadProgress',
-        UPLOAD_FINISH: 'uploadFinish',
-        UPLOAD_FAILED: 'uploadFailed',
-        ON_FILE_CONTENT_CHANGED: 'onFileContentChanged',
-        ON_COPY_BEGIN: 'onCopyBegin',
-        ON_COPY_END: 'onCopyEnd',
-        ON_DELETE_BEGIN: 'onDeleteBegin',
-        ON_DELETE_END: 'onDeleteEnd',
-        ON_MOVE_BEGIN: 'onMoveBegin',
-        ON_MOVE_END: 'onMoveEnd',
-        ON_CHANGED_CONTENT: 'onChangedContent',
-        ON_COMPRESS_BEGIN: 'onCompressBegin',
-        ON_COMPRESS_END: 'onCompressEnd',
-
-
-
-        ON_COMPONENT_READY: 'onComponentReady',
-        ON_ALL_COMPONENTS_LOADED: 'onAllComponentsLoaded',
-        ON_APP_READY: 'onAppReady',
-        /**
-         * Store
-         */
-        ON_CREATE_STORE: 'onCreateStore',
-        ON_STORE_CREATED: 'onStoreCreated',
-        ON_STORE_CHANGED: 'onStoreChanged',
-        ON_STATUS_MESSAGE: 'onStatusMessage',
-        /**
-         * layout
-         */
-        SAVE_LAYOUT: 'layoutSave',
-        RESTORE_LAYOUT: 'layoutRestore',
-        /**
-         * views, panels and 'main view'
-         */
-        ON_SHOW_PANEL: 'onShowPanel',
-        ON_PANEL_CLOSED: 'onPanelClosed',
-        ON_PANEL_CREATED: 'onPanelCreated',
-
-        ON_MAIN_VIEW_READY: 'onMainViewReady',
-        ON_MAIN_MENU_READY: 'onMainMenuReady',
-        ON_MAIN_MENU_OPEN: 'onMainMenuOpen',
-        ON_VIEW_REMOVED: 'onViewRemoved',
-        ON_VIEW_SHOW: 'onViewShow',
-        ON_VIEW_HIDE: 'onViewHide',
-        ON_VIEW_ADDED: 'onViewAdded',
-        ON_OPEN_VIEW: 'onOpenView',
-        ON_VIEW_MAXIMIZE_START: 'onViewMaximizeStart',
-        ON_VIEW_MAXIMIZE_END: 'onViewMaximizeEnd',
-        ON_CONTAINER_ADDED: 'onContainerAdded',
-        ON_CONTAINER_REMOVED: 'onContainerRemoved',
-        ON_REMOVE_CONTAINER: 'onRemoveContainer',
-        ON_CONTAINER_REPLACED: 'onContainerReplaced',
-        ON_CONTAINER_SPLIT: 'onContainerSplit'
-    }
-    /**
-     * To be moved
-     * @type {{SIZE_NORMAL: string, SIZE_SMALL: string, SIZE_WIDE: string, SIZE_LARGE: string}}
-     */
-    types.DIALOG_SIZE = {
-        SIZE_NORMAL: 'size-normal',
-        SIZE_SMALL: 'size-small',
-        SIZE_WIDE: 'size-wide',    // size-wide is equal to modal-lg
-        SIZE_LARGE: 'size-large'
-    }
-
-    /**
-     * To be moved
-     * @type {{DEFAULT: string, INFO: string, PRIMARY: string, SUCCESS: string, WARNING: string, DANGER: string}}
-     */
-    types.DIALOG_TYPE = {
-        DEFAULT: 'type-default',
-        INFO: 'type-info',
-        PRIMARY: 'type-primary',
-        SUCCESS: 'type-success',
-        WARNING: 'type-warning',
-        DANGER: 'type-danger'
-    }
-    /**
-     * @TODO: remove, defined in xideve
-     */
-    lang.mixin(types, {
-        LAYOUT_RIGHT_CENTER_BOTTOM: 'LAYOUT_RIGHT_CENTER_BOTTOM',
-        LAYOUT_CENTER_BOTTOM: 'LAYOUT_CENTER_BOTTOM',
-        LAYOUT_CENTER_RIGHT: 'LAYOUT_CENTER_RIGHT',
-        LAYOUT_LEFT_CENTER_RIGHT: 'LAYOUT_LEFT_CENTER_RIGHT',
-        LAYOUT_LEFT_CENTER_RIGHT_BOTTOM: 'LAYOUT_LEFT_CENTER_RIGHT_BOTTOM'
-    })
-
-    /**
-     * Hard Dojo override to catch malformed JSON.
-     * @param js
-     * @returns {*}
-     */
-    dojo.fromJson = function (js, debug) {
-        var res = null;
-        var didFail = false;
-        try {
-            res = eval("(" + js + ")");
-        } catch (e) {
-            didFail = true;
-        }
-        if (didFail) {
-            var js2 = js.substring(js.indexOf('{'), js.lastIndexOf('}') + 1);
-            try {
-                js2 && (res = eval("(" + js2 + ")"));
-            } catch (e) {
-                debug !== false && console.error('error in json parsing! ' + js);
-                if (js.indexOf('error') !== -1) {
-                    return {
-                        "jsonrpc": "2.0",
-                        "result": {
-                            "error": {
-                                "code": 1,
-                                "message": js,
-                                "data": null
-                            }
-                        }, "id": 0
-                    };
-                    return {
-                        error: '1',
-                        message: js
-                    }
-                }
-                throw new Error(js);
-            }
-        }
-        return res;
-    };
-    return types;
 });;
 define('xaction/types',[
     'xide/types',
@@ -70891,8 +71010,12 @@ define('xfile/manager/FileManager',[
         _initService: function () {
             this.filesToUpload = [];
             if (!this.serviceObject) {
-                this.serviceObject = new RPCService(decodeURIComponent(this.serviceUrl));
-                this.serviceObject.config = this.config;
+                if(this.serviceUrl) {
+                    this.serviceObject = new RPCService(decodeURIComponent(this.serviceUrl));
+                    this.serviceObject.config = this.config;
+                }else{
+                    console.warn('FileManager : Have no service url');
+                }
             }
         }
     });
@@ -79570,88 +79693,6 @@ define('xblox/mainr',[
     "xblox/StyleState"
 ], function(){});
 ;
-define('xblox/types/Types',[
-    'xide/types/Types',
-    'dojo/_base/lang',
-    'xide/utils'
-],function(types,lang,utils){
-
-        types.BLOCK_MODE = {
-            NORMAL:0,
-            UPDATE_WIDGET_PROPERTY:1
-        };
-
-        types.BLOCK_OUTLET = {
-            NONE:0x00000000,
-            PROGRESS:0x00000001,
-            ERROR:0x00000002,
-            PAUSED:0x00000004,
-            FINISH:0x00000008,
-            STOPPED:0x00000010
-        };
-
-        utils.mixin(types.EVENTS,{
-            ON_RUN_BLOCK:                   'onRunBlock',
-            ON_RUN_BLOCK_FAILED:            'onRunBlockFailed',
-            ON_RUN_BLOCK_SUCCESS:           'onRunBlockSuccess',
-            ON_BLOCK_SELECTED:              'onItemSelected',
-            ON_BLOCK_UNSELECTED:            'onBlockUnSelected',
-            ON_BLOCK_EXPRESSION_FAILED:     'onExpressionFailed',
-            ON_BUILD_BLOCK_INFO_LIST:       'onBuildBlockInfoList',
-            ON_BUILD_BLOCK_INFO_LIST_END:   'onBuildBlockInfoListEnd',
-            ON_BLOCK_PROPERTY_CHANGED:      'onBlockPropertyChanged',
-            ON_SCOPE_CREATED:               'onScopeCreated',
-            ON_VARIABLE_CHANGED:            'onVariableChanged',
-            ON_CREATE_VARIABLE_CI:          'onCreateVariableCI'
-        });
-
-
-        types.BlockType = {
-
-            AssignmentExpression: 'AssignmentExpression',
-            ArrayExpression: 'ArrayExpression',
-            BlockStatement: 'BlockStatement',
-            BinaryExpression: 'BinaryExpression',
-            BreakStatement: 'BreakStatement',
-            CallExpression: 'CallExpression',
-            CatchClause: 'CatchClause',
-            ConditionalExpression: 'ConditionalExpression',
-            ContinueStatement: 'ContinueStatement',
-            DoWhileStatement: 'DoWhileStatement',
-            DebuggerStatement: 'DebuggerStatement',
-            EmptyStatement: 'EmptyStatement',
-            ExpressionStatement: 'ExpressionStatement',
-            ForStatement: 'ForStatement',
-            ForInStatement: 'ForInStatement',
-            FunctionDeclaration: 'FunctionDeclaration',
-            FunctionExpression: 'FunctionExpression',
-            Identifier: 'Identifier',
-            IfStatement: 'IfStatement',
-            Literal: 'Literal',
-            LabeledStatement: 'LabeledStatement',
-            LogicalExpression: 'LogicalExpression',
-            MemberExpression: 'MemberExpression',
-            NewExpression: 'NewExpression',
-            ObjectExpression: 'ObjectExpression',
-            Program: 'Program',
-            Property: 'Property',
-            ReturnStatement: 'ReturnStatement',
-            SequenceExpression: 'SequenceExpression',
-            SwitchStatement: 'SwitchStatement',
-            SwitchCase: 'SwitchCase',
-            ThisExpression: 'ThisExpression',
-            ThrowStatement: 'ThrowStatement',
-            TryStatement: 'TryStatement',
-            UnaryExpression: 'UnaryExpression',
-            UpdateExpression: 'UpdateExpression',
-            VariableDeclaration: 'VariableDeclaration',
-            VariableDeclarator: 'VariableDeclarator',
-            WhileStatement: 'WhileStatement',
-            WithStatement: 'WithStatement'
-        };
-
-        return types;
-});;
 define('xblox/model/html/SetCSS',[
     "dojo/_base/declare",
     "dojo/_base/lang",
