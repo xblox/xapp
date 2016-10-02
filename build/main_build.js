@@ -5514,7 +5514,7 @@ define('requirejs-dplugins/has',["module"], function (module) {
 });
 ;
 define('delite/handlebars!xdeliteful/MediaPlayer/template.html',["delite/handlebars","deliteful/ToggleButton","xdeliteful/Button","xblox/RunScript","deliteful/Slider"], function(handlebars){
-	return handlebars.compile("<template attach-point=\"focusNode\" style=\"position: relative;display: inherit;width: 300px;height: 300px;min-width:300px;min-height:300px\">\n\n<button class=\"mediaPlayerLabel\" is=\"d-button\" title=\"Default Label\" label=\"Position\" style=\"position: absolute; left: 18px; top: 61px;\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"label\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=2219d68b-862f-92ab-de5d-b7a847930a7a\" script=\"Current Position\" style=\"position: relative;\"></d-xscript>\n</button>\n<button class=\"mediaPlayerLabel\" attach-point=\"btnCurrentTrack\" is=\"d-button\" title=\"Default Label\" label=\"Current Track\" style=\"position: absolute; left: 19px; top: 158px;\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"label\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=e76f0b30-4443-47ae-0cef-2c4c9e4acffd\" style=\"position: relative;\"></d-xscript>\n</button>\n<d-slider class=\"mediaPlayerSlider\" attach-point=\"slider\" max=\"1\" step=\"0.01\" style=\"position: absolute; width: 202px; height: 3px; left: 14px; top: 106px;\" value=\"0.2\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"value\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=2219d68b-862f-92ab-de5d-b7a847930a7a\" style=\"position: relative;\"></d-xscript>\n</d-slider>\n<button class=\"mediaPlayerButton\" attach-point=\"btnStop\" is=\"d-button\" title=\"Default Label\" label=\" \" iconclass=\"fa fa-stop \" style=\"position: absolute; left: 63px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=418f48fc-9d4d-9c8c-fc19-4674848fa55c\" script=\"Stop\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnPause\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-pause\" style=\"position: absolute; left: 109.53125px; width: 38px; height: 34px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=a3c0e8d7-e517-18a2-1405-0a46e6182aef\" script=\"Pause\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnPlay\" is=\"d-button\" title=\"Default Label\" style=\"position: absolute; left: 155px; width: 38px; height: 34px; top: 17px;\" iconclass=\"fa fa-play\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=126d4b91-f6de-bce2-d150-932a1f5334ed\" script=\"Play\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnNext\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-caret-right\" style=\"position: absolute; left: 203px; width: 38px; height: 34px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=49936bba-e005-053f-b88d-48ec88688b8b\" script=\"Next\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnPrev\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-caret-left\" style=\"position: absolute; left: 15.015625px; width: 38px; height: 34px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=ab927f79-8968-ff46-44a8-e5fbe5bbfdbe\" script=\"Prev\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnOpenFolder\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-folder-open\" style=\"position: absolute; left: 254px; top: 17px;\"></button>\n\n<button class=\"mediaPlayerLabel\" is=\"d-button\" label=\"Default Label\" title=\"Default Label\" style=\"position: absolute; left: 19px; top: 236px;\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"label\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=9673fd4c-15f5-cebb-82a0-8500ec7b52e6\" style=\"position: relative;\"></d-xscript>\n</button>\n\n<d-slider class=\"mediaPlayerSlider\" attach-point=\"volume\" value=\"100\" sliderange=\"true\" vertical=\"true\" style=\"position: absolute; left: 354px; top: 5px; width: 4px; height: 104px;\" id=\"mediaPlayerVolume\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"value\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=3879e1cd-7a17-71d2-59d4-6e825658194b\" script=\"Current Volume\" style=\"position: relative;\"></d-xscript>\n</d-slider>\n\n<button attach-point=\"mute\" is=\"d-toggle-button\" checkediconclass=\"fa fa-volume-down\" iconclass=\"fa fa-volume-up\" style=\"position: absolute; left: 203px; top: 61px;display: none\" checked=\"false\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"checked\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=cabd937b-28b7-3985-6a10-d456dbe74374\" script=\"Muted\" style=\"position: relative;\"></d-xscript>\n</button>\n\n</template>");
+	return handlebars.compile("<template attach-point=\"focusNode\" style=\"position: relative;display: inherit;width: 300px;height: 300px;min-width:300px;min-height:300px\">\n\n<button class=\"mediaPlayerLabel\" is=\"d-button\" title=\"Default Label\" label=\"Position\" style=\"position: absolute; left: 18px; top: 61px;\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"label\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=VLC&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=2219d68b-862f-92ab-de5d-b7a847930a7a\" script=\"Current Position\" style=\"position: relative;\"></d-xscript>\n</button>\n<button class=\"mediaPlayerLabel\" attach-point=\"btnCurrentTrack\" is=\"d-button\" title=\"Default Label\" label=\"Current Track\" style=\"position: absolute; left: 19px; top: 158px;\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"label\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=VLC&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=e76f0b30-4443-47ae-0cef-2c4c9e4acffd\" style=\"position: relative;\"></d-xscript>\n</button>\n<d-slider class=\"mediaPlayerSlider\" attach-point=\"slider\" max=\"1\" step=\"0.01\" style=\"position: absolute; width: 202px; height: 3px; left: 14px; top: 106px;\" value=\"0.2\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"value\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=VLC&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=2219d68b-862f-92ab-de5d-b7a847930a7a\" style=\"position: relative;\"></d-xscript>\n</d-slider>\n<button class=\"mediaPlayerButton\" attach-point=\"btnStop\" is=\"d-button\" title=\"Default Label\" label=\" \" iconclass=\"fa fa-stop \" style=\"position: absolute; left: 63px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=VLC&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=418f48fc-9d4d-9c8c-fc19-4674848fa55c\" script=\"Stop\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnPause\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-pause\" style=\"position: absolute; left: 109.53125px; width: 38px; height: 34px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=VLC&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=a3c0e8d7-e517-18a2-1405-0a46e6182aef\" script=\"Pause\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnPlay\" is=\"d-button\" title=\"Default Label\" style=\"position: absolute; left: 155px; width: 38px; height: 34px; top: 17px;\" iconclass=\"fa fa-play\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=VLC&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=450d2c75-29b0-29b7-13c5-be175b2a5749\" script=\"Play Args\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnNext\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-caret-right\" style=\"position: absolute; left: 203px; width: 38px; height: 34px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=VLC&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=49936bba-e005-053f-b88d-48ec88688b8b\" script=\"Next\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnPrev\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-caret-left\" style=\"position: absolute; left: 15.015625px; width: 38px; height: 34px; top: 17px;\">\n    <d-xscript style=\"position:relative\" targetevent=\"click\" block=\"command://deviceScope=user_devices&amp;device=VLC&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=ab927f79-8968-ff46-44a8-e5fbe5bbfdbe\" script=\"Prev\"></d-xscript>\n</button>\n<button class=\"mediaPlayerButton\" attach-point=\"btnOpenFolder\" is=\"d-button\" title=\"Default Label\" label=\"\" iconclass=\"fa fa-folder-open\" style=\"position: absolute; left: 254px; top: 17px;\"></button>\n\n<button class=\"mediaPlayerLabel\" is=\"d-button\" label=\"Default Label\" title=\"Default Label\" style=\"position: absolute; left: 19px; top: 236px;\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"label\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=VLC&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=9673fd4c-15f5-cebb-82a0-8500ec7b52e6\" style=\"position: relative;\"></d-xscript>\n</button>\n\n<d-slider class=\"mediaPlayerSlider\" attach-point=\"volume\" value=\"100\" sliderange=\"true\" vertical=\"true\" style=\"position: absolute; left: 354px; top: 5px; width: 4px; height: 104px;\" id=\"mediaPlayerVolume\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"value\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=VLC&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=3879e1cd-7a17-71d2-59d4-6e825658194b\" script=\"Current Volume\" style=\"position: relative;\"></d-xscript>\n</d-slider>\n\n<button attach-point=\"mute\" is=\"d-toggle-button\" checkediconclass=\"fa fa-volume-down\" iconclass=\"fa fa-volume-up\" style=\"position: absolute; left: 203px; top: 61px;display: none\" checked=\"false\">\n    <d-xscript stop=\"false\" bidirectional=\"false\" mode=\"1\" targetproperty=\"checked\" sourceevent=\"onDriverVariableChanged\" sourceeventvaluepath=\"item.value\" sourceeventnamepath=\"item.name\" block=\"variable://deviceScope=user_devices&amp;device=VLC&amp;driver=9db866a4-bb3e-137b-ae23-793b729c44f8&amp;driverScope=user_drivers&amp;block=cabd937b-28b7-3985-6a10-d456dbe74374\" script=\"Muted\" style=\"position: relative;\"></d-xscript>\n</button>\n\n</template>");
 });;
 /** @module deliteful/TabBar */
 define('xdeliteful/MediaPlayer',[
@@ -5525,11 +5525,14 @@ define('xdeliteful/MediaPlayer',[
     'xide/mixins/EventedMixin',
     "delite/handlebars!./MediaPlayer/template.html",
     "requirejs-dplugins/jquery!attributes/classes",
-    "requirejs-dplugins/has"
-], function (dcl, register,Widget,RunScript,EventedMixin,template, $,has) {
-
-    console.log('has debug ' + has('debug'));
-
+    "requirejs-dplugins/has",
+    "delite/handlebars",
+    "delite/Template",
+    "deliteful/ToggleButton",
+    "xdeliteful/Button",
+    "xblox/RunScript",
+    "deliteful/Slider"
+], function (dcl, register,Widget,RunScript,EventedMixin,template, $,has,handlebars,Template) {
 
     var MediaPlayer = dcl([Widget,EventedMixin.dcl], /** @lends module:delite/Widget# */ {
         baseClass: "d-media-player",
@@ -5548,6 +5551,9 @@ define('xdeliteful/MediaPlayer',[
             var path = item.realPath;
             path = path  || "/home/mc007/Music/Sasha/";
             var vlc = this.vlc;
+            if(!vlc){
+                console.error('can`t get VLC driver, abort');
+            }
             var cmd = vlc.getCommand('Play Args');
             cmd.stop();
             path = path.replace(/\\/g, '/');
@@ -5704,7 +5710,7 @@ define('xdeliteful/MediaPlayer',[
 
                                 picker.resize();
 
-                                $(combo.list).css('height','inherit');
+                                //$(combo.list).css('height','inherit');
                                 //$(combo.list).css('width','100%');
 
 
@@ -5815,13 +5821,53 @@ define('xdeliteful/MediaPlayer',[
                 vlc.callCommand('Volume',settings);
             });
         },
+
+        doTemplate:function(){
+
+            var template = $(this).attr('templateId');
+            if(template){
+                template = $(template);
+                //if(this.!this._didTemplate)
+                if(template[0] && !this._didTemplate){
+
+                    console.error('create new template');
+
+                    var text = template[0].outerHTML;
+
+                    text = text.replace('display:none','');
+                    text = text.replace('pointer-events:none','');
+                    var templateDom = handlebars.toDom(text),
+                        requires = templateDom.getAttribute("requires") ||
+                            templateDom.getAttribute("data-requires") || "";
+
+                    templateDom.removeAttribute("requires");
+                    templateDom.removeAttribute("data-requires");
+                    templateDom.removeAttribute("style");
+
+                    var tree = handlebars.parse(templateDom);
+
+
+                    this.template = new Template(tree).func;
+                    this._didTemplate=true;
+
+
+                }else{
+                    console.log('cant get template');
+                }
+            }
+        },
         attachedCallback:function () {
 
+            var template = $(this).attr('templateId');
+            if(template) {
+                template = $(template);
+                if (template[0]) {
+                    this.doTemplate();
+                }
+            }
         },
         DevicesConnected:function(){
-
             console.log('devices connected');
-
             var vlc = this.getDriverInstance("VLC");
             if(vlc){
                 this.vlc = vlc;
@@ -5841,12 +5887,11 @@ define('xdeliteful/MediaPlayer',[
             this.subscribe('DevicesConnected');
         },
         init:function(){
-
             this.subscribe('onContextReady');
         },
         createdCallback: function () {
             // Get label from innerHTML, and then clear it since we are to put the label in a <span>
-            console.log('created ');
+            this.doTemplate();
             this.init();
         }
     });
@@ -15958,26 +16003,14 @@ define('delite/CustomElement',[
 		 * @param {string} type - Name of event.
 		 * @param {Object} [eventObj] - Properties to mix in to emitted event.  Can also contain
 		 * `bubbles` and `cancelable` properties to control how the event is emitted.
+		 * @param {Element} [node] - Element to emit event on, defaults to `this`.
 		 * @returns {boolean} True if the event was *not* canceled, false if it was canceled.
 		 * @example
 		 * myWidget.emit("query-success", {});
 		 * @protected
 		 */
-		emit: function (type, eventObj) {
-			eventObj = eventObj || {};
-			var bubbles = "bubbles" in eventObj ? eventObj.bubbles : true;
-			var cancelable = "cancelable" in eventObj ? eventObj.cancelable : true;
-
-			// Note: can't use jQuery.trigger() because it doesn't work with addEventListener(),
-			// see http://bugs.jquery.com/ticket/11047
-			var nativeEvent = this.ownerDocument.createEvent("HTMLEvents");
-			nativeEvent.initEvent(type, bubbles, cancelable);
-			for (var i in eventObj) {
-				if (!(i in nativeEvent)) {
-					nativeEvent[i] = eventObj[i];
-				}
-			}
-			return this.dispatchEvent(nativeEvent);
+		emit: function (type, eventObj, node) {
+			on.emit(node || this, type, eventObj);
 		},
 
 		/**
@@ -16051,7 +16084,7 @@ define('delite/on',[],function () {
 	 * @param {Function} callback - Callback function.
 	 * @returns {Object} Handle with `remove()` method to cancel the listener.
 	 */
-	return function (node, type, callback) {
+	var on = function (node, type, callback) {
 		var capture = false;
 
 		// Shim support for focusin/focusout where necessary.
@@ -16118,6 +16151,38 @@ define('delite/on',[],function () {
 			}
 		};
 	};
+
+
+	/**
+	 * Emits a synthetic event of specified type, based on eventObj.
+	 * @param {Element} node - Element to emit event on.
+	 * @param {string} type - Name of event.
+	 * @param {Object} [eventObj] - Properties to mix in to emitted event.  Can also contain
+	 * `bubbles` and `cancelable` properties to control how the event is emitted.
+	 * @returns {boolean} True if the event was *not* canceled, false if it was canceled.
+	 * @example
+	 * myWidget.emit("query-success", {});
+	 * @protected
+	 */
+	on.emit = function (node, type, eventObj) {
+		eventObj = eventObj || {};
+		var bubbles = "bubbles" in eventObj ? eventObj.bubbles : true;
+		var cancelable = "cancelable" in eventObj ? eventObj.cancelable : true;
+
+		// Note: can't use jQuery.trigger() because it doesn't work with addEventListener(),
+		// see http://bugs.jquery.com/ticket/11047.
+		var nativeEvent = node.ownerDocument.createEvent("HTMLEvents");
+		nativeEvent.initEvent(type, bubbles, cancelable);
+		for (var i in eventObj) {
+			if (!(i in nativeEvent)) {
+				nativeEvent[i] = eventObj[i];
+			}
+		}
+
+		return node.dispatchEvent(nativeEvent);
+	};
+
+	return on;
 });
 ;
 /** @module decor/Stateful */
@@ -25902,18 +25967,10 @@ define('delite/HasDropDown',[
 			var dropDown = this._currentDropDown, target = e.target;
 			if (dropDown && this.opened) {
 				// Forward the keystroke to the dropdown widget.
-				// Can't use dropDown.emit() though because deliteful/List (the dropdown for deliteful/Combobox)
+				// deliteful/List (the dropdown for deliteful/Combobox)
 				// listens for events on List#containerNode rather than the List root node.
-				var eventCopy = this.ownerDocument.createEvent("HTMLEvents");
-				eventCopy.initEvent("keydown", true, true);
-				for (var i in e) {
-					if (!(i in eventCopy)) {
-						eventCopy[i] = e[i];
-					}
-				}
-
 				var forwardNode = dropDown.keyNavContainerNode || dropDown.containerNode || dropDown;
-				if (forwardNode.dispatchEvent(eventCopy) === false) {
+				if (dropDown.emit("keydown", e, forwardNode) === false) {
 					/* false return code means that the drop down handled the key */
 					e.stopPropagation();
 					e.preventDefault();
@@ -26133,6 +26190,8 @@ define('delite/HasDropDown',[
 		 * @fires module:delite/HasDropDown#delite-after-hide
 		 */
 		closeDropDown: function (focus) {
+			var dropdown = this._currentDropDown;
+
 			if (this._cancelPendingDisplay) {
 				this._cancelPendingDisplay();
 			}
@@ -26151,17 +26210,25 @@ define('delite/HasDropDown',[
 				}
 
 				this.emit("delite-before-hide", {
-					child: this._currentDropDown,
+					child: dropdown,
 					cancelable: false
 				});
 
-				popup.close(this._currentDropDown);
+				popup.close(dropdown);
 				this.opened = false;
 
-				this._currentDropDown.style.cssText = this._currentDropDown._originalStyle;
+				// Restore original height/width etc.  But don't put back display:none.
+				// That is handled by the popup wrapper.
+				dropdown.style.cssText = dropdown._originalStyle;
+				if (dropdown.style.display === "none") {
+					dropdown.style.display = "";
+				}
+				if (dropdown.style.visibility === "hidden") {
+					dropdown.style.visibility = "";
+				}
 
 				this.emit("delite-after-hide", {
-					child: this._currentDropDown,
+					child: dropdown,
 					cancelable: false
 				});
 			}
@@ -26186,10 +26253,11 @@ define('delite/popup',[
 	"./BackgroundIframe",
 	"./DialogUnderlay",
 	"./features", // has("config-bgIframe")
+	"./on",
 	"./place",
 	"./Viewport",
 	"./theme!" // d-popup class
-], function (advise, dcl, $, BackgroundIframe, DialogUnderlay, has, place, Viewport) {
+], function (advise, dcl, $, BackgroundIframe, DialogUnderlay, has, on, place, Viewport) {
 
 	function isDocLtr(doc) {
 		return !(/^rtl$/i).test(doc.body.dir || doc.documentElement.dir);
@@ -26317,10 +26385,7 @@ define('delite/popup',[
 			this._stack.forEach(function (args) {
 				this._size(args, measureSize);
 				this._position(args);
-				var nativeEvent = args.popup.ownerDocument.createEvent("HTMLEvents");
-				nativeEvent.initEvent("delite-repositioned", true, true);
-				nativeEvent.args = args;
-				args.popup.dispatchEvent(nativeEvent);
+				on.emit(args.popup, "delite-repositioned", {args: args});
 			}, this);
 		},
 
@@ -31020,14 +31085,15 @@ define('dpointer/handlers/mspointer',[
 	};
 });;
 /**
- * This module sets has() flags based on the current browser:
+ * This module sets has() flags based on the current browser and platform:
  *
  * - `has("webkit")`, `has("chrome")`, `has("safari")`
- * - `has("mozilla")`, `has("ff")`
- * - `has("ie")`
+ * - `has("ff")`
+ * - `has("ie")`, `has("edge")`
  * - `has("ios")`
  * - `has("android")`
  * - `has("wp")`
+ * - `has("mac")`
  *
  * It returns the `has()` function.
  * @module decor/sniff
@@ -33326,7 +33392,7 @@ define('xblox/model/Block',[
             } else {
 
                 if (val === 'true' || val === 'false') {
-                    return utils.toBoolean(val);
+                    return val==='true' ? true : false;
                 }else if(val && escape && _.isString(val)){
                     return '\'' + val + '\'';
                 }
@@ -33636,10 +33702,19 @@ define('xblox/model/Block',[
         deactivate: function () {
         },
         _get: function (what) {
-            return (what in this.override ? this.override[what] : this[what]);
+            if(this.override) {
+                return (what in this.override ? this.override[what] : this[what]);
+            }
         },
         onDidRun: function () {
-            this.override = {};
+
+            if(this.override){
+                this.override.args && delete this.override.args;
+                delete this.override;
+            }
+
+            //this.override = {}
+
         },
         destroy:function(){
             this.stop();
@@ -33652,6 +33727,8 @@ define('xblox/model/Block',[
                 clearTimeout(this._loop);
                 this._loop = null;
             }
+            delete this.override;
+            this.override = {};
         },
         stop:function(){
             this.reset();
@@ -33676,6 +33753,7 @@ define('xblox/model/Block',[
     }
     dcl.chainAfter(Block,'stop');
     dcl.chainAfter(Block,'destroy');
+    dcl.chainAfter(Block,'onDidRun');
     return Block;
 });;
 /** @module xblox/model/ModelBase
@@ -34935,6 +35013,7 @@ define('xblox/model/Contains',[
                         if(block.enabled) {
                             var blockDfd = block.solve(this.scope, settings);
                             allDfds.push(blockDfd);
+                            block.onDidRun();
                         }
                     }
 
@@ -34943,6 +35022,10 @@ define('xblox/model/Contains',[
             } else {
                 this.onSuccess(this, settings);
             }
+
+            //console.log('last settings ',this._lastSettings);
+
+            this._lastSettings && delete this._lastSettings.override;
 
             return allDfds;
         },
@@ -39542,7 +39625,7 @@ define('xblox/model/variables/VariableAssignmentBlock',[
                 }
 
 
-                changed && _variable.set('value',_parsed);
+                _variable.set('value',_parsed);
 
                 var publish = false;
 
@@ -48774,6 +48857,13 @@ define('xblox/model/Scope',[
 
             parts = utils.urlArgs(parts.host);//go on with query string
             var _device = deviceManager.getItemById(parts.device.value);
+            //support device by name
+            if(!_device){
+                var _instance = deviceManager.getInstanceByName(parts.device.value)
+                if(_instance){
+                    _device = _instance.device;
+                }
+            }
             if(_device){
                 var info=deviceManager.toDeviceControlInfo(_device);
                 driver = driverManager.getDriverById(info.driverId);
@@ -71071,14 +71161,14 @@ define('xfile/manager/Electron',[
                 return false;
             }
             
-            mount = utils.replaceAll(' ','',mount);
+            //mount = utils.replaceAll(' ','',mount);
 
             var itemPath = item.path.replace('./','/');
             itemPath = utils.replaceAll('/',path.sep,itemPath);
 
             var realPath = path.resolve(mount + path.sep + itemPath);//"/PMaster/projects/x4mm/build/electron-template" in debug version;
 
-            realPath = utils.replaceAll(' ','',realPath);
+            //realPath = utils.replaceAll(' ','',realPath);
 
             if(fs.existsSync(realPath)){
                 
@@ -71097,7 +71187,7 @@ define('xfile/manager/Electron',[
                 }
 
             }else{
-                console.error('path ' + realPath + ' doesnt exists');
+                console.warn('path ' + realPath + ' doesnt exists, fall back to legacy getContent');
                 return false;
             }
             return dfd;
@@ -71137,14 +71227,14 @@ define('xfile/manager/Electron',[
             }
             mount = vfsConfig[mount];
             if(!mount){
-                console.error('cant resolve file ' + mount + '/'+ _path);
+                console.warn('cant resolve file mount' + mount + '/'+ _path);
                 return false;
             }
-            mount = utils.replaceAll(' ','',mount);
+            //mount = utils.replaceAll(' ','',mount);
             var itemPath = item.path.replace('./','/');
             itemPath = utils.replaceAll('/',path.sep,itemPath);
             var realPath = path.resolve(mount + path.sep + itemPath);
-            realPath = utils.replaceAll(' ','',realPath);
+            //realPath = utils.replaceAll(' ','',realPath);
             if(fs.existsSync(realPath)){
                 try {
                     fs.writeFileSync(realPath, content);
@@ -71159,7 +71249,7 @@ define('xfile/manager/Electron',[
                     return false;
                 }
             }else{
-                console.error('path ' + realPath + ' doesnt exists');
+                console.error('path ' + realPath + ' doesnt exists, fallback to legacy setContent');
                 return false;
             }
             return dfd;
@@ -85264,8 +85354,8 @@ define('deliteful/Button',[
 ], function (dcl, has, register, Widget, BidiButton, template) {
 
 	/**
-	 * A Non-templated form-aware button widget.
-	 * A Button can display a label, an icon, or both. Icon is specified via the iconClass property that
+	 * A form-aware button widget.
+	 * A Button can display a label, an icon, or both.  Icon is specified via the iconClass property that
 	 * takes the name of the class to apply to the button node to display the icon.
 	 * @example
 	 * <style>
