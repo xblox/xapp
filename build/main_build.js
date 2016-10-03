@@ -34818,7 +34818,7 @@ define('xblox/model/File/ReadJSON',[
     'xide/types',
     'module',
     "xdojo/has!xblox-ui?xfile/data/DriverStore",
-    'xdojo/has!xblox-ui?xfile/views/FileGridLight',
+    'xdojo/has!xblox-ui?xfile/views/FileGridLight'
 ], function(dcl,has,Deferred,Block,utils,Contains,all,types,module,DriverStore,FileGridLight){
 
     var isServer = has('host-node');
@@ -44754,7 +44754,7 @@ define('xblox/manager/BlockManager',[
                 data && scope.initWithData(data);
                 scope.init();
             }catch(e){
-                logError(e,'error creating scope');
+                logError(e,'error creating scope, data:',mixed);
             }
 
             return scope;
