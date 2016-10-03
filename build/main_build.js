@@ -5542,7 +5542,7 @@ define('xdeliteful/MediaPlayer',[
         fileServer:null,
         declaredClass:'delite/MediaPlayer',
         allowAudio:true,
-        allowVideo:true,
+        allowVideo:false,
         getDriverInstance:function(name){
             var deviceManager = this.context.getDeviceManager();
             //device instance
@@ -5578,7 +5578,7 @@ define('xdeliteful/MediaPlayer',[
             path = path.replace(/\\/g, '/');
             if(item.isDir) {
                 //path += '/*.mp3';
-                path+='/+(*.mp3|*.wav|*.m4a)'
+                path+='/+(*.mp3|*.wav|*.m4a|*.wma)'
             }
             vlc.setVariable("Current Folder",path);
             vlc.callCommand('Play Args');
@@ -5617,7 +5617,7 @@ define('xdeliteful/MediaPlayer',[
                             types.FIELDS.SHOW_MEDIA_INFO
                         };
 
-                        var match = thiz.allowAudio ? "(*.m4a)|(*.wav)|(*.mp3)" : "";
+                        var match = thiz.allowAudio ? "(*.m4a)|(*.wav)|(*.mp3)|(*.wma)" : "";
                         if(thiz.allowVideo){
                             thiz.allowAudio && (match+="|");
                             match+="(*.avi)|(*.mp4)|(*.mkv)"
@@ -5634,7 +5634,7 @@ define('xdeliteful/MediaPlayer',[
                             options: options,
                             driver: thiz.fileServer,
                             glob: ext,
-                            _micromatch: "(*.m4a)|(*.wav)|(*.mp3)|!(*.*)", // Only folders
+                            _micromatch: "(*.m4a)|(*.wav)|(*.mp3)|(*.wma)|!(*.*)", // Only folders
                             micromatch: match // Only folders
                         });
                     }
