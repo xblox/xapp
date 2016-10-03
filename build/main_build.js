@@ -5541,24 +5541,44 @@ define('xdeliteful/MediaPlayer',[
         vlc:null,
         fileServer:null,
         declaredClass:'delite/MediaPlayer',
+        allowAudio:true,
+        allowVideo:true,
         getDriverInstance:function(name){
             var deviceManager = this.context.getDeviceManager();
             //device instance
             return deviceManager.getInstanceByName(name);
         },
-        onPickedFolder:function(item){
-            item = item || {isDir:true};
-            var path = item.realPath;
-            path = path  || "/home/mc007/Music/Sasha/";
+        onPickedFolder:function(selection){
+
             var vlc = this.vlc;
             if(!vlc){
                 console.error('can`t get VLC driver, abort');
+                return;
             }
+
             var cmd = vlc.getCommand('Play Args');
-            cmd.stop();
+            var item = selection[0];
+            if(selection.length>1){
+                var _items = _.pluck(selection,'realPath');
+                var items = [];
+                _.each(_items,function(path){
+                    items.push(path.replace(/\\/g, '/'));
+                });
+                cmd.stop();
+                vlc.setVariable("Current Folder",items.join(';'));
+                vlc.callCommand('Play Args');
+                return;
+
+            }
+
+            item = item || {isDir:true};
+
+            var path = item.realPath;
+            path = path  || "/home/mc007/Music/Sasha/";
             path = path.replace(/\\/g, '/');
             if(item.isDir) {
-                path += '/*.mp3';
+                //path += '/*.mp3';
+                path+='/+(*.mp3|*.wav|*.m4a)'
             }
             vlc.setVariable("Current Folder",path);
             vlc.callCommand('Play Args');
@@ -5597,6 +5617,16 @@ define('xdeliteful/MediaPlayer',[
                             types.FIELDS.SHOW_MEDIA_INFO
                         };
 
+                        var match = thiz.allowAudio ? "(*.m4a)|(*.wav)|(*.mp3)" : "";
+                        if(thiz.allowVideo){
+                            thiz.allowAudio && (match+="|");
+                            match+="(*.avi)|(*.mp4)|(*.mkv)"
+                        }
+
+                        match+="|!(*.*)";
+
+                        console.log('match : '+match);
+
                         return new DriverStore({
                             data: [],
                             config: config,
@@ -5604,7 +5634,8 @@ define('xdeliteful/MediaPlayer',[
                             options: options,
                             driver: thiz.fileServer,
                             glob: ext,
-                            micromatch: "*|*.wav|*.mp3|!(*.*)" // Only folders
+                            _micromatch: "(*.m4a)|(*.wav)|(*.mp3)|!(*.*)", // Only folders
+                            micromatch: match // Only folders
                         });
                     }
                     _Popup.setStartIndex(2000);
@@ -5618,12 +5649,11 @@ define('xdeliteful/MediaPlayer',[
                          * callback when ok
                          */
                         function ok() {
-                            picker._selection = picker._selection || [{isDir:true}];
-                            console.log('ok ',picker._selection[0],picker._selection[0]);
+                            var selection = picker._selection || [{isDir:true}];
+                            console.log('ok ',selection[0]);
                             utils.destroy(picker);
                             utils.destroy(_popup);
-                            thiz.onPickedFolder(picker._selection[0]);
-                        }
+                            thiz.onPickedFolder(selection);                        }
 
                         
 
@@ -5719,24 +5749,40 @@ define('xdeliteful/MediaPlayer',[
 
                                     picker.resize();
                                     if(!fileGrid.collection) {
-                                        fileGrid.set('collection', collection);
+                                        //fileGrid.set('collection', collection);
                                     }
 
+                                    /*
                                     fileGrid.collection._loadPath('.',true).then(function(){
                                         fileGrid.refresh();
                                     });
+                                    */
                                     picker.resize();
                                 }
                                 
                                 setTimeout(function() {
+
+                                    picker.rightGrid.collection._loadPath('/',true).then(function(){
+                                        picker.rightGrid.refresh();
+                                        setTimeout(function(){
+                                            picker.leftGrid.select(0,null,true,{
+                                                append:false,
+                                                focus:true,
+                                                delay:10
+                                            });
+                                        },200);
+                                    });
+
                                     //$(combo.list).css('width','100%');
+                                    /*
                                     refreshGrid(picker.leftGrid,picker.leftStore);
                                     setTimeout(function() {
                                         refreshGrid(picker.rightGrid,picker.rightStore);
 
                                     },1000);
+                                    */
 
-                                },1000);
+                                },100);
                                 
                             }
                         });
@@ -31759,7 +31805,7 @@ define('xapp/manager/Context',[
 ], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, Reloadable,Types,has,Deferred) {
 
     var isIDE = has('xcf-ui');
-    var debugWire = false;
+    var debugWire = true;
     var debugBoot = true;
     var debugRun = false;
 
@@ -32061,7 +32107,10 @@ define('xapp/manager/Context',[
 
         },
         wireScope: function (scope) {
-            debugWire && console.log('wire scope');
+            
+            debugWire && console.log('wire scope '+scope.id);
+
+            
             var allGroups = scope.allGroups(),
                 thiz = this,
                 delegate = thiz.delegate || {},
@@ -32199,11 +32248,14 @@ define('xapp/manager/Context',[
 
         },
         onBlockFilesLoaded: function (scopes) {
-
+            if(this.isVE()){
+                return;
+            }
             debugBoot && console.log('xapp:onSceneBlocksLoaded, wire scope!', scopes);
             for (var i = 0; i < scopes.length; i++) {
                 var scope = scopes[i];
                 try {
+
                     this.wireScope(scope);
                 } catch (e) {
                     logError(e,'onBlockFilesLoaded')
@@ -32309,7 +32361,9 @@ define('xapp/manager/Context',[
             }
 
             var xbloxFiles = this.settings.xbloxScripts;
+
             this.loadXBloxFiles(xbloxFiles);
+
             var thiz = this;
             
             debugBoot && console.info('-app ready',this);
@@ -34199,6 +34253,7 @@ define('xblox/factory/Blocks',[
     "xblox/model/events/OnKey",
     "xblox/model/mqtt/Subscribe",
     "xblox/model/mqtt/Publish",
+    "xblox/model/File/ReadJSON",
     "xcf/factory/Blocks"
 ], function (factory,
              utils,
@@ -34226,13 +34281,11 @@ define('xblox/factory/Blocks',[
              OnEvent,
              OnKey,
              Subscribe,
-             Publish
+             Publish,
+             ReadJSON
 
     )
 {
-
-
-
     factory.prepareBlockContructorArgs=function(ctorArgs){
         if(!ctorArgs){
             ctorArgs={};
@@ -34288,6 +34341,7 @@ define('xblox/factory/Blocks',[
     var cachedAll = null;
     factory.clearVariables=function(){};
     factory.getAllBlocks=function(scope,owner,target,group,allowCache){
+
         if(allowCache!==false && cachedAll !=null){
             /**
              * remove dynamic blocks like 'Set Variable'
@@ -34306,6 +34360,7 @@ define('xblox/factory/Blocks',[
 
 
         var items = factory._getFlowBlocks(scope,owner,target,group);
+        
         items = items.concat(factory._getLoopBlocks(scope,owner,target,group));
         items = items.concat(factory._getCommandBlocks(scope,owner,target,group));
         items = items.concat(factory._getCodeBlocks(scope,owner,target,group));
@@ -34313,6 +34368,8 @@ define('xblox/factory/Blocks',[
         items = items.concat(factory._getLoggingBlocks(scope,owner,target,group));
         items = items.concat(factory._getServerBlocks(scope,owner,target,group));
         items = items.concat(factory._getMQTTBlocks(scope,owner,target,group));
+        items = items.concat(factory._getFileBlocks(scope,owner,target,group));
+        
         cachedAll = items;
         return items;
     };
@@ -34355,6 +34412,36 @@ define('xblox/factory/Blocks',[
         return items;
 
     };
+
+    factory._getFileBlocks=function(scope,owner,target,group){
+        var items = [];
+        items.push({
+            name:'File',
+            iconClass: 'fa-file',
+            items:[
+                {
+                    name:'%%Read JSON',
+                    owner:owner,
+                    iconClass:'fa-file',
+                    proto:ReadJSON,
+                    target:target,
+                    ctrArgs:{
+                        scope:scope,
+                        group:group
+                    }
+                }
+            ]
+        });
+
+        //tell everyone
+        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST,{
+            items:items,
+            group:'File'
+        });
+        return items;
+
+    };
+    
     factory._getServerBlocks=function(scope,owner,target,group){
         var items = [];
         items.push({
@@ -34719,96 +34806,80 @@ define('xblox/factory/Blocks',[
     };
     return factory;
 });;
-/** @module xblox/model/mqtt/Publish **/
-define('xblox/model/mqtt/Publish',[
+/** @module xblox/model/File/ReadJSON **/
+define('xblox/model/File/ReadJSON',[
     'dcl/dcl',
     'xdojo/has',
     "dojo/Deferred",
     "xblox/model/Block",
     'xide/utils',
     'xblox/model/Contains',
+    'dojo/promise/all',
     'xide/types',
-    'xcf/model/Command'
-    //'xdojo/has!host-node?dojo/node!tracer',
-    //'xdojo/has!host-node?nxapp/utils/_console'
-], function(dcl,has,Deferred,Block,utils,Contains,types,Command,tracer,_console){
+    'module',
+    "xdojo/has!xblox-ui?xfile/data/DriverStore",
+    'xdojo/has!xblox-ui?xfile/views/FileGridLight',
+], function(dcl,has,Deferred,Block,utils,Contains,all,types,module,DriverStore,FileGridLight){
+
     var isServer = has('host-node');
-    var console = typeof window !== 'undefined' ? window.console : global.console;
-    if(isServer && tracer && console && console.error){
-        console = _console;
-    }else{
-        //console.error('have no tracer ' + (tracer!=null && tracer.error!=null ? 'tracer ok ' : 'no ') + ' | ' + (console.error!=null ? 'errir ok ' : 'no error') );
-        //console.dir(tracer);
-    }
-
-    // summary:
-    //		The Call Block model.
-    //      This block makes calls to another blocks in the same scope by action name
-
-    // module:
-    //		xblox.model.code.CallMethod
+    var isElectron = has('electronx');
+    var isIDE = has('xcf-ui');
+    var hasPHP = has('php');
     /**
-     * Base block class.
      *
-     * @class module:xblox/model/mqtt/Publish
+     * @class module:xblox/model/code/RunScript
      * @extends module:xblox/model/Block
      */
-    return dcl(Command,{
-        declaredClass:"xblox.model.mqtt.Publish",
-        //method: (String)
-        //  block action name
-        name:'Publish',
-        //method: (String)
-        //  block action name
-        topic:'',
-        args:'',
+    return dcl([Block,Contains],{
+        declaredClass:"xblox.model.File.ReadJSON",
+        name:'Read JSON',
         deferred:false,
-        sharable:true,
+        sharable:false,
         context:null,
-        icon:'fa-send',
-        isCommand:true,
-        qos:0,
-        retain:false,
-        /**
-         * @type {string|null}
-         */
-        path:null,
-        onData:function(message){
-            if(message && message.topic && message.topic==this.topic){
-                var thiz=this,
-                    ctx = this.getContext(),
-                    items = this[this._getContainer()];
-
-                var settings = this._lastSettings;
-                var ret=[];
-                if(items.length>0){
-
-                    var value = message;
-                    this.path = 'value';
-                    if(this.path && _.isObject(message)){
-                        value = utils.getAt(message,this.path,message);
-                    }
-
-                    for(var n = 0; n < this.items.length ; n++)
-                    {
-                        var block = this.items[n];
-                        if(block.enabled) {
-                            block.override ={
-                                args: [value]
-                            };
-                            ret.push(block.solve(this.scope,settings));
-                        }
-                    }
-                }
-                this.onSuccess(this, this._lastSettings);
-                return ret;
-            }
-        },
+        icon:'fa-file',
         observed:[
-            'topic'
+            'path'
         ],
         getContext:function(){
             return this.context || (this.scope.getContext ?  this.scope.getContext() : this);
+            return this.context || this;
+        },
+        getFileContent:function(path){
+            
+            var head = new Deferred();
+            var scope = this.getScope();
+            var ctx = scope.ctx;
+            var fileManager = ctx.getFileManager();
+            //use file manager
+            if(isIDE){
+            }
+            
+            var deviceManager = ctx.getDeviceManager();
+            var fileServer = deviceManager.getInstanceByName('File-Server');
+            if(!fileServer){
+                console.error('ReadJSON : have no file server driver');
+            }
+
+            var dfd = fileServer.callCommand('GetProg', {
+                override: {
+                    args: [path]
+                }
+            });
+
+
+            return dfd;
+            
+        },
+        processJSON:function(data,settings){
+            var path = this.jsonPath;
+            if(path){
+                var at = utils.getAt(data,path);
+                this._lastResult = at;
+            }else{
+                this._lastResult = data;
+            }
+            this.onSuccess(this, settings);
+            this.runByType(types.BLOCK_OUTLET.FINISH,settings);
         },
         /**
          *
@@ -34818,61 +34889,91 @@ define('xblox/model/mqtt/Publish',[
          * @param send
          * @param run
          * @param error
+         * @returns {*}
          */
-        solve:function(scope,settings,isInterface,send,run,error){
+        solve:function(scope,settings,isInterface,run,error){
 
             this._currentIndex = 0;
             this._return=[];
 
-            settings = this._lastSettings = settings || this._lastSettings;
+            settings = this._lastSettings = settings || this._lastSettings || {};
+            
+            var _script = ('' + this._get('path'));
 
-            var instance = this.getInstance();
-            if(isInterface ==true && this._loop){
-                this.reset();
-            }
+            var thiz=this,
+                ctx = this.getContext(),
+                items = this[this._getContainer()],
 
-            var args = this.args;
-            var inArgs = this.getArgs(settings);
-            if(inArgs[0]){
-                args = inArgs[0];
-            }
+                //outer head dfd
+                dfd = new Deferred,
+                self = this;
 
-            if(instance){
-                var value =utils.getJson(args,true,false);
-                if(value === null || value === 0 || value === true || value === false || !_.isObject(value)){
-                    value = {
-                        payload:this.args
+            this.onRunThis(settings);
+
+            var expression = scope.expressionModel.replaceVariables(scope,_script,null,null);
+
+            console.log('path '+expression);
+
+            var getDfd = this.getFileContent(expression);
+
+            getDfd.then(function(data){
+                var content = data.content;
+                if(content){
+                    content = utils.getJson(content,true);
+                    if(content){
+                        self.processJSON(content,settings);
                     }
                 }
-                var topic = scope.expressionModel.replaceVariables(scope,this.topic,false,false);
+            });
 
-                instance.callMethod('publishTopic',utils.mixin({
-                    topic:topic,
-                    qos:this.qos,
-                    retain:this.retain
-                },value),this.id,this.id);
+            /*
+
+            var _function = scope.expressionModel.expressionCache[expression];
+            if(!_function){
+                _function = scope.expressionModel.expressionCache[expression] = new Function("{" + expression + "}");
             }
+            */
 
-            settings = settings || {};
 
-            this.onDidRun();
 
-            this.onSuccess(this, settings);
-            return true;
+            var _args = thiz.getArgs(settings) || [];
+
+            try {
+
+                //console.log('parsed _ '+_parsed);
+                //thiz._lastResult = _parsed;
+                if (run) {
+                    run('Expression ' + _script + ' evaluates to ' + expression);
+                }
+
+/*
+                if (_parsed !== 'false' && _parsed !== false) {
+                    thiz.onSuccess(thiz, settings);
+                } else {
+                    thiz.onFailed(thiz, settings);
+                }
+                */
+            } catch (e) {
+                e=e ||{};
+                thiz.onDidRunItemError(dfd,e,settings);
+                thiz.onFailed(thiz,settings);
+                if (error) {
+                    error('invalid expression : \n' + _script + ': ' + e);
+                }
+            }
+            return dfd;
         },
         /////////////////////////////////////////////////////////////////////////////////////
         //
         //  UI
         //
         /////////////////////////////////////////////////////////////////////////////////////
-        toText:function(icon,label,detail,breakDetail){
-            var out = '<span style="">' + this.getBlockIcon() + ' ' + this.makeEditable('name','top','text','Enter a name','inline') + ' :: '+'</span>';
-            if(this.topic){
-                out+= this.makeEditable('topic','bottom','text','Enter a topic','inline');
-                this.startup && (out +=this.getIcon('fa-bell inline-icon text-warning','text-align:right;float:right;',''));
-                this.interval > 0 && (out +=this.getIcon('fa-clock-o inline-icon text-warning','text-align:right;float:right',''));
+        toText:function(){
+            var result = '<span style="">' + this.getBlockIcon() + ' ' + this.name + ' :: '+'</span>';
+            if(this.path){
+                result+= this.path.substr(0,50);
             }
-            return out;
+            return result;
         },
         //  standard call from interface
         canAdd:function(){
@@ -34882,261 +34983,103 @@ define('xblox/model/mqtt/Publish',[
         getFields:function(){
 
             var fields = this.inherited(arguments) || this.getDefaultFields();
+            var thiz=this;
 
-            fields.push(utils.createCI('qos',types.ECIType.ENUMERATION,this.qos,{
+
+            var store = null;
+            var scope = this.getScope();
+            var ctx = scope.ctx;
+
+            var deviceManager = ctx.getDeviceManager();
+            var fileServer = deviceManager.getInstanceByName('File-Server');
+            var permissions = utils.clone(types.DEFAULT_FILE_GRID_PERMISSIONS);
+
+
+            var FilePickerOptions = {
+                ctx: ctx,
+                owner: this,
+                selection: '/',
+                resizeToParent: true,
+                Module: FileGridLight,
+                permissions: permissions
+            }
+
+            if(fileServer && DriverStore){
+
+                    var config = {};
+                    var options = {
+                        fields: types.FIELDS.SHOW_ISDIR | types.FIELDS.SHOW_OWNER | types.FIELDS.SHOW_SIZE |
+                        types.FIELDS.SHOW_FOLDER_SIZE |
+                        types.FIELDS.SHOW_MIME |
+                        types.FIELDS.SHOW_PERMISSIONS |
+                        types.FIELDS.SHOW_TIME |
+                        types.FIELDS.SHOW_MEDIA_INFO
+                    };
+
+                function createStore(ext) {
+
+                    return new DriverStore({
+                        data: [],
+                        config: config,
+                        mount: 'none',
+                        options: options,
+                        driver: fileServer,
+                        micromatch: "(*.json)|!(*.*)", // Only folders and json files
+                        //micromatch: "(*.mp3)|(*.wav)|(*.webm)|!(*.*)", // Only folders and json files
+                        glob:ext
+                    });
+                }
+
+
+                FilePickerOptions.leftStore =createStore("/*");
+                FilePickerOptions.rightStore=createStore("/*");
+
+            }
+
+            fields.push(utils.createCI('path',4,this.path,{
                     group:'General',
-                    title:'QOS',
-                    dst:'qos',
-                    widget: {
-                        options: [
-                            {
-                                label:"0 - at most once",
-                                value:0
-                            },
-                            {
-                                label:"1 - at least once",
-                                value:1
-                            },
-                            {
-                                label:"2 - exactly once",
-                                value:2
-                            }
-                        ]
+                    title:'Path',
+                    dst:'path',
+                    filePickerOptions:FilePickerOptions,
+                    widget:{
+                        item:this
                     }
-                })
-            );
+            }));
 
-
-
-            //
-            //var type = 'xide/widgets/JSONDualEditorWidget';//27
-            fields.push(utils.createCI('arguments',27,this.args,{
-                    group:'Arguments',
-                    title:'Arguments',
-                    dst:'args'
-                }));
-
-            fields.push(utils.createCI('topic',types.ECIType.STRING,this.topic,{
+            fields.push(utils.createCI('jsonPath',13,this.jsonPath,{
                 group:'General',
-                title:'Topic',
-                dst:'topic',
-                select:true
-            }));
-
-            fields.push(utils.createCI('retain',types.ECIType.BOOL,this.retain,{
-                group:'General',
-                title:'Retain',
-                dst:'retain'
-            }));
-
-            fields.remove(_.find(fields,{
-                name:"send"
-            }));
-
-            fields.remove(_.find(fields,{
-                name:"waitForResponse"
+                title:'Select',
+                dst:'jsonPath'
             }));
 
             return fields;
-        }
-    });
-});;
-define('xblox/model/Contains',[
-    'dcl/dcl',
-    "dojo/promise/all",
-    "xide/types"
-], function(dcl,all,types){
-    /**
-     * Contains provides implements functions to deal with sub blocks.
-     *
-     */
-    return dcl(null,{
 
-        declaredClass:'xblox.model.Contains',
-        getContainer:function(){
-            return this[this._getContainer()];
-        },
-        /**
-         * Store is asking this!
-         * @param parent
-         * @returns {boolean}
-         */
-        mayHaveChildren:function(parent){
-            var items = this[this._getContainer()];
-            return items!=null && items.length>0;
-        },
-        /**
-         * Store function
-         * @param parent
-         * @returns {Array}
-         */
-        getChildren:function(parent){
-            return this[this._getContainer()];
-        },
-        //  standard call from interface
-        canAdd:function(){
-            return [];
-        },
-        runFrom: function (_blocks, index, settings) {
-
-            var thiz = this,
-                blocks = _blocks || this.items,
-                allDfds = [];
-
-            var onFinishBlock = function (block, results) {
-                block._lastResult = block._lastResult || results;
-                thiz._currentIndex++;
-                thiz.runFrom(blocks, thiz._currentIndex, settings);
-            };
-
-            var wireBlock = function (block) {
-                block._deferredObject.then(function (results) {
-                    console.log('----def block finish');
-                    onFinishBlock(block, results);
-                });
-            };
-
-            if (blocks.length) {
-
-                for (var n = index; n < blocks.length; n++) {
-                    var block = blocks[n];
-                    if (block.deferred === true && block.enabled) {
-                        block._deferredObject = new Deferred();
-                        this._currentIndex = n;
-                        wireBlock(block);
-                        //this.addToEnd(this._return, block.solve(this.scope, settings));
-                        var blockDfd = block.solve(this.scope, settings);
-                        allDfds.push(blockDfd);
-                        break;
-                    } else {
-                        //this.addToEnd(this._return, block.solve(this.scope, settings));
-                        if(block.enabled) {
-                            var blockDfd = block.solve(this.scope, settings);
-                            allDfds.push(blockDfd);
-                            block.onDidRun();
+/*
+            fields.push(
+                utils.createCI('value',types.ECIType.EXPRESSION_EDITOR,this.method,{
+                    group:'Script',
+                    title:'Script',
+                    dst:'method',
+                    select:true,
+                    widget:{
+                        allowACECache:true,
+                        showBrowser:false,
+                        showSaveButton:true,
+                        editorOptions:{
+                            showGutter:true,
+                            autoFocus:false
+                        },
+                        item:this
+                    },
+                    delegate:{
+                        runExpression:function(val,run,error){
+                            var old = thiz.method;
+                            thiz.method=val;
+                            var _res = thiz.solve(thiz.scope,null,run,error);
                         }
                     }
-
-                }
-
-            } else {
-                this.onSuccess(this, settings);
-            }
-
-            //console.log('last settings ',this._lastSettings);
-
-            this._lastSettings && delete this._lastSettings.override;
-
-            return allDfds;
-        },
-        /***
-         * Generic: run sub blocks
-         * @param scope
-         * @param settings
-         * @param run
-         * @param error
-         * @returns {Array}
-         */
-        _solve:function(scope,settings,run,error) {
-
-            if(!this._lastRunSettings && settings){
-                this._lastRunSettings= settings;
-            }
-
-            settings = this._lastRunSettings || settings;
-
-
-            this._currentIndex=0;
-            this._return=[];
-
-            var ret=[], items = this[this._getContainer()];
-            if(items.length) {
-                var res = this.runFrom(items,0,settings);
-                this.onSuccess(this, settings);
-                return res;
-            }else{
-                this.onSuccess(this, settings);
-            }
-            return ret;
-        },
-        onDidRunItem:function(dfd,result,settings){
-
-            settings = settings || {};
-
-            var listener = settings.listener,
-                thiz = this;
-            this._emit(types.EVENTS.ON_RUN_BLOCK_SUCCESS, thiz);
-            dfd.resolve(result);
-        },
-        onDidRunItemError:function(dfd,result,settings){
-
-            settings = settings || {};
-
-            var listener = settings.listener,
-                thiz = this;
-
-            dfd.reject(result);
-        },
-        onRunThis:function(settings){
-
-            settings = settings || {};
-
-            var listener = settings.listener,
-                thiz = this;
-
-            if(listener) {
-                //listener._emit(types.EVENTS.ON_RUN_BLOCK, thiz);
-            }
-            this._emit(types.EVENTS.ON_RUN_BLOCK, thiz);
-        },
-        onDidRunThis:function(dfd,result,items,settings){
-
-            var thiz = this;
-
-            //more blocks?
-            if(items && items.length) {
-
-                var subDfds = thiz.runFrom(items,0,settings);
-
-                all(subDfds).then(function(what){
-                    thiz.onDidRunItem(dfd,result,settings);
-                },function(err){
-                    console.error('error in chain',err);
-                    thiz.onDidRunItem(dfd,err,settings);
-                });
-
-            }else{
-                thiz.onDidRunItem(dfd,result,settings);
-            }
-        },
-        ___solve:function(scope,settings,run,error) {
-
-
-            /*
-            if(!this._lastRunSettings && settings){
-                this._lastRunSettings= settings;
-            }
-
-            settings = this._lastRunSettings || settings;
-
-
-            this._currentIndex=0;
-            this._return=[];
-
-            var ret=[], items = this[this._getContainer()];
-            if(items.length) {
-
-                var res = this.runFrom(items,0,settings);
-
-                this.onSuccess(this, settings);
-
-                return res;
-
-            }else{
-
-                this.onSuccess(this, settings);
-            }
-            return ret;
+                }));
+            return fields;
             */
         }
     });
@@ -35408,6 +35351,447 @@ define('dojo/promise/Promise',[
 	});
 });
 ;
+define('xblox/model/Contains',[
+    'dcl/dcl',
+    "dojo/promise/all",
+    "xide/types"
+], function(dcl,all,types){
+    /**
+     * Contains provides implements functions to deal with sub blocks.
+     *
+     */
+    return dcl(null,{
+
+        declaredClass:'xblox.model.Contains',
+        runByType:function(outletType,settings){
+            var items = this.getItemsByType(outletType);
+            if(items.length) {
+                this.runFrom(items,0,settings);
+            }
+        },
+        getItemsByType:function(outletType){
+            var items = this.items;
+            if(!outletType){
+                return items;
+            }
+            var result = [];
+            _.each(items,function(item){
+                if(item.outlet & outletType){
+                    result.push(item);
+                }
+            });
+            return result;
+        },
+        getContainer:function(){
+            return this[this._getContainer()];
+        },
+        /**
+         * Store is asking this!
+         * @param parent
+         * @returns {boolean}
+         */
+        mayHaveChildren:function(parent){
+            var items = this[this._getContainer()];
+            return items!=null && items.length>0;
+        },
+        /**
+         * Store function
+         * @param parent
+         * @returns {Array}
+         */
+        getChildren:function(parent){
+            return this[this._getContainer()];
+        },
+        //  standard call from interface
+        canAdd:function(){
+            return [];
+        },
+        runFrom: function (_blocks, index, settings) {
+
+            var thiz = this,
+                blocks = _blocks || this.items,
+                allDfds = [];
+
+            var onFinishBlock = function (block, results) {
+                block._lastResult = block._lastResult || results;
+                thiz._currentIndex++;
+                thiz.runFrom(blocks, thiz._currentIndex, settings);
+            };
+
+            var wireBlock = function (block) {
+                block._deferredObject.then(function (results) {
+                    console.log('----def block finish');
+                    onFinishBlock(block, results);
+                });
+            };
+
+            if (blocks.length) {
+
+                for (var n = index; n < blocks.length; n++) {
+                    var block = blocks[n];
+                    if (block.deferred === true && block.enabled) {
+                        block._deferredObject = new Deferred();
+                        this._currentIndex = n;
+                        wireBlock(block);
+                        //this.addToEnd(this._return, block.solve(this.scope, settings));
+                        var blockDfd = block.solve(this.scope, settings);
+                        allDfds.push(blockDfd);
+                        break;
+                    } else {
+                        //this.addToEnd(this._return, block.solve(this.scope, settings));
+                        if(block.enabled) {
+                            var blockDfd = block.solve(this.scope, settings);
+                            allDfds.push(blockDfd);
+                            block.onDidRun();
+                        }
+                    }
+
+                }
+
+            } else {
+                this.onSuccess(this, settings);
+            }
+
+            //console.log('last settings ',this._lastSettings);
+
+            this._lastSettings && delete this._lastSettings.override;
+
+            return allDfds;
+        },
+        /***
+         * Generic: run sub blocks
+         * @param scope
+         * @param settings
+         * @param run
+         * @param error
+         * @returns {Array}
+         */
+        _solve:function(scope,settings,run,error) {
+
+            if(!this._lastRunSettings && settings){
+                this._lastRunSettings= settings;
+            }
+
+            settings = this._lastRunSettings || settings;
+
+
+            this._currentIndex=0;
+            this._return=[];
+
+            var ret=[], items = this[this._getContainer()];
+            if(items.length) {
+                var res = this.runFrom(items,0,settings);
+                this.onSuccess(this, settings);
+                return res;
+            }else{
+                this.onSuccess(this, settings);
+            }
+            return ret;
+        },
+        onDidRunItem:function(dfd,result,settings){
+
+            settings = settings || {};
+
+            var listener = settings.listener,
+                thiz = this;
+            this._emit(types.EVENTS.ON_RUN_BLOCK_SUCCESS, thiz);
+            dfd.resolve(result);
+        },
+        onDidRunItemError:function(dfd,result,settings){
+
+            settings = settings || {};
+
+            var listener = settings.listener,
+                thiz = this;
+
+            dfd.reject(result);
+        },
+        onRunThis:function(settings){
+
+            settings = settings || {};
+
+            var listener = settings.listener,
+                thiz = this;
+
+            if(listener) {
+                //listener._emit(types.EVENTS.ON_RUN_BLOCK, thiz);
+            }
+            this._emit(types.EVENTS.ON_RUN_BLOCK, thiz);
+        },
+        onDidRunThis:function(dfd,result,items,settings){
+
+            var thiz = this;
+
+            //more blocks?
+            if(items && items.length) {
+
+                var subDfds = thiz.runFrom(items,0,settings);
+
+                all(subDfds).then(function(what){
+                    thiz.onDidRunItem(dfd,result,settings);
+                },function(err){
+                    console.error('error in chain',err);
+                    thiz.onDidRunItem(dfd,err,settings);
+                });
+
+            }else{
+                thiz.onDidRunItem(dfd,result,settings);
+            }
+        },
+        ___solve:function(scope,settings,run,error) {
+
+
+            /*
+            if(!this._lastRunSettings && settings){
+                this._lastRunSettings= settings;
+            }
+
+            settings = this._lastRunSettings || settings;
+
+
+            this._currentIndex=0;
+            this._return=[];
+
+            var ret=[], items = this[this._getContainer()];
+            if(items.length) {
+
+                var res = this.runFrom(items,0,settings);
+
+                this.onSuccess(this, settings);
+
+                return res;
+
+            }else{
+
+                this.onSuccess(this, settings);
+            }
+            return ret;
+            */
+        }
+    });
+});;
+/** @module xblox/model/mqtt/Publish **/
+define('xblox/model/mqtt/Publish',[
+    'dcl/dcl',
+    'xdojo/has',
+    "dojo/Deferred",
+    "xblox/model/Block",
+    'xide/utils',
+    'xblox/model/Contains',
+    'xide/types',
+    'xcf/model/Command'
+    //'xdojo/has!host-node?dojo/node!tracer',
+    //'xdojo/has!host-node?nxapp/utils/_console'
+], function(dcl,has,Deferred,Block,utils,Contains,types,Command,tracer,_console){
+    var isServer = has('host-node');
+    var console = typeof window !== 'undefined' ? window.console : global.console;
+    if(isServer && tracer && console && console.error){
+        console = _console;
+    }else{
+        //console.error('have no tracer ' + (tracer!=null && tracer.error!=null ? 'tracer ok ' : 'no ') + ' | ' + (console.error!=null ? 'errir ok ' : 'no error') );
+        //console.dir(tracer);
+    }
+
+    // summary:
+    //		The Call Block model.
+    //      This block makes calls to another blocks in the same scope by action name
+
+    // module:
+    //		xblox.model.code.CallMethod
+    /**
+     * Base block class.
+     *
+     * @class module:xblox/model/mqtt/Publish
+     * @extends module:xblox/model/Block
+     */
+    return dcl(Command,{
+        declaredClass:"xblox.model.mqtt.Publish",
+        //method: (String)
+        //  block action name
+        name:'Publish',
+        //method: (String)
+        //  block action name
+        topic:'',
+        args:'',
+        deferred:false,
+        sharable:true,
+        context:null,
+        icon:'fa-send',
+        isCommand:true,
+        qos:0,
+        retain:false,
+        /**
+         * @type {string|null}
+         */
+        path:null,
+        onData:function(message){
+            if(message && message.topic && message.topic==this.topic){
+                var thiz=this,
+                    ctx = this.getContext(),
+                    items = this[this._getContainer()];
+
+                var settings = this._lastSettings;
+                var ret=[];
+                if(items.length>0){
+
+                    var value = message;
+                    this.path = 'value';
+                    if(this.path && _.isObject(message)){
+                        value = utils.getAt(message,this.path,message);
+                    }
+
+                    for(var n = 0; n < this.items.length ; n++)
+                    {
+                        var block = this.items[n];
+                        if(block.enabled) {
+                            block.override ={
+                                args: [value]
+                            };
+                            ret.push(block.solve(this.scope,settings));
+                        }
+                    }
+                }
+                this.onSuccess(this, this._lastSettings);
+                return ret;
+            }
+        },
+        observed:[
+            'topic'
+        ],
+        getContext:function(){
+            return this.context || (this.scope.getContext ?  this.scope.getContext() : this);
+        },
+        /**
+         *
+         * @param scope
+         * @param settings
+         * @param isInterface
+         * @param send
+         * @param run
+         * @param error
+         */
+        solve:function(scope,settings,isInterface,send,run,error){
+
+            this._currentIndex = 0;
+            this._return=[];
+
+            settings = this._lastSettings = settings || this._lastSettings;
+
+            var instance = this.getInstance();
+            if(isInterface ==true && this._loop){
+                this.reset();
+            }
+
+            var args = this.args;
+            var inArgs = this.getArgs(settings);
+            if(inArgs[0]){
+                args = inArgs[0];
+            }
+
+            if(instance){
+                var value =utils.getJson(args,true,false);
+                if(value === null || value === 0 || value === true || value === false || !_.isObject(value)){
+                    value = {
+                        payload:this.args
+                    }
+                }
+                var topic = scope.expressionModel.replaceVariables(scope,this.topic,false,false);
+
+                instance.callMethod('publishTopic',utils.mixin({
+                    topic:topic,
+                    qos:this.qos,
+                    retain:this.retain
+                },value),this.id,this.id);
+            }
+
+            settings = settings || {};
+
+            this.onDidRun();
+
+            this.onSuccess(this, settings);
+            return true;
+        },
+        /////////////////////////////////////////////////////////////////////////////////////
+        //
+        //  UI
+        //
+        /////////////////////////////////////////////////////////////////////////////////////
+        toText:function(icon,label,detail,breakDetail){
+            var out = '<span style="">' + this.getBlockIcon() + ' ' + this.makeEditable('name','top','text','Enter a name','inline') + ' :: '+'</span>';
+            if(this.topic){
+                out+= this.makeEditable('topic','bottom','text','Enter a topic','inline');
+                this.startup && (out +=this.getIcon('fa-bell inline-icon text-warning','text-align:right;float:right;',''));
+                this.interval > 0 && (out +=this.getIcon('fa-clock-o inline-icon text-warning','text-align:right;float:right',''));
+            }
+            return out;
+        },
+        //  standard call from interface
+        canAdd:function(){
+            return [];
+        },
+        //  standard call for editing
+        getFields:function(){
+
+            var fields = this.inherited(arguments) || this.getDefaultFields();
+
+            fields.push(utils.createCI('qos',types.ECIType.ENUMERATION,this.qos,{
+                    group:'General',
+                    title:'QOS',
+                    dst:'qos',
+                    widget: {
+                        options: [
+                            {
+                                label:"0 - at most once",
+                                value:0
+                            },
+                            {
+                                label:"1 - at least once",
+                                value:1
+                            },
+                            {
+                                label:"2 - exactly once",
+                                value:2
+                            }
+                        ]
+                    }
+                })
+            );
+
+
+
+            //
+            //var type = 'xide/widgets/JSONDualEditorWidget';//27
+            fields.push(utils.createCI('arguments',27,this.args,{
+                    group:'Arguments',
+                    title:'Arguments',
+                    dst:'args'
+                }));
+
+            fields.push(utils.createCI('topic',types.ECIType.STRING,this.topic,{
+                group:'General',
+                title:'Topic',
+                dst:'topic',
+                select:true
+            }));
+
+            fields.push(utils.createCI('retain',types.ECIType.BOOL,this.retain,{
+                group:'General',
+                title:'Retain',
+                dst:'retain'
+            }));
+
+            fields.remove(_.find(fields,{
+                name:"send"
+            }));
+
+            fields.remove(_.find(fields,{
+                name:"waitForResponse"
+            }));
+
+            return fields;
+        }
+    });
+});;
 /** @module xblox/model/mqtt/Subscribe **/
 define('xblox/model/mqtt/Subscribe',[
     'dcl/dcl',
@@ -42001,17 +42385,7 @@ define('xcf/model/Command',[
         __started:false,
         isCommand:true,
         getItems:function(outletType){
-            var items = this.items;
-            if(!outletType){
-                return items;
-            }
-            var result = [];
-            _.each(items,function(item){
-                if(item.outlet & outletType){
-                    result.push(item);
-                }
-            });
-            return result;
+            return this.getItemsByType(outletType);
         },
         /**
          * onCommandFinish will be excecuted which a driver did run a command
@@ -53001,6 +53375,9 @@ define('xcf/manager/DeviceManager',[
             var self = this;
             for(var instance in instances){
                 var device = instances[instance].device;
+                if(!device){
+                    continue;
+                }
                 var title = self.getMetaValue(device, DEVICE_PROPERTY.CF_DEVICE_TITLE);
                 if(title ===name){
                     return instances[instance];
@@ -71404,6 +71781,7 @@ define('xfile/data/Store',[
     function Implementation() {
         return {
             addDot: true,
+            rootSegment:".",
             Model: File,
             /**
              * @member idProperty {string} sets the unique identifier for store items is set to the 'path' of a file.
@@ -71596,12 +71974,16 @@ define('xfile/data/Store',[
             },
             onAfterSort:function(data){
                 var micromatch = this.micromatch;
-                if(typeof mm !=='undefined' && micromatch) {
-                    var _items = _.pluck(data, "name");
+
+                if(typeof mm !=='undefined' && micromatch && data && data[0]) {
+
+                    var what = data[0].realPath ? 'realPath' : 'path';
+                    what = 'name';
+                    var _items = _.pluck(data, what);
                     //'*.sql|*.txt|!(*.*)'
                     var matching = mm(_items,micromatch);
                     data = data.filter(function (item) {
-                        if (matching.indexOf(item.name) === -1) {
+                        if (matching.indexOf(item[what]) === -1) {
                             return null;
                         }
                         return item;

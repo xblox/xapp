@@ -17,7 +17,7 @@ define([
 ], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, Reloadable,Types,has,Deferred) {
 
     var isIDE = has('xcf-ui');
-    var debugWire = false;
+    var debugWire = true;
     var debugBoot = true;
     var debugRun = false;
 
@@ -319,7 +319,10 @@ define([
 
         },
         wireScope: function (scope) {
-            debugWire && console.log('wire scope');
+            
+            debugWire && console.log('wire scope '+scope.id);
+
+            
             var allGroups = scope.allGroups(),
                 thiz = this,
                 delegate = thiz.delegate || {},
@@ -457,11 +460,14 @@ define([
 
         },
         onBlockFilesLoaded: function (scopes) {
-
+            if(this.isVE()){
+                return;
+            }
             debugBoot && console.log('xapp:onSceneBlocksLoaded, wire scope!', scopes);
             for (var i = 0; i < scopes.length; i++) {
                 var scope = scopes[i];
                 try {
+
                     this.wireScope(scope);
                 } catch (e) {
                     logError(e,'onBlockFilesLoaded')
@@ -567,7 +573,9 @@ define([
             }
 
             var xbloxFiles = this.settings.xbloxScripts;
+
             this.loadXBloxFiles(xbloxFiles);
+
             var thiz = this;
             
             debugBoot && console.info('-app ready',this);
