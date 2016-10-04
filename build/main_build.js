@@ -5622,11 +5622,7 @@ define('xdeliteful/MediaPlayer',[
                             thiz.allowAudio && (match+="|");
                             match+="(*.avi)|(*.mp4)|(*.mkv)"
                         }
-
                         match+="|!(*.*)";
-
-                        console.log('match : '+match);
-
                         return new DriverStore({
                             data: [],
                             config: config,
@@ -72286,7 +72282,7 @@ define('xfile/data/Store',[
                     }, this);
                 }
                 item.getPath = function () {
-                    return this.realPath || this.path;
+                    return this.path;
                 }
             },
             /////////////////////////////////////////////////////////////////////////////
@@ -72425,7 +72421,7 @@ define('xfile/data/Store',[
                     _item = this.addSync(item);
                     _item._S = this;
                     _item.getPath = function () {
-                        return this.realPath || this.path;
+                        return this.path;
                     }
                 }
                 return _item;
