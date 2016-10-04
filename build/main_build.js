@@ -34144,7 +34144,7 @@ define('xblox/model/functions/CallBlock',[
                             _args = args;
                         }
 
-                        settings.override['args']=[args];
+                        settings.override['args']= _.isArray(_args) ? _args : [args];
                         settings.override['mixin']=_args;
                     }
                     var res = scope.solveBlock(this.command,settings);
