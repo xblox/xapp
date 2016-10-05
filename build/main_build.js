@@ -41286,7 +41286,6 @@ define('xblox/model/code/RunScript',[
          * @returns {Array}
          */
         solve2:function(scope,settings,run,error) {
-
             this._currentIndex = 0;
             this._return=[];
             var _script = '' + this._get('method');
@@ -41294,21 +41293,12 @@ define('xblox/model/code/RunScript',[
                 ctx = this.getContext();
             if(_script && _script.length) {
 
-                //bloody promises, still not working as real monads
-                //TODO, look at arrowlets
-                //  move out exception shit
-
                 var runScript = function() {
-
-                    /*this = scope.global;*/
                     var _function = new Function("{" + _script + "}");
                     var _args = thiz.getArgs() || [];
                     try {
-
                         var _parsed = _function.apply(ctx, _args || {});
-
                         thiz._lastResult = _parsed;
-
                         if (run) {
                             run('Expression ' + _script + ' evaluates to ' + _parsed);
                         }
@@ -41321,7 +41311,6 @@ define('xblox/model/code/RunScript',[
                             return [];
                         }
                     } catch (e) {
-
                         if (error) {
                             error('invalid expression : \n' + _script + ': ' + e);
                         }
@@ -41354,10 +41343,7 @@ define('xblox/model/code/RunScript',[
                                 thiz.onFailed(thiz, settings);
                                 return [];
                             }
-
-
                         } catch (e) {
-
                             thiz._lastResult = null;
                             if (error) {
                                 error('invalid expression : \n' + _script + ': ' + e);
@@ -41371,8 +41357,6 @@ define('xblox/model/code/RunScript',[
                 }else{
                     return runScript();
                 }
-
-
             }else{
                 console.error('have no script');
             }
@@ -41382,9 +41366,7 @@ define('xblox/model/code/RunScript',[
             }else{
                 this.onSuccess(this, settings);
             }
-
             this.onDidRun();
-
             return ret;
         },
         /**
@@ -41400,9 +41382,6 @@ define('xblox/model/code/RunScript',[
             this._return=[];
 
 
-
-            console.log('Run RunScript ',settings);
-
             settings = settings || {};
             var _script = send || (this._get('method') ? this._get('method') : this.method);
 
@@ -41410,12 +41389,10 @@ define('xblox/model/code/RunScript',[
                 ctx = this.getContext(),
                 items = this[this._getContainer()],
 
-                //outer,head dfd
+                //outer
                 dfd = new Deferred,
                 listener = settings.listener,
-
                 isDfd = thiz.deferred;
-
 
             this.onRunThis(settings);
 
@@ -41435,60 +41412,34 @@ define('xblox/model/code/RunScript',[
 
                 return ret;
             }
-
-            //var _scope.parseExpression(this.condition +';',null,null);
-
-            //expression = this.replaceAll("''","'",expression);//weird!
-            //expression = this.replaceBlockCalls(scope,expression);
-
-            //var expressionContext = context || scope.context || scope.getContext() ||{};
-            //var useVariableGetter  = expressionContext['getVariable'] !=null;
-
-
             var expression = scope.expressionModel.replaceVariables(scope,_script,null,null);
-
-            //console.error('parse '+expression);
-
             var _function = scope.expressionModel.expressionCache[expression];
             if(!_function){
                 _function = scope.expressionModel.expressionCache[expression] = new Function("{" + expression + "}");
             }
-
-            //var _function = new Function(_script);
             var _args = thiz.getArgs(settings) || [];
-            //console.log('run with args ' , _args);
             try {
-
                 if(isDfd){
                     ctx.resolve=function(result){
                         if(thiz._deferredObject) {
                             thiz._deferredObject.resolve();
                         }
-                        //_headDone(result);
                         thiz.onDidRunThis(dfd,result,items,settings);
                     }
                 }
                 var _parsed = _function.apply(ctx, _args || {});
-                //var _parsed = globalEval(_script);
-                //console.log('---' + _parsed);
                 thiz._lastResult = _parsed;
+
                 if (run) {
                     run('Expression ' + _script + ' evaluates to ' + _parsed);
                 }
-
-
                 if(!isDfd) {
-                   // console.log('root block done');
-                    //_headDone(_parsed);
                     thiz.onDidRunThis(dfd,_parsed,items,settings);
                 }
-
                 if (_parsed !== 'false' && _parsed !== false) {
                     thiz.onSuccess(thiz, settings);
                 } else {
-                    //console.log('----false result');
                     thiz.onFailed(thiz, settings);
-                    //return [];
                 }
             } catch (e) {
                 e=e ||{};
@@ -41497,14 +41448,9 @@ define('xblox/model/code/RunScript',[
                 if (error) {
                     error('invalid expression : \n' + _script + ': ' + e);
                 }
-                //thiz.onFailed(thiz, settings);
-                //return [];
             }
-
             return dfd;
-
         },
-
         /////////////////////////////////////////////////////////////////////////////////////
         //
         //  UI
@@ -41518,21 +41464,15 @@ define('xblox/model/code/RunScript',[
             }
             return result;
         },
-
-        //  standard call from interface
         canAdd:function(){
             return [];
         },
-        //  standard call for editing
         getFields:function(){
-
             if(this.description === 'No Description'){
                 this.description = Description;
             }
-
             var fields = this.inherited(arguments) || this.getDefaultFields();
             var thiz=this;
-
             fields.push(
                 utils.createCI('name',13,this.name,{
                     group:'General',
@@ -41540,7 +41480,6 @@ define('xblox/model/code/RunScript',[
                     dst:'name'
                 })
             );
-
             fields.push(
                 utils.createCI('deferred',0,this.deferred,{
                     group:'General',
@@ -41548,10 +41487,6 @@ define('xblox/model/code/RunScript',[
                     dst:'deferred'
                 })
             );
-
-
-
-
             fields.push(utils.createCI('arguments',27,this.args,{
                     group:'Arguments',
                     title:'Arguments',
@@ -41559,7 +41494,6 @@ define('xblox/model/code/RunScript',[
                 }));
 
             fields.push(
-
                 utils.createCI('value',types.ECIType.EXPRESSION_EDITOR,this.method,{
                     group:'Script',
                     title:'Script',
@@ -42498,13 +42432,13 @@ define('xcf/model/Command',[
             var result = {};
             var dfd = null;
             if(msg.params && msg.params.id){
-
                 var id = msg.params.id;
                 dfd = this.getDeferred(id);
                 delete this._solving[id];
+                /*
                 this._emit('cmd:'+msg.cmd + '_' + id,{
                     msg:msg
-                });
+                });*/
                 msg.lastResponse && this.storeResult(msg.lastResponse);
                 this._emit('finished',{
                     msg:msg,
@@ -42535,9 +42469,11 @@ define('xcf/model/Command',[
             var params = msg.params;
 
             if(params && params.id){
+                /*
                 this._emit('cmd:'+msg.cmd + '_' + params.id,{
                     msg:msg
                 });
+                */
                 msg.lastResponse && this.storeResult(msg.lastResponse);
                 this._emit('paused',{
                     msg:msg,
@@ -42564,12 +42500,11 @@ define('xcf/model/Command',[
             var params = msg.params;
 
             if(params && params.id){
+                /*
                 this._emit('cmd:'+msg.cmd + '_' + params.id,{
                     msg:msg
-                });
-
+                });*/
                 msg.lastResponse && this.storeResult(msg.lastResponse);
-
                 this._emit('stopped',{
                     msg:msg,
                     result:this._lastResult,
@@ -42590,16 +42525,15 @@ define('xcf/model/Command',[
          * @param msg.cmd {string} the command string being sent
          */
         onCommandProgress:function(msg){
-            console.log('progress ' + this.declaredClass,msg);
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
             var result = {};
             var params = msg.params;
-
             if(params && params.id){
+                /*
                 this._emit('cmd:'+msg.cmd + '_' + params.id,{
                     msg:msg
-                });
+                });*/
                 msg.lastResponse && this.storeResult(msg.lastResponse);
                 this._emit('progress',{
                     msg:msg,
@@ -42631,7 +42565,6 @@ define('xcf/model/Command',[
                     this._lastResult = null;
                 }
             }
-
             return result;
         },
         resolve:function(data){
@@ -42642,7 +42575,7 @@ define('xcf/model/Command',[
         },
         onCommandError:function(msg){
             var scope = this.getScope();
-            var context = scope.getContext();//driver instance
+            var context = scope.getContext();
             var params = msg.params;
             if(params.id){
                 this._emit('cmd:'+msg.cmd + '_' + params.id,msg);
@@ -42652,7 +42585,6 @@ define('xcf/model/Command',[
                     id:params.id
                 });
             }
-
             this.onFailed(this, this._settings);
             var items = this.getItems(types.BLOCK_OUTLET.ERROR);
             if(items.length) {
@@ -42768,17 +42700,12 @@ define('xcf/model/Command',[
          * @returns formatted send string
          */
         solve:function(scope,settings,isInterface,send) {
-
             var dfd = null;
-
             scope = scope || this.scope;
-
             settings = this._lastSettings = settings || this._lastSettings || {};
-
             if(settings && settings.override && settings.override.mixin){
                 utils.mixin(this.override,settings.override.mixin);
             }
-
             var value = send || this._get('send');
             var parse = !(this.flags & types.CIFLAG.DONT_PARSE);
             var isExpression = (this.flags & types.CIFLAG.EXPRESSION);
@@ -42797,11 +42724,11 @@ define('xcf/model/Command',[
                 this.reset();
                 return;
             }
+
             //we're already running
             if(isInterface ==true && this._loop){
                 this.reset();
             }
-
             if(wait!==true) {
                 this.onRun(this,settings);
             }else{
@@ -42811,7 +42738,6 @@ define('xcf/model/Command',[
                 dfd = this.addDeferred(id);
             }
             if(this.items && this.items.length>0){
-
                 if(value && value.length>0){
                     var res = this._resolve(this.send,settings);
                     if(res && res.length>0){
@@ -42822,11 +42748,9 @@ define('xcf/model/Command',[
                         }
                     }
                 }
-
                 if(wait){
                     return dfd;
                 }
-
                 var ret=[];
                 for(var n = 0; n < this.items.length ; n++){
                     var block = this.items[n];
@@ -42834,9 +42758,7 @@ define('xcf/model/Command',[
                         ret.push(block.solve(scope, settings));
                     }
                 }
-
                 return ret;
-
             }else if(value.length>0){
                 var res = this._resolve(this.send,settings);
                 if(res && res.length>0){
@@ -42931,11 +42853,8 @@ define('xcf/model/Command',[
             return result;
         },
         getFields:function(){
-
             var fields = this.inherited(arguments) || this.getDefaultFields();
-
             var thiz=this;
-
             fields.push(this.utils.createCI('name',13,this.name,{
                 group:'General',
                 title:'Name',
@@ -42954,14 +42873,12 @@ define('xcf/model/Command',[
                 dst:'auto',
                 order:198
             }));
-
             fields.push(this.utils.createCI('interval',13,this.interval,{
                 group:'General',
                 title:'Interval',
                 dst:'interval',
                 order:197
             }));
-
             fields.push(this.utils.createCI('send',types.ECIType.EXPRESSION_EDITOR,this.send,{
                 group:'Send',
                 title:'Send',
@@ -42989,7 +42906,6 @@ define('xcf/model/Command',[
                     }
                 }
             }));
-
             fields.push(this.utils.createCI('flags',5,this.flags,{
                 group:'General',
                 title:'Flags',
@@ -43014,11 +42930,8 @@ define('xcf/model/Command',[
                 widget:{
                     hex:true
                 }
-
             }));
-
             fields = fields.concat(this.getDriverFields(fields));
-
             return fields;
         },
         icon:'fa-exclamation',
@@ -43081,8 +42994,7 @@ define('xcf/model/Command',[
             delete this._runningDfd;
         }
     });
-});
-;
+});;
 define('xblox/types/Types',[
     'xide/types/Types',
     'dojo/_base/lang',
