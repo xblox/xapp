@@ -6379,6 +6379,7 @@ define('xide/mixins/EventedMixin',[
 
                 var eventList = this.__events[type];
 
+
                 if (!eventList) {
                     // Optimize the case of one listener. Don't need the extra array object.
                     this.__events[type] = listener;
@@ -6395,6 +6396,7 @@ define('xide/mixins/EventedMixin',[
                         type: type,
                         remove: function () {
                             eventList.remove(this);
+                            owner && owner.__events && owner.__events[type] && owner.__events[type].remove(this);
                             this.owner = null;
                             this.handler = null;
                             delete this.type;
@@ -33499,6 +33501,8 @@ define('xblox/model/Block',[
                 }
             }
 
+            !_.isArray(result) && (result=[]);
+
             //add previous result
             var previousResult = this.getPreviousResult();
             if (previousResult != null) {
@@ -34094,8 +34098,9 @@ define('xblox/model/functions/CallBlock',[
     'xide/utils',
     'xide/types',
     'dojo/Deferred',
-    "xblox/model/Block"
-], function(dcl,utils,types,Deferred,Block){
+    "xblox/model/Block",
+    "xcf/model/Command"
+], function(dcl,utils,types,Deferred,Block,Command){
 
     // summary:
     //		The Call Block model.
@@ -34109,7 +34114,7 @@ define('xblox/model/functions/CallBlock',[
      * @extends module:xblox/model/Block
      * @extends module:xblox/model/ModelBase
      */
-    return dcl(Block,{
+    return dcl(Command,{
         declaredClass:"xblox.model.functions.CallBlock",
         //command: (String)
         //  block action name
@@ -34121,32 +34126,120 @@ define('xblox/model/functions/CallBlock',[
 
         _timeout:100,
 
+        isCommand:true,
+
+
+        _commandHandles:null,
+        /**
+         * onCommandFinish will be excecuted which a driver did run a command
+         * @param msg {object}
+         * @param msg.id {string} the command job id
+         * @param msg.src {string} the source id, which is this block id
+         * @param msg.cmd {string} the command string being sent
+         */
+        onCommandProgress:function(msg){
+
+            var scope = this.getScope();
+            var context = scope.getContext();//driver instance
+            var result = {};
+            var params = msg.params;
+
+            if(params && params.id){
+                this._emit('cmd:'+msg.cmd + '_' + params.id,{
+                    msg:msg
+                });
+                msg.lastResponse && this.storeResult(msg.lastResponse);
+                this._emit('progress',{
+                    msg:msg,
+                    //result:this._lastResult,
+                    id:params.id
+                });
+            }
+
+            var command = this._lastCommand;
+
+            this._lastResult = null;
+
+
+            this._lastResult = msg ? msg.result : null;
+
+            var items = this.getItems(types.BLOCK_OUTLET.PROGRESS);
+            //console.log('progress ' + this.declaredClass,this._lastResult);
+            if(!this._lastSettings){
+                this._lastSettings = {}
+            }
+            this._lastSettings.override = {};
+/*
+            utils.mixin(this._lastSettings.override,{
+                args:!_.isArray(this._lastResult) && (this._lastResult=[])
+            });*/
+            if(items.length) {
+                this.runFrom(items,0,this._lastSettings);
+            }
+        },
+        stop:function(){
+            this._lastCommand && this._lastCommand.stop();
+        },
+        pause:function(){
+            this._lastCommand && this._lastCommand.pause();
+        },
+        destroy:function(){
+            _.invoke(this._commandHandles,'remove');
+            delete this._commandHandles;
+            delete this._lastCommand;
+        },
         /***
          * Returns the block run result
          * @param scope
          */
         solve:function(scope,settings) {
+            if(!this._commandHandles){
+                this._commandHandles=[];
+            }else{
+                _.invoke(this._commandHandles,'remove');
+                this._commandHandles = [];
+            }
+
             var timeout = this._timeout || 50;
+            if(_.isString(timeout)){
+                timeout = parseInt(timeout);
+            }
+
             var dfd = new Deferred();
+
+            var handles = this._commandHandles;
+
+            settings = settings || {}
+
             setTimeout(function(){
                 if (this.command){
+
                     var _args = null;
                     if(this.args){
+
                         settings.override = settings.override || {};
                         var args = scope.expressionModel.replaceVariables(scope,this.args,false,false,null,null,{
                             begin:"%%",
                             end:"%%"
                         });
-
                         try {
                             _args = utils.fromJson(args);
                         }catch(e){
                             _args = args;
                         }
-
                         settings.override['args']= _.isArray(_args) ? _args : [args];
                         settings.override['mixin']=_args;
                     }
+                    this._lastCommand = scope.resolveBlock(this.command);
+                    
+                    if(this._lastCommand){
+                        handles.push(this._lastCommand._on('paused',this.onCommandPaused,this));
+                        handles.push(this._lastCommand._on('finished',this.onCommandFinish,this));
+                        handles.push(this._lastCommand._on('stopped',this.onCommandStopped,this));
+                        handles.push(this._lastCommand._on('error',this.onCommandError,this));
+                        handles.push(this._lastCommand._on('progress',this.onCommandProgress,this));                    
+                    }
+                    
                     var res = scope.solveBlock(this.command,settings);
                     if(res){
                         this.onSuccess(this,settings);
@@ -34190,18 +34283,18 @@ define('xblox/model/functions/CallBlock',[
             var _out = this.getBlockIcon('D') + 'Call Command : ' + text;
             return _out;
         },
-        onChangeField:function(what,value){
-            //debugger;
-        },
         //  standard call for editing
         getFields:function(){
-            var fields = this.inherited(arguments) || this.getDefaultFields();
+
+            var fields = this.getDefaultFields();
             var thiz=this;
 
             var title = 'Command';
+
             if(this.command.indexOf('://')){
                 title = this.scope.toFriendlyName(this,this.command);
             }
+
             fields.push(utils.createCI('value','xcf.widgets.CommandPicker',this.command,{
                     group:'General',
                     title:'Command',
@@ -34211,11 +34304,19 @@ define('xblox/model/functions/CallBlock',[
                     pickerType:'command',
                     value:this.command
             }));
+
             fields.push(utils.createCI('arguments',27,this.args,{
                 group:'Arguments',
                 title:'Arguments',
                 dst:'args'
             }));
+
+            fields.push(utils.createCI('timeout',13,this._timeout,{
+                group:'General',
+                title:'Delay',
+                dst:'_timeout'
+            }));
+
             return fields;
         }
     });
@@ -41299,10 +41400,11 @@ define('xblox/model/code/RunScript',[
             this._return=[];
 
 
-            //console.log('Run RunScript');
+
+            console.log('Run RunScript ',settings);
 
             settings = settings || {};
-            var _script = send || ('' + this._get('method'));
+            var _script = send || (this._get('method') ? this._get('method') : this.method);
 
             var thiz=this,
                 ctx = this.getContext(),
@@ -42404,6 +42506,10 @@ define('xcf/model/Command',[
                     msg:msg
                 });
                 msg.lastResponse && this.storeResult(msg.lastResponse);
+                this._emit('finished',{
+                    msg:msg,
+                    result:this._lastResult
+                });
             }
             var items = this.getItems(types.BLOCK_OUTLET.FINISH);
             if(items.length) {
@@ -42433,8 +42539,75 @@ define('xcf/model/Command',[
                     msg:msg
                 });
                 msg.lastResponse && this.storeResult(msg.lastResponse);
+                this._emit('paused',{
+                    msg:msg,
+                    result:this._lastResult,
+                    id:params.id                    
+                });
             }
             var items = this.getItems(types.BLOCK_OUTLET.PAUSED);
+            if(items.length) {
+                this.runFrom(items,0,this._lastSettings);
+            }
+        },
+        /**
+         * onCommandPaused
+         * @param msg {object}
+         * @param msg.id {string} the command job id
+         * @param msg.src {string} the source id, which is this block id
+         * @param msg.cmd {string} the command string being sent
+         */
+        onCommandStopped:function(msg){
+            var scope = this.getScope();
+            var context = scope.getContext();//driver instance
+            var result = {};
+            var params = msg.params;
+
+            if(params && params.id){
+                this._emit('cmd:'+msg.cmd + '_' + params.id,{
+                    msg:msg
+                });
+
+                msg.lastResponse && this.storeResult(msg.lastResponse);
+
+                this._emit('stopped',{
+                    msg:msg,
+                    result:this._lastResult,
+                    id:params.id
+                });
+            }
+
+            var items = this.getItems(types.BLOCK_OUTLET.STOPPED);
+            if(items.length) {
+                this.runFrom(items,0,this._lastSettings);
+            }
+        },
+        /**
+         * onCommandFinish will be excecuted which a driver did run a command
+         * @param msg {object}
+         * @param msg.id {string} the command job id
+         * @param msg.src {string} the source id, which is this block id
+         * @param msg.cmd {string} the command string being sent
+         */
+        onCommandProgress:function(msg){
+            console.log('progress ' + this.declaredClass,msg);
+            var scope = this.getScope();
+            var context = scope.getContext();//driver instance
+            var result = {};
+            var params = msg.params;
+
+            if(params && params.id){
+                this._emit('cmd:'+msg.cmd + '_' + params.id,{
+                    msg:msg
+                });
+                msg.lastResponse && this.storeResult(msg.lastResponse);
+                this._emit('progress',{
+                    msg:msg,
+                    result:this._lastResult,
+                    id:params.id
+                });
+            }
+            var items = this.getItems(types.BLOCK_OUTLET.PROGRESS);
             if(items.length) {
                 this.runFrom(items,0,this._lastSettings);
             }
@@ -42461,53 +42634,6 @@ define('xcf/model/Command',[
 
             return result;
         },
-        /**
-         * onCommandPaused
-         * @param msg {object}
-         * @param msg.id {string} the command job id
-         * @param msg.src {string} the source id, which is this block id
-         * @param msg.cmd {string} the command string being sent
-         */
-        onCommandStopped:function(msg){
-            var scope = this.getScope();
-            var context = scope.getContext();//driver instance
-            var result = {};
-            var params = msg.params;
-            if(params && params.id){
-                this._emit('cmd:'+msg.cmd + '_' + params.id,{
-                    msg:msg
-                });
-                msg.lastResponse && this.storeResult(msg.lastResponse);
-            }
-
-            var items = this.getItems(types.BLOCK_OUTLET.STOPPED);
-            if(items.length) {
-                this.runFrom(items,0,this._lastSettings);
-            }
-        },
-        /**
-         * onCommandFinish will be excecuted which a driver did run a command
-         * @param msg {object}
-         * @param msg.id {string} the command job id
-         * @param msg.src {string} the source id, which is this block id
-         * @param msg.cmd {string} the command string being sent
-         */
-        onCommandProgress:function(msg){
-            var scope = this.getScope();
-            var context = scope.getContext();//driver instance
-            var result = {};
-            var params = msg.params;
-            if(params && params.id){
-                this._emit('cmd:'+msg.cmd + '_' + params.id,{
-                    msg:msg
-                });
-                msg.lastResponse && this.storeResult(msg.lastResponse);
-            }
-            var items = this.getItems(types.BLOCK_OUTLET.PROGRESS);
-            if(items.length) {
-                this.runFrom(items,0,this._lastSettings);
-            }
-        },
         resolve:function(data){
             data = data || this._lastResult;
             if(this._runningDfd){
@@ -42520,7 +42646,13 @@ define('xcf/model/Command',[
             var params = msg.params;
             if(params.id){
                 this._emit('cmd:'+msg.cmd + '_' + params.id,msg);
+                this._emit('error',{
+                    msg:msg,
+                    result:this._lastResult,
+                    id:params.id
+                });
             }
+
             this.onFailed(this, this._settings);
             var items = this.getItems(types.BLOCK_OUTLET.ERROR);
             if(items.length) {
@@ -42692,7 +42824,7 @@ define('xcf/model/Command',[
                 }
 
                 if(wait){
-                    return this._runningDfd;
+                    return dfd;
                 }
 
                 var ret=[];
