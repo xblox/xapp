@@ -6133,6 +6133,7 @@ define('xide/mixins/EventedMixin',[
          * This function will remove all the event handles, using this._destroyHandles()
          */
         destroy: function () {
+            this._emit('destroy');
             this.inherited && this.inherited(arguments);
             this._destroyHandles();
         },
@@ -31803,8 +31804,8 @@ define('xapp/manager/Context',[
 ], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, Reloadable,Types,has,Deferred) {
 
     var isIDE = has('xcf-ui');
-    var debugWire = true;
-    var debugBoot = true;
+    var debugWire = false;
+    var debugBoot = false;
     var debugRun = false;
 
     var Instance = null;
@@ -31831,13 +31832,15 @@ define('xapp/manager/Context',[
             return this.resourceManager;
         },
         getMount:function(mount){
-            var resourceManager = this.getResourceManager(),
-                vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
-
+            var resourceManager = this.getResourceManager();
+            var vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
             if(vfsConfig && vfsConfig[mount]) {
                 return vfsConfig[mount];
             }
             return null;
+        },
+        getBlock: function (url) {
+            return this.getDeviceManager().getBlock(url);
         },
         getVariable: function (deviceId, driverId, variableId) {
             var deviceManager = ctx.getDeviceManager();
@@ -31889,20 +31892,20 @@ define('xapp/manager/Context',[
                         driverId = varParams[1],
                         variableId = varParams[2];
 
-
-                    var variable = this.getVariable(deviceId, driverId, variableId);
-
+                    var variable = this.getBlock(variableId);
                     rejectFunction = function (evt) {
-
                         var variable = evt.item;
+                        var _variableIn = thiz.getBlock(variableId);
+                        if(_variableIn && variable && _variableIn.id === variable.id){
+                            return false;
+                        }
+
                         if (variable.id === variableId) {
                             return false;
                         }
                         return true;
                     };
-
                     onBeforeRun = function (block, evt) {
-
                         var variable = evt.item;
                         block.override = {
                             variables: {
@@ -31911,9 +31914,7 @@ define('xapp/manager/Context',[
                         };
                     }
                 }
-
             }
-
 
             if (!widget) {
                 console.error('have no widget for event ' + event);
@@ -31945,6 +31946,7 @@ define('xapp/manager/Context',[
              * @param widget
              */
             var run = function (event, value, block, widget) {
+
                 if(event==='load' && widget.__didRunLoad){
                     return;
                 }
@@ -31978,7 +31980,6 @@ define('xapp/manager/Context',[
                 if (block && context) {
                     block.context = context;
                     block._targetReference = context;
-
                     if (onBeforeRun) {
                         onBeforeRun(block, value);
                     }
@@ -31986,7 +31987,7 @@ define('xapp/manager/Context',[
                         highlight: true,
                         args:[value]
                     });
-                    debugWire && console.log('run ' + block.name + ' for even ' + event, result + ' for ' + this.id);
+                    debugWire && console.log('run ' + block.name + ' for even ' + event + ' for ' + this.id,result);
                 }
             };
 
@@ -32012,26 +32013,23 @@ define('xapp/manager/Context',[
             }
 
             if (_target) {
-
                 //plain node
                 if (!_isDelite && (!_hasWidgetCallback || !_isWidget)) {
-                    _handle = widget.__on(_target, event, function (evt) {
-                        run(event, evt, block, widget);
-
-                    });
-
-                    //_handle = on(_target, event, function (evt) {
-                        //run(event, evt, block, widget);
-                    //});
-
+                    if(utils.isSystemEvent(event)){
+                        _handle = widget.subscribe(event, function (evt) {
+                            run(event, evt, block, widget);
+                        }.bind(this), widget);
+                    }else {
+                        _handle = widget.__on(_target, event, function (evt) {
+                            run(event, evt, block, widget);
+                        });
+                    }
                 } else {
-
                     _target = widget;
                     var useOn = true;
                     if (useOn) {
                         if (!_isDelite) {
                             var _e = 'on' + utils.capitalize(_event);
-
                             widget[_e] = function (val, nada) {
                                 if (_target.ignore !== true) {
                                     run(event, val);
@@ -32042,26 +32040,20 @@ define('xapp/manager/Context',[
                                 _handle = _target.subscribe(event, function (evt) {
                                     run(event, evt, block, widget);
                                 }.bind(this), widget);
-
                             }
                             else {
-
                                 if (utils.isNativeEvent(event)) {
                                     event = event.replace('on', '');
                                 }
                                 _handle = _target.on(event, function (evt) {
-
                                     var value = evt.target.value;
-
                                     if("checked" in evt.target){
                                         value = evt.target.checked;
                                     }
                                     run(event, value, block, widget);
-
                                 }.bind(this));
                             }
                         }
-
                     } else {
                         widget['on' + utils.capitalize(_event)] = function (val) {
                             if (_target.ignore !== true) {
@@ -32072,7 +32064,6 @@ define('xapp/manager/Context',[
                 }
 
                 if (_handle) {
-
                     if (widget.addHandle) {
                         widget.addHandle(event, _handle);
                     }
@@ -32087,11 +32078,9 @@ define('xapp/manager/Context',[
             }
         },
         wireWidget: function (scope, widget, node, event, group, params) {
-
             var blocks = scope.getBlocks({
                 group: group
             });
-
             debugWire && console.log('wire widget : ' + event + ' for group ' + group, blocks);
             if (!blocks || !blocks.length) {
                 debugWire && console.log('have no blocks for group : ' + group);
@@ -32102,7 +32091,6 @@ define('xapp/manager/Context',[
                 debugWire && console.log('activate block : ' + block.name + ' for ' + event, block);
                 this.wireNode(widget, event, block, params);
             }
-
         },
         wireScope: function (scope) {
             
@@ -32120,24 +32108,53 @@ define('xapp/manager/Context',[
                     parts = group.split('__'),
                     params = [];
 
-                //no element:
+                //no element, set to body
                 if (parts.length == 1) {
                     event = parts[0];
                     widgetId = 'body';
                     if(isIDE) {
                         var _body = editorContext.rootWidget;
                         _body.domNode.runExpression = editorContext.global.runExpression;
-                    }else{
-
                     }
-
                 }
 
                 if (parts.length == 2) {
-                    event = parts[1];
-                    widgetId = parts[0];
+                    var blockUrl;
+                    //can be: event & block url: onDriverVariableChanged__variable://deviceScope=user_devices&device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&driver=9db866a4-bb3e-137b-ae23-793b729c44f8&driverScope=user_drivers&block=2219d68b-862f-92ab-de5d-b7a847930a7a
+                    //can be: widget id & event: btnCurrentFileName__load
+                    if(parts[1].indexOf('://')!==-1){
+                        event = parts[0];
+                        widgetId = 'body';
+                        blockUrl = parts[1];
+                    }else {
+                        event = parts[1];
+                        widgetId = parts[0];
+
+                    }
+                    if(blockUrl) {
+                        var url_parts = utils.parse_url(blockUrl);
+                        var url_args = utils.urlArgs(url_parts.host);
+                        params = [
+                            url_args.device.value,
+                            url_args.driver.value,
+                            blockUrl
+                        ]
+                    }
                 }
 
+                //scripted__onDriverVariableChanged__variable://deviceScope=user_devices&device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&driver=9db866a4-bb3e-137b-ae23-793b729c44f8&driverScope=user_drivers&block=2219d68b-862f-92ab-de5d-b7a847930a7a
+                if (parts.length == 3) {
+                    event = parts[1];
+                    widgetId = parts[0];
+                    var _blockUrl = parts[2];
+                    var _url_parts = utils.parse_url(_blockUrl);
+                    var _url_args = utils.urlArgs(_url_parts.host);
+                    params = [
+                        _url_args.device.value,
+                        _url_args.driver.value,
+                        _blockUrl
+                    ]
+                }
                 if (parts.length == 5) {
                     event = parts[1];
                     widgetId = parts[0];
@@ -33024,10 +33041,7 @@ define('xblox/model/Block',[
          */
         childrenByNotClass:function(clz){
             var all = this.getChildren();
-            
             var out = [];
-            
-            
             for (var i = 0; i < all.length; i++) {
                 var obj = all[i];
                 if(!obj.isInstanceOf(clz)){
@@ -33048,7 +33062,6 @@ define('xblox/model/Block',[
             return null;
         },
         pause:function(){
-
         },
         mergeNewModule: function (source) {
             for (var i in source) {
@@ -33761,19 +33774,17 @@ define('xblox/model/Block',[
             }
         },
         onDidRun: function () {
-
             if(this.override){
                 this.override.args && delete this.override.args;
                 delete this.override;
             }
-
             //this.override = {}
-
         },
         destroy:function(){
             this.stop();
             this.reset();
             this._destroyed = true;
+            console.error('destroy '+this.scope.id);
         },
         reset:function(){
             this._lastSettings = {};
@@ -33816,14 +33827,15 @@ define('xblox/model/Block',[
 define('xblox/model/ModelBase',[
     'dcl/dcl',
     "xide/utils",
-    "xide/types"
-], function(dcl,utils,types){
+    "xide/types",
+    "xide/mixins/EventedMixin"
+], function(dcl,utils,types,EventedMixin){
 
     /**
      * The model mixin for a block
      * @class module:xblox.model.ModelBase
      */
-    return dcl(null,{
+    var Module = dcl(EventedMixin.dcl,{
         declaredClass:'xblox.model.ModelBase',
         id:null,
         description:'',
@@ -33999,8 +34011,12 @@ define('xblox/model/ModelBase',[
         },
         isInValidState:function(){
             return true;
-        }
+        },
+        destroy:function(){}
     });
+
+    dcl.chainAfter(Module,'destroy');
+    return Module;
 });;
 /** @module xblox/model/functions/StopBlock **/
 define('xblox/model/functions/StopBlock',[
@@ -34414,7 +34430,7 @@ define('xblox/factory/Blocks',[
             if(block && block.init){
                 block.init();
             }
-            ReloadMixin.prototype.mergeFunctions(block,EventedMixin.prototype);
+            //ReloadMixin.prototype.mergeFunctions(block,EventedMixin.prototype);
             //add to scope
             if (block.scope) {
                 newBlock = block.scope.registerBlock(block,publish);
@@ -41427,9 +41443,9 @@ define('xblox/model/code/RunScript',[
                         thiz.onDidRunThis(dfd,result,items,settings);
                     }
                 }
+                //console.log('=run script',ctx);
                 var _parsed = _function.apply(ctx, _args || {});
                 thiz._lastResult = _parsed;
-
                 if (run) {
                     run('Expression ' + _script + ' evaluates to ' + _parsed);
                 }
@@ -49178,15 +49194,11 @@ define('xblox/model/Scope',[
             //2nd pass, update child blocks
             var allBlocks = this.allBlocks();
             for(var i = 0; i < allBlocks.length ; i++){
-
                 var block = allBlocks[i];
-
                 block._children = childMap[block.id];
-
                 if(block._children) {
                     // get all the block container fields
-                    for (var propName in block._children)
-                    {
+                    for (var propName in block._children){
                         if (typeof block._children[propName] == "string")
                         {
                             // single block
@@ -49235,14 +49247,10 @@ define('xblox/model/Scope',[
                         debug && console.error('have orphan block!',block);
                         block.parentId = null;
                     }
-                }
-              
-                    
+                }                                  
                 block.postCreate();
-
             }
             var result = this.allBlocks();
-            //console.log('after json deserialize ' , result);
             return resultSelected;
         },
         /**
@@ -49301,16 +49309,13 @@ define('xblox/model/Scope',[
          * @return block
          */
         getBlockByName:function(name) {
-
             if(name.indexOf('://')!==-1){
                 var block = this.resolveBlock(name);
                 if(block){
                     return block;
                 }
             }
-
             var allBlocks = this.getBlocks();
-
             for (var i = 0; i < allBlocks.length; i++) {
                 var block = allBlocks[i];
                 if(block.name===name){
@@ -49322,12 +49327,6 @@ define('xblox/model/Scope',[
                 name:name
             });
             return blocks && blocks.length>0? blocks[0] : null;
-            /*
-            for(var b in this.blocks){
-                if(this.blocks[b].name===name){
-                    return this.blocks[b];
-                }
-            }*/
         },
         /***
          * Returns a block from the scope
@@ -49336,7 +49335,6 @@ define('xblox/model/Scope',[
          * @return block
          */
         getBlockById:function(id) {
-            /*return this.blocks[id];*/
             return this.blockStore.getSync(id) /*|| this.variableStore.getSync(id)*/;
         },
         /**
@@ -49375,7 +49373,6 @@ define('xblox/model/Scope',[
          * @param blocks {module:xblox/model/Block[]}
          */
         flatten:function(blocks){
-
             var result = [];
             for(var b in blocks){
 
@@ -49384,7 +49381,6 @@ define('xblox/model/Scope',[
                 if(block.keys==null){
                     continue;
                 }
-
                 var found = _.find(result,{
                     id:block.id
                 })
@@ -49405,29 +49401,21 @@ define('xblox/model/Scope',[
                         var value = block[prop];
                         if (this.isBlock(value)){
                             // if the field is a single block container, store the child block's id
-                            //result.push(value);
                             found = _.find(result,{
                                 id:value.id
                             })
                             if(found){
-                                //console.error('already in array  : ' +value.name);
+                                
                             }else {
                                 result.push(value);
                             }
                         } else if (this.areBlocks(value)){
-
-                            //console.log('found sub blocks in ' + prop + ' ' + block.name);
-
                             for(var i = 0; i < value.length ; i++){
                                 var sBlock = value[i];
-
-                                //result.push(sBlock);
                                 found = _.find(result,{
                                     id:sBlock.id
                                 })
-
-                                if(found){
-                                    //console.error('already in array  : ' +sBlock.name);
+                                if(found){                                  
                                 }else {
                                     result.push(sBlock);
                                 }
@@ -49437,23 +49425,12 @@ define('xblox/model/Scope',[
                     }
                 }
             }
-
-            //console.log('un : ' , _.uniqBy(result, 'id'));
-
-            //console.log('found in total '+result.length + ' blocks ',result);
-
             result = _.uniq(result,false,function(item){
                 return item.id;
             });
-
             return result;
         },
         _getSolve:function(block){
-
-            if(block.prototype){
-
-            }
-
             return block.prototype ? block.prototype.solve : block.__proto__.solve;
         },
         /***
@@ -49463,8 +49440,6 @@ define('xblox/model/Scope',[
          * @returns result
          */
         solveBlock:function(mixed,settings,force,isInterface) {
-
-
             settings = settings || {
                 highlight:false
             };
@@ -54186,16 +54161,12 @@ define('xcf/manager/DeviceManager',[
          * @private
          */
         onNodeServiceStoreReady: function (evt) {
-
             if (this.deviceServerClient) {
                 this.deviceServerClient.destroy();
             }
             var store = evt.store,thiz = this;
-
             var client = this.createDeviceServerClient(store);
-
             var connect = has('drivers') && has('devices');
-
         },
         /**
          *
@@ -54242,7 +54213,6 @@ define('xcf/manager/DeviceManager',[
          * @private
          */
         _removeInstance: function (instance, hash,device) {
-
             if (instance.destroy) {
                 instance.destroy();
             }
@@ -54307,7 +54277,11 @@ define('xcf/manager/DeviceManager',[
             }
             return null;
         },
-
+        getDeviceByUrl:function(url){
+            var parts = utils.parse_url(url);
+            parts = utils.urlArgs(parts.host);
+            return this.getDeviceById(parts.device.value);
+        },
         /**
          * Returns a device by id
          * @param id {string}
@@ -54345,23 +54319,6 @@ define('xcf/manager/DeviceManager',[
                     }
                 }
             }
-            /*
-            
-            var items = utils.queryStore(store || this.getStore(), {
-                isDir: false
-            });
-            
-            if (items._S) {
-                items = [items];
-            }
-            for (var i = 0; i < items.length; i++) {
-                var device = items[i];
-                var _id = this.getMetaValue(device, DEVICE_PROPERTY.CF_DEVICE_ID);
-                if(_id == id){
-                    return device;
-                }
-            }
-            */
             return null;
         },
         /**
@@ -54370,7 +54327,6 @@ define('xcf/manager/DeviceManager',[
          * @returns {module:xcf/model/Device[]}
          */
         getDevicesByDriverId: function (id) {
-
             var items = utils.queryStore(this.getStore(), {
                 isDir: false
             });
@@ -54386,7 +54342,6 @@ define('xcf/manager/DeviceManager',[
             }
             return null;
         },
-
         _cachedItems:null,
         getDeviceStoreItem: function (deviceInfo) {
             if(!deviceInfo){
@@ -62322,6 +62277,11 @@ define('xcf/manager/DriverManager',[
                 block = _driver.blockScope.getBlockById(parts.block.value);
             }
             return block;
+        },
+        getDriverByUrl:function(url){
+            var parts = utils.parse_url(url);
+            parts = utils.urlArgs(parts.host);//go on with query string
+            return this.getItemById(parts.driver.value);
         },
         declaredClass:"xcf.manager.DriverManager",
         /**

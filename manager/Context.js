@@ -17,8 +17,8 @@ define([
 ], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, Reloadable,Types,has,Deferred) {
 
     var isIDE = has('xcf-ui');
-    var debugWire = true;
-    var debugBoot = true;
+    var debugWire = false;
+    var debugBoot = false;
     var debugRun = false;
 
     var Instance = null;
@@ -45,13 +45,15 @@ define([
             return this.resourceManager;
         },
         getMount:function(mount){
-            var resourceManager = this.getResourceManager(),
-                vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
-
+            var resourceManager = this.getResourceManager();
+            var vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
             if(vfsConfig && vfsConfig[mount]) {
                 return vfsConfig[mount];
             }
             return null;
+        },
+        getBlock: function (url) {
+            return this.getDeviceManager().getBlock(url);
         },
         getVariable: function (deviceId, driverId, variableId) {
             var deviceManager = ctx.getDeviceManager();
@@ -103,20 +105,20 @@ define([
                         driverId = varParams[1],
                         variableId = varParams[2];
 
-
-                    var variable = this.getVariable(deviceId, driverId, variableId);
-
+                    var variable = this.getBlock(variableId);
                     rejectFunction = function (evt) {
-
                         var variable = evt.item;
+                        var _variableIn = thiz.getBlock(variableId);
+                        if(_variableIn && variable && _variableIn.id === variable.id){
+                            return false;
+                        }
+
                         if (variable.id === variableId) {
                             return false;
                         }
                         return true;
                     };
-
                     onBeforeRun = function (block, evt) {
-
                         var variable = evt.item;
                         block.override = {
                             variables: {
@@ -125,9 +127,7 @@ define([
                         };
                     }
                 }
-
             }
-
 
             if (!widget) {
                 console.error('have no widget for event ' + event);
@@ -159,6 +159,7 @@ define([
              * @param widget
              */
             var run = function (event, value, block, widget) {
+
                 if(event==='load' && widget.__didRunLoad){
                     return;
                 }
@@ -192,7 +193,6 @@ define([
                 if (block && context) {
                     block.context = context;
                     block._targetReference = context;
-
                     if (onBeforeRun) {
                         onBeforeRun(block, value);
                     }
@@ -200,7 +200,7 @@ define([
                         highlight: true,
                         args:[value]
                     });
-                    debugWire && console.log('run ' + block.name + ' for even ' + event, result + ' for ' + this.id);
+                    debugWire && console.log('run ' + block.name + ' for even ' + event + ' for ' + this.id,result);
                 }
             };
 
@@ -226,26 +226,23 @@ define([
             }
 
             if (_target) {
-
                 //plain node
                 if (!_isDelite && (!_hasWidgetCallback || !_isWidget)) {
-                    _handle = widget.__on(_target, event, function (evt) {
-                        run(event, evt, block, widget);
-
-                    });
-
-                    //_handle = on(_target, event, function (evt) {
-                        //run(event, evt, block, widget);
-                    //});
-
+                    if(utils.isSystemEvent(event)){
+                        _handle = widget.subscribe(event, function (evt) {
+                            run(event, evt, block, widget);
+                        }.bind(this), widget);
+                    }else {
+                        _handle = widget.__on(_target, event, function (evt) {
+                            run(event, evt, block, widget);
+                        });
+                    }
                 } else {
-
                     _target = widget;
                     var useOn = true;
                     if (useOn) {
                         if (!_isDelite) {
                             var _e = 'on' + utils.capitalize(_event);
-
                             widget[_e] = function (val, nada) {
                                 if (_target.ignore !== true) {
                                     run(event, val);
@@ -256,26 +253,20 @@ define([
                                 _handle = _target.subscribe(event, function (evt) {
                                     run(event, evt, block, widget);
                                 }.bind(this), widget);
-
                             }
                             else {
-
                                 if (utils.isNativeEvent(event)) {
                                     event = event.replace('on', '');
                                 }
                                 _handle = _target.on(event, function (evt) {
-
                                     var value = evt.target.value;
-
                                     if("checked" in evt.target){
                                         value = evt.target.checked;
                                     }
                                     run(event, value, block, widget);
-
                                 }.bind(this));
                             }
                         }
-
                     } else {
                         widget['on' + utils.capitalize(_event)] = function (val) {
                             if (_target.ignore !== true) {
@@ -286,7 +277,6 @@ define([
                 }
 
                 if (_handle) {
-
                     if (widget.addHandle) {
                         widget.addHandle(event, _handle);
                     }
@@ -301,11 +291,9 @@ define([
             }
         },
         wireWidget: function (scope, widget, node, event, group, params) {
-
             var blocks = scope.getBlocks({
                 group: group
             });
-
             debugWire && console.log('wire widget : ' + event + ' for group ' + group, blocks);
             if (!blocks || !blocks.length) {
                 debugWire && console.log('have no blocks for group : ' + group);
@@ -316,7 +304,6 @@ define([
                 debugWire && console.log('activate block : ' + block.name + ' for ' + event, block);
                 this.wireNode(widget, event, block, params);
             }
-
         },
         wireScope: function (scope) {
             
@@ -334,24 +321,53 @@ define([
                     parts = group.split('__'),
                     params = [];
 
-                //no element:
+                //no element, set to body
                 if (parts.length == 1) {
                     event = parts[0];
                     widgetId = 'body';
                     if(isIDE) {
                         var _body = editorContext.rootWidget;
                         _body.domNode.runExpression = editorContext.global.runExpression;
-                    }else{
-
                     }
-
                 }
 
                 if (parts.length == 2) {
-                    event = parts[1];
-                    widgetId = parts[0];
+                    var blockUrl;
+                    //can be: event & block url: onDriverVariableChanged__variable://deviceScope=user_devices&device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&driver=9db866a4-bb3e-137b-ae23-793b729c44f8&driverScope=user_drivers&block=2219d68b-862f-92ab-de5d-b7a847930a7a
+                    //can be: widget id & event: btnCurrentFileName__load
+                    if(parts[1].indexOf('://')!==-1){
+                        event = parts[0];
+                        widgetId = 'body';
+                        blockUrl = parts[1];
+                    }else {
+                        event = parts[1];
+                        widgetId = parts[0];
+
+                    }
+                    if(blockUrl) {
+                        var url_parts = utils.parse_url(blockUrl);
+                        var url_args = utils.urlArgs(url_parts.host);
+                        params = [
+                            url_args.device.value,
+                            url_args.driver.value,
+                            blockUrl
+                        ]
+                    }
                 }
 
+                //scripted__onDriverVariableChanged__variable://deviceScope=user_devices&device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&driver=9db866a4-bb3e-137b-ae23-793b729c44f8&driverScope=user_drivers&block=2219d68b-862f-92ab-de5d-b7a847930a7a
+                if (parts.length == 3) {
+                    event = parts[1];
+                    widgetId = parts[0];
+                    var _blockUrl = parts[2];
+                    var _url_parts = utils.parse_url(_blockUrl);
+                    var _url_args = utils.urlArgs(_url_parts.host);
+                    params = [
+                        _url_args.device.value,
+                        _url_args.driver.value,
+                        _blockUrl
+                    ]
+                }
                 if (parts.length == 5) {
                     event = parts[1];
                     widgetId = parts[0];
