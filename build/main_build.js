@@ -32784,7 +32784,6 @@ define('xblox/model/Block',[
 
     var bases = [ModelBase];
 
-
     function index(what,items) {
         for (var j = 0; j < items.length; j++) {
             if (what.id === items[j].id) {
@@ -32903,6 +32902,7 @@ define('xblox/model/Block',[
         scopeId: null,
         isCommand:false,
         outlet:0,
+        _destroyed:false,
         /**
          * Switch to include the block for execution.
          * @todo, move to block flags
@@ -32989,6 +32989,7 @@ define('xblox/model/Block',[
             '_didSubscribe',
             '_currentIndex',
             '_deferredObject',
+            '_destroyed',
             '_return',
             'parent',
             '__started',
@@ -33017,6 +33018,39 @@ define('xblox/model/Block',[
             'autoCreateElse',
             '_postCreated'
         ],
+        _parseString: function (string,settings,block,flags) {
+            try {
+                settings = settings || this._lastSettings || {};
+                block = block || this;
+                flags = flags || settings.flags || types.CIFLAG.EXPRESSION;
+                var scope = this.scope;
+                var value = string;
+                var parse = !(flags & types.CIFLAG.DONT_PARSE);
+                var isExpression = (flags & types.CIFLAG.EXPRESSION);
+                var wait = (flags & types.CIFLAG.WAIT) ? true : false;
+
+                if (flags & types.CIFLAG.TO_HEX) {
+                    value = utils.to_hex(value);
+                }
+
+                if (parse !== false) {
+                    value = utils.convertAllEscapes(value, "none");
+                }
+
+                var override = settings.override || this.override || {};
+                var _overrides = (override && override.variables) ? override.variables : null;
+                var res = "";
+                if (isExpression && parse !== false) {
+
+                    res = scope.parseExpression(value, null, _overrides, null, null, null, override.args,flags);
+                } else {
+                    res = '' + value;
+                }
+            }catch(e){
+                console.error(e);
+            }
+            return res;
+        },
         postCreate:function(){},
         /**
          * 
@@ -34167,7 +34201,6 @@ define('xblox/model/functions/CallBlock',[
                 msg.lastResponse && this.storeResult(msg.lastResponse);
                 this._emit('progress',{
                     msg:msg,
-                    //result:this._lastResult,
                     id:params.id
                 });
             }
@@ -34180,15 +34213,10 @@ define('xblox/model/functions/CallBlock',[
             this._lastResult = msg ? msg.result : null;
 
             var items = this.getItems(types.BLOCK_OUTLET.PROGRESS);
-            //console.log('progress ' + this.declaredClass,this._lastResult);
             if(!this._lastSettings){
                 this._lastSettings = {}
             }
             this._lastSettings.override = {};
-/*
-            utils.mixin(this._lastSettings.override,{
-                args:!_.isArray(this._lastResult) && (this._lastResult=[])
-            });*/
             if(items.length) {
                 this.runFrom(items,0,this._lastSettings);
             }
@@ -37485,12 +37513,7 @@ define('xide/mixins/ReferenceMixin',[
             }
             return result.trim();
         },
-        /**
-         *
-         * @param params (object in that format : reference(string) | mode (string))
-         */
-        resolveReference: function (params) {
-
+        resolveReference: function (params,settings) {
             var override = null;
             try{
                 override = this.getTarget();
@@ -37499,7 +37522,10 @@ define('xide/mixins/ReferenceMixin',[
                 return null;
             }
             var scope = this.scope;
+
             var query = params.reference;
+
+
             if (!params || !query || !query.length) {
                 if (override) {
                     return [override];
@@ -37550,7 +37576,7 @@ define('xide/mixins/ReferenceMixin',[
                 case types.WIDGET_REFERENCE_MODE.BY_CSS:
                 {
                     var _query = this._cssClassesToQuery(query);
-
+                    this._parseString && (_query = this._parseString(_query,settings,null,types.CIFLAG.EXPRESSION) || _query);
                     var _$ = null;
                     if (this.scope && this.scope.global && this.scope.global['$']) {
                         _$ = this.scope.global['$'];
@@ -37558,12 +37584,12 @@ define('xide/mixins/ReferenceMixin',[
                         _$ = $;
                     }
                     if (_$) {
-                        var _elements = _$(query);
+                        var _elements = _$(_query);
                         if (_elements) {
                             return _elements;
                         }
                     }
-                    var objects = utils.find(query, null, false);
+                    var objects = utils.find(_query, null, false);
                     if (objects) {
                         return objects;
                     }
@@ -40150,7 +40176,8 @@ define('xblox/model/variables/VariableAssignmentBlock',[
                     block:this,
                     name:_variable.name,
                     value:_value,
-                    publish:publish
+                    publish:publish,
+                    result:_parsed
                 });
                 this.onSuccess(this,settings);
                 return [];
@@ -40737,7 +40764,7 @@ define('xblox/model/variables/Variable',[
         initial:null,
         
         isVariable:true,
-        
+        flags: 0x000001000,
         getValue:function(){
             return this.value;
         },
@@ -40764,7 +40791,6 @@ define('xblox/model/variables/Variable',[
 
         },
         getFields:function(){
-
             var fields = this.getDefaultFields();
             var thiz=this,
                 defaultArgs = {
@@ -40790,8 +40816,6 @@ define('xblox/model/variables/Variable',[
                 dst:'name'
             }));
 
-
-
             fields.push(this.utils.createCI('value',types.ECIType.EXPRESSION,this.value,{
                 group:'General',
                 title:'Value',
@@ -40802,6 +40826,8 @@ define('xblox/model/variables/Variable',[
                     }
                 }
             }));
+
+            
 
 
             //this.types.ECIType.EXPRESSION_EDITOR
@@ -41443,7 +41469,6 @@ define('xblox/model/code/RunScript',[
                         thiz.onDidRunThis(dfd,result,items,settings);
                     }
                 }
-                //console.log('=run script',ctx);
                 var _parsed = _function.apply(ctx, _args || {});
                 thiz._lastResult = _parsed;
                 if (run) {
@@ -42342,6 +42367,26 @@ define('xcf/model/Variable',[
                 }
             }));
 
+            fields.push(this.utils.createCI('flags', 5, this.flags, {
+                group: 'General',
+                title: 'Flags',
+                dst: 'flags',
+                data: [
+                    {
+                        value: 0x000001000,
+                        label: 'Dont parse',
+                        title: "Do not parse the string and use it as is"
+                    },
+                    {
+                        value: 0x00000800,//2048
+                        label: 'Expression',
+                        title: 'Parse it as Javascript'
+                    }
+                ],
+                widget: {
+                    hex: true
+                }
+            }));
 
 /*
             //this.types.ECIType.EXPRESSION_EDITOR
@@ -42397,7 +42442,7 @@ define('xcf/model/Command',[
     'module',
     'require',
     'xblox/types/Types'
-], function(dcl,Block,Contains,utils,types,Deferred,module,require,BTypes){
+], function (dcl, Block, Contains, utils, types, Deferred, module, require, BTypes) {
     var debug = false;
     /**
      * The command model. A 'command' consists out of a few parameters and a series of
@@ -42408,31 +42453,41 @@ define('xcf/model/Command',[
      * @extends module:xblox/model/Block
      * @extends module:xblox/model/ModelBase
      */
-    return dcl([Block,Contains],{
+    return dcl([Block, Contains], {
         //declaredClass: String (dcl internals, private!)
         declaredClass: "xcf.model.Command",
-        //startup: Boolean
-        //  3.12.10.3. The “Startup” checkbox indicates whether or not the associated command
-        //  should be automatically sent at startup once communications have been established
-        //  with the device.
-        startup:false,
-        //auto: Float
-        //  3.12.10.3. The “Auto” field is used to set a time interval at which the command is
-        //  automatically continually sent when necessary for applications such as polling.
-        auto:null,
-        //send: xcf.model.Expression
-        //  3.12.10.3. “Send” field containing the actual string or hexadecimal sequence used to communicate with the device.
-        send:'',
-        name:'No Title',
-        observed:[
+        /**
+         *  3.12.10.3. The “Startup” checkbox indicates whether or not the associated command
+         *  should be automatically sent at startup once communications have been established
+         *  with the device.
+         * @type {Boolean}
+         */
+        startup: false,
+        /**
+         * 3.12.10.3. The “Auto” field is used to set a time interval at which the command is
+         * automatically continually sent when necessary for applications such as polling.
+         * @type {Boolean}
+         */
+        auto: null,
+        /**
+         * 3.12.10.3. “Send” field containing the actual string or hexadecimal sequence used to communicate with the device.
+         * @type {String}
+         */
+        send: '',
+        /**
+         * Name of the block
+         * @type {String}
+         */
+        name: 'No Title',
+        observed: [
             'send'
         ],
-        interval:0,
-        flags:0x00000800,
-        _runningDfd:null,
-        __started:false,
-        isCommand:true,
-        getItems:function(outletType){
+        interval: 0,
+        flags: 0x00000800,
+        _runningDfd: null,
+        __started: false,
+        isCommand: true,
+        getItems: function (outletType) {
             return this.getItemsByType(outletType);
         },
         /**
@@ -42442,32 +42497,28 @@ define('xcf/model/Command',[
          * @param msg.src {string} the source id, which is this block id
          * @param msg.cmd {string} the command string being sent
          */
-        onCommandFinish:function(msg){
+        onCommandFinish: function (msg) {
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
             var result = {};
             var dfd = null;
-            if(msg.params && msg.params.id){
+            if (msg.params && msg.params.id) {
                 var id = msg.params.id;
                 dfd = this.getDeferred(id);
                 delete this._solving[id];
-                /*
-                this._emit('cmd:'+msg.cmd + '_' + id,{
-                    msg:msg
-                });*/
                 msg.lastResponse && this.storeResult(msg.lastResponse);
-                this._emit('finished',{
-                    msg:msg,
-                    result:this._lastResult
+                this._emit('finished', {
+                    msg: msg,
+                    result: this._lastResult
                 });
             }
             var items = this.getItems(types.BLOCK_OUTLET.FINISH);
-            if(items.length) {
-                this.runFrom(items,0,this._lastSettings);
+            if (items.length) {
+                this.runFrom(items, 0, this._lastSettings);
             }
             this.resolve(result);
             this.onSuccess(this, this._lastSettings);
-            if(dfd){
+            if (dfd) {
                 dfd.resolve(this._lastResult);
             }
         },
@@ -42478,28 +42529,23 @@ define('xcf/model/Command',[
          * @param msg.src {string} the source id, which is this block id
          * @param msg.cmd {string} the command string being sent
          */
-        onCommandPaused:function(msg){
+        onCommandPaused: function (msg) {
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
             var result = {};
             var params = msg.params;
 
-            if(params && params.id){
-                /*
-                this._emit('cmd:'+msg.cmd + '_' + params.id,{
-                    msg:msg
-                });
-                */
+            if (params && params.id) {
                 msg.lastResponse && this.storeResult(msg.lastResponse);
-                this._emit('paused',{
-                    msg:msg,
-                    result:this._lastResult,
-                    id:params.id                    
+                this._emit('paused', {
+                    msg: msg,
+                    result: this._lastResult,
+                    id: params.id
                 });
             }
             var items = this.getItems(types.BLOCK_OUTLET.PAUSED);
-            if(items.length) {
-                this.runFrom(items,0,this._lastSettings);
+            if (items.length) {
+                this.runFrom(items, 0, this._lastSettings);
             }
         },
         /**
@@ -42509,28 +42555,28 @@ define('xcf/model/Command',[
          * @param msg.src {string} the source id, which is this block id
          * @param msg.cmd {string} the command string being sent
          */
-        onCommandStopped:function(msg){
+        onCommandStopped: function (msg) {
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
             var result = {};
             var params = msg.params;
 
-            if(params && params.id){
+            if (params && params.id) {
                 /*
-                this._emit('cmd:'+msg.cmd + '_' + params.id,{
-                    msg:msg
-                });*/
+                 this._emit('cmd:'+msg.cmd + '_' + params.id,{
+                 msg:msg
+                 });*/
                 msg.lastResponse && this.storeResult(msg.lastResponse);
-                this._emit('stopped',{
-                    msg:msg,
-                    result:this._lastResult,
-                    id:params.id
+                this._emit('stopped', {
+                    msg: msg,
+                    result: this._lastResult,
+                    id: params.id
                 });
             }
 
             var items = this.getItems(types.BLOCK_OUTLET.STOPPED);
-            if(items.length) {
-                this.runFrom(items,0,this._lastSettings);
+            if (items.length) {
+                this.runFrom(items, 0, this._lastSettings);
             }
         },
         /**
@@ -42540,75 +42586,75 @@ define('xcf/model/Command',[
          * @param msg.src {string} the source id, which is this block id
          * @param msg.cmd {string} the command string being sent
          */
-        onCommandProgress:function(msg){
+        onCommandProgress: function (msg) {
             var scope = this.getScope();
             var context = scope.getContext();//driver instance
             var result = {};
             var params = msg.params;
-            if(params && params.id){
+            if (params && params.id) {
                 /*
-                this._emit('cmd:'+msg.cmd + '_' + params.id,{
-                    msg:msg
-                });*/
+                 this._emit('cmd:'+msg.cmd + '_' + params.id,{
+                 msg:msg
+                 });*/
                 msg.lastResponse && this.storeResult(msg.lastResponse);
-                this._emit('progress',{
-                    msg:msg,
-                    result:this._lastResult,
-                    id:params.id
+                this._emit('progress', {
+                    msg: msg,
+                    result: this._lastResult,
+                    id: params.id
                 });
             }
             var items = this.getItems(types.BLOCK_OUTLET.PROGRESS);
-            if(items.length) {
-                this.runFrom(items,0,this._lastSettings);
+            if (items.length) {
+                this.runFrom(items, 0, this._lastSettings);
             }
         },
-        storeResult:function (lastResponse) {
+        storeResult: function (lastResponse) {
             var data = utils.getJson(lastResponse);
             var result = null;
-            if(data && data.result && _.isString(data.result)){
+            if (data && data.result && _.isString(data.result)) {
                 var str = data.result;
-                var isJSON = str.indexOf('{') !==-1 || str.indexOf('[') !==-1;
+                var isJSON = str.indexOf('{') !== -1 || str.indexOf('[') !== -1;
                 var lastResult = str;
-                if(isJSON){
-                    var tmp = utils.getJson(str,true,false);
-                    if(tmp){
+                if (isJSON) {
+                    var tmp = utils.getJson(str, true, false);
+                    if (tmp) {
                         lastResult = tmp;
                     }
                 }
-                if(lastResult!==null){
+                if (lastResult !== null) {
                     this._lastResult = result = lastResult;
-                }else{
+                } else {
                     this._lastResult = null;
                 }
             }
             return result;
         },
-        resolve:function(data){
+        resolve: function (data) {
             data = data || this._lastResult;
-            if(this._runningDfd){
+            if (this._runningDfd) {
                 this._runningDfd.resolve(data);
             }
         },
-        onCommandError:function(msg){
+        onCommandError: function (msg) {
             var scope = this.getScope();
             var context = scope.getContext();
             var params = msg.params;
-            if(params.id){
-                this._emit('cmd:'+msg.cmd + '_' + params.id,msg);
-                this._emit('error',{
-                    msg:msg,
-                    result:this._lastResult,
-                    id:params.id
+            if (params.id) {
+                this._emit('cmd:' + msg.cmd + '_' + params.id, msg);
+                this._emit('error', {
+                    msg: msg,
+                    result: this._lastResult,
+                    id: params.id
                 });
             }
             this.onFailed(this, this._settings);
             var items = this.getItems(types.BLOCK_OUTLET.ERROR);
-            if(items.length) {
-                this.runFrom(items,0,this._lastSettings);
+            if (items.length) {
+                this.runFrom(items, 0, this._lastSettings);
             }
         },
-        sendToDevice:function(msg,settings,stop,pause,id){
-            msg = this.replaceAll("'",'',msg);
+        sendToDevice: function (msg, settings, stop, pause, id) {
+            msg = this.replaceAll("'", '', msg);
             id = id || utils.createUUID();
             var self = this;
 
@@ -42616,51 +42662,51 @@ define('xcf/model/Command',[
 
             this.lastCommand = '' + msg;
 
-            if(this.scope.instance){
-                if(wait){
-                    this._on('cmd:'+msg + '_' + id,function(msg){
-                        if(msg.error){
+            if (this.scope.instance) {
+                if (wait) {
+                    this._on('cmd:' + msg + '_' + id, function (msg) {
+                        if (msg.error) {
                             self.onFailed(self, settings);
-                        }else {
+                        } else {
                             self.onSuccess(self, settings);
                         }
                     });
                 }
-                this.scope.instance.sendMessage(msg,null,this.id,id,wait,stop,pause);
-            }else{
+                this.scope.instance.sendMessage(msg, null, this.id, id, wait, stop, pause);
+            } else {
                 debug && console.warn('have no device!');
-                this.publish(types.EVENTS.ON_STATUS_MESSAGE,{
-                    text:'Command ' + this.name + ' : have no device',
-                    type:'error',
-                    delay:1000
+                this.publish(types.EVENTS.ON_STATUS_MESSAGE, {
+                    text: 'Command ' + this.name + ' : have no device',
+                    type: 'error',
+                    delay: 1000
                 });
                 return false;
             }
             return id;
         },
-        reset:function(){
+        reset: function () {
             this._lastSettings = {};
-            if(this._loop){
+            if (this._loop) {
                 clearTimeout(this._loop);
                 this._loop = null;
             }
             delete this._runningDfd;
         },
-        _solving:null,
-        addDeferred:function(id){
-            if(!this._solving){
-                this._solving  = {};
+        _solving: null,
+        addDeferred: function (id) {
+            if (!this._solving) {
+                this._solving = {};
             }
             this._solving[id] = new Deferred();
             return this._solving[id];
         },
-        getDeferred:function(id){
-            if(!this._solving){
-                this._solving  = {};
+        getDeferred: function (id) {
+            if (!this._solving) {
+                this._solving = {};
             }
             return this._solving[id];
         },
-        _resolve:function(string,settings){
+        _resolve: function (string, settings) {
 
             var scope = this.scope;
             var value = string || this._get('send');
@@ -42668,43 +42714,38 @@ define('xcf/model/Command',[
             var isExpression = (this.flags & types.CIFLAG.EXPRESSION);
             var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
 
-            if(this.flags & types.CIFLAG.TO_HEX){
+            if (this.flags & types.CIFLAG.TO_HEX) {
                 value = utils.to_hex(value);
             }
 
-            if(parse!==false){
-                value = utils.convertAllEscapes(value,"none");
+            if (parse !== false) {
+                value = utils.convertAllEscapes(value, "none");
             }
 
             settings = settings || this._lastSettings || {};
             var override = settings.override || this.override;
             var _overrides = (override && override.variables) ? override.variables : null;
-            if(_overrides){
-                for(var prop in _overrides){
-                    if(_.isNumber(_overrides[prop])){
+            if (_overrides) {
+                for (var prop in _overrides) {
+                    if (_.isNumber(_overrides[prop])) {
                         _overrides[prop] = Math.round(_overrides[prop]);
                     }
                 }
             }
-
-            //var res =  parse ? scope.parseExpression(value) : value;
-            //var res =  parse ? scope.parseExpression(value) : value;
-
             var res = "";
-
             var DriverModule = this.getDriverModule();
-            if(DriverModule && DriverModule.resolveBefore){
-                value = DriverModule.resolveBefore(this,value);
+            if (DriverModule && DriverModule.resolveBefore) {
+                value = DriverModule.resolveBefore(this, value);
             }
 
-            if(/*(this.isScript(value) && parse!==false) || */isExpression && parse!==false){
-                res = scope.parseExpression(value,null,_overrides,null,null,null,override.args);
-            }else{
+            if (/*(this.isScript(value) && parse!==false) || */isExpression && parse !== false) {
+                res = scope.parseExpression(value, null, _overrides, null, null, null, override.args);
+            } else {
                 res = '' + value;
             }
 
-            if(DriverModule && DriverModule.resolveAfter){
-                res = DriverModule.resolveAfter(this,res);
+            if (DriverModule && DriverModule.resolveAfter) {
+                res = DriverModule.resolveAfter(this, res);
             }
 
             return res;
@@ -42715,12 +42756,12 @@ define('xcf/model/Command',[
          * @param scope
          * @returns formatted send string
          */
-        solve:function(scope,settings,isInterface,send) {
+        solve: function (scope, settings, isInterface, send) {
             var dfd = null;
             scope = scope || this.scope;
             settings = this._lastSettings = settings || this._lastSettings || {};
-            if(settings && settings.override && settings.override.mixin){
-                utils.mixin(this.override,settings.override.mixin);
+            if (settings && settings.override && settings.override.mixin) {
+                utils.mixin(this.override, settings.override.mixin);
             }
             var value = send || this._get('send');
             var parse = !(this.flags & types.CIFLAG.DONT_PARSE);
@@ -42728,68 +42769,68 @@ define('xcf/model/Command',[
             var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
             var id = utils.createUUID();
 
-            if(this.flags & types.CIFLAG.TO_HEX){
+            if (this.flags & types.CIFLAG.TO_HEX) {
                 value = utils.to_hex(value);
             }
 
-            if(parse!==false){
-                value = utils.convertAllEscapes(value,"none");
+            if (parse !== false) {
+                value = utils.convertAllEscapes(value, "none");
             }
 
-            if(!this.enabled && isInterface!==true){
+            if (!this.enabled && isInterface !== true) {
                 this.reset();
                 return;
             }
 
             //we're already running
-            if(isInterface ==true && this._loop){
+            if (isInterface == true && this._loop) {
                 this.reset();
             }
-            if(wait!==true) {
-                this.onRun(this,settings);
-            }else{
-                this.onRun(this,settings,{
-                    timeout:false
+            if (wait !== true) {
+                this.onRun(this, settings);
+            } else {
+                this.onRun(this, settings, {
+                    timeout: false
                 });
                 dfd = this.addDeferred(id);
             }
-            if(this.items && this.items.length>0){
-                if(value && value.length>0){
-                    var res = this._resolve(this.send,settings);
-                    if(res && res.length>0){
-                        if(!this.sendToDevice(res,settings)){
+            if (this.items && this.items.length > 0) {
+                if (value && value.length > 0) {
+                    var res = this._resolve(this.send, settings);
+                    if (res && res.length > 0) {
+                        if (!this.sendToDevice(res, settings)) {
                             this.onFailed(this, settings);
-                        }else{
+                        } else {
                             this.onSuccess(this, settings);
                         }
                     }
                 }
-                if(wait){
+                if (wait) {
                     return dfd;
                 }
-                var ret=[];
-                for(var n = 0; n < this.items.length ; n++){
+                var ret = [];
+                for (var n = 0; n < this.items.length; n++) {
                     var block = this.items[n];
-                    if(block.enabled) {
+                    if (block.enabled) {
                         ret.push(block.solve(scope, settings));
                     }
                 }
                 return ret;
-            }else if(value.length>0){
-                var res = this._resolve(this.send,settings);
-                if(res && res.length>0){
-                    if(!this.sendToDevice(res,settings,null,null,id)) {
+            } else if (value.length > 0) {
+                var res = this._resolve(this.send, settings);
+                if (res && res.length > 0) {
+                    if (!this.sendToDevice(res, settings, null, null, id)) {
                         this.onFailed(this, settings);
                     }
                 }
-                if(wait!==true) {
+                if (wait !== true) {
                     this.onSuccess(this, settings);
 
-                }else{
+                } else {
                     this._settings = settings;
                 }
-                if(isInterface){
-                    if(this.auto && this.getInterval()>0) {
+                if (isInterface) {
+                    if (this.auto && this.getInterval() > 0) {
                         this.scope.loopBlock(this, settings);
                     }
                 }
@@ -42797,7 +42838,7 @@ define('xcf/model/Command',[
             }
             return false;
         },
-        canAdd:function(){
+        canAdd: function () {
             return [];
         },
         /**
@@ -42805,8 +42846,8 @@ define('xcf/model/Command',[
          * @param parent
          * @returns {boolean}
          */
-        mayHaveChildren:function(parent){
-            return this.items!=null && this.items.length>0;
+        mayHaveChildren: function (parent) {
+            return this.items != null && this.items.length > 0;
         },
 
         /**
@@ -42814,31 +42855,31 @@ define('xcf/model/Command',[
          * @param parent
          * @returns {Array}
          */
-        getChildren:function(parent){
+        getChildren: function (parent) {
             return this.items;
         },
-        hasInlineEdits:true,
-        toText:function(icon,label,detail,breakDetail){
+        hasInlineEdits: true,
+        toText: function (icon, label, detail, breakDetail) {
             var out = "";
-            if(icon!==false){
-                out +="<span class='text-primary inline-icon'>" + this.getBlockIcon() + "</span>";
+            if (icon !== false) {
+                out += "<span class='text-primary inline-icon'>" + this.getBlockIcon() + "</span>";
             }
-            label!==false && (out +=""+ this.makeEditable('name','bottom','text','Enter a unique name','inline') + "");
-            breakDetail == true && (out +="<br/>");
-            detail !==false && (out +=("<span class='text-muted small'> Send:<kbd class='text-warning'>" + this.makeEditable('send','bottom','text','Enter the string to send','inline')) + "</kbd></span>");
-            if(icon!==false){
-                this.startup && (out +=this.getIcon('fa-bell inline-icon text-warning','text-align:right;float:right;',''));
-                this.auto && this.getInterval() > 0 && (out +=this.getIcon('fa-clock-o inline-icon text-warning','text-align:right;float:right',''));
+            label !== false && (out += "" + this.makeEditable('name', 'bottom', 'text', 'Enter a unique name', 'inline') + "");
+            breakDetail == true && (out += "<br/>");
+            detail !== false && (out += ("<span class='text-muted small'> Send:<kbd class='text-warning'>" + this.makeEditable('send', 'bottom', 'text', 'Enter the string to send', 'inline')) + "</kbd></span>");
+            if (icon !== false) {
+                this.startup && (out += this.getIcon('fa-bell inline-icon text-warning', 'text-align:right;float:right;', ''));
+                this.auto && this.getInterval() > 0 && (out += this.getIcon('fa-clock-o inline-icon text-warning', 'text-align:right;float:right', ''));
             }
             return out;
         },
-        getInterval:function(){
+        getInterval: function () {
             return parseInt(this.interval);
         },
-        start:function(){
-            if(this.startup && !this.auto){
+        start: function () {
+            if (this.startup && !this.auto) {
                 this.solve(this.scope);
-            }else if(this.auto && this.getInterval()>0){
+            } else if (this.auto && this.getInterval() > 0) {
                 this.scope.loopBlock(this);
             }
 
@@ -42847,90 +42888,90 @@ define('xcf/model/Command',[
          * Return the driver's code module
          * @returns {module:xcf/driver/DriverBase|null}
          */
-        getDriverModule:function(){
+        getDriverModule: function () {
             var DriverModule = null;
             var instance = this.getInstance();
-            if(instance){
+            if (instance) {
                 DriverModule = instance.Module;
-            }else{
+            } else {
                 var driver = this.getScope().driver;
-                if(driver && driver.Module){
-                    DriverModule  = driver.Module;
+                if (driver && driver.Module) {
+                    DriverModule = driver.Module;
                 }
             }
             return DriverModule;
         },
-        getDriverFields:function(fields){
+        getDriverFields: function (fields) {
             var DriverModule = this.getDriverModule();
             var result = [];
-            if(DriverModule && DriverModule.getFields){
-                result = DriverModule.getFields(this,fields) || [];
+            if (DriverModule && DriverModule.getFields) {
+                result = DriverModule.getFields(this, fields) || [];
             }
             return result;
         },
-        getFields:function(){
+        getFields: function () {
             var fields = this.inherited(arguments) || this.getDefaultFields();
-            var thiz=this;
-            fields.push(this.utils.createCI('name',13,this.name,{
-                group:'General',
-                title:'Name',
-                dst:'name',
-                order:200
+            var thiz = this;
+            fields.push(this.utils.createCI('name', 13, this.name, {
+                group: 'General',
+                title: 'Name',
+                dst: 'name',
+                order: 200
             }));
-            fields.push(this.utils.createCI('startup',0,this.startup,{
-                group:'General',
-                title:'Send on Startup',
-                dst:'startup',
-                order:199
+            fields.push(this.utils.createCI('startup', 0, this.startup, {
+                group: 'General',
+                title: 'Send on Startup',
+                dst: 'startup',
+                order: 199
             }));
-            fields.push(this.utils.createCI('auto',0,this.auto,{
-                group:'General',
-                title:'Auto Send',
-                dst:'auto',
-                order:198
+            fields.push(this.utils.createCI('auto', 0, this.auto, {
+                group: 'General',
+                title: 'Auto Send',
+                dst: 'auto',
+                order: 198
             }));
-            fields.push(this.utils.createCI('interval',13,this.interval,{
-                group:'General',
-                title:'Interval',
-                dst:'interval',
-                order:197
+            fields.push(this.utils.createCI('interval', 13, this.interval, {
+                group: 'General',
+                title: 'Interval',
+                dst: 'interval',
+                order: 197
             }));
-            fields.push(this.utils.createCI('send',types.ECIType.EXPRESSION_EDITOR,this.send,{
-                group:'Send',
-                title:'Send',
-                dst:'send',
-                widget:{
-                    instantChanges:false,
-                    allowACECache:true,
-                    showBrowser:false,
-                    showSaveButton:true,
-                    style:'height:inherit;',
-                    editorOptions:{
-                        showGutter:false,
-                        autoFocus:false
+            fields.push(this.utils.createCI('send', types.ECIType.EXPRESSION_EDITOR, this.send, {
+                group: 'Send',
+                title: 'Send',
+                dst: 'send',
+                widget: {
+                    instantChanges: false,
+                    allowACECache: true,
+                    showBrowser: false,
+                    showSaveButton: true,
+                    style: 'height:inherit;',
+                    editorOptions: {
+                        showGutter: false,
+                        autoFocus: false
                     },
-                    aceOptions:{
-                        hasEmmet:false,
-                        hasLinking:false,
-                        hasMultiDocs:false
+                    aceOptions: {
+                        hasEmmet: false,
+                        hasLinking: false,
+                        hasMultiDocs: false
                     },
-                    item:this
+                    item: this
                 },
-                delegate:{
-                    runExpression:function(val,run,error){
-                        return thiz.scope.expressionModel.parse(thiz.scope,val,false,run,error);
+                delegate: {
+                    runExpression: function (val, run, error) {
+                        return thiz.scope.expressionModel.parse(thiz.scope, val, false, run, error);
                     }
                 }
             }));
-            fields.push(this.utils.createCI('flags',5,this.flags,{
-                group:'General',
-                title:'Flags',
-                dst:'flags',
-                data:[
+            fields.push(this.utils.createCI('flags', 5, this.flags, {
+                group: 'General',
+                title: 'Flags',
+                dst: 'flags',
+                data: [
                     {
                         value: 0x000001000,
                         label: 'Dont parse',
-                        title:"Do not parse the string and use it as is"
+                        title: "Do not parse the string and use it as is"
                     },
                     {
                         value: 0x00000800,//2048
@@ -42943,68 +42984,68 @@ define('xcf/model/Command',[
                         title: "Wait for response"
                     }
                 ],
-                widget:{
-                    hex:true
+                widget: {
+                    hex: true
                 }
             }));
             fields = fields.concat(this.getDriverFields(fields));
             return fields;
         },
-        icon:'fa-exclamation',
-        getIconClass:function(){
+        icon: 'fa-exclamation',
+        getIconClass: function () {
             return 'el-icon-play-circle';
         },
-        getBlockIcon:function(){
-            return '<span class="'+this.icon+'"></span> ';
+        getBlockIcon: function () {
+            return '<span class="' + this.icon + '"></span> ';
         },
-        canEdit:function(){
+        canEdit: function () {
             return true;
         },
-        onChangeField:function(field,newValue,cis){            
-            var interval = this.getInterval();            
-            if(field=='auto'){
-                if(newValue==true){
-                    interval>0 && this.scope.loopBlock(this);
-                }else{
-                    if(this._loop){
+        onChangeField: function (field, newValue, cis) {
+            var interval = this.getInterval();
+            if (field == 'auto') {
+                if (newValue == true) {
+                    interval > 0 && this.scope.loopBlock(this);
+                } else {
+                    if (this._loop) {
                         this.reset();
                     }
                 }
             }
-            if(field=='enabled'){
-                if(newValue==false){
+            if (field == 'enabled') {
+                if (newValue == false) {
                     this.reset();
-                }else{
-                    if(interval){
+                } else {
+                    if (interval) {
                         this.scope.loopBlock(this);
                     }
                 }
             }
-            if(field=='interval'){
-                if(interval>0 && this.auto){
+            if (field == 'interval') {
+                if (interval > 0 && this.auto) {
                     this.scope.loopBlock(this);
-                }else{
+                } else {
                     this.reset();
                 }
             }
             this.inherited(arguments);
         },
-        destroy:function () {
+        destroy: function () {
             this.reset();
         },
-        pause:function(){
-            var last = this.lastCommand || this._resolve(this.send,this._lastSettings);
-            if(last) {
+        pause: function () {
+            var last = this.lastCommand || this._resolve(this.send, this._lastSettings);
+            if (last) {
                 this.sendToDevice(last, this._lastSettings, false, true);
             }
         },
-        stop:function(){
+        stop: function () {
             this.onSuccess(this, {
-                highlight:true
+                highlight: true
             });
             this.resolve('');
-            var last = this.lastCommand || this._resolve(this.send,this._lastSettings);
-            if(last) {
+            var last = this.lastCommand || this._resolve(this.send, this._lastSettings);
+            if (last) {
                 this.sendToDevice(last, this._lastSettings, true, false);
             }
             delete this._runningDfd;
@@ -43289,11 +43330,8 @@ define('xide/types/Types',[
     }
     /**
      * A 'Configurable Information's ("CI") type flags for post and pre-processing a value.
-     * This is user configurable and needs to stay in the in integer limit.
-     *
-     * @TODO: 64 bit integers?
-     *
      * @enum {string} module:xide/types/CIFlag
+     * @global CIFLAGS
      * @memberOf module:xide/types
      */
 
@@ -43402,11 +43440,17 @@ define('xide/types/Types',[
          */
         WAIT: 0x000008000,
         /**
+         * Wait for finish
+         * @constant
+         * @type int
+         */
+        DONT_ESCAPE: 0x000010000,
+        /**
          * Flag to mark the maximum core bit mask, after here its user land
          * @constant
          * @type int
          */
-        END: 0x000010000
+        END: 0x000020000
     }
     /**
      * A CI's default post-pre processing order.
@@ -48053,9 +48097,7 @@ define('xblox/model/Scope',[
     "xide/mixins/EventedMixin",
     'dojo/_base/lang',
     'dojo/has',
-    'xide/encoding/MD5'
-    //'xdojo/has!host-node?dojo/node!tracer',
-    //'xdojo/has!host-node?nxapp/utils/_console'
+    'xide/encoding/MD5'    
 ], function(dcl,ModelBase,Expression,factory,utils,types,EventedMixin,lang,has,MD5,tracer,_console){
 
     var console = typeof window !== 'undefined' ? window.console : console;
@@ -48138,12 +48180,10 @@ define('xblox/model/Scope',[
             return this.instance;
         },
         toString:function(){
-
             var all = {
                 blocks: null,
                 variables: null
             };
-
             var blocks = this.blocksToJson();
             try {
                 //test integrity
@@ -48153,19 +48193,14 @@ define('xblox/model/Scope',[
                 return;
             }
             all.blocks = blocks;
-
             return JSON.stringify(all, null, 2);
-
         },
         /**
          *
          * @param data
          */
         initWithData:function(data){
-
-            if(data){
-                this.blocksFromJson(data);
-            }
+            data && this.blocksFromJson(data);
             this.clearCache();
         },
         /////////////////////////////////////////////////////////
@@ -48185,15 +48220,15 @@ define('xblox/model/Scope',[
         getStore:function(){
             return this.blockStore;
         },
+        reset:function(){
+            this.getExpressionModel().reset();
+        },
         /**
          *
          */
         empty:function(){
-
             this.clearCache();
-
             var store = this.blockStore;
-
             var allBlocks = this.getBlocks();
             _.each(allBlocks,function(block){
                 if(block) {
@@ -48207,22 +48242,14 @@ define('xblox/model/Scope',[
         },
         fromScope:function(source){
             this.empty();
-            //var b0 = source.blockStore.getSync('c4f9df77-c552-72b6-447d-bb45687d473b');
-
             var _t = source.blocksToJson();
-
             this.blocksFromJson(_t);
-
-            //var b1 = this.blockStore.getSync('c4f9df77-c552-72b6-447d-bb45687d473b');
-            //console.log('merge!',[b0,b1]);
         },
-
         /**
          *
          */
         clearCache:function(){
-            this.expressionModel.expressionCache={};
-            this.expressionModel.variableFuncCache={};
+            this.getExpressionModel().reset();
         },
         /**
          * @returns {dojo/store/Memory}
@@ -48291,7 +48318,6 @@ define('xblox/model/Scope',[
             return this.blockStore.query(query);
         },
         loopBlock:function(block,settings){
-
             if(block && block.interval > 0 && block.enabled){
 
                 var thiz=this;
@@ -48307,9 +48333,7 @@ define('xblox/model/Scope',[
                         block._loop=null;
                     }
                 },block.interval);
-
             }
-
         },
         getEventsAsOptions:function(selected){
 
@@ -48321,15 +48345,8 @@ define('xblox/model/Scope',[
                     label:label,
                     value:types.EVENTS[e]
                 };
-
-                /*if(selected===types.EVENTS[e]){
-                    item.selected=true;
-                }*/
-
                 result.push(item);
             }
-
-
             result = result.concat([{label:"onclick", value:"onclick"},
                 {label:"ondblclick",value:"ondblclick"},
                 {label:"onmousedown",value:"onmousedown"},
@@ -48352,17 +48369,13 @@ define('xblox/model/Scope',[
                     break;
                 }
             }
-
-
             return result;
-
         },
         /**
          *
          * @returns {{}}
          */
         getVariablesAsObject:function() {
-
             var variables = this.getVariables();
             var result = {};
             for(var i=0; i<variables.length;i++){
@@ -48371,11 +48384,9 @@ define('xblox/model/Scope',[
             return result;
         },
         getVariablesAsOptions:function(){
-
             var variables = this.getVariables();
             var result = [];
             if(variables){
-
                 for(var i=0; i<variables.length;i++){
                     result.push({
                         label:variables[i].label,
@@ -48383,11 +48394,9 @@ define('xblox/model/Scope',[
                     })
                 }
             }
-
             return result;
         },
         getCommandsAsOptions:function(labelField){
-
             var items = this.getBlocks({
                 declaredClass:'xcf.model.Command'
             });
@@ -48404,13 +48413,10 @@ define('xblox/model/Scope',[
         },
         _cached:null,
         getBlocks:function(query){
-
             if(!isIDE){
-
                 if(!this._cached){
                     this._cached = {};
                 }
-
                 if(query){
                     var hash = MD5(JSON.stringify(query), 1);
                     var cached = this._cached[hash];
@@ -48419,27 +48425,32 @@ define('xblox/model/Scope',[
                     }
                 }
             }
-
             //no store,
             if(!this.blockStore){
                 return [];
             }
             query = query||{id:/\S+/};//all blocks
-
             var result = this.blockStore.query(query);
-
             if(!isIDE){
                 var hash = MD5(JSON.stringify(query), 1);
                 this._cached[hash] = result;
             }
-
             return result;
         },
-        //declaredClass: String (dcl internals, private!)
         /**
-         *
+         *  @type {module:xblox/model/Expression}
          */
-        expressionModel: new Expression(),
+        expressionModel: null,
+        /**
+         * 
+         * @returns {module:xblox/model/Expression}
+         */
+        getExpressionModel:function(){
+            if(!this.expressionModel){
+                this.expressionModel  = new Expression();
+            }
+            return this.expressionModel;
+        },
         /***
          * Register a variable into the scope
          *
@@ -48460,8 +48471,6 @@ define('xblox/model/Scope',[
          * @return variable
          */
         getVariable:function(title) {
-            //return this.variables[title];
-
             var _variables = this.getVariables();
             var _var = null;
             for (var i = 0; i < _variables.length; i++) {
@@ -48470,7 +48479,6 @@ define('xblox/model/Scope',[
                     return obj;
                 }
             }
-            //console.error('couldnt find variable with name ' + title,_variables);
             return null;
         },
         /***
@@ -48480,15 +48488,12 @@ define('xblox/model/Scope',[
          * @return variable
          */
         getVariableById:function(id) {
-
             if(!id){
                 return null;
             }
-
             var parts = id.split('/');
             var scope = this;
             if(parts.length==2){
-
                 var owner = scope.owner;
                 if(owner && owner.hasScope){
                     if(owner.hasScope(parts[0])){
@@ -48497,21 +48502,12 @@ define('xblox/model/Scope',[
                         console.error('have scope id but cant resolve it',this);
                     }
                 }
-
                 id = parts[1];
             }
-
             var _var = scope.blockStore.getSync(id);
             if(_var){
                 return _var;
             }
-            /*
-            var _var = this.variableStore.query({title:title});
-            if(_var){
-                return _var[0];
-            }
-            console.error('couldnt find variable with name ' + title);
-            */
             return null;
         },
         /***
@@ -48529,39 +48525,23 @@ define('xblox/model/Scope',[
                     debug && console.warn('block already in store! '+block.id,block);
                     return added;
                 }
-
-
-
                 var result = null;
-
                 //custom add block to store function
                 if(block.addToStore){
                     result = block.addToStore(store);
                 }else{
                     result = store.putSync(block,publish);
                 }
-
                 return result;
             }
-
         },
         /***
          * Return all blocks
          *
-         * @param block   =>    Array(xblox.model.Block)
+         * @returns {xblox.model.Block[]}
          */
         allBlocks:function(block) {
-
             return this.getBlocks();
-
-            var result = [];
-
-            for(var b in this.blocks){
-                if(this.blocks[b].id!=null){
-                    result.push(this.blocks[b]);
-                }
-            }
-            return result;
         },
         /**
          * Returns whether there is any block belongs to a given group
@@ -48569,7 +48549,6 @@ define('xblox/model/Scope',[
          * @returns {boolean}
          */
         hasGroup:function(group){
-
             var all = this.allGroups();
             for (var i = 0; i < all.length; i++) {
                 var obj = all[i];
@@ -48581,12 +48560,11 @@ define('xblox/model/Scope',[
         },
         /**
          * Return all block groups
+         * @returns {String[]}
          */
         allGroups:function(){
-
             var result = [];
             var all = this.allBlocks();
-
             var _has = function(what){
                 for (var i = 0; i < result.length; i++) {
                     if(result[i]===what){
@@ -48595,15 +48573,11 @@ define('xblox/model/Scope',[
                 }
                 return false;
             };
-
-
             for (var i = 0; i < all.length; i++) {
                 var obj = all[i];
-
                 if(obj.parentId){
                     continue;
                 }
-
                 if(obj.group){
                     if(!_has(obj.group)){
                         result.push(obj.group);
@@ -48614,7 +48588,6 @@ define('xblox/model/Scope',[
                     }
                 }
             }
-
             return result;
         },
         /**
@@ -48649,8 +48622,6 @@ define('xblox/model/Scope',[
 
                 result.push(varOut);
             }
-            //return JSON.stringify(result);
-            //console.log('saving all variables  ' + JSON.stringify(result),result);
             return result;
         },
         isScript:function(val){
@@ -48662,30 +48633,6 @@ define('xblox/model/Scope',[
                     val.indexOf('}')!=-1
                 );
         },
-        /*
-        parseVariable:function(_var){
-
-            var value = ''+ _var.value;
-            try{
-                //put other variables on the stack;
-                var _otherVariables = this.variablesToJavascript(_var,false);
-                if(_otherVariables){
-                    value = _otherVariables + value;
-                }
-                var _parsed = (new Function("{" + value+ "}")).call(this.expressionModel.context||{});
-                //wasnt a script
-                if(_parsed==='undefined' || typeof _parsed ==='undefined'){
-                    //console.error(' parsed variable to undefined : ' + _var.title + ' with value : ' + value);
-                    value = '' + _var.value;
-                }else{
-                    value = ''+_parsed;
-                    value = "'" + value + "'";
-                }
-            }catch(e){
-                console.error('parse variable failed : ' + )
-            }
-            return value;
-        },*/
         /**
          * Serializes all variables
          * @returns {Array}
@@ -48721,18 +48668,14 @@ define('xblox/model/Scope',[
                 if(_varVal==="''"){
                     _varVal="'0'";
                 }
-
-                //result+="var " + _var.title + " = " + _varVal + ";";
-                //result+="\n";
                 result.push(_varVal);
             }
 
             return result;
         },
         variablesToJavascript:function(skipVariable,expression){
-
             var result='';
-            var data = this.variableStore ? this.getVariables() : this.variables;
+            var data = this.variableStore ? this.getVariables() : this.variables || [];
             for(var i = 0 ; i  < data.length ; i++){
                 var _var = data[i];
                 if(_var == skipVariable){
@@ -48762,7 +48705,6 @@ define('xblox/model/Scope',[
                 if(_varVal==="''"){
                     _varVal="'0'";
                 }
-
                 result+="var " + _var.title + " = " + _varVal + ";";
                 result+="\n";
             }
@@ -48794,7 +48736,6 @@ define('xblox/model/Scope',[
             return result;
         },
         regenerateIDs:function(blocks){
-
             var thiz=this;
             var updateChildren=function(block){
                 var newId = utils.createUUID();
@@ -48810,7 +48751,6 @@ define('xblox/model/Scope',[
                 }
                 block.id=newId;
             };
-
             for(var i = 0 ; i < blocks.length ; i ++){
                 var block=blocks[i];
                 updateChildren(block);
@@ -48819,9 +48759,9 @@ define('xblox/model/Scope',[
         /**
          * Clone blocks
          * @param blocks
+         * @returns {module:xblox/model/Block[]}
          */
         cloneBlocks2:function(blocks,forceGroup){
-
             var blocksJSON = this.blocksToJson(blocks);
             var tmpScope = this.owner.getScope(utils.createUUID(),null,false);
             var newBlocks = tmpScope.blocksFromJson(blocksJSON,false);
@@ -48844,7 +48784,6 @@ define('xblox/model/Scope',[
             _.each(newBlocks,function(block){
                 result.push(store.getSync(block.id));
             });
-
             return result;
 
         },
@@ -48853,12 +48792,10 @@ define('xblox/model/Scope',[
          * @param blocks
          */
         cloneBlocks:function(blocks){
-
             var blocksJSON = this.blocksToJson(blocks);
             var tmpScope = this.owner.getScope(utils.createUUID(),null,false);
             var newBlocks = tmpScope.blocksFromJson(blocksJSON,false);
             newBlocks = tmpScope.allBlocks();
-
             for(var i = 0 ; i < newBlocks.length ; i ++){
                 var block=newBlocks[i];
                 block.id = utils.createUUID();
@@ -48868,17 +48805,17 @@ define('xblox/model/Scope',[
             blocksJSON = this.blocksToJson(newBlocks);
             this.blocksFromJson(newBlocks);//add it us
             return newBlocks;
-
         },
+        /**
+         * 
+         * @param block
+         * @returns {Object}
+         */
         blockToJson:function(block){
-
-
                 var blockOut={
-
                     // this property is used to recreate the child blocks in the JSON -> blocks process
                     _containsChildrenIds: []
                 };
-
                 for(var prop in block){
 
                     if (prop == 'ctrArgs') {
@@ -49063,7 +49000,6 @@ define('xblox/model/Scope',[
             return blockStore;
             */
         },
-
         blockFromJson:function(block){
             block['scope']  = this;
             if(block._containsChildrenIds==null){
@@ -49129,7 +49065,6 @@ define('xblox/model/Scope',[
          * @returns {Array}
          */
         blocksFromJson:function(data,check) {
-
             var resultSelected = [];
             var childMap = {};
             for(var i = 0; i < data.length ; i++){
@@ -49254,13 +49189,11 @@ define('xblox/model/Scope',[
             return resultSelected;
         },
         /**
-         *
-         * @param block
-         * @param url
-         * @returns {*}
+         * 
+         * @param url {String}
+         * @returns {module:xblox/model/Block[]}
          */
         resolveBlock:function(url){
-
             var blockScope = this,
                 ctx = this.ctx,
                 driver = this.driver,
@@ -49304,9 +49237,8 @@ define('xblox/model/Scope',[
         },
         /***
          * Returns a block from the scope
-         *
-         * @param name  =>  block name
-         * @return block
+         * @param name {String}
+         * @return block {module:xblox/model/Block[]}
          */
         getBlockByName:function(name) {
             if(name.indexOf('://')!==-1){
@@ -49339,7 +49271,8 @@ define('xblox/model/Scope',[
         },
         /**
          * Returns an array of blocks
-         * @param blocks
+         * @param blocks {module:xblox/model/Block[]
+         * @returns {module:xblox/model/Block[]}
          */
         _flatten:function(blocks){
             var result = [];
@@ -49371,6 +49304,7 @@ define('xblox/model/Scope',[
         /**
          * 
          * @param blocks {module:xblox/model/Block[]}
+         * @returns {module:xblox/model/Block[]}
          */
         flatten:function(blocks){
             var result = [];
@@ -49443,7 +49377,6 @@ define('xblox/model/Scope',[
             settings = settings || {
                 highlight:false
             };
-
             var block = null;
             if(this.isString(mixed)){
                 block = this.getBlockByName(mixed);
@@ -49486,12 +49419,9 @@ define('xblox/model/Scope',[
          */
         solve:function(scope,settings) {
             var ret='';
-
-            for(var n = 0; n < this.items.length ; n++)
-            {
+            for(var n = 0; n < this.items.length ; n++){
                 ret += this.items[n].solve(scope,settings);
             }
-
             return ret;
         },
         /***
@@ -49511,8 +49441,8 @@ define('xblox/model/Scope',[
          * @param args
          * @returns {*}
          */
-        parseExpression:function(expression,addVariables,variableOverrides,runCallback,errorCallback,context,args) {
-            return this.expressionModel.parse(this,expression,addVariables,runCallback,errorCallback,context,variableOverrides,args);
+        parseExpression:function(expression,addVariables,variableOverrides,runCallback,errorCallback,context,args,flags) {
+            return this.expressionModel.parse(this,expression,addVariables,runCallback,errorCallback,context,variableOverrides,args,flags);
         },
         isString: function (a) {
             return typeof a == "string"
@@ -49560,9 +49490,10 @@ define('xblox/model/Scope',[
         },
 
         init:function(){
-
+            this.getExpressionModel();//create
             this.subscribe(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED,this._onVariableChanged);
             var thiz = this;
+            
             this.subscribe(types.EVENTS.ON_MODULE_RELOADED, function(evt){
                 var mid = evt.module,
                     newModule = evt.newModule,
@@ -49577,25 +49508,20 @@ define('xblox/model/Scope',[
                 instances && _.each(instances,function(block){
                     mergeNewModule(block,newModule.prototype);
                 });
-            });
+            });            
         },
         /**
          *
          */
         _destroy:function(){
-
             var allblocks = this.allBlocks();
-
             for (var i = 0; i < allblocks.length; i++) {
 
                 var obj = allblocks[i];
                 if(!obj){
                     continue;
                 }
-
-
                 try {
-
 
                     if (obj && obj.stop) {
                         obj.stop();
@@ -49626,9 +49552,10 @@ define('xblox/model/Scope',[
         },
         destroy:function(){
             this._destroy();
+            this.reset();
             this._destroyed=true;
+            delete this.expressionModel;
         },
-
         /**
          *
          * @param source
@@ -49638,8 +49565,6 @@ define('xblox/model/Scope',[
          * @returns {boolean}
          */
         moveTo:function(source,target,before,add){
-
-
             /**
              * treat first the special case of adding an item
              */
@@ -49663,8 +49588,6 @@ define('xblox/model/Scope',[
 
             //for root level move
             if(!target.parentId && add==false){
-
-
                 //if source is part of something, we remove it
                 var sourceParent = this.getBlockById(source.parentId);
                 if(sourceParent && sourceParent.removeBlock){
@@ -50087,10 +50010,9 @@ define('xblox/model/Expression',[
     "xdojo/declare",
     "xdojo/has",
     "xide/utils",
+    "xide/types",
     "xblox/model/ModelBase"
-    //'xdojo/has!host-node?dojo/node!tracer',
-    //'xdojo/has!host-node?nxapp/utils/_console'
-], function(declare,has,utils,ModelBase,tracer,_console){
+], function(declare,has,utils,types,ModelBase,tracer,_console){
 
     'use strict';
     var isServer = has('host-node');
@@ -50116,11 +50038,14 @@ define('xblox/model/Expression',[
             begin : "{",
             end : "}"
         },
-        expressionCache:{},
-        variableFuncCache:{},
+        expressionCache:null,
+        variableFuncCache:null,
+        constructor:function(){
+            this.reset();
+        },
         reset:function(){
-            this.expressionCache ={};
-            this.variableFuncCache ={};
+            this.expressionCache={};
+            this.variableFuncCache={};
         },
         /**
          * Replace variable calls width variable values
@@ -50131,8 +50056,15 @@ define('xblox/model/Expression',[
          * @param variableOverrides
          * @returns {*}
          */
-        replaceVariables:function(scope,expression,_evaluate,_escape,variableOverrides,useVariableGetter,variableDelimiters) {
+        replaceVariables:function(scope,expression,_evaluate,_escape,variableOverrides,useVariableGetter,variableDelimiters,flags) {
             variableDelimiters = variableDelimiters || this.variableDelimiters;
+            flags = flags || types.CIFLAG.NONE;
+            if(flags & types.CIFLAG.DONT_ESCAPE){
+                _escape = false;
+            }
+            if(flags & types.CIFLAG.DONT_PARSE){
+                _evaluate = false;
+            }
 
             var ocurr = this._findOcurrences( expression , variableDelimiters );
             if (ocurr) {
@@ -50143,6 +50075,11 @@ define('xblox/model/Expression',[
                     oc = oc.replace(variableDelimiters.begin,'');
                     oc = oc.replace(variableDelimiters.end,'');
                     var _var = this._getVar(scope,oc);
+
+                    if(_var && _var.flags & types.CIFLAG.DONT_PARSE){
+                        _evaluate = false;
+                    }
+
                     var value = null;
                     if(_var){
 
@@ -50169,7 +50106,7 @@ define('xblox/model/Expression',[
                                 }
 
                                 var _parsed = (new Function("{\n" + value+ "\n}")).call(scope.context||{});
-                                console.log(' parsed variable value to : ' + _parsed);
+
 
                                 //wasnt a script
                                 if(_parsed==='undefined' || typeof _parsed ==='undefined'){
@@ -50177,7 +50114,7 @@ define('xblox/model/Expression',[
                                     value = '' + _var.value;
                                 }else{
                                     value = _parsed;
-                                    value = "'" + value + "'";
+                                    !(flags & types.CIFLAG.DONT_ESCAPE) && (value = "'" + value + "'");
                                 }
                             }catch(e){
                                 console.log(' parsed variable expression failed \n' + value,e);
@@ -50209,22 +50146,18 @@ define('xblox/model/Expression',[
          * @param errorCallback
          * @param context
          * @param variableOverrides
+         * @param args {[*]}
+         * @param args {CIFLAGS}
          * @returns {*}
          */
-        parse:function(scope,expression,addVariables,runCallback,errorCallback,context,variableOverrides,args) {
-
+        parse:function(scope,expression,addVariables,runCallback,errorCallback,context,variableOverrides,args,flags) {
             expression = this.replaceAll("''","'",expression);//weird!
             //expression = this.replaceBlockCalls(scope,expression);
-
             var expressionContext = context || scope.context || scope.getContext() ||{};
             var useVariableGetter  = expressionContext['getVariable'] !=null;
-
             //expression = utils.replaceHex(expression);
-
-            expression = this.replaceVariables(scope,expression,null,null,variableOverrides,useVariableGetter);
-
+            expression = this.replaceVariables(scope,expression,null,null,variableOverrides,useVariableGetter,null,flags);
             var isExpression = this.isScript(expression);
-
             if(!isExpression && (this.isString(expression) || this.isNumber(expression))){
 
                 if(runCallback){
@@ -50232,16 +50165,10 @@ define('xblox/model/Expression',[
                 }
                 return expression;
             }
-
-
-            if(expression.indexOf('return')==-1){
+            if(expression.indexOf('return')==-1 && isExpression){
                 expression = 'return ' + expression;
-            }else{
-                /*expression = 'return ' + expression;*/
             }
-
             addVariables=false;
-
             if(addVariables===true){
                 var _otherVariables = scope.variablesToJavascript(null,expression);
                 if(_otherVariables){
@@ -50249,9 +50176,7 @@ define('xblox/model/Expression',[
                     expression = this.replaceAll("''","'",expression);//weird!
                 }
             }
-
             var parsed = this;
-
             try{
                 expression = this.replaceAll("''","'",expression);
                 var _function = this.expressionCache[expression];
@@ -50343,46 +50268,31 @@ define('xblox/model/Expression',[
         },
         // Replace block call with block result
         replaceBlockCalls:function(scope,expression) {
-
             var ocurr = this._findOcurrences( expression, this.blockCallDelimiters );
-
             if (ocurr) {
-                for(var n = 0; n < ocurr.length; n++ )
-                {
+                for(var n = 0; n < ocurr.length; n++ ){
                     // Replace each block call with block result
                     var blockName = this._removeDelimiters( ocurr[n],this.blockCallDelimiters );
                     var blockResult = scope.solveBlock(blockName).join("\n");
                     expression = expression.replace(ocurr[n],blockResult);
                 }
             }
-
             return expression;
         },
-
-
         // gets a variable from the scope using text [variableName]
         _getVar:function(scope,vartext) {
-
             return scope.getVariable(this._getVarName(vartext));
         },
-
         _getVarName:function(vartext) {
-
             return this._removeDelimiters(vartext,this.variableDelimiters);
         },
-
         _removeDelimiters:function(text,delimiters) {
-            return text.replace(delimiters.begin,'')
-                .replace(delimiters.end,'');
+            return text.replace(delimiters.begin,'').replace(delimiters.end,'');
         },
-
         // escape regular expressions special chars
         _escapeRegExp:function(string) {
-
             var special = [ "[" ,"]" , "(" , ")" , "{", "}" , "*" , "+" , "." ];
-
-            for (var n = 0; n < special.length ; n++ )
-            {
+            for (var n = 0; n < special.length ; n++ ){
                 string = string.replace(special[n],"\\"+special[n]);
             }
             return string;
@@ -50395,13 +50305,11 @@ define('xblox/model/Expression',[
          * @private
          */
         _findOcurrences:function(expression,delimiters) {
-
             // prepare delimiters for the regular expression
             var d = {
                 begin: this._escapeRegExp(delimiters.begin),
                 end:   this._escapeRegExp(delimiters.end)
             };
-
             // regular expression for [<content>]
             var allExceptEnd = "[^" + d.end + "]*";
 
@@ -80345,7 +80253,7 @@ define('xblox/model/html/SetStyle',[
     "xide/registry"
 ], function(dcl,Block,utils,types,EventedMixin,Referenced,domAttr,domStyle,Color,registry){
 
-    var debug = true;
+    var debug = false;
     /**
      *
      * @class module:xblox/model/html/SetStyle
@@ -80366,6 +80274,10 @@ define('xblox/model/html/SetStyle',[
         //
         /////////////////////////////////////////////////////////////////////////////////////
         /**
+         *
+         * @param params (object in that format : reference(string) | mode (string))
+         */
+        /**
          * Run this block
          * @param scope
          * @param settings
@@ -80373,24 +80285,25 @@ define('xblox/model/html/SetStyle',[
         solve:function(scope,settings) {
             debug && console.log('-set style solve');
             var value = this.value;
+            settings = settings || {};
+            var override = settings.override || this.override || {};
 
-            if(this.override && this.override.variables){
-                value = utils.replace(value,null,this.override.variables,{
+            if(override.variables){
+                value = utils.replace(value,null,override.variables,{
                     begin:'{',
                     end:'}'
                 });
             }
 
-            if(settings.args[0]!==null){
-                value = utils.replace(value,null,{value:settings.args[0]},{
+            if(override.args && override.args[0]!==null){
+                value = utils.replace(value,null,{value:override.args[0]},{
                     begin:'{',
                     end:'}'
                 });
             }
-
-            this.updateObjects(null,value,this.mode);
+            this.updateObjects(null,value,this.mode,settings);
             this.onSuccess(this,settings);
-            this.onDidRun();//clear overrides
+            this.onDidRun();
         },
         /**
          * Get human readable string for the UI
@@ -80503,10 +80416,10 @@ define('xblox/model/html/SetStyle',[
                 }
             }
         },
-        onReferenceChanged:function(newValue,cis){
+        onReferenceChanged:function(newValue,cis,settings){
             this.reference = newValue;
-            this.references = this.resolveReference(this.deserialize(newValue));
-            this.updateObjects(this.references,this.value);
+            this.references = this.resolveReference(this.deserialize(newValue),settings);
+            this.updateObjects(this.references,this.value,null,settings);
         },
         getPropValue:function(stylesObject,prop){
             for (var _prop in stylesObject) {
@@ -80534,7 +80447,7 @@ define('xblox/model/html/SetStyle',[
 
             return null;
         },
-        updateObject:function(obj,style,mode){
+        updateObject:function(obj,style,mode,settings){
             if(!obj){
                 return false;
             }
@@ -80697,9 +80610,8 @@ define('xblox/model/html/SetStyle',[
                 }
             }
         },
-        onDomStyleChanged:function(objects,newStyle,mode){
-
-            objects = objects || this.resolveReference(this.deserialize(this.reference));
+        onDomStyleChanged:function(objects,newStyle,mode,settings){
+            objects = objects || this.resolveReference(this.deserialize(this.reference),settings);
             if(!objects){
                 debug && console.warn('have no objects');
                 return;
@@ -80710,12 +80622,19 @@ define('xblox/model/html/SetStyle',[
                 if(obj && obj.id && obj.id.indexOf('davinci')!=-1) {
                     continue;
                 }
-                this.updateObject(obj, newStyle, mode);
+                this.updateObject(obj, newStyle, mode,settings);
             }
         },
-        updateObjects:function(objects,domStyleString,mode){
-            objects = objects || this.resolveReference(this.deserialize(this.reference));
-            this.onDomStyleChanged(objects,domStyleString,mode);
+        /**
+         *
+         * @param objects
+         * @param domStyleString
+         * @param mode
+         * @param settings
+         */
+        updateObjects:function(objects,domStyleString,mode,settings){
+            objects = objects || this.resolveReference(this.deserialize(this.reference),settings);
+            this.onDomStyleChanged(objects,domStyleString,mode,settings);
         },
         onChangeField:function(field,newValue,cis){
             this._destroy();
@@ -80812,7 +80731,7 @@ define('xblox/model/html/SetStyle',[
     };
 
     //package via declare
-    var _class = dcl([Block,EventedMixin.dcl,Referenced.dcl],Impl);
+    var _class = dcl([Block,Referenced.dcl],Impl);
     //static access to Impl.
     _class.Impl = Impl;
     return _class;
