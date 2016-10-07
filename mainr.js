@@ -72,6 +72,7 @@ define([
     "dojo/selector/_loader",
     "xdeliteful/TabBar",
     "xdeliteful/MediaPlayer",
+    "xdeliteful/Script",
     "deliteful/Accordion",
     "requirejs-domready/domReady"
 ], function(Button,RunScript,register){

@@ -30,6 +30,7 @@ define([
         "deliteful/ViewStack",
         "xdeliteful/TabBar",
         "xdeliteful/MediaPlayer",
+        "xdeliteful/Script",
         "deliteful/Accordion",
         "deliteful/Panel",
         'xblox/model/html/SetState',

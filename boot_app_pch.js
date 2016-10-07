@@ -39,6 +39,7 @@ define([
         "deliteful/RadioButton",
         "deliteful/ToggleButton",
         "xdeliteful/MediaPlayer",
+        "xdeliteful/Script",
         "require"
     ],function(has,dcl,dHas,Deferred){
 
