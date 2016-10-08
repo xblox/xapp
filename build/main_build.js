@@ -42705,6 +42705,11 @@ define('xcf/model/Command',[
             }
         },
         sendToDevice: function (msg, settings, stop, pause, id) {
+
+            if(this._destroyed){
+                return;
+            }
+            
             msg = this.replaceAll("'", '', msg);
             id = id || utils.createUUID();
             var self = this;
@@ -46462,6 +46467,10 @@ define('xide/data/ObservableStore',[
     return declare('xide/data/Observable', EventedMixin, {
         _ignoreChangeEvents: true,
         observedProperties: [],
+        mute:false,
+        silent:function(silent){
+            this._ignoreChangeEvents = silent;
+        },
         putSync: function (item,publish) {
             this._ignoreChangeEvents = true;
             var res = this.inherited(arguments);
@@ -46901,13 +46910,12 @@ define('xide/data/_Base',[
 });;
 define('dstore/Memory',[
 	'dojo/_base/declare',
-	'dojo/_base/lang',
 	'dojo/_base/array',
 	'./Store',
 	'./Promised',
 	'./SimpleQuery',
 	'./QueryResults'
-], function (declare, lang, arrayUtil, Store, Promised, SimpleQuery, QueryResults) {
+], function (declare, arrayUtil, Store, Promised, SimpleQuery, QueryResults) {
 
 	// module:
 	//		dstore/Memory
@@ -47054,7 +47062,7 @@ define('dstore/Memory',[
 				var removed = data.splice(index[id], 1)[0];
 				// now we have to reindex
 				this._reindex();
-				this.emit('delete', {id: id, target: removed});
+				this._ignoreChangeEvents !==true && this.emit('delete', {id: id, target: removed});
 				return true;
 			}
 		},
@@ -48281,6 +48289,7 @@ define('xblox/model/Scope',[
             this.clearCache();
             var store = this.blockStore;
             var allBlocks = this.getBlocks();
+            store.silent(true);
             _.each(allBlocks,function(block){
                 if(block) {
                     store.removeSync(block.id);
@@ -48290,11 +48299,15 @@ define('xblox/model/Scope',[
 
             });
             store.setData([]);
+            store.silent(false);
         },
         fromScope:function(source){
+            var store = this.blockStore;
+            store.silent(true);
             this.empty();
             var _t = source.blocksToJson();
             this.blocksFromJson(_t);
+            store.silent(false);
         },
         /**
          *
@@ -49161,7 +49174,7 @@ define('xblox/model/Scope',[
 
                 var blockOut = null;
                 try{
-                    blockOut = factory.createBlock(blockClassProto,block);
+                    blockOut = factory.createBlock(blockClassProto,block,null,false);
                 }catch(e){
                     console.error('error in block creation ' , e + ' ' + block.declaredClass);
                     logError(e);
