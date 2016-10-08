@@ -33063,6 +33063,7 @@ define('xblox/model/Block',[
             '_loop',
             'help',
             'owner',
+            '_lastCommand',
             'allowActionOverride',
             'canDelete',
             'isCommand',
