@@ -48160,10 +48160,12 @@ define('xblox/model/Scope',[
     'xide/encoding/MD5'    
 ], function(dcl,ModelBase,Expression,factory,utils,types,EventedMixin,lang,has,MD5,tracer,_console){
 
+    /*
     var console = typeof window !== 'undefined' ? window.console : console;
     if(tracer && tracer.error && console && console.error){
         console = _console;
     }
+    */
 
     function mergeNewModule(block,source) {
         for (var i in source) {
@@ -49204,7 +49206,8 @@ define('xblox/model/Scope',[
                             // single block
                             var child = this.getBlockById( block._children[propName] );
                             if (!child) {
-                                console.log('   couldnt resolve child: ' + block._children[propName],block);
+                                this.blockStore.removeSync(block._children[propName]);
+                                console.log('   couldnt resolve child: ' + block._children[propName]);
                                 continue;
                             }
                             block[propName] = child;
@@ -55330,6 +55333,28 @@ define('xide/utils/StringUtils',[
 
         return str;
     }
+
+    /*
+    var _str ="background-image:url('workspace_user://backgrounds/CC_Skin.png')>";
+    //preg_match_all('~\bbackground(-image)?\s*:(.*?)\(\s*(\'|")?(?<image>.*?)\3?\s*\)~i',$content,$matches);
+    var str = _str.replace(/\burl\s*\(\s*["']?([^"'\r\n\)\(]+)["']?\s*\)/gi,
+        function (matchstr, parens) {
+            console.log('match : ',parens);
+            var parts = parens.split('://');
+            var mount = parts[0];
+            var path  = parts[1];
+            if(mount && path) {
+                //$url = $bootstrap - > getVFSGetUrl($mount).$path;
+                //$content = str_replace($imageUrl, $url, $content);
+                console.log('part : ' + path);
+                return "url('./" + path + "')";
+            }
+            return parens;
+        }
+    );
+
+    console.log('after all : ',str);
+    */
 
     /**
      * Converts a string containing U+... escapes to a string of characters.

@@ -1,45 +1,41 @@
 define([
-    //'xdojo/declare',
     "xapp/build/main_build"
-    //"dstore/build/dstorer",
-    //"xide/build/xider",
-    //"xblox/build/xbloxr",
-    //"xwire/build/xwirer",
-    //"xcf/build/xcfr",
-    //"decor/build/decorr",
-    //"dpointer/build/dpointerr"
 ], function (dcl,has,xapp) {
 
     console.log('Checkpoint 1.2 build ready');
-    //return;
-    //debugger;
+    
     if(typeof logError==='undefined'){
 
         window['logError']=function(e,message){
             console.error('error '+message,e);
         }
     }
-    //return;
     require([
         "requirejs-dplugins/has",
         "dcl/dcl",
         "dojo/has",
         'dojo/Deferred',
-        //'xdojo/declare',
         'xdojo/has',
+        "xide/utils/ObjectUtils",
         "xblox/RunScript",
         "xblox/CSSState",
         "xblox/StyleState",
         'delite/register',        
-        "delite/register",
         "deliteful/Button",
         "deliteful/Slider",
         "deliteful/Combobox",
+        "deliteful/Select",
         "deliteful/Checkbox",
         "deliteful/RadioButton",
         "deliteful/ToggleButton",
+        "deliteful/ViewStack",
+        "xdeliteful/TabBar",
         "xdeliteful/MediaPlayer",
         "xdeliteful/Script",
+        "deliteful/Accordion",
+        "deliteful/Panel",
+        'xblox/model/html/SetState',
+        "requirejs-dplugins/css!Font-Awesome/css/font-awesome.css",
         "require"
     ],function(has,dcl,dHas,Deferred){
 
