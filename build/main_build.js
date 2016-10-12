@@ -5514,7 +5514,7 @@ define('requirejs-dplugins/has',["module"], function (module) {
 	return has;
 });
 ;
-/** @module deliteful/TabBar */
+/** @module xdeliteful/Script */
 define('xdeliteful/Script',[
     "dcl/dcl",
     "delite/register",
@@ -5552,6 +5552,9 @@ define('xdeliteful/Script',[
                 this._function = new Function("{" + script + "; }");
                 this._script = script;
             }
+        },
+        getFunction:function(){
+            return this._function;
         },
         attachedCallback:function () {
             this.setScript(this.innerHTML);
@@ -38048,6 +38051,7 @@ define('xblox/model/events/OnEvent',[
         }
     });
 });;
+/** @module xwire/_Base */
 define('xwire/_Base',[
     'dcl/dcl',
     'xide/mixins/EventedMixin'
@@ -38091,6 +38095,12 @@ define('xwire/_Base',[
                 (o[prop] = value);
     }
 
+    /**
+     * Abstract binding source
+     * @class xwire/Source
+     * @extends {module:xwire/_Base}
+     * @extends {module:xide/mixins/EventedMixin}
+     */
     var _base  = dcl([EventedMixin.dcl],{
         declaredClass:'xwire._Base',
         /***
@@ -43092,7 +43102,7 @@ define('xcf/model/Command',[
         },
         pause: function () {
             var last = this.lastCommand || this._resolve(this.send, this._lastSettings);
-            if (last) {
+            if (last!==null) {
                 this.sendToDevice(last, this._lastSettings, false, true);
             }
         },
@@ -43102,7 +43112,7 @@ define('xcf/model/Command',[
             });
             this.resolve('');
             var last = this.lastCommand || this._resolve(this.send, this._lastSettings);
-            if (last) {
+            if (!_.isEmpty(last)) {
                 this.sendToDevice(last, this._lastSettings, true, false);
             }
             delete this._runningDfd;
@@ -70611,6 +70621,7 @@ define('xwire/EventSource',[
         }
     });
 });;
+/** @module xwire/WidgetTarget */
 define('xwire/WidgetTarget',[
     'dcl/dcl',
     'xide/types',
@@ -70619,16 +70630,28 @@ define('xwire/WidgetTarget',[
 ],function(dcl,types,Target,utils){
     /**
      * Widget based binding target
+     * @class xwire/WidgetTarget
      */
     return dcl(Target,{
         declaredClass:"xwire.WidgetTarget",
         targetFilter:null,
         /**
+         * type {module:xwire/Binding}
+         */
+        binding:null,
+        /**
+         * type {module:xblox/RunScript}
+         */
+        delegate:null,
+        /**
          * Run the action
          */
         run:function(data){
             var thiz = this,
-                isDelite = thiz.object !=null && thiz.object.render!=null;
+                isDelite = thiz.object !==null && thiz.object.render!=null;
+
+            var acceptFn = this.binding.accept ? this.binding.accept.getFunction() : null;
+            var transformFn = this.binding.transform ? this.binding.transform.getFunction() : null;
 
             if(thiz.object){
                 var value = data.value;
@@ -70636,6 +70659,21 @@ define('xwire/WidgetTarget',[
                     value = this.delegate.resolveFilter(this.targetFilter,value,this.object);
                 }
                 thiz.object.ignore=true;
+
+                if(acceptFn){
+                    var accept = acceptFn.apply(this.delegate,[value,this.binding.accept,this.delegate,,this.object]);
+                    if(!accept){
+                        return;
+                    }
+                }
+
+                if(transformFn){
+                    var _value = transformFn.apply(this.delegate,[value,this.binding.transform,this.delegate,this.object]);
+                    if(_value!==null && _value!==undefined){
+                        value = _value;
+                    }
+                }
+
                 if(!isDelite && thiz.object.set) {
                     thiz.object.set(thiz.path, value);
                 }else if(thiz.object._set){
@@ -70715,12 +70753,15 @@ define('xwire/WidgetSource',[
         }
     });
 });;
+/** @module xwire/Target */
 define('xwire/Target',[
     'dcl/dcl',
     'xwire/_Base'
 ],function(dcl,_Base){
+
     /**
      * Abstract binding target
+     * @class xwire/Target
      */
     var Module = dcl(_Base,{
         declaredClass:"xwire.Target",
@@ -70750,10 +70791,10 @@ define('xwire/Target',[
 
         }
     });
-
     dcl.chainAfter(Module,'run');
     return Module
 });;
+/** @module xwire/Source */
 define('xwire/Source',[
     'dcl/dcl',
     'xide/types',
@@ -70761,32 +70802,50 @@ define('xwire/Source',[
 ],function(dcl,types,_Base){
     /**
      * Abstract binding source
+     * @class xwire/Source
+     * @extends {module:xwire/_Base}
      */
     return dcl(_Base,{
         declaredClass:"xwire.Source",
-        destroy:function(){
-        }
+        destroy:function(){}
     });
 });;
+/** @module xwire/Binding */
 define('xwire/Binding',[
     'dcl/dcl',
     'xwire/_Base'
 ],function(dcl,_Base){
+    /**
+     * @class xwire/Binding
+     */
     return dcl(_Base,{
         declaredClass:"xwire.Binding",
+        /**
+         * @type {module:xdeliteful/Source}
+         */
         source:null,
+        /**
+         * @type {module:xwire/Target}
+         */
         target:null,
-        destroy:function()
-        {
-            if(this.source){
-                this.source.destroy();
-            }
+        /**
+         * @type {module:xdeliteful/Script}
+         */
+        accept:null,
+        /**
+         * @type {module:xdeliteful/Script}
+         */
+        transform:null,
+        destroy:function(){
+            this.source && this.source.destroy();
+            this.target && this.target.destroy();
+            delete this.transform;
+            delete this.accept;
         },
         /**
          * trigger is being invoked by the source
          */
         trigger:function(data){
-
             if(this.target){
                 this.target.run(data);
             }
@@ -70795,12 +70854,10 @@ define('xwire/Binding',[
          *
          */
         start:function(){
-
             if(this.source){
                 this.source.binding=this;
                 this.source.start();
             }
-
             if(this.target){
                 this.target.binding=this;
                 this.target.start();
@@ -85084,6 +85141,8 @@ define('xblox/RunScript',[
         stop: false,
         _events: [],
         context: null,
+        accept:'',
+        transform:'',
         /**
          * @type {xide/types/BlockMode}
          */
@@ -85107,7 +85166,7 @@ define('xblox/RunScript',[
 
             }
 
-            this.binding = null;
+            delete this.binding;
             //this._targetBlock = null;
             this._appContext = null;
             this._targetReference = null;
@@ -85134,9 +85193,9 @@ define('xblox/RunScript',[
          * @inheritDoc
          */
         destroy: function () {
-            //console.error('destroy')
             this.onDestroy && this.onDestroy();
             this.reset();
+            delete this.binding;
         },
         /**
          * The final execution when 'target event' has been triggered. This
@@ -85163,6 +85222,8 @@ define('xblox/RunScript',[
             }
 
 
+            console.log('run');
+
 
             //setup variables
             var block = this._targetBlock,
@@ -85174,7 +85235,6 @@ define('xblox/RunScript',[
                 block._targetReference = context;
 
                 if (this.targetvariable && this.targetvariable.length && val != null) {
-
                     block.override = {
                         variables: {}
                     };
@@ -85498,17 +85558,35 @@ define('xblox/RunScript',[
                 delegate:this
             });
 
+
+
+            var accept = this._findbyTagAndName('D-SCRIPT','accept');
+            var transform = this._findbyTagAndName('D-SCRIPT','transform');
+
+
             //construct the binding
             var binding = new Binding({
                 source: bindingSource,
-                target: bindingTarget
+                target: bindingTarget,
+                accept:this._findbyTagAndName('D-SCRIPT','accept'),
+                transform:this._findbyTagAndName('D-SCRIPT','transform')
             });
+
 
             this.binding = binding;
 
             binding.start();
         },
-
+        _findbyTagAndName:function(tag,name){
+            var scripts = $(this).find(tag);
+            for (var i = 0; i < scripts.length; i++) {
+                var script = scripts[i];
+                if($(script).attr('name')===name){
+                    return script;
+                }
+            }
+            return null;
+        },
         /**
          * setup inbound wire, assumes all parameters are checked
          * @private
