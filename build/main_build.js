@@ -40114,6 +40114,9 @@ define('xblox/model/variables/VariableAssignmentBlock',[
 
     var isServer = has('host-node');
     var BLOCK_INSERT_ROOT_COMMAND = 'Step/Insert';
+    
+
+
     /**
      *
      * @class module:xblox/model/variables/VariableAssignmentBlock
@@ -40185,7 +40188,7 @@ define('xblox/model/variables/VariableAssignmentBlock',[
                 //console.log('run with args ' , _args);
 
                 if(!_variable){
-                    console.error('     no such variable : ' + this.variable);
+                    //console.error('     no such variable : ' + this.variable);
                     return [];
                 }
                 var _parsed = null;
@@ -54074,6 +54077,7 @@ define('xcf/manager/DeviceManager',[
 
             var message=utils.getJson(msg.message);
             var isUs=false;
+            var thiz = this;
             if(message){
                 var sourceHost = message.sourceHost;
                 var sourcePort = message.sourcePort;
@@ -54105,6 +54109,16 @@ define('xcf/manager/DeviceManager',[
                                     _debugMQTT && console.error('     received MQTT variable ' +_variable.name + ' = ' +message.value);
                                     _variable.set('value',message.value);
                                     _variable.refresh();
+
+                                    thiz.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, {
+                                        item: _variable,
+                                        scope: _variable.scope,
+                                        owner: thiz,
+                                        save: false,
+                                        publish : false,
+                                        source:'mqtt'
+                                    });
+
                                 }
                             }else{
                                 _debugMQTT && console.error('cant find driver instance '+msg.topic);
