@@ -456,7 +456,11 @@ define([
                     $(widget.nodeName).trigger('load');
                 }else {
                     if (widget.emit) {
-                        widget.emit('load', widget);
+                        try {
+                            widget.emit('load', widget);
+                        }catch(e){
+                            console.error('firing load',e);
+                        }
                     }
                 }
             }

@@ -17359,10 +17359,10 @@ define('ecma402/Intl',[ "./impl/Record", "./impl/calendars", "./impl/common", ".
 					m = m.replace(/\.$/, "");
 				}
 				var dPos = m.indexOf(".");
-				var int = dPos > 0 ? dPos : m.length;
-				while (int < minInteger) {
+				var _int = dPos > 0 ? dPos : m.length;
+				while (_int < minInteger) {
 					m = "0" + m;
-					int++;
+					_int++;
 				}
 				return m;
 			}
@@ -21360,18 +21360,18 @@ define('delite/FormValueWidget',[
 });
 ;
 /**
- * Tracks which widgets are currently "active".
- * A widget is considered active if it or a descendant widget has focus,
- * or if a non-focusable node of this widget or a descendant was the most recent node
+ * Tracks which nodes are currently "active".
+ * A node is considered active if it or a descendant node has focus,
+ * or if a non-focusable descendant was the most recent node
  * to get a touchstart/mousedown/pointerdown event.
  *
- * Emits non-bubbling `delite-activated` and `delite-deactivated` events on widgets
+ * Emits non-bubbling `delite-activated` and `delite-deactivated` events on nodes
  * as they become active, or stop being active, as defined above.
  *
- * Call `activationTracker.on("active-widget-stack", callback)` to track the stack of currently active widgets.
+ * Call `activationTracker.on("active-stack", callback)` to track the stack of currently active nodes.
  *
  * Call `activationTracker.on("deactivated", func)` or `activationTracker.on("activated", ...)` to monitor when
- * when widgets become active/inactive.
+ * when nodes become active/inactive.
  *
  * @module delite/activationTracker
  * */
@@ -21380,9 +21380,10 @@ define('delite/activationTracker',[
 	"dcl/dcl",
 	"requirejs-dplugins/jquery!attributes/classes",	// hasClass()
 	"decor/Evented",
+	"./on",
 	"dpointer/events",		// so can just monitor for "pointerdown"
 	"requirejs-domready/domReady!"
-], function (advise, dcl, $, Evented) {
+], function (advise, dcl, $, Evented, on) {
 
 	// Time of the last touch/mouse and focusin events
 	var lastPointerDownTime;
@@ -21400,34 +21401,14 @@ define('delite/activationTracker',[
 		activeStack: [],
 
 		/**
-		 * Registers listeners on the specified iframe so that any pointerdown
-		 * or focus event on that iframe (or anything in it) is reported
-		 * as a focus/pointerdown event on the `<iframe>` itself.
+		 * Registers listeners on the specified window to detect when the user has
+		 * touched / mouse-downed / focused somewhere.  This is called automatically.
 		 *
-		 * In dijit this was only used by editor; perhaps it should be removed.
-		 *
-		 * @param {HTMLIframeElement} iframe
-		 * @returns {Object} Handle with `remove()` method to deregister.
-		 */
-		registerIframe: function (iframe) {
-			return this.registerWin(iframe.contentWindow, iframe);
-		},
-
-		/**
-		 * Registers listeners on the specified window (either the main
-		 * window or an iframe's window) to detect when the user has touched / mouse-downed /
-		 * focused somewhere.
-		 *
-		 * Users should call registerIframe() instead of this method.
-		 *
-		 * @param {Window} [targetWindow] - If specified this is the window associated with the iframe,
-		 *       i.e. iframe.contentWindow.
-		 * @param {Element} [effectiveNode] - If specified, report any focus events inside targetWindow as
-		 *       an event on effectiveNode, rather than on evt.target.
+		 * @param {Window} [targetWindow]
 		 * @returns {Object} Handle with `remove()` method to deregister.
 		 * @private
 		 */
-		registerWin: function (targetWindow, effectiveNode) {
+		registerWin: function (targetWindow) {
 			// Listen for blur and focus events on targetWindow's document.
 			var _this = this,
 				doc = targetWindow.document,
@@ -21443,7 +21424,7 @@ define('delite/activationTracker',[
 
 				lastPointerDownTime = (new Date()).getTime();
 
-				_this._pointerDownOrFocusHandler(effectiveNode || evt.target, "mouse");
+				_this._pointerDownOrFocusHandler(evt.target, "mouse");
 			}
 
 			function focusHandler(evt) {
@@ -21459,11 +21440,11 @@ define('delite/activationTracker',[
 					return;
 				}
 
-				_this._focusHandler(effectiveNode || evt.target);
+				_this._focusHandler(evt.target);
 			}
 
 			function blurHandler(evt) {
-				_this._blurHandler(effectiveNode || evt.target);
+				_this._blurHandler(evt.target);
 			}
 
 			if (body) {
@@ -21549,10 +21530,11 @@ define('delite/activationTracker',[
 						// need to do this trick instead). window.frameElement is supported in IE/FF/Webkit
 						node = node.ownerDocument.defaultView.frameElement;
 					} else {
-						// if this node is the root node of a widget, then add widget id to stack,
-						// except ignore clicks on disabled widgets (actually focusing a disabled widget still works,
-						// to support MenuItem)
-						if (node.render && !(by === "mouse" && node.disabled)) {
+						// Ignore clicks on disabled widgets (actually focusing a disabled widget still works,
+						// to support MenuItem).
+						if (by === "mouse" && node.disabled) {
+							newStack = [];
+						} else {
 							newStack.unshift(node);
 						}
 						node = node.parentNode;
@@ -21607,8 +21589,8 @@ define('delite/activationTracker',[
 		},
 
 		/**
-		 * The stack of active widgets has changed.  Send out appropriate events and records new stack.
-		 * @param {module:delite/Widget[]} newStack - Array of widgets, starting from the top (outermost) widget.
+		 * The stack of active nodes has changed.  Send out appropriate events and record new stack.
+		 * @param {Element} newStack - Array of nodes, starting from the top (outermost) node.
 		 * @param {string} by - "mouse" if the focus/pointerdown was caused by a mouse down event.
 		 * @private
 		 */
@@ -21621,26 +21603,22 @@ define('delite/activationTracker',[
 			}
 
 			this.activeStack = newStack;
-			this.emit("active-widget-stack", newStack);
+			this.emit("active-stack", newStack);
 
-			var widget, i;
+			var node, i;
 
-			// for all elements that have gone out of focus, set focused=false
+			// for all elements that have become deactivated
 			for (i = lastOldIdx; i >= 0 && oldStack[i] !== newStack[i]; i--) {
-				widget = oldStack[i];
-				if (widget) {
-					widget.emit("delite-deactivated", {bubbles: false, by: by});
-					this.emit("deactivated", widget, by);
-				}
+				node = oldStack[i];
+				on.emit(node, "delite-deactivated", {bubbles: false, by: by});
+				this.emit("deactivated", node, by);
 			}
 
-			// for all element that have come into focus, set focused=true
+			// for all elements that have become activated
 			for (i++; i <= lastNewIdx; i++) {
-				widget = newStack[i];
-				if (widget) {
-					widget.emit("delite-activated", {bubbles: false, by: by});
-					this.emit("activated", widget, by);
-				}
+				node = newStack[i];
+				on.emit(node, "delite-activated", {bubbles: false, by: by});
+				this.emit("activated", node, by);
 			}
 		}
 	});
@@ -25699,10 +25677,11 @@ define('delite/HasDropDown',[
 	"requirejs-dplugins/jquery!attributes/classes",	// addClass(), removeClass(), hasClass()
 	"./place",
 	"./popup",
+	"./register",
 	"./Widget",
 	"./activationTracker",		// for delite-deactivated event
 	"dpointer/events"		// so can just monitor for "pointerdown"
-], function (dcl, Promise, $, place, popup, Widget) {
+], function (dcl, Promise, $, place, popup, register, Widget) {
 	
 	/**
 	 * Dispatched before popup widget is shown.
@@ -25749,33 +25728,27 @@ define('delite/HasDropDown',[
 	 * @mixin module:delite/HasDropDown
 	 * @augments module:delite/Widget
 	 */
-	return dcl(Widget, /** @lends module:delite/HasDropDown# */ {
-		/**
-		 * The button/icon/node to click to display the drop down.
-		 * Can be set in a template via a `attach-point` assignment.
-		 * If missing, then either `this.focusNode` or `this` (if `focusNode` is also missing) will be used.
-		 * @member {Element}
-		 * @protected
-		 */
-		buttonNode: null,
-
-		/**
-		 * The node to set the `aria-owns` etc. on.
-		 * Can be set in a template via a `attach-point` assignment.
-		 * If missing, then `this.focusNode` or `this.buttonNode` (if `focusNode` is missing) will be used.
-		 * @member {Element}
-		 * @protected
-		 */
-		popupStateNode: null,
-
+	var HasDropDown = dcl(Widget, /** @lends module:delite/HasDropDown# */ {
 		/**
 		 * The node to display the popup around.
-		 * Can be set in a template via a `attach-point` assignment.
+		 * Can be set in a template via a `attach-point` assignment,
+		 * or set to a node non-descendant node, in order to set up dropdown-opening behavior on an arbitrary node.
 		 * If missing, then `this` will be used.
 		 * @member {Element}
 		 * @protected
 		 */
-		aroundNode: null,
+		anchorNode: null,
+
+		/**
+		 * The button/icon/node to click to display the drop down.
+		 * Useful for widgets like Combobox which contain an `<input>` and a
+		 * down arrow icon, and only clicking the icon should open the drop down.
+		 * If undefined, click handler set up on `this.anchorNode` (if defined),
+		 * or otherwise on `this`.
+		 * @member {Element}
+		 * @protected
+		 */
+		buttonNode: null,
 
 		/**
 		 * The widget to display as a popup.  Applications/subwidgets should *either*:
@@ -25967,19 +25940,6 @@ define('delite/HasDropDown',[
 			}.bind(this));
 		},
 
-		createdCallback: function () {
-			// set this.hovering when mouse is over widget so we can differentiate real mouse clicks from synthetic
-			// mouse clicks generated from JAWS upon keyboard events
-			this.on("pointerenter", function () {
-				this.hovering = true;
-			}.bind(this));
-			this.on("pointerleave", function () {
-				this.hovering = false;
-			}.bind(this));
-
-			this.on("delite-deactivated", this._deactivatedHandler.bind(this));
-		},
-
 		preRender: function () {
 			// Remove old listeners if we are re-rendering, just in case some of the listeners were put onto
 			// the root node.  We don't want to make duplicate listeners.
@@ -25991,16 +25951,28 @@ define('delite/HasDropDown',[
 		},
 
 		postRender: function () {
-			this.setAttribute("aria-haspopup", "true");
+			this.anchorNode = this.anchorNode || this;
+			this.buttonNode = this.buttonNode || this.anchorNode;
+			this.popupStateNode = this.focusNode || this.buttonNode;
 
-			this.buttonNode = this.buttonNode || this.focusNode || this;
-			this.popupStateNode = this.popupStateNode || this.focusNode || this.buttonNode;
+			this.popupStateNode.setAttribute("aria-haspopup", "true");
 
 			this._HasDropDownListeners = [
 				// basic listeners
 				this.on("pointerdown", this._dropDownPointerDownHandler.bind(this), this.buttonNode),
-				this.on("keydown", this._dropDownKeyDownHandler.bind(this), this.focusNode || this),
-				this.on("keyup", this._dropDownKeyUpHandler.bind(this), this.focusNode || this),
+				this.on("keydown", this._dropDownKeyDownHandler.bind(this), this.focusNode || this.anchorNode),
+				this.on("keyup", this._dropDownKeyUpHandler.bind(this), this.focusNode || this.anchorNode),
+
+				this.on("delite-deactivated", this._deactivatedHandler.bind(this), this.anchorNode),
+
+				// set this.hovering when mouse is over widget so we can differentiate real mouse clicks from synthetic
+				// mouse clicks generated from JAWS upon keyboard events
+				this.on("pointerenter", function () {
+					this.hovering = true;
+				}.bind(this), this.anchorNode),
+				this.on("pointerleave", function () {
+					this.hovering = false;
+				}.bind(this), this.anchorNode),
 
 				// Avoid phantom click on android [and maybe iOS] where touching the button opens a centered dialog, but
 				// then there's a phantom click event on the dialog itself, possibly closing it.
@@ -26112,7 +26084,7 @@ define('delite/HasDropDown',[
 		},
 
 		_deactivatedHandler: function () {
-			// Called when focus has shifted away from this widget and it's dropdown
+			// Called when focus has shifted away from this widget and its dropdown.
 
 			// Close dropdown but don't focus my <input>.  User may have focused somewhere else (ex: clicked another
 			// input), and even if they just clicked a blank area of the screen, focusing my <input> will unwantedly
@@ -26199,7 +26171,7 @@ define('delite/HasDropDown',[
 				delete this._cancelPendingDisplay;
 
 				this._currentDropDown = dropDown;
-				var aroundNode = this.aroundNode || this,
+				var anchorNode = this.anchorNode,
 					self = this;
 
 				this.emit("delite-before-show", {
@@ -26215,9 +26187,9 @@ define('delite/HasDropDown',[
 				dropDown._originalStyle = dropDown.style.cssText;
 
 				var retVal = popup.open({
-					parent: this,
+					parent: anchorNode,
 					popup: dropDown,
-					around: aroundNode,
+					around: anchorNode,
 					orient: this.dropDownPosition,
 					maxHeight: this.maxHeight,
 					onExecute: function () {
@@ -26227,21 +26199,21 @@ define('delite/HasDropDown',[
 						self.closeDropDown(true);
 					},
 					onClose: function () {
-						$(self._popupStateNode).removeClass("d-drop-down-open");
+						$(self.popupStateNode).removeClass("d-drop-down-open");
 						this.opened = false;
 					}
 				});
 
 				// Set width of drop down if necessary, so that dropdown width + width of scrollbar (from popup wrapper)
-				// matches width of aroundNode.  Don't do anything for when dropDownPosition=["center"] though,
+				// matches width of anchorNode.  Don't do anything for when dropDownPosition=["center"] though,
 				// in which case popup.open() doesn't return a value.
 				if (retVal && (this.forceWidth ||
-						(this.autoWidth && aroundNode.offsetWidth > dropDown._popupWrapper.offsetWidth))) {
-					var widthAdjust = aroundNode.offsetWidth - dropDown._popupWrapper.offsetWidth;
-					dropDown._popupWrapper.style.width = aroundNode.offsetWidth + "px";
+						(this.autoWidth && anchorNode.offsetWidth > dropDown._popupWrapper.offsetWidth))) {
+					var widthAdjust = anchorNode.offsetWidth - dropDown._popupWrapper.offsetWidth;
+					dropDown._popupWrapper.style.width = anchorNode.offsetWidth + "px";
 
 					// Workaround apparent iOS bug where width: inherit on dropdown apparently not working.
-					dropDown.style.width = aroundNode.offsetWidth + "px";
+					dropDown.style.width = anchorNode.offsetWidth + "px";
 
 					// If dropdown is right-aligned then compensate for width change by changing horizontal position
 					if (retVal.corner[1] === "R") {
@@ -26250,14 +26222,14 @@ define('delite/HasDropDown',[
 					}
 				}
 
-				$(this._popupStateNode).addClass("d-drop-down-open");
+				$(this.popupStateNode).addClass("d-drop-down-open");
 				this.opened = true;
 
 				this.popupStateNode.setAttribute("aria-owns", dropDown.id);
 
 				// Set aria-labelledby on dropdown if it's not already set to something more meaningful
 				if (dropDown.getAttribute("role") !== "presentation" && !dropDown.getAttribute("aria-labelledby")) {
-					dropDown.setAttribute("aria-labelledby", this.id);
+					dropDown.setAttribute("aria-labelledby", this.anchorNode.id);
 				}
 
 				this.emit("delite-after-show", {
@@ -26340,6 +26312,15 @@ define('delite/HasDropDown',[
 			delete this._currentDropDown;
 		}
 	});
+
+	/**
+	 * Widget to setup HasDropDown behavior on an arbitrary Element or Custom Element.
+	 * @class module:delite/HasDropDown.HasDropDownCustomElement
+	 * @augments module:delite/Widget
+	 */
+	HasDropDown.HasDropDownCustomElement = register("d-has-drop-down", [HTMLElement, HasDropDown], {});
+
+	return HasDropDown;
 });
 ;
 /**
@@ -26375,6 +26356,10 @@ define('delite/popup',[
 	 * @event module:delite/popup#popup-after-show
 	 */
 
+	/**
+	 * Dispatched on a popup before it's hidden.
+	 * @event module:delite/popup#popup-before-hide
+	 */
 
 	/**
 	 * Arguments to `delite/popup#open()` method.
@@ -26585,6 +26570,8 @@ define('delite/popup',[
 		 * @param {module:delite/Widget} widget
 		 */
 		hide: function (widget) {
+			widget.emit("popup-before-hide");
+
 			// Create wrapper if not already there
 			var wrapper = this._createWrapper(widget);
 
@@ -26626,7 +26613,9 @@ define('delite/popup',[
 		open: function (args) {
 			this._prepareToOpen(args);
 			this._size(args, true);
-			var position = this._position(args);
+			var position = this._position(args) || {};
+
+			position.around = args.around;
 
 			args.popup.emit("popup-after-show", position);
 
@@ -37631,7 +37620,7 @@ define('xide/mixins/ReferenceMixin',[
                 case types.WIDGET_REFERENCE_MODE.BY_CSS:
                 {
                     var _query = this._cssClassesToQuery(query);
-                    this._parseString && (_query = this._parseString(_query,settings,null,types.CIFLAG.EXPRESSION) || _query);
+                    this._parseString && (_query = this._parseString(_query,settings,null,settings && settings.flags ? settings.flags : types.CIFLAG.EXPRESSION) || _query);
                     var _$ = null;
                     if (this.scope && this.scope.global && this.scope.global['$']) {
                         _$ = this.scope.global['$'];
@@ -40139,7 +40128,7 @@ define('xblox/model/variables/VariableAssignmentBlock',[
         toText:function(){
             var _variable = this.scope.getVariableById(this.variable);
             var _text = _variable ? _variable.name : '';
-            if(this.variable.indexOf('://')!==-1) {
+            if(this.variable && this.variable.indexOf('://')!==-1) {
                 _text = '<span class="text-info">' +this.scope.toFriendlyName(this, this.variable)+'</span>';
             }
             return this.getBlockIcon('C') + this.name + ' ' + _text  + "<span class='text-muted small'> to <kbd class='text-warning'>" + this.makeEditable("value",'bottom','text','Enter the string to send','inline') + "</kbd></span>";
@@ -40205,9 +40194,15 @@ define('xblox/model/variables/VariableAssignmentBlock',[
                     }
 
                 }else{
+
+                    if(_args && _args.length==1){
+                        _value = _args[0];
+                    }
+
                     if(_variable.value!==_value){
                         changed = true;
                     }
+
                     _variable.value = _value;
                     _parsed = _value;
                 }
@@ -54034,6 +54029,9 @@ define('xcf/manager/DeviceManager',[
          */
         onDeviceServerConnectionLost:function(){
 
+            if(this.deviceServerClient && this.deviceServerClient.pageUnloaded){
+                return;
+            }
             if (this.deviceServerClient) {
                 this.deviceServerClient.destroy();
                 this.deviceServerClient = null;
@@ -65009,6 +65007,7 @@ define('xide/client/ClientBase',[
         onClosed: function () {
         },
         destroy: function () {
+
             if (this._socket && this._socket.close) {
                 this._socket.close();
                 this.onClosed();
@@ -65021,6 +65020,7 @@ define('xide/client/ClientBase',[
             this.options = utils.mixin(this._defaultOptions(), args.options);
             //disconnect on onload
             unload.addOnUnload(function () {
+                this.pageUnloaded=true;
                 this.destroy();
             }.bind(this));
         }
@@ -79271,25 +79271,27 @@ define('xblox/model/html/SetState',[
          * @param settings
          */
         solve:function(scope,settings) {
-            debug && console.log('-set state solve');
             var value = this.value;
-            var objects = this.resolveReference(this.deserialize(this.reference));
+            settings = settings || {};
+            settings.flags = types.CIFLAG.DONT_PARSE;
+            var objects = this.resolveReference(this.deserialize(this.reference),settings);
             if(this.override && this.override.variables){
                 value = utils.replace(value,null,this.override.variables,{
                     begin:'{',
                     end:'}'
                 });
             }
-            //this.updateObjects(null,value,this.mode);
-            if(objects && objects[0]){
-                var widget = objects[0];
-                var _widget = registry.byId(widget.id) || widget;
-                if(widget!=_widget){
+            if(objects && objects.length){
+                _.each(objects,function(object){
+                    var widget = object
+                    var _widget = registry.byId(widget.id) || widget;
+                    if(widget!=_widget){
 
-                }
-                if(_widget && _widget.setState){
-                    _widget.setState(value);
-                }
+                    }
+                    if(_widget && _widget.setState){
+                        _widget.setState(value);
+                    }
+                });
             }
             this.onSuccess(this,settings);
             this.onDidRun();//clear overrides
@@ -79311,15 +79313,23 @@ define('xblox/model/html/SetState',[
          * @returns {*}
          */
         getFields:function(){
-            var fields = this.inherited(arguments) || this.getDefaultFields();
+            var fields = this.getDefaultFields(false);
 
+            var referenceArgs = {
+                group:'General',
+                dst:'reference',
+                value:this.reference
+            };
             fields.push(utils.createCI('State',types.ECIType.STRING,this.value,{
                 group:'General',
                 dst:'value',
                 value:this.value,
                 intermediateChanges:false
             }));
-            
+
+
+            fields.push(utils.createCI('Target',types.ECIType.WIDGET_REFERENCE,this.reference,referenceArgs));
+
             //fields.push(utils.createCI('Target',types.ECIType.WIDGET_REFERENCE,this.reference,referenceArgs));
 
             return fields;
@@ -85827,7 +85837,7 @@ define('xblox/RunScript',[
     return register("d-xscript", [HTMLElement, CustomElement, _class]);
 });;
 define('delite/handlebars!deliteful/Button/Button.html',["delite/handlebars"], function(handlebars){
-	return handlebars.compile("<template attach-point=\"focusNode\">\n\t<span attach-point=\"iconNode\" class=\"d-icon {{this.iconClass ? this.iconClass : 'd-hidden'}}\" aria-hidden=\"true\"></span><span attach-point=\"labelNode\" d-shown=\"{{this.showLabel}}\">{{this.label}}</span>\n</template>");
+	return handlebars.compile("<template attach-point=\"focusNode\" aria-label=\"{{label}}\">\n\t<span attach-point=\"iconNode\" class=\"d-icon {{this.iconClass || 'd-hidden'}}\" aria-hidden=\"true\"></span><span attach-point=\"labelNode\" d-shown=\"{{showLabel}}\">{{label}}</span>\n</template>");
 });;
 /** @module deliteful/Button */
 define('deliteful/Button',[
