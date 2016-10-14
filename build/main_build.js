@@ -42792,7 +42792,7 @@ define('xcf/model/Command',[
             }
 
             settings = settings || this._lastSettings || {};
-            var override = settings.override || this.override;
+            var override = settings.override || this.override || {};
             var _overrides = (override && override.variables) ? override.variables : null;
             if (_overrides) {
                 for (var prop in _overrides) {
@@ -42832,7 +42832,7 @@ define('xcf/model/Command',[
             if (settings && settings.override && settings.override.mixin) {
                 utils.mixin(this.override, settings.override.mixin);
             }
-            var value = send || this._get('send');
+            var value = send || this._get('send') || this.send;
             var parse = !(this.flags & types.CIFLAG.DONT_PARSE);
             var isExpression = (this.flags & types.CIFLAG.EXPRESSION);
             var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
@@ -53376,11 +53376,42 @@ define('xcf/manager/DeviceManager',[
          * @private
          */
         reconnectDeviceServer: 5000,
+
         /////////////////////////////////////////////////////////////////////////////////////
         //
         //  Device-Related
         //
         /////////////////////////////////////////////////////////////////////////////////////
+        onRunClassEvent:function (data) {
+            var id = data.args.id;
+
+            console.log('zzqwqw: x',data);
+
+            if(this.running && this.running[id]){
+
+                var runData = this.running[id];
+
+                var delegate = runData.delegate;
+                if(!delegate){
+                    return;
+                }
+                if(data.error){
+                    if(delegate.onError){
+                        delegate.onError(data.error);
+                    }
+                }
+                if(data.finish){
+                    if(delegate.onFinish){
+                        delegate.onFinish(data.finish);
+                    }
+                }
+                if(data.progress){
+                    if(delegate.onProgress){
+                        delegate.onProgress(data.progress);
+                    }
+                }
+            }
+        },
         getInstanceByName:function(name){
 
             var instances = this.deviceInstances;
@@ -55103,6 +55134,9 @@ define('xcf/manager/DeviceManager',[
                 }
                 thiz.lastUpTime = current;
             }, 1000);
+
+            this.initReload();
+
         },
         onDeviceServerConnected:function(){
             var self = this;
@@ -60339,6 +60373,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
              Deferred,ReloadMixin,EventedMixin,require,Variable,_console) {
 
 
+
     var isServer = has('host-node'),
         isIDE = has('xcf-ui'),
         runDrivers = true;
@@ -60392,6 +60427,60 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     var debugCreateInstance = false;
     var debugServerMessages = false;
     var debugByteMessages = false;
+
+
+
+
+    if(typeof sctx !=='undefined' && sctx){
+
+        var options = {};
+        var id = utils.createUUID();
+
+
+        //1. input : LN0x09BLUCOVE0x09270x0d
+        //2.
+        //2. output: LN0x09>LUCOVE0x09270x0d
+
+
+        var rm = sctx.getResourceManager();
+
+
+        console.log('root : '+rm.getVariable('ROOT'));
+        console.log('user : '+rm.getVariable('USER_DIRECTORY'));
+        console.log('system : '+rm.getVariable('SYSTEM'));
+
+        //console.log('system : '+rm.getVariable('SYSTEM'));
+
+
+
+        return;
+
+
+        var delegate = {
+            onError:function(e){
+                console.error('have error : ',e);
+            },
+            onProgress:function(e){
+                console.error('have progress: ',e);
+            },
+            onFinish:function(e){
+                console.error('have finish: ',e);
+            }
+        };
+
+        sctx.getDeviceManager().runClass('nxapp/manager/ExportManager',{
+            options:options
+        },delegate);
+
+
+    }
+
+
+
+
+
+
+
     /***
      *
      * 1. startDevice
@@ -60404,6 +60493,13 @@ define('xcf/manager/DeviceManager_DeviceServer',[
      *
      */
 
+
+
+
+
+
+
+
     /**
      *
      * @class module:xcf.manager.DeviceManager_DeviceServer
@@ -60412,7 +60508,44 @@ define('xcf/manager/DeviceManager_DeviceServer',[
      */
     return dcl(null,{
         
-        declaredClass:"xcf.manager.DeviceManager_Server",
+        declaredClass:"xcf.manager.DeviceManager_DeviceServer",
+        onReloaded:function(){
+
+            console.error('-relloada');
+        },
+        running:null,
+        /***
+         *
+         * @param driverInstance
+         * @param data
+         */
+        runClass: function (_class,args,delegate) {
+            this.checkDeviceServerConnection();
+            if(this.deviceServerClient) {
+
+                var id = utils.createUUID();
+                args.id = id;
+                var dataOut = {
+                    "class":_class,
+                    args: args,
+                    manager_command: types.SOCKET_SERVER_COMMANDS.RUN_CLASS
+                };
+
+
+
+                !this.running && (this.running = {});
+
+                this.running[id] = {
+                    "class":_class,
+                    args: args,
+                    delegate:delegate
+                }
+
+                this.deviceServerClient.emit(null, dataOut, types.SOCKET_SERVER_COMMANDS.RUN_CLASS);
+            }else{
+                this.onHaveNoDeviceServer();
+            }
+        },
         /**
          * Starts a device with a device store item
          * @param item
@@ -60711,7 +60844,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     var _var = scope.getVariable(variable.name);
                     if(_var){
                         _var.value = variable.value;
-                        //instance.setVariable(_var,variable.value);
                     }
                 });
             }
@@ -61555,6 +61687,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 this.onHaveNoDeviceServer();
             }
         },
+
         /**
          * 
          * @param path
@@ -61605,10 +61738,12 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                                 msg = dataIn;
                             }
 
+
                             debug && !msg && console.error('invalid incoming message',data);
 
                             msg = msg || {};
-                            
+
+
                             if (msg && msg.data && msg.data.deviceMessage && msg.data.deviceMessage.event === types.EVENTS.ON_COMMAND_FINISH) {
                                 thiz.onCommandFinish(msg.data.device,msg.data.deviceMessage);
                                 return;
@@ -61621,6 +61756,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                                 thiz.onCommandPaused(msg.data.device,msg.data.deviceMessage);
                                 return;
                             }
+
                             if (msg && msg.data && msg.data.deviceMessage && msg.data.deviceMessage.event === types.EVENTS.ON_COMMAND_STOPPED) {
                                 thiz.onCommandStopped(msg.data.device,msg.data.deviceMessage);
                                 return;
@@ -61636,6 +61772,10 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
                             if (msg.event === types.EVENTS.SET_DEVICE_VARIABLES) {
                                 return thiz.onSetDeviceServerVariables(msg.data);
+                            }
+
+                            if (msg.event === types.EVENTS.ON_RUN_CLASS_EVENT) {
+                                return thiz.onRunClassEvent(msg.data);
                             }
 
                             if (msg.event === types.EVENTS.ON_DEVICE_CONNECTED) {
@@ -63498,7 +63638,6 @@ define('xcf/types/Types',[
         SSH: 'ssh',
         MQTT: 'mqtt'
     };
-
     /**
      * Additional event keys
      * @enum {string} module:xcf/types/EVENTS
@@ -63537,7 +63676,8 @@ define('xcf/types/Types',[
         SET_DEVICE_VARIABLES:'setDeviceVariables',
         ON_SERVER_LOG_MESSAGE: 'onServerLogMessage',
         ON_CLIENT_LOG_MESSAGE: 'onClientLogMessage',
-        ON_DEVICE_SERVER_CONNECTED:'onDeviceServerConnected'
+        ON_DEVICE_SERVER_CONNECTED:'onDeviceServerConnected',
+        ON_RUN_CLASS_EVENT: 'onRunClassEvent'
     }
     
     utils.mixin(types.EVENTS,Events);
@@ -63723,6 +63863,8 @@ define('xcf/types/Types',[
     types.SOCKET_SERVER_COMMANDS =
     {
         SIGNAL_MANAGER: 'Manager_command',
+        RUN_FILE: 'Run_File',
+        RUN_CLASS: 'Run_Class',
         SIGNAL_DEVICE: 'Device_command',
         SIGNAL_RESPONSE: 'WebSocket_response',
         MANAGER_TEST: 'Manager_Test',
@@ -73705,7 +73847,7 @@ define('xide/manager/Context',[
                 });
             }
         },
-        mergeFunctions: function (target, source) {
+        mergeFunctions: function (target, source,oldModule,newModule) {
             for (var i in source) {
                 var o = source[i];
                 if (_.isFunction(source[i])) {
@@ -73759,6 +73901,9 @@ define('xide/manager/Context',[
             });
             return head;
         },
+        getModule:function(_module){
+            return lang.getObject(utils.replaceAll('/', '.', _module)) || lang.getObject(_module) || (dcl.getObject ? dcl.getObject(_module) || dcl.getObject(utils.replaceAll('/', '.', _module)) : null);
+        },
         _reloadModule: function (_module, reload) {
 
             var _errorHandle = null;
@@ -73777,14 +73922,14 @@ define('xide/manager/Context',[
 
 
             //has its own impl.
-            var obj = lang.getObject(utils.replaceAll('/', '.', _module)) || lang.getObject(_module);
+            var obj = this.getModule(_module);
             if (obj && obj.prototype && obj.prototype.reloadModule) {
                 return obj.prototype.reloadModule();
             }
 
             _errorHandle = _require.on("error", handleError);
             
-            var oldModule = lang.getObject(utils.replaceAll('/', '.', _module)) || lang.getObject(_module);
+            var oldModule = this.getModule(_module);
             if (!oldModule) {
                 oldModule = typeof _module !== 'undefined' ? oldModule : null;
                 if (!oldModule && typeof window !== 'undefined') {
@@ -73843,7 +73988,7 @@ define('xide/manager/Context',[
                             moduleLoaded.modulePath = _module;
 
                             if (obj) {
-                                thiz.mergeFunctions(obj.prototype, moduleLoaded.prototype);
+                                thiz.mergeFunctions(obj.prototype, moduleLoaded.prototype,obj,moduleLoaded);
                                 if (obj.prototype && obj.prototype._onReloaded) {
                                     obj.prototype._onReloaded(moduleLoaded);
                                 }
@@ -81380,8 +81525,6 @@ define('dstore/mainr',[
 		var bases = [0], proto, base, ctor, meta, connectionMap,
 			output, vector, superClasses, i, j = 0, n;
 
-
-
 		if(superClass){
 			if(superClass instanceof Array){
 				// mixins: C3 MRO
@@ -81486,7 +81629,7 @@ define('dstore/mainr',[
 
 		var result = dcl._postprocess(ctor);    // fully prepared constructor
 
-		if(props.declaredClass){
+		if(props.declaredClass && !registry[props.declaredClass]){
 			registry[props.declaredClass] = result;
 		}
 
