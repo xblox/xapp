@@ -32287,7 +32287,11 @@ define('xapp/manager/Context',[
                     $(widget.nodeName).trigger('load');
                 }else {
                     if (widget.emit) {
-                        widget.emit('load', widget);
+                        try {
+                            widget.emit('load', widget);
+                        }catch(e){
+                            console.error('firing load',e);
+                        }
                     }
                 }
             }
@@ -33860,7 +33864,7 @@ define('xblox/model/Block',[
             //this.override = {}
         },
         destroy:function(){
-            this.stop();
+            this.stop(true);
             this.reset();
             this._destroyed = true;
         },
@@ -43104,7 +43108,10 @@ define('xcf/model/Command',[
                 this.sendToDevice(last, this._lastSettings, false, true);
             }
         },
-        stop: function () {
+        stop: function (isDestroy) {
+            if(isDestroy ==true){
+                return;
+            }
             this.onSuccess(this, {
                 highlight: true
             });
@@ -44885,7 +44892,7 @@ define('xblox/manager/BlockManager',[
          * @param data
          * @returns {*}
          */
-        createScope:function(mixed,data){
+        createScope:function(mixed,data,errorCB){
             //console.error('create scope');
             data = data || [];
             var blockStore = new Store({
@@ -44916,7 +44923,7 @@ define('xblox/manager/BlockManager',[
             utils.mixin(args,mixed);
             try {
                 var scope = new Scope(args);
-                data && scope.initWithData(data);
+                data && scope.initWithData(data,errorCB);
                 scope.init();
             }catch(e){
                 logError(e,'error creating scope, data:',mixed);
@@ -48266,11 +48273,11 @@ define('xblox/model/Scope',[
             return JSON.stringify(all, null, 2);
         },
         /**
-         *
          * @param data
+         * @param errorCB {function}
          */
-        initWithData:function(data){
-            data && this.blocksFromJson(data);
+        initWithData:function(data,errorCB){
+            data && this.blocksFromJson(data,null,errorCB);
             this.clearCache();
         },
         /////////////////////////////////////////////////////////
@@ -49139,7 +49146,7 @@ define('xblox/model/Scope',[
          * @param data
          * @returns {Array}
          */
-        blocksFromJson:function(data,check) {
+        blocksFromJson:function(data,check,errorCB) {
             var resultSelected = [];
             var childMap = {};
             for(var i = 0; i < data.length ; i++){
@@ -49215,6 +49222,9 @@ define('xblox/model/Scope',[
                             var child = this.getBlockById( block._children[propName] );
                             if (!child) {
                                 this.blockStore.removeSync(block._children[propName]);
+                                if(errorCB){
+                                    errorCB('   couldnt resolve child: ' + block._children[propName])
+                                }
                                 console.log('   couldnt resolve child: ' + block._children[propName]);
                                 continue;
                             }
@@ -49233,6 +49243,9 @@ define('xblox/model/Scope',[
                             for(var j = 0; j < block._children[propName].length ; j++){
                                 var child = this.getBlockById(block._children[propName][j]);
                                 if (!child) {
+                                    if(errorCB){
+                                        errorCB('   couldnt resolve child: ' + block._children[propName])
+                                    }
                                     console.log('   couldnt resolve child: ' + block._children[propName][j]);
                                     continue;
                                 }
@@ -53732,7 +53745,12 @@ define('xcf/manager/DeviceManager',[
                 blockScope: blockScope
             });
             
+
             this.ctx.getDriverManager().addDeviceInstance(deviceStoreItem,driver);
+
+            if(this.completeDevice){
+                //this.completeDevice(null,deviceStoreItem,driver);
+            }
 
         },
         getDevice:function(mixed){
@@ -54218,7 +54236,12 @@ define('xcf/manager/DeviceManager',[
             delete this.deviceInstances[hash];
             this.ctx.getBlockManager().removeScope(instance.options.id);
             this.ctx.getDriverManager().removeDriverInstance(instance,device);
+
             device.reset();
+            if(this.completeDevice){
+                //this.completeDevice(null,device,instance.driver);
+            }
+
         },
         /**
          *
@@ -60631,8 +60654,11 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                         getContext: function () {
                             return this.instance;
                         }
-
-                    }, dojo.clone(driver.blox.blocks));
+                    }, dojo.clone(driver.blox.blocks),function(error){
+                        if(error){
+                            console.error(error  + ' : in '+driver.name + ' Resave Driver! in scope id ' +scopeId);
+                        }
+                    });
 
                     //important:
                     driverInstance.blockScope = scope;
@@ -62363,6 +62389,15 @@ define('xcf/manager/DriverManager',[
 
             !driver.instances && (driver.instances =[]);
 
+            var instanceReference = _.find(driver.instances,{
+                path:instance.path
+            });
+
+            if(instanceReference){
+                console.log('instance already added ');
+                driver.instances.remove(instanceReference);
+            }
+
             driver.instances.push(instance);
         },
         /***
@@ -62421,12 +62456,22 @@ define('xcf/manager/DriverManager',[
                 driverStore = driver._store,
                 parentId = driver.path,
                 deviceId = device.path,
-                instanceId = parentId + '_instances' + '_instance_'+deviceId,
+                instanceId = parentId + '_instances_instance_'+deviceId,
                 instanceReferenceItem = driverStore.getSync(instanceId);
 
             instanceReferenceItem && driverStore.removeSync(instanceId);
 
-            driver.instances.remove(instanceReferenceItem);
+            //"Audio-Player/VLC.meta.json_instances_instance_Audio-Player/VLC.meta.json"
+            var instanceReference = _.find(driver.instances,{
+                path:instanceId
+            });
+
+            if(instanceReference){
+                //instanceReference.destroy();
+                driver.instances.remove(instanceReference);
+            }
+
+
             device.removeReference(instanceReferenceItem);
 
             if(instanceReferenceItem) {
@@ -65303,8 +65348,8 @@ define('xide/factory/Events',[
                 continue;
             }
 
-            if (_debug && !_debugGroup) {
-                console.group("Events");
+            if (_debug) {
+                //console.group("Events");
                 _debugGroup = true;
                 console.log('publish ' + eventKey + ' from : ' + (callee ? callee.id : ''), msgStruct);
             }
