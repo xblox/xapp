@@ -53248,10 +53248,10 @@ define('xcf/manager/DeviceManager',[
         ReloadMixin.dcl,
         LogMixin
     ],
-    _debugMQTT = true,
-    _debug = true,
+    _debugMQTT = false,
+    _debug = false,
     _debugLogging = false,
-    _debugConnect = true,
+    _debugConnect = false,
     isServer = !has('host-browser'),
     isIDE = has('xcf-ui'),
     DEVICE_PROPERTY = types.DEVICE_PROPERTY,
@@ -60439,6 +60439,9 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
 
     if(typeof sctx !=='undefined' && sctx){
+
+
+        return;
 
         var options = {};
         var id = utils.createUUID();
