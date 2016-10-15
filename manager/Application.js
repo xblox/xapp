@@ -81,7 +81,7 @@ define([
                                 owner: this,
                                 save: false,                         //dont save it
                                 source: types.MESSAGE_SOURCE.DEVICE,  //for prioritizing
-                                refresh:true
+                                publishMQTT:false
                             });
                         }
                     }

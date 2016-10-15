@@ -22358,10 +22358,6 @@ define('deliteful/SidePane',[
 				resolve();
 			},
 
-			postRender: function () {
-				setVisibility(this, false);
-			},
-
 			preRender: function () {
 				this._transitionTiming = {default: 0, chrome: 20, ios: 20, android: 100, ff: 100};
 				for (var o in this._transitionTiming) {
@@ -22371,9 +22367,10 @@ define('deliteful/SidePane',[
 				}
 			},
 
-			render: function () {
+			postRender: function () {
 				pointer.setTouchAction(this, "pan-y");
 				this._resetInteractions();
+				setVisibility(this, false);
 			},
 
 			_refreshMode: function (nextElement) {
@@ -23831,7 +23828,7 @@ define('deliteful/Switch/bidi/Switch',[
 });
 ;
 define('delite/handlebars!deliteful/ToggleButton/ToggleButton.html',["delite/handlebars"], function(handlebars){
-	return handlebars.compile("<template role=\"button\" type=\"button\" attach-point=\"focusNode\" aria-pressed=\"{{this.checked ? 'true' : 'false'}}\" on-click=\"{{toggle}}\">\n    <span attach-point=\"iconNode\" aria-hidden=\"true\" class=\"d-icon {{this.checked &amp;&amp; this.checkedIconClass ? this.checkedIconClass : (this.iconClass ? this.iconClass : 'd-hidden')}}\"></span><span attach-point=\"labelNode\" d-shown=\"{{this.showLabel}}\">{{this.checked &amp;&amp; this.checkedLabel ? this.checkedLabel : this.label}}</span>\n</template>");
+	return handlebars.compile("<template role=\"button\" type=\"button\" attach-point=\"focusNode\" aria-pressed=\"{{this.checked ? 'true' : 'false'}}\" on-click=\"{{toggle}}\" aria-label=\"{{this.checked ? this.checkedLabel : this.label}}\">\n    <span attach-point=\"iconNode\" aria-hidden=\"true\" class=\"d-icon {{this.checked &amp;&amp; this.checkedIconClass ? this.checkedIconClass : (this.iconClass ? this.iconClass : 'd-hidden')}}\"></span><span attach-point=\"labelNode\" d-shown=\"{{this.showLabel}}\">{{this.checked &amp;&amp; this.checkedLabel ? this.checkedLabel : this.label}}</span>\n</template>");
 });;
 /** @module deliteful/ToggleButton */
 define('deliteful/ToggleButton',[
@@ -25302,7 +25299,7 @@ define('deliteful/Combobox',[
 				if (renderer) {
 					this.list.scrollBy({y: this.list.getBottomDistance(renderer)});
 					if (navigate) {
-						this.list.navigatedDescendant = renderer.childNodes[0];
+						this.list.navigatedDescendant = renderer.renderNode;
 					}
 				} // null if the list is empty because no item matches the auto-filtering
 			}
@@ -26707,7 +26704,13 @@ define('delite/popup',[
 			}
 			if (args.onExecute) {
 				handlers.push(widget.on("execute", args.onExecute));
-				handlers.push(widget.on("change", args.onExecute));
+				handlers.push(widget.on("change", function (event) {
+					// Ignore change events from nodes inside the widget (for example, typing into an <input>),
+					// but if the widget itself emits a change event then...
+					if (event.target === widget) {
+						args.onExecute();
+					}
+				}));
 			}
 
 			handlers.push(widget.on("delite-size-change", function () {
@@ -53245,10 +53248,10 @@ define('xcf/manager/DeviceManager',[
         ReloadMixin.dcl,
         LogMixin
     ],
-    _debugMQTT = false,
-    _debug = false,
+    _debugMQTT = true,
+    _debug = true,
     _debugLogging = false,
-    _debugConnect = false,
+    _debugConnect = true,
     isServer = !has('host-browser'),
     isIDE = has('xcf-ui'),
     DEVICE_PROPERTY = types.DEVICE_PROPERTY,
@@ -54046,6 +54049,10 @@ define('xcf/manager/DeviceManager',[
                     instanceOptions.protocol === deviceInfo.protocol &&
                     instanceOptions.isServer === deviceInfo.isServer) {
 
+                    if(fillSettings && instance.sendSettings && has('xcf-ui')){
+                        fillSettings = false;
+                    }
+
                     if (fillSettings !== false) {
                         //get settings, if not cached already
                         if (instance && !instance.sendSettings) {
@@ -54139,13 +54146,13 @@ define('xcf/manager/DeviceManager',[
 
             if(!isUs) {
 
-                _debugMQTT && console.error('on mqtt message ', [message, msg]);
+                _debugMQTT && console.info('onMQTTMessage:', [message, msg]);
                 //
                 var parts=msg.topic.split('/');
                 if(parts.length==4 && parts[2]=='Variable' && message.device){
                     var _device = this.getDeviceStoreItem(message.device);
                     if(_device){
-                        _debugMQTT && console.error(' on mqtt variable topic ' + msg.topic);
+                        _debugMQTT && console.info('\tonMQTTMessage: on mqtt variable topic ' + msg.topic);
                         var _deviceInfo = this.toDeviceControlInfo(message.device);
                         if(_deviceInfo){
                             var driverInstance = this.getDriverInstance(_deviceInfo);
@@ -54153,17 +54160,17 @@ define('xcf/manager/DeviceManager',[
                                 var scope = driverInstance.blockScope;
                                 var _variable = scope.getVariable(parts[3]);
                                 if(_variable){
-                                    _debugMQTT && console.error('     received MQTT variable ' +_variable.name + ' = ' +message.value);
+                                    _debugMQTT && console.info('     received MQTT variable ' +_variable.name + ' = ' +message.value);
                                     _variable.set('value',message.value);
                                     _variable.refresh();
-
                                     thiz.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, {
                                         item: _variable,
                                         scope: _variable.scope,
                                         owner: thiz,
                                         save: false,
-                                        publish : false,
-                                        source:'mqtt'
+                                        publish : true,
+                                        source:'mqtt',
+                                        publishMQTT:false
                                     });
 
                                 }
@@ -54411,16 +54418,13 @@ define('xcf/manager/DeviceManager',[
             if(deviceInfo && deviceInfo._store){
                 //return deviceInfo;
             }
-            var store = this.getStore();
             var scope = deviceInfo.deviceScope;
-            if(scope){
-                store = this.getStore(scope);
-            }
+            var store = this.getStore(scope);
 
             if(!store){
+
                 return;
             }
-
             var items = utils.queryStore(store, {
                 isDir: false
             });
@@ -55056,17 +55060,19 @@ define('xcf/manager/DeviceManager',[
          * @private
          */
         onVariableChanged:function(evt){
+
             var variable = evt.item,
                 scope = evt.scope,
                 name = variable.name,
                 publish = evt.publish!==false;
-            
+
+            //_debugMQTT && console.log('DeviceManager/onVariableChanged/variable changed: '+name + ' - publish : ' + publish);
+
             if(name==='value' || publish===false){
                 return;
             }
-            if(_debug){
-                console.log('on variable changed');
-            }
+
+
 
             var value = variable.value,
                 driver= scope.driver,
@@ -55081,17 +55087,19 @@ define('xcf/manager/DeviceManager',[
                 var deviceInfo = device.info,
                     mqttTopic = deviceInfo.host + '/' + deviceInfo.port+'/Variable/' + name;
 
-                _debugMQTT && console.log('send mqtt message ' + mqttTopic);
+                _debugMQTT && evt.publishMQTT!==false && console.log('send mqtt message ' + mqttTopic);
 
-                this.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.MQTT_PUBLISH, {
+                evt.publishMQTT!==false && this.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.MQTT_PUBLISH, {
                     topic:mqttTopic,
                     data:{
                         value:value,
                         device:deviceInfo
                     }
                 });
+            }else{
+                _debugMQTT && console.warn('onVariableChanged->MQTT : have no device')
             }
-            _debug && console.error('on variable changed ' + device.toString());
+            //_debugMQTT && console.info('on variable changed ' + device.toString());
         },
         /***
          * Common manager function, called by the context of the application
@@ -55105,7 +55113,6 @@ define('xcf/manager/DeviceManager',[
             this.stores = {};
             this.subscribe(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, this.onVariableChanged);
             this.subscribe(types.EVENTS.ON_DEVICE_SERVER_CONNECTED,function(){
-
                 var connect = has('drivers') && has('devices');
                 if (thiz.autoConnectDevices && connect) {
                     all(thiz.connectToAllDevices()).then(function(){
@@ -61177,7 +61184,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             var device = this.getDeviceStoreItem(deviceInfo);
 
             if(!device){
-                console.error('cant find device : ',deviceInfo);
+                debugStrangers && console.error('cant find device : ',deviceInfo.toString());
                 return;
             }
 
@@ -61437,7 +61444,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                         scope: scope,
                         owner: this,
                         save: false,                         //dont save it
-                        source: types.MESSAGE_SOURCE.DEVICE  //for prioritizing
+                        source: types.MESSAGE_SOURCE.DEVICE,  //for prioritizing
+                        publishMQTT:false //just for local processing
                     });
                     var runVariables = false;
                     var runBlocks = false;
@@ -70274,7 +70282,7 @@ define('xapp/manager/Application',[
                                 owner: this,
                                 save: false,                         //dont save it
                                 source: types.MESSAGE_SOURCE.DEVICE,  //for prioritizing
-                                refresh:true
+                                publishMQTT:false
                             });
                         }
                     }
@@ -81629,7 +81637,7 @@ define('dstore/mainr',[
 
 		var result = dcl._postprocess(ctor);    // fully prepared constructor
 
-		if(props.declaredClass && !registry[props.declaredClass]){
+		if(props.declaredClass){
 			registry[props.declaredClass] = result;
 		}
 
