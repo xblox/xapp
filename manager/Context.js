@@ -637,14 +637,26 @@ define([
             debugBoot && console.log('Checkpoint 7. xapp/manager->init(settings)',settings);
 
             var thiz = this;
-            this.subscribe(types.EVENTS.ON_DEVICE_DRIVER_INSTANCE_READY, function () {
-                debugBoot && console.log('driver instance ready');
-                setTimeout(function () {
+            this.subscribe(types.EVENTS.ON_DEVICE_DRIVER_INSTANCE_READY, function (evt) {
+                if(thiz._timer){
+                    clearTimeout(thiz._timer);
+                    delete thiz._timer;
+                }
+                var instance = evt.instance;
+                if(!instance){
+                    return;
+                }
+                if(thiz['__instance_variables_'+instance.id]){
+                    //return;
+                }
+                thiz['__instance_variables_'+instance.id] = true;
+                thiz.timer = setTimeout(function(){
                     thiz.publish(types.EVENTS.ON_APP_READY, {
                         context: thiz
                     });
                     thiz.application.publishVariables();
-                }, 1000);
+                },10);
+
             });
             if(has('debug')) {
                 this.loadXIDE();

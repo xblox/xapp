@@ -6809,17 +6809,17 @@ define('xdeliteful/MediaPlayer',[
             }
         },
         DevicesConnected:function(){
-            console.log('devices connected');
             var vlc = this.getDriverInstance("VLC");
             if(vlc){
                 this.vlc = vlc;
                 this.initVLC();
-
+                console.log('got vlc');
                 this.wireWidgets();
             }
             var fileServer = this.getDriverInstance("File-Server");
             if(fileServer){
                 this.fileServer = fileServer;
+                console.log('got file server');
                 this.initFilePicker();
             }
 
@@ -32471,14 +32471,26 @@ define('xapp/manager/Context',[
             debugBoot && console.log('Checkpoint 7. xapp/manager->init(settings)',settings);
 
             var thiz = this;
-            this.subscribe(types.EVENTS.ON_DEVICE_DRIVER_INSTANCE_READY, function () {
-                debugBoot && console.log('driver instance ready');
-                setTimeout(function () {
+            this.subscribe(types.EVENTS.ON_DEVICE_DRIVER_INSTANCE_READY, function (evt) {
+                if(thiz._timer){
+                    clearTimeout(thiz._timer);
+                    delete thiz._timer;
+                }
+                var instance = evt.instance;
+                if(!instance){
+                    return;
+                }
+                if(thiz['__instance_variables_'+instance.id]){
+                    //return;
+                }
+                thiz['__instance_variables_'+instance.id] = true;
+                thiz.timer = setTimeout(function(){
                     thiz.publish(types.EVENTS.ON_APP_READY, {
                         context: thiz
                     });
                     thiz.application.publishVariables();
-                }, 1000);
+                },10);
+
             });
             if(has('debug')) {
                 this.loadXIDE();
@@ -49534,7 +49546,7 @@ define('xblox/model/Scope',[
          * @returns {*}
          */
         parseExpression:function(expression,addVariables,variableOverrides,runCallback,errorCallback,context,args,flags) {
-            return this.expressionModel.parse(this,expression,addVariables,runCallback,errorCallback,context,variableOverrides,args,flags);
+            return this.getExpressionModel().parse(this,expression,addVariables,runCallback,errorCallback,context,variableOverrides,args,flags);
         },
         isString: function (a) {
             return typeof a == "string"
@@ -49576,7 +49588,7 @@ define('xblox/model/Scope',[
          * @private
          */
         _onVariableChanged:function(evt){
-            if(evt.item && this.expressionModel.variableFuncCache[evt.item.title]){
+            if(evt.item && this.getExpressionModel().variableFuncCache[evt.item.title]){
                 delete this.expressionModel.variableFuncCache[evt.item.title];
             }
         },
@@ -61193,6 +61205,9 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
             //important: use our info now
             deviceInfo = device.info;
+            if(!deviceInfo){
+                console.error('invalid device : '+device.toString());
+            }
 
             var state = device.get('state');
 
@@ -61600,8 +61615,12 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 return;
             }
 
-            if(device && (device.state === types.DEVICE_STATE.DISABLED||device.state === types.DEVICE_STATE.DISCONNECTED)){
+            if(device && (device.state === types.DEVICE_STATE.DISABLED ||
+                device.state === types.DEVICE_STATE.DISCONNECTED ||
+                device.state === types.DEVICE_STATE.CONNECTING
+                )){
                 console.error('send command when disconnected');
+                return;
             }
 
             var message = utils.stringFromDecString(dataOut.command);
@@ -81640,7 +81659,7 @@ define('dstore/mainr',[
 
 		var result = dcl._postprocess(ctor);    // fully prepared constructor
 
-		if(props.declaredClass){
+		if(props.declaredClass && !registry[props.declaredClass]){
 			registry[props.declaredClass] = result;
 		}
 
