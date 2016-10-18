@@ -53628,7 +53628,6 @@ define('xcf/manager/DeviceManager',[
                 }
             };
             */
-
             instance.setVariable = function (title, value, save, publish,highlight) {
                 var _variable = this.blockScope.getVariable(title);
                 if (_variable) {
