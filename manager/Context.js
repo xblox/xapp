@@ -547,17 +547,14 @@ define([
             var mid = item.mount.replace('/','')  + '/' + itemUrl;
             var url = require.toUrl(item.mount.replace('/','')  + '/' + itemUrl);
             debugBoot && console.log('load default app.js ' + mid);
-
             require.config({
                 //urlArgs:"bust=" +  (new Date()).getTime()
             });
-
             try{
                 require.undef(mid);
             }catch(e){
                 console.warn('error unloading app module ' + mid,e);
             }
-
             try{
                 //probe
                 require([mid],function(appModule){
