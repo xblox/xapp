@@ -56609,7 +56609,6 @@ define('xide/utils/StringUtils',[
      * @returns {string}
      */
     utils.stringToBufferStr = function (string) {
-
         var i = 0,
             tmp_len = string.length,
             c;
