@@ -6604,17 +6604,13 @@ define('xdeliteful/MediaPlayer',[
                                 }
                             },
                             _deactivatedHandler: function () {
-                                //this.closePopup();
+
                             },
                             _openPopup: function () {
-
                                 $(combo.list).css('height','600px');
                                 $(combo.list).css('width','800px');
                                 $(combo.list).empty();
                                 $(combo.list).append(gridNode);
-
-
-
                                 this._openRet = popup.open({
                                     popup: this.popup,
                                     parent: this,
@@ -6622,42 +6618,20 @@ define('xdeliteful/MediaPlayer',[
                                     orient: ['center'],
                                     maxHeight: -1
                                 });
-
                                 this.open = true;
-
                                 picker._parent = combo.list;
-
                                 picker.startup();
-
                                 $(gridNode).css('height','100%');
-                                //$(gridNode).css('width','100%');
-                                //$(gridNode).css('min-height','100%');
                                 $(gridNode).css('min-width','100%');
 
                                 picker.resize();
-
-                                //$(combo.list).css('height','inherit');
-                                //$(combo.list).css('width','100%');
-
-
-
                                 function refreshGrid(fileGrid,collection){
 
                                     picker.resize();
-                                    if(!fileGrid.collection) {
-                                        //fileGrid.set('collection', collection);
-                                    }
-
-                                    /*
-                                    fileGrid.collection._loadPath('.',true).then(function(){
-                                        fileGrid.refresh();
-                                    });
-                                    */
                                     picker.resize();
                                 }
                                 
                                 setTimeout(function() {
-
                                     picker.rightGrid.collection._loadPath('/',true).then(function(){
                                         picker.rightGrid.refresh();
                                         setTimeout(function(){
@@ -6668,18 +6642,7 @@ define('xdeliteful/MediaPlayer',[
                                             });
                                         },200);
                                     });
-
-                                    //$(combo.list).css('width','100%');
-                                    /*
-                                    refreshGrid(picker.leftGrid,picker.leftStore);
-                                    setTimeout(function() {
-                                        refreshGrid(picker.rightGrid,picker.rightStore);
-
-                                    },1000);
-                                    */
-
                                 },100);
-                                
                             }
                         });
                         button.on("delite-deactivated", function () {
@@ -6765,41 +6728,26 @@ define('xdeliteful/MediaPlayer',[
         },
 
         doTemplate:function(){
-
             var template = $(this).attr('templateId');
             if(template){
                 template = $(template);
-                //if(this.!this._didTemplate)
                 if(template[0] && !this._didTemplate){
-
-                    console.error('create new template');
-
                     var text = template[0].outerHTML;
-
                     text = text.replace('display:none','');
                     text = text.replace('pointer-events:none','');
-                    var templateDom = handlebars.toDom(text),
-                        requires = templateDom.getAttribute("requires") ||
-                            templateDom.getAttribute("data-requires") || "";
+                    var templateDom = handlebars.toDom(text);
+                    var requires = templateDom.getAttribute("requires") ||templateDom.getAttribute("data-requires") || "";
 
                     templateDom.removeAttribute("requires");
                     templateDom.removeAttribute("data-requires");
                     templateDom.removeAttribute("style");
-
                     var tree = handlebars.parse(templateDom);
-
-
                     this.template = new Template(tree).func;
                     this._didTemplate=true;
-
-
-                }else{
-                    console.log('cant get template');
                 }
             }
         },
         attachedCallback:function () {
-
             var template = $(this).attr('templateId');
             if(template) {
                 template = $(template);
@@ -6810,19 +6758,16 @@ define('xdeliteful/MediaPlayer',[
         },
         DevicesConnected:function(){
             var vlc = this.getDriverInstance("VLC");
-            if(vlc){
+            if(vlc && !this.vlc){
                 this.vlc = vlc;
                 this.initVLC();
-                console.log('got vlc');
                 this.wireWidgets();
             }
             var fileServer = this.getDriverInstance("File-Server");
-            if(fileServer){
+            if(fileServer && !this.fileServer){
                 this.fileServer = fileServer;
-                console.log('got file server');
                 this.initFilePicker();
             }
-
         },
         onContextReady:function(context){
             this.context = context;
@@ -46770,14 +46715,14 @@ define('xide/data/_Base',[
     'dstore/Memory',
     'dstore/Tree',
     'dstore/QueryResults',
-    'xide/mixins/EventedMixin'
-], function (declare, Memory, Tree, QueryResults,EventedMixin) {
-
+    'xide/mixins/EventedMixin',
+    'xide/encoding/MD5',
+    'xdojo/has'
+], function (declare, Memory, Tree, QueryResults,EventedMixin,MD5,has) {
     return declare("xide/data/_Base",EventedMixin, {
         __all:null,
         allowCache:false,
         constructor: function () {
-
             var store = this;
             if (store._getQuerierFactory('filter') || store._getQuerierFactory('sort')) {
 
@@ -46932,10 +46877,290 @@ define('xide/data/_Base',[
                 return handle;
             };
             //this.__all = queryResults;
+            console.log('query store ' + MD5(JSON.stringify(query),1));
             return queryResults;
         }
     });
 });;
+define('xide/encoding/MD5',["./_base"], function(base) {
+
+/*	A port of Paul Johnstone's MD5 implementation
+ *	http://pajhome.org.uk/crypt/md5/index.html
+ *
+ *	Copyright (C) Paul Johnston 1999 - 2002.
+ *	Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+ * 	Distributed under the BSD License
+ *
+ *	Dojo port by Tom Trenka
+ */
+
+	var chrsz=8;
+
+	//	MD5 rounds functions
+	function R(n,c){ return (n<<c)|(n>>>(32-c)); }
+	function C(q,a,b,x,s,t){ return base.addWords(R(base.addWords(base.addWords(a, q), base.addWords(x, t)), s), b); }
+	function FF(a,b,c,d,x,s,t){ return C((b&c)|((~b)&d),a,b,x,s,t); }
+	function GG(a,b,c,d,x,s,t){ return C((b&d)|(c&(~d)),a,b,x,s,t); }
+	function HH(a,b,c,d,x,s,t){ return C(b^c^d,a,b,x,s,t); }
+	function II(a,b,c,d,x,s,t){ return C(c^(b|(~d)),a,b,x,s,t); }
+
+	//	the core MD5 rounds method
+	function core(x,len){
+		x[len>>5]|=0x80<<((len)%32);
+		x[(((len+64)>>>9)<<4)+14]=len;
+		var a= 1732584193;
+		var b=-271733879;
+		var c=-1732584194;
+		var d= 271733878;
+		for(var i=0; i<x.length; i+=16){
+			var olda=a;
+			var oldb=b;
+			var oldc=c;
+			var oldd=d;
+
+			a=FF(a,b,c,d,x[i+ 0],7 ,-680876936);
+			d=FF(d,a,b,c,x[i+ 1],12,-389564586);
+			c=FF(c,d,a,b,x[i+ 2],17, 606105819);
+			b=FF(b,c,d,a,x[i+ 3],22,-1044525330);
+			a=FF(a,b,c,d,x[i+ 4],7 ,-176418897);
+			d=FF(d,a,b,c,x[i+ 5],12, 1200080426);
+			c=FF(c,d,a,b,x[i+ 6],17,-1473231341);
+			b=FF(b,c,d,a,x[i+ 7],22,-45705983);
+			a=FF(a,b,c,d,x[i+ 8],7 , 1770035416);
+			d=FF(d,a,b,c,x[i+ 9],12,-1958414417);
+			c=FF(c,d,a,b,x[i+10],17,-42063);
+			b=FF(b,c,d,a,x[i+11],22,-1990404162);
+			a=FF(a,b,c,d,x[i+12],7 , 1804603682);
+			d=FF(d,a,b,c,x[i+13],12,-40341101);
+			c=FF(c,d,a,b,x[i+14],17,-1502002290);
+			b=FF(b,c,d,a,x[i+15],22, 1236535329);
+
+			a=GG(a,b,c,d,x[i+ 1],5 ,-165796510);
+			d=GG(d,a,b,c,x[i+ 6],9 ,-1069501632);
+			c=GG(c,d,a,b,x[i+11],14, 643717713);
+			b=GG(b,c,d,a,x[i+ 0],20,-373897302);
+			a=GG(a,b,c,d,x[i+ 5],5 ,-701558691);
+			d=GG(d,a,b,c,x[i+10],9 , 38016083);
+			c=GG(c,d,a,b,x[i+15],14,-660478335);
+			b=GG(b,c,d,a,x[i+ 4],20,-405537848);
+			a=GG(a,b,c,d,x[i+ 9],5 , 568446438);
+			d=GG(d,a,b,c,x[i+14],9 ,-1019803690);
+			c=GG(c,d,a,b,x[i+ 3],14,-187363961);
+			b=GG(b,c,d,a,x[i+ 8],20, 1163531501);
+			a=GG(a,b,c,d,x[i+13],5 ,-1444681467);
+			d=GG(d,a,b,c,x[i+ 2],9 ,-51403784);
+			c=GG(c,d,a,b,x[i+ 7],14, 1735328473);
+			b=GG(b,c,d,a,x[i+12],20,-1926607734);
+
+			a=HH(a,b,c,d,x[i+ 5],4 ,-378558);
+			d=HH(d,a,b,c,x[i+ 8],11,-2022574463);
+			c=HH(c,d,a,b,x[i+11],16, 1839030562);
+			b=HH(b,c,d,a,x[i+14],23,-35309556);
+			a=HH(a,b,c,d,x[i+ 1],4 ,-1530992060);
+			d=HH(d,a,b,c,x[i+ 4],11, 1272893353);
+			c=HH(c,d,a,b,x[i+ 7],16,-155497632);
+			b=HH(b,c,d,a,x[i+10],23,-1094730640);
+			a=HH(a,b,c,d,x[i+13],4 , 681279174);
+			d=HH(d,a,b,c,x[i+ 0],11,-358537222);
+			c=HH(c,d,a,b,x[i+ 3],16,-722521979);
+			b=HH(b,c,d,a,x[i+ 6],23, 76029189);
+			a=HH(a,b,c,d,x[i+ 9],4 ,-640364487);
+			d=HH(d,a,b,c,x[i+12],11,-421815835);
+			c=HH(c,d,a,b,x[i+15],16, 530742520);
+			b=HH(b,c,d,a,x[i+ 2],23,-995338651);
+
+			a=II(a,b,c,d,x[i+ 0],6 ,-198630844);
+			d=II(d,a,b,c,x[i+ 7],10, 1126891415);
+			c=II(c,d,a,b,x[i+14],15,-1416354905);
+			b=II(b,c,d,a,x[i+ 5],21,-57434055);
+			a=II(a,b,c,d,x[i+12],6 , 1700485571);
+			d=II(d,a,b,c,x[i+ 3],10,-1894986606);
+			c=II(c,d,a,b,x[i+10],15,-1051523);
+			b=II(b,c,d,a,x[i+ 1],21,-2054922799);
+			a=II(a,b,c,d,x[i+ 8],6 , 1873313359);
+			d=II(d,a,b,c,x[i+15],10,-30611744);
+			c=II(c,d,a,b,x[i+ 6],15,-1560198380);
+			b=II(b,c,d,a,x[i+13],21, 1309151649);
+			a=II(a,b,c,d,x[i+ 4],6 ,-145523070);
+			d=II(d,a,b,c,x[i+11],10,-1120210379);
+			c=II(c,d,a,b,x[i+ 2],15, 718787259);
+			b=II(b,c,d,a,x[i+ 9],21,-343485551);
+
+			a=base.addWords(a, olda);
+			b=base.addWords(b, oldb);
+			c=base.addWords(c, oldc);
+			d=base.addWords(d, oldd);
+		}
+		return [a,b,c,d];
+	}
+
+	function hmac(data, key){
+		var wa=base.stringToWord(key);
+		if(wa.length>16){
+			wa=core(wa, key.length*chrsz);
+		}
+		var l=[], r=[];
+		for(var i=0; i<16; i++){
+			l[i]=wa[i]^0x36363636;
+			r[i]=wa[i]^0x5c5c5c5c;
+		}
+		var h=core(l.concat(base.stringToWord(data)), 512+data.length*chrsz);
+		return core(r.concat(h), 640);
+	}
+
+	//	public function
+	base.MD5=function(/* string */data, /* dojox.encoding.digests.outputTypes? */outputType){
+		// summary:
+		//		computes the digest of data, and returns the result according to type outputType
+		var out=outputType || base.outputTypes.Base64;
+		var wa=core(base.stringToWord(data), data.length*chrsz);
+		switch(out){
+			case base.outputTypes.Raw:{
+				return wa;	//	word[]
+			}
+			case base.outputTypes.Hex:{
+				return base.wordToHex(wa);	//	string
+			}
+			case base.outputTypes.String:{
+				return base.wordToString(wa);	//	string
+			}
+			default:{
+				return base.wordToBase64(wa);	//	string
+			}
+		}
+	};
+
+	//	make this private, for later use with a generic HMAC calculator.
+	base.MD5._hmac=function(/* string */data, /* string */key, /* dojox.encoding.digests.outputTypes? */outputType){
+		// summary:
+		//		computes the digest of data, and returns the result according to type outputType
+		var out=outputType || base.outputTypes.Base64;
+		var wa=hmac(data, key);
+		switch(out){
+			case base.outputTypes.Raw:{
+				return wa;	//	word[]
+			}
+			case base.outputTypes.Hex:{
+				return base.wordToHex(wa);	//	string
+			}
+			case base.outputTypes.String:{
+				return base.wordToString(wa);	//	string
+			}
+			default:{
+				return base.wordToBase64(wa);	//	string
+			}
+		}
+	};
+
+	return base.MD5;
+});
+;
+define('xide/encoding/_base',[
+	"dojo/_base/lang"
+
+], function(lang){
+
+	//	These functions are 32-bit word-based.  See _sha-64 for 64-bit word ops.
+	var base = {};//lang.getObject("dojox.encoding.digests", true);
+
+	base.outputTypes={
+		// summary:
+		//		Enumeration for input and output encodings.
+		Base64:0, Hex:1, String:2, Raw:3
+	};
+
+	//	word-based addition
+	base.addWords=function(/* word */a, /* word */b){
+		// summary:
+		//		add a pair of words together with rollover
+		var l=(a&0xFFFF)+(b&0xFFFF);
+		var m=(a>>16)+(b>>16)+(l>>16);
+		return (m<<16)|(l&0xFFFF);	//	word
+	};
+
+	//	word-based conversion method, for efficiency sake;
+	//	most digests operate on words, and this should be faster
+	//	than the encoding version (which works on bytes).
+	var chrsz=8;	//	16 for Unicode
+	var mask=(1<<chrsz)-1;
+
+	base.stringToWord=function(/* string */s){
+		// summary:
+		//		convert a string to a word array
+		var wa=[];
+		for(var i=0, l=s.length*chrsz; i<l; i+=chrsz){
+			wa[i>>5]|=(s.charCodeAt(i/chrsz)&mask)<<(i%32);
+		}
+		return wa;	//	word[]
+	};
+
+	base.wordToString=function(/* word[] */wa){
+		// summary:
+		//		convert an array of words to a string
+		var s=[];
+		for(var i=0, l=wa.length*32; i<l; i+=chrsz){
+			s.push(String.fromCharCode((wa[i>>5]>>>(i%32))&mask));
+		}
+		return s.join("");	//	string
+	};
+
+	base.wordToHex=function(/* word[] */wa){
+		// summary:
+		//		convert an array of words to a hex tab
+		var h="0123456789abcdef", s=[];
+		for(var i=0, l=wa.length*4; i<l; i++){
+			s.push(h.charAt((wa[i>>2]>>((i%4)*8+4))&0xF)+h.charAt((wa[i>>2]>>((i%4)*8))&0xF));
+		}
+		return s.join("");	//	string
+	};
+
+	base.wordToBase64=function(/* word[] */wa){
+		// summary:
+		//		convert an array of words to base64 encoding, should be more efficient
+		//		than using dojox.encoding.base64
+		var p="=", tab="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", s=[];
+		for(var i=0, l=wa.length*4; i<l; i+=3){
+			var t=(((wa[i>>2]>>8*(i%4))&0xFF)<<16)|(((wa[i+1>>2]>>8*((i+1)%4))&0xFF)<<8)|((wa[i+2>>2]>>8*((i+2)%4))&0xFF);
+			for(var j=0; j<4; j++){
+				if(i*8+j*6>wa.length*32){
+					s.push(p);
+				} else {
+					s.push(tab.charAt((t>>6*(3-j))&0x3F));
+				}
+			}
+		}
+		return s.join("");	//	string
+	};
+
+	//	convert to UTF-8
+	base.stringToUtf8 = function(input){
+		var output = "";
+		var i = -1;
+		var x, y;
+
+		while(++i < input.length){
+			x = input.charCodeAt(i);
+			y = i + 1 < input.length ? input.charCodeAt(i + 1) : 0;
+			if(0xD800 <= x && x <= 0xDBFF && 0xDC00 <= y && y <= 0xDFFF){
+				x = 0x10000 + ((x & 0x03FF) << 10) + (y & 0x03FF);
+				i++;
+			}
+
+			if(x <= 0x7F)
+				output += String.fromCharCode(x);
+			else if(x <= 0x7FF)
+				output += String.fromCharCode(0xC0 | ((x >>> 6) & 0x1F), 0x80 | (x & 0x3F));
+			else if(x <= 0xFFFF)
+				output += String.fromCharCode(0xE0 | ((x >>> 12) & 0x0F), 0x80 | ((x >>> 6) & 0x3F), 0x80 | (x & 0x3F));
+			else if(x <= 0x1FFFFF)
+				output += String.fromCharCode(0xF0 | ((x >>> 18) & 0x07), 0x80 | ((x >>> 12) & 0x3F), 0x80 | ((x >>> 6) & 0x3F), 0x80 | (x & 0x3F));
+		}
+		return output;
+	};
+
+	return base;
+});
+;
 define('dstore/Memory',[
 	'dojo/_base/declare',
 	'dojo/_base/array',
@@ -48216,17 +48441,29 @@ define('xblox/model/Scope',[
         context:null,
         blockStore:null,
         /**
+         *  @type {module:xblox/model/Expression}
+         */
+        expressionModel: null,
+        /**
+         *
+         * @returns {module:xblox/model/Expression}
+         */
+        getExpressionModel:function(){
+            if(!this.expressionModel){
+                this.expressionModel  = new Expression();
+            }
+            return this.expressionModel;
+        },
+        /**
          *
          * @param block
          * @param url
          * @returns {*}
          */
         toFriendlyName:function(block,url){
-
             if(!url || !block){
                 return null;
             }
-
             var blockScope = this,
                 ctx = this.ctx,
                 driver = this.driver,
@@ -48246,7 +48483,6 @@ define('xblox/model/Scope',[
             parts = utils.urlArgs(parts.host);//go on with query string
             var _device = deviceManager.getItemById(parts.device.value);
             if(_device){
-
                 var info=deviceManager.toDeviceControlInfo(_device);
                 driver = driverManager.getDriverById(info.driverId);
                 var driverInstance = _device.driverInstance;
@@ -48355,82 +48591,50 @@ define('xblox/model/Scope',[
             return this.blockStore;
         },
         getVariables:function(query){
-            //no store,
             if(!this.blockStore){
                 return [];
             }
-
             var all = this.blockStore.data;
             var out = [];
-
             if(query && query.group==='processVariables'){
-
                 for (var i = 0; i < all.length; i++) {
-
                     if(all[i].group ==='processVariables'){
                         out.push(all[i]);
                     }
                 }
-
                 return out;
             }
-
             //query = query || {id:/\S+/};//all variables
             if(!query){
-
-
                 for (var i = 0; i < all.length; i++) {
-
                     var block = all[i],
                         cls = block.declaredClass;
-
-                    if(cls =='xblox.model.variables.Variable'||
-                            cls == 'xcf.model.Variable'){
+                    if(cls =='xblox.model.variables.Variable'||cls == 'xcf.model.Variable'){
                         out.push(block);
                     }
-
-
-
                 }
-
-                /*
-
-                var _vars = this.blockStore.query({
-                    declaredClass:'xblox.model.variables.Variable'
-                });
-
-                _vars = _vars.concat(this.blockStore.query({
-                    declaredClass:'xcf.model.Variable'
-                }));
-*/
                 return out;
-
-
-
             }
-
             return this.blockStore.query(query);
         },
         loopBlock:function(block,settings){
-            if(block && block.interval > 0 && block.enabled){
-
+            if(block && block.interval > 0 && block.enabled && block._destroyed!==true){
                 var thiz=this;
-
                 if(block._loop){
                     clearTimeout(block._loop);
                 }
-
                 block._loop  = setInterval(function(){
-                    block.solve(thiz,settings || block._lastSettings);
-                    if(!block.enabled){
+                    if(!block.enabled || block._destroyed){
                         clearTimeout(block._loop);
                         block._loop=null;
+                        return;
                     }
+                    block.solve(thiz,settings || block._lastSettings);
+
                 },block.interval);
             }
         },
         getEventsAsOptions:function(selected){
-
             var result = [];
             for(var e in types.EVENTS){
                 var label = types.EVENTS[e];
@@ -48530,20 +48734,6 @@ define('xblox/model/Scope',[
                 this._cached[hash] = result;
             }
             return result;
-        },
-        /**
-         *  @type {module:xblox/model/Expression}
-         */
-        expressionModel: null,
-        /**
-         * 
-         * @returns {module:xblox/model/Expression}
-         */
-        getExpressionModel:function(){
-            if(!this.expressionModel){
-                this.expressionModel  = new Expression();
-            }
-            return this.expressionModel;
         },
         /***
          * Register a variable into the scope
@@ -48699,10 +48889,8 @@ define('xblox/model/Scope',[
                 if(variable.keys==null){
                     continue;
                 }
-                var varOut={
-                };
+                var varOut={};
                 for(var prop in variable){
-
                     //copy all serializables over
                     if(
                         this.isString(variable[prop])||
@@ -48927,10 +49115,7 @@ define('xblox/model/Scope',[
                     {
                         blockOut[prop]=block[prop];
                     }
-
-
                     //flatten children to ids. Skip "parent" field
-
                     if (prop != 'parent') {
 
                         if ( this.isBlock(block[prop]) )
@@ -48979,7 +49164,6 @@ define('xblox/model/Scope',[
                         continue;
                     }
                     var blockOut={
-
                         // this property is used to recreate the child blocks in the JSON -> blocks process
                         _containsChildrenIds: []
                     };
@@ -49012,16 +49196,14 @@ define('xblox/model/Scope',[
                         //flatten children to ids. Skip "parent" field
 
                         if (prop != 'parent') {
-                            if ( this.isBlock(block[prop]) )
-                            {
+                            if ( this.isBlock(block[prop]) ){
                                 // if the field is a single block container, store the child block's id
                                 blockOut[prop] = block[prop].id;
 
                                 // register this field name as children ID container
                                 blockOut._containsChildrenIds.push(prop);
 
-                            } else if ( this.areBlocks(block[prop]))
-                            {
+                            } else if ( this.areBlocks(block[prop])){
                                 // if the field is a multiple blocks container, store all the children blocks' id
                                 blockOut[prop] = [];
 
@@ -49033,66 +49215,15 @@ define('xblox/model/Scope',[
                                 blockOut._containsChildrenIds.push(prop);
                             }
                         }
-
                     }
-
                     result.push(blockOut);
                 }
             }catch(e){
                 console.error('from json failed : ' +e);
             }
-            //return JSON.stringify(result);
-           // console.log(JSON.stringify(result));
-            //console.dir(result);
             return result;
         },
         _createBlockStore:function(){
-
-            /*
-            debugger;
-            var blockData={
-                identifier: "id",
-                label: "title",
-                items:[]
-            };
-
-            var blockStore = new StoreAdapter(Observable(new Memory({
-                data: blockData,
-                getChildren: function(parent, options){
-
-                    if(parent.getChildren){
-                        return parent.getChildren(parent);
-                    }
-
-                    // Support persisting the original query via options.originalQuery
-                    // so that child levels will filter the same way as the root level
-                    var op = lang.mixin({}, options && options.originalQuery || null, { parentId: parent.id });
-                    var res = this.query(op, options);
-
-
-                    return res;
-                },
-                mayHaveChildren: function(parent){
-                    if(parent.mayHaveChildren){
-                        return parent.mayHaveChildren(parent);
-                    }
-                    return parent.items!=null && parent.items.length>0;
-                },
-                query: function (query, options){
-                    query = query || {};
-                    options = options || {};
-
-                    if (!query.parentId && !options.deep) {
-                        // Default to a single-level query for root items (no parent)
-                        query.parentId = undefined;
-                    }
-                    return this.queryEngine(query, options)(this.data);
-                }
-
-            })));
-
-            return blockStore;
-            */
         },
         blockFromJson:function(block){
             block['scope']  = this;
@@ -49215,8 +49346,6 @@ define('xblox/model/Scope',[
                 blockOut._children=children;
                 childMap[blockOut.id] = children;
                 resultSelected.push(blockOut);
-
-
             }
 
 
@@ -49228,8 +49357,7 @@ define('xblox/model/Scope',[
                 if(block._children) {
                     // get all the block container fields
                     for (var propName in block._children){
-                        if (typeof block._children[propName] == "string")
-                        {
+                        if (typeof block._children[propName] == "string"){
                             // single block
                             var child = this.getBlockById( block._children[propName] );
                             if (!child) {
@@ -49242,14 +49370,11 @@ define('xblox/model/Scope',[
                             }
                             block[propName] = child;
                             child.parent=block;
-
                             if(child.postCreate){
                                 child.postCreate();
                             }
-
                         }
-                        else if (typeof block._children[propName] == "object")
-                        {
+                        else if (typeof block._children[propName] == "object"){
                             // multiple blocks
                             block[propName] = [];
                             for(var j = 0; j < block._children[propName].length ; j++){
@@ -49261,9 +49386,7 @@ define('xblox/model/Scope',[
                                     console.log('   couldnt resolve child: ' + block._children[propName][j]);
                                     continue;
                                 }
-
                                 block[propName].push(child);
-
                                 var _parent = this.getBlockById(child.parentId);
                                 if(_parent){
                                     child.parent = _parent;
@@ -49827,285 +49950,6 @@ define('xblox/model/Scope',[
     dcl.chainAfter(Module,'destroy');
     return Module;
 });;
-define('xide/encoding/MD5',["./_base"], function(base) {
-
-/*	A port of Paul Johnstone's MD5 implementation
- *	http://pajhome.org.uk/crypt/md5/index.html
- *
- *	Copyright (C) Paul Johnston 1999 - 2002.
- *	Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
- * 	Distributed under the BSD License
- *
- *	Dojo port by Tom Trenka
- */
-
-	var chrsz=8;
-
-	//	MD5 rounds functions
-	function R(n,c){ return (n<<c)|(n>>>(32-c)); }
-	function C(q,a,b,x,s,t){ return base.addWords(R(base.addWords(base.addWords(a, q), base.addWords(x, t)), s), b); }
-	function FF(a,b,c,d,x,s,t){ return C((b&c)|((~b)&d),a,b,x,s,t); }
-	function GG(a,b,c,d,x,s,t){ return C((b&d)|(c&(~d)),a,b,x,s,t); }
-	function HH(a,b,c,d,x,s,t){ return C(b^c^d,a,b,x,s,t); }
-	function II(a,b,c,d,x,s,t){ return C(c^(b|(~d)),a,b,x,s,t); }
-
-	//	the core MD5 rounds method
-	function core(x,len){
-		x[len>>5]|=0x80<<((len)%32);
-		x[(((len+64)>>>9)<<4)+14]=len;
-		var a= 1732584193;
-		var b=-271733879;
-		var c=-1732584194;
-		var d= 271733878;
-		for(var i=0; i<x.length; i+=16){
-			var olda=a;
-			var oldb=b;
-			var oldc=c;
-			var oldd=d;
-
-			a=FF(a,b,c,d,x[i+ 0],7 ,-680876936);
-			d=FF(d,a,b,c,x[i+ 1],12,-389564586);
-			c=FF(c,d,a,b,x[i+ 2],17, 606105819);
-			b=FF(b,c,d,a,x[i+ 3],22,-1044525330);
-			a=FF(a,b,c,d,x[i+ 4],7 ,-176418897);
-			d=FF(d,a,b,c,x[i+ 5],12, 1200080426);
-			c=FF(c,d,a,b,x[i+ 6],17,-1473231341);
-			b=FF(b,c,d,a,x[i+ 7],22,-45705983);
-			a=FF(a,b,c,d,x[i+ 8],7 , 1770035416);
-			d=FF(d,a,b,c,x[i+ 9],12,-1958414417);
-			c=FF(c,d,a,b,x[i+10],17,-42063);
-			b=FF(b,c,d,a,x[i+11],22,-1990404162);
-			a=FF(a,b,c,d,x[i+12],7 , 1804603682);
-			d=FF(d,a,b,c,x[i+13],12,-40341101);
-			c=FF(c,d,a,b,x[i+14],17,-1502002290);
-			b=FF(b,c,d,a,x[i+15],22, 1236535329);
-
-			a=GG(a,b,c,d,x[i+ 1],5 ,-165796510);
-			d=GG(d,a,b,c,x[i+ 6],9 ,-1069501632);
-			c=GG(c,d,a,b,x[i+11],14, 643717713);
-			b=GG(b,c,d,a,x[i+ 0],20,-373897302);
-			a=GG(a,b,c,d,x[i+ 5],5 ,-701558691);
-			d=GG(d,a,b,c,x[i+10],9 , 38016083);
-			c=GG(c,d,a,b,x[i+15],14,-660478335);
-			b=GG(b,c,d,a,x[i+ 4],20,-405537848);
-			a=GG(a,b,c,d,x[i+ 9],5 , 568446438);
-			d=GG(d,a,b,c,x[i+14],9 ,-1019803690);
-			c=GG(c,d,a,b,x[i+ 3],14,-187363961);
-			b=GG(b,c,d,a,x[i+ 8],20, 1163531501);
-			a=GG(a,b,c,d,x[i+13],5 ,-1444681467);
-			d=GG(d,a,b,c,x[i+ 2],9 ,-51403784);
-			c=GG(c,d,a,b,x[i+ 7],14, 1735328473);
-			b=GG(b,c,d,a,x[i+12],20,-1926607734);
-
-			a=HH(a,b,c,d,x[i+ 5],4 ,-378558);
-			d=HH(d,a,b,c,x[i+ 8],11,-2022574463);
-			c=HH(c,d,a,b,x[i+11],16, 1839030562);
-			b=HH(b,c,d,a,x[i+14],23,-35309556);
-			a=HH(a,b,c,d,x[i+ 1],4 ,-1530992060);
-			d=HH(d,a,b,c,x[i+ 4],11, 1272893353);
-			c=HH(c,d,a,b,x[i+ 7],16,-155497632);
-			b=HH(b,c,d,a,x[i+10],23,-1094730640);
-			a=HH(a,b,c,d,x[i+13],4 , 681279174);
-			d=HH(d,a,b,c,x[i+ 0],11,-358537222);
-			c=HH(c,d,a,b,x[i+ 3],16,-722521979);
-			b=HH(b,c,d,a,x[i+ 6],23, 76029189);
-			a=HH(a,b,c,d,x[i+ 9],4 ,-640364487);
-			d=HH(d,a,b,c,x[i+12],11,-421815835);
-			c=HH(c,d,a,b,x[i+15],16, 530742520);
-			b=HH(b,c,d,a,x[i+ 2],23,-995338651);
-
-			a=II(a,b,c,d,x[i+ 0],6 ,-198630844);
-			d=II(d,a,b,c,x[i+ 7],10, 1126891415);
-			c=II(c,d,a,b,x[i+14],15,-1416354905);
-			b=II(b,c,d,a,x[i+ 5],21,-57434055);
-			a=II(a,b,c,d,x[i+12],6 , 1700485571);
-			d=II(d,a,b,c,x[i+ 3],10,-1894986606);
-			c=II(c,d,a,b,x[i+10],15,-1051523);
-			b=II(b,c,d,a,x[i+ 1],21,-2054922799);
-			a=II(a,b,c,d,x[i+ 8],6 , 1873313359);
-			d=II(d,a,b,c,x[i+15],10,-30611744);
-			c=II(c,d,a,b,x[i+ 6],15,-1560198380);
-			b=II(b,c,d,a,x[i+13],21, 1309151649);
-			a=II(a,b,c,d,x[i+ 4],6 ,-145523070);
-			d=II(d,a,b,c,x[i+11],10,-1120210379);
-			c=II(c,d,a,b,x[i+ 2],15, 718787259);
-			b=II(b,c,d,a,x[i+ 9],21,-343485551);
-
-			a=base.addWords(a, olda);
-			b=base.addWords(b, oldb);
-			c=base.addWords(c, oldc);
-			d=base.addWords(d, oldd);
-		}
-		return [a,b,c,d];
-	}
-
-	function hmac(data, key){
-		var wa=base.stringToWord(key);
-		if(wa.length>16){
-			wa=core(wa, key.length*chrsz);
-		}
-		var l=[], r=[];
-		for(var i=0; i<16; i++){
-			l[i]=wa[i]^0x36363636;
-			r[i]=wa[i]^0x5c5c5c5c;
-		}
-		var h=core(l.concat(base.stringToWord(data)), 512+data.length*chrsz);
-		return core(r.concat(h), 640);
-	}
-
-	//	public function
-	base.MD5=function(/* string */data, /* dojox.encoding.digests.outputTypes? */outputType){
-		// summary:
-		//		computes the digest of data, and returns the result according to type outputType
-		var out=outputType || base.outputTypes.Base64;
-		var wa=core(base.stringToWord(data), data.length*chrsz);
-		switch(out){
-			case base.outputTypes.Raw:{
-				return wa;	//	word[]
-			}
-			case base.outputTypes.Hex:{
-				return base.wordToHex(wa);	//	string
-			}
-			case base.outputTypes.String:{
-				return base.wordToString(wa);	//	string
-			}
-			default:{
-				return base.wordToBase64(wa);	//	string
-			}
-		}
-	};
-
-	//	make this private, for later use with a generic HMAC calculator.
-	base.MD5._hmac=function(/* string */data, /* string */key, /* dojox.encoding.digests.outputTypes? */outputType){
-		// summary:
-		//		computes the digest of data, and returns the result according to type outputType
-		var out=outputType || base.outputTypes.Base64;
-		var wa=hmac(data, key);
-		switch(out){
-			case base.outputTypes.Raw:{
-				return wa;	//	word[]
-			}
-			case base.outputTypes.Hex:{
-				return base.wordToHex(wa);	//	string
-			}
-			case base.outputTypes.String:{
-				return base.wordToString(wa);	//	string
-			}
-			default:{
-				return base.wordToBase64(wa);	//	string
-			}
-		}
-	};
-
-	return base.MD5;
-});
-;
-define('xide/encoding/_base',[
-	"dojo/_base/lang"
-
-], function(lang){
-
-	//	These functions are 32-bit word-based.  See _sha-64 for 64-bit word ops.
-	var base = {};//lang.getObject("dojox.encoding.digests", true);
-
-	base.outputTypes={
-		// summary:
-		//		Enumeration for input and output encodings.
-		Base64:0, Hex:1, String:2, Raw:3
-	};
-
-	//	word-based addition
-	base.addWords=function(/* word */a, /* word */b){
-		// summary:
-		//		add a pair of words together with rollover
-		var l=(a&0xFFFF)+(b&0xFFFF);
-		var m=(a>>16)+(b>>16)+(l>>16);
-		return (m<<16)|(l&0xFFFF);	//	word
-	};
-
-	//	word-based conversion method, for efficiency sake;
-	//	most digests operate on words, and this should be faster
-	//	than the encoding version (which works on bytes).
-	var chrsz=8;	//	16 for Unicode
-	var mask=(1<<chrsz)-1;
-
-	base.stringToWord=function(/* string */s){
-		// summary:
-		//		convert a string to a word array
-		var wa=[];
-		for(var i=0, l=s.length*chrsz; i<l; i+=chrsz){
-			wa[i>>5]|=(s.charCodeAt(i/chrsz)&mask)<<(i%32);
-		}
-		return wa;	//	word[]
-	};
-
-	base.wordToString=function(/* word[] */wa){
-		// summary:
-		//		convert an array of words to a string
-		var s=[];
-		for(var i=0, l=wa.length*32; i<l; i+=chrsz){
-			s.push(String.fromCharCode((wa[i>>5]>>>(i%32))&mask));
-		}
-		return s.join("");	//	string
-	};
-
-	base.wordToHex=function(/* word[] */wa){
-		// summary:
-		//		convert an array of words to a hex tab
-		var h="0123456789abcdef", s=[];
-		for(var i=0, l=wa.length*4; i<l; i++){
-			s.push(h.charAt((wa[i>>2]>>((i%4)*8+4))&0xF)+h.charAt((wa[i>>2]>>((i%4)*8))&0xF));
-		}
-		return s.join("");	//	string
-	};
-
-	base.wordToBase64=function(/* word[] */wa){
-		// summary:
-		//		convert an array of words to base64 encoding, should be more efficient
-		//		than using dojox.encoding.base64
-		var p="=", tab="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", s=[];
-		for(var i=0, l=wa.length*4; i<l; i+=3){
-			var t=(((wa[i>>2]>>8*(i%4))&0xFF)<<16)|(((wa[i+1>>2]>>8*((i+1)%4))&0xFF)<<8)|((wa[i+2>>2]>>8*((i+2)%4))&0xFF);
-			for(var j=0; j<4; j++){
-				if(i*8+j*6>wa.length*32){
-					s.push(p);
-				} else {
-					s.push(tab.charAt((t>>6*(3-j))&0x3F));
-				}
-			}
-		}
-		return s.join("");	//	string
-	};
-
-	//	convert to UTF-8
-	base.stringToUtf8 = function(input){
-		var output = "";
-		var i = -1;
-		var x, y;
-
-		while(++i < input.length){
-			x = input.charCodeAt(i);
-			y = i + 1 < input.length ? input.charCodeAt(i + 1) : 0;
-			if(0xD800 <= x && x <= 0xDBFF && 0xDC00 <= y && y <= 0xDFFF){
-				x = 0x10000 + ((x & 0x03FF) << 10) + (y & 0x03FF);
-				i++;
-			}
-
-			if(x <= 0x7F)
-				output += String.fromCharCode(x);
-			else if(x <= 0x7FF)
-				output += String.fromCharCode(0xC0 | ((x >>> 6) & 0x1F), 0x80 | (x & 0x3F));
-			else if(x <= 0xFFFF)
-				output += String.fromCharCode(0xE0 | ((x >>> 12) & 0x0F), 0x80 | ((x >>> 6) & 0x3F), 0x80 | (x & 0x3F));
-			else if(x <= 0x1FFFFF)
-				output += String.fromCharCode(0xF0 | ((x >>> 18) & 0x07), 0x80 | ((x >>> 12) & 0x3F), 0x80 | ((x >>> 6) & 0x3F), 0x80 | (x & 0x3F));
-		}
-		return output;
-	};
-
-	return base;
-});
-;
 /** @module xblox/model/Expression */
 define('xblox/model/Expression',[
     "xdojo/declare",
@@ -50469,6 +50313,13 @@ define('xide/manager/ManagerBase',[
                 return def;
             }
             return '' + result + '';
+        },
+        /**
+         * Return context
+         * @returns {module:xcf/manager/Context}
+         */
+        getContext:function(){
+            return this.ctx;
         }
     });
 
@@ -54166,8 +54017,14 @@ define('xcf/manager/DeviceManager',[
                                 var _variable = scope.getVariable(parts[3]);
                                 if(_variable){
                                     _debugMQTT && console.info('     received MQTT variable ' +_variable.name + ' = ' +message.value);
-                                    _variable.set('value',message.value);
-                                    _variable.refresh();
+
+                                    if(has('xcf-ui')) {
+                                        _variable.set('value', message.value);
+                                        _variable.refresh();
+                                    }else{
+                                        delete _variable.value;
+                                        _variable.value = message.value;
+                                    }
                                     thiz.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, {
                                         item: _variable,
                                         scope: _variable.scope,
@@ -54205,9 +54062,11 @@ define('xcf/manager/DeviceManager',[
                     continue;
                 }
                 var scope = instance.blockScope;
-                var block = scope.resolveBlock(url);
-                if(block){
-                    return block;
+                if(scope) {
+                    var block = scope.resolveBlock(url);
+                    if (block) {
+                        return block;
+                    }
                 }
             }
             return this.ctx.getDriverManager().getBlock(url);
@@ -54814,6 +54673,7 @@ define('xcf/manager/DeviceManager',[
                 ]
             }
         },
+        _deviceInfoCache:null,
         /**
          * Return handy info for a device
          * @param {module:xcf/model/Device} item
@@ -54823,6 +54683,15 @@ define('xcf/manager/DeviceManager',[
             if(!item){
                 return null;
             }
+
+            var hash = item.hash;
+
+            if(!has('xcf-ui') && hash) {
+                if(this._deviceInfoCache[hash]){
+                    return this._deviceInfoCache[hash];
+                }
+            }
+
 
             if(!item._store && item.id){
                 var _item = this.getItemById(item.id);
@@ -54917,7 +54786,14 @@ define('xcf/manager/DeviceManager',[
             }else{
                 _debug && console.error('cant find driver ' + driverId + ' for '+ item.toString());
             }
-            item.info = result;            
+
+
+            item.info = result;
+
+            if(!has('xcf-ui') && hash) {
+                this._deviceInfoCache[hash] = result;
+            }
+
             return result;
         },
         /**
@@ -55110,6 +54986,7 @@ define('xcf/manager/DeviceManager',[
                 this.initUI();
             }
             this.stores = {};
+            this._deviceInfoCache={};
             this.subscribe(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, this.onVariableChanged);
             this.subscribe(types.EVENTS.ON_DEVICE_SERVER_CONNECTED,function(){
                 var connect = has('drivers') && has('devices');
@@ -60621,7 +60498,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
 
             var hash = cInfo.hash;
-
             var state = item.state;
             var wasLost = state===types.DEVICE_STATE.LOST_DEVICE_SERVER;
             if (this.deviceInstances[hash] && wasLost!==true) {
@@ -60635,7 +60511,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     console.warn('buildMQTTParams:have no driver instance');
                 }
                 return {
-                    driverScopeId:driverInstance ? driverInstance.blockScope.id : 'have no driver instance',
+                    driverScopeId:driverInstance && driverInstance.blockScope ? driverInstance.blockScope.id : 'have no driver instance',
                     driverId:driverInstance ? driverInstance.driver.id : 'have no driver id',
                     deviceId:item.path
                 };
@@ -60787,6 +60663,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     }
 
                     thiz.deviceInstances[hash] = driverInstance;
+
                     // Build an id basing on : driver id + driver path
                     // "235eb680-cb87-11e3-9c1a-....ab5_Marantz/Marantz.20.meta.json"
                     var scopeId = driverId + '_' + hash + '_' + device.path;
@@ -60796,9 +60673,11 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                             blocks: []
                         }
                     }
+
+                    /*
                     if (isServer && driver.blockPath) {
-                        var newBlocks = utils.getJson(utils.readFile(driver.blockPath));
-                        newBlocks = driver.blox = utils.getJson(utils.readFile(driver.blockPath));
+                        utils.getJson(utils.readFile(driver.blockPath));
+                        driver.blox = utils.getJson(utils.readFile(driver.blockPath));
                     }
 
                     var scope = ctx.getBlockManager().createScope({
@@ -60812,7 +60691,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                         getContext: function () {
                             return this.instance;
                         }
-                    }, dojo.clone(driver.blox.blocks),function(error){
+                    }, utils.clone(driver.blox.blocks),function(error){
                         if(error){
                             console.error(error  + ' : in '+driver.name + ' Resave Driver! in scope id ' +scopeId);
                         }
@@ -60820,14 +60699,15 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
                     //important:
                     driverInstance.blockScope = scope;
-
                     device.blockScope = scope;
+                    */
                     device.driverInstance = driverInstance;
                     
                     thiz.getDriverInstance(deviceInfo, true);//triggers to resolve settings
 
                     //add variable && command functions:
-                    isIDE && thiz.completeDriverInstance(driver, driverInstance, device);
+                    //isIDE && thiz.completeDriverInstance(driver, driverInstance, device);
+
                     driverInstance._id= utils.createUUID();
                     dfd.resolve(driverInstance);
                     return driverInstance;
@@ -60840,21 +60720,67 @@ define('xcf/manager/DeviceManager_DeviceServer',[
         },
         /**
          * Callback when server returns the variables of a device
-         *
+         * @param data.device {module:xide/types~DeviceInfo}
          * @param data
          */
         onSetDeviceServerVariables:function(data){
 
-            //debugDevice && console.log('did set device server variables',data);
+            //console.log('did set device server variables',data);
 
             var instance = this.getDriverInstance(data.device, true);
             var device = this.getDeviceStoreItem(data.device);
-
 
             if(!device){
                 debugDevice && console.log('did set device server variables failed, have no device',data);
                 return;
             }
+
+
+            if(!instance.blockScope) {
+                var deviceInfo = device.info;
+                var hash = deviceInfo.hash;
+                var driver = instance.driver;
+                var driverId = deviceInfo.driverId;
+                var ctx = this.getContext();
+                var serverSide = deviceInfo.serverSide;
+                var scopeId = driverId + '_' + hash + '_' + device.path;
+                if (!driver.blox || !driver.blox.blocks) {
+                    debugConnect && console.warn('Attention : INVALID driver, have no blocks', deviceInfo.toString());
+                    driver.blox = {
+                        blocks: []
+                    }
+                }
+                if (isServer && driver.blockPath) {
+                    utils.getJson(utils.readFile(driver.blockPath));
+                    driver.blox = utils.getJson(utils.readFile(driver.blockPath));
+                }
+
+                var scope = ctx.getBlockManager().createScope({
+                    id: scopeId,
+                    device: device,
+                    driver: driver,
+                    instance: instance,
+                    serviceObject: this.serviceObject,
+                    ctx: ctx,
+                    serverSide: serverSide,
+                    getContext: function () {
+                        return this.instance;
+                    }
+                }, utils.clone(driver.blox.blocks), function (error) {
+                    if (error) {
+                        console.error(error + ' : in ' + driver.name + ' Resave Driver! in scope id ' + scopeId);
+                    }
+                });
+                //important:
+                instance.blockScope = scope;
+                device.blockScope = scope;
+                isIDE && this.completeDriverInstance(driver, instance, device);
+
+            }
+
+
+
+
 
             if(instance){
                 var variables = data.variables,
@@ -61037,15 +60963,44 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
         },
         getDeviceServerVariables:function(device,driverInstance){
+
+
+            var driver = driverInstance.driver;
+            if (!driver.blox || !driver.blox.blocks) {
+                debugConnect && console.warn('Attention : INVALID driver, have no blocks', deviceInfo.toString());
+                driver.blox = {
+                    blocks: []
+                }
+            }
+            var blocks = driver.blox.blocks;
+
+            var basicVariables = [];
+
+            _.each(blocks,function(block){
+                block.group === types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES && basicVariables.push(block);
+            });
+
+            /*
+            var basicVariables = _.find(blocks,{
+                group:types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES
+            }) || [];
+            */
+
+            //basicVariables = _.isObject(basicVariables) ? [basicVariables] : basicVariables;
+
+
+            /*
             var scope = driverInstance.blockScope;
             if(!scope){
                 console.error(' have no block scope');
                 return;
             }
+
+            console.log('variables: ');
             var basicVariables = scope.getVariables({
                 group: types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES
             });
-
+            */
             var out = [];
             for (var i = 0; i < basicVariables.length; i++) {
                 out.push({
@@ -61133,12 +61088,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             if (!driverInstance) {
                 return;
             }
-
-            var deviceInfo  = deviceData,
-                device = this.getDeviceStoreItem(deviceInfo);
-
+            var deviceInfo  = deviceData;
             var params = message.params || {};
-
             if(params.src && params.id){
                 var scope = driverInstance.blockScope;
                 var block = scope.getBlockById(params.src);
@@ -61149,16 +61100,29 @@ define('xcf/manager/DeviceManager_DeviceServer',[
         },
         /**
          * Primary callback when the device server has received a message from a device.
-         *
-         * @param evt
+         * @param evt {object}
+         * @param evt.event {string}
+         * @param evt.data {string|object}
+         * @param evt.data.data {object}
          */
         onDeviceServerMessage: function (evt) {
-
             var dataIn = evt['data'];
             var deviceMessageData = null;
             if (_.isString(dataIn) && dataIn.indexOf('{') !=-1){
                 try {
                     deviceMessageData = dojo.fromJson(dataIn);
+                    //at this point "deviceMessageData" is:
+                    /*
+                    var data ={
+                        data:{
+                            bytes:"",
+                            device:device,
+                            deviceMessage:"mssg"
+                        },
+                        event:""
+                    }
+                    */
+
                 } catch (e) {
                     console.error('error parsing device message', evt);
                     return;
@@ -61613,7 +61577,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 device.state === types.DEVICE_STATE.DISCONNECTED ||
                 device.state === types.DEVICE_STATE.CONNECTING
                 )){
-                console.error('send command when disconnected');
+                debug && console.error('send command when disconnected');
                 return;
             }
 
@@ -61757,7 +61721,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                         if (_.isString(dataIn)) {
 
                             try {
-                                msg = dojo.fromJson(dataIn,false);
+                                msg = JSON.parse(dataIn);
                             } catch (e) {
                                 msg = dataIn;
                             }
@@ -62972,6 +62936,7 @@ define('xcf/manager/DriverManager',[
         //  CI related
         //
         /////////////////////////////////////////////////////////////////////////////////////
+        _driverQueryCache:null,
         _getDriverById: function (id,store) {
             var items = utils.queryStore(store, {
                 isDir: false
@@ -62980,6 +62945,8 @@ define('xcf/manager/DriverManager',[
             if (!_.isArray(items)) {
                 items = [items];
             }
+
+            var diver = null;
 
             for (var i = 0; i < items.length; i++) {
                 var driver = items[i];
@@ -63005,6 +62972,14 @@ define('xcf/manager/DriverManager',[
             var result = null;
             var self = this;
 
+            var driver = null;
+
+            if(!has('xcf-ui')){
+                !this._driverQueryCache && (this._driverQueryCache={});
+                if(this._driverQueryCache[id]){
+                    return this._driverQueryCache[id];
+                }
+            }
 
             function search(_store) {
                 return self._getDriverById(id,_store);
@@ -63015,10 +62990,15 @@ define('xcf/manager/DriverManager',[
                 var store = this.stores[scope];
                 result = search(store);
                 if(result){
-                    return result;
+                    driver = result;
+                    break;
                 }
             }
-            return null;
+            if(!has('xcf-ui') && driver){
+                this._driverQueryCache[id] = driver;
+            }
+
+            return driver;
         },
         getDriverByPath: function (path) {
 
