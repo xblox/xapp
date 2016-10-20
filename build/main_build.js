@@ -46721,7 +46721,7 @@ define('xide/data/_Base',[
 ], function (declare, Memory, Tree, QueryResults,EventedMixin,MD5,has) {
     return declare("xide/data/_Base",EventedMixin, {
         __all:null,
-        allowCache:false,
+        allowCache:true,
         constructor: function () {
             var store = this;
             if (store._getQuerierFactory('filter') || store._getQuerierFactory('sort')) {
@@ -46783,12 +46783,19 @@ define('xide/data/_Base',[
                 target: item
             });
         },
+        _queryCache:null,
         query: function (query, options,allowCache) {
+            var hash = query ? MD5(JSON.stringify(query),1) : null;
+            if(!has('xcf-ui') && hash){
+                !this._queryCache && (this._queryCache={});
+                if(this._queryCache[hash]){
+                    return this._queryCache[hash];
+                }
+            };
             /*
-            if(!query && !options && this.__all && allowCache!==false && this.allowCache){
-                return this.__all;
-            }
-            */
+            if(!query && !options && allowCache!==false && this.allowCache){
+                return this.data;
+            }*/
 
             // summary:
             //		Queries the store for objects. This does not alter the store, but returns a
@@ -46876,8 +46883,9 @@ define('xide/data/_Base',[
                 handle.cancel = handle.remove;
                 return handle;
             };
-            //this.__all = queryResults;
-            console.log('query store ' + MD5(JSON.stringify(query),1));
+            if(!has('xcf-ui') && hash){
+                this._queryCache[hash]=queryResults;
+            };
             return queryResults;
         }
     });
