@@ -32313,7 +32313,12 @@ define('xapp/manager/Context',[
                 }
             }
         },
+        _appModule:null,
         loadAppModule:function (item) {
+
+            if(this._appModule){
+                //return _appModule;
+            }
 
             var dfd = new Deferred();
 
@@ -32324,6 +32329,7 @@ define('xapp/manager/Context',[
 
             var itemUrl = item.path.replace('./','').replace('.dhtml','');
             var mid = item.mount.replace('/','')  + '/' + itemUrl;
+            mid = mid.split(' ').join('%20');
             var url = require.toUrl(item.mount.replace('/','')  + '/' + itemUrl);
             debugBoot && console.log('load default app.js ' + mid);
             require.config({
@@ -32337,7 +32343,8 @@ define('xapp/manager/Context',[
             try{
                 //probe
                 require([mid],function(appModule){
-                    console.log('got app module');
+                    console.log('got app module',appModule);
+                    console.warn('invalid app module ' + mid);
                     dfd.resolve(appModule);
                     require.config({
                         urlArgs:null
@@ -32348,6 +32355,8 @@ define('xapp/manager/Context',[
                 console.error('error loading module ',e);
                 dfd.resolve();
             }
+
+            this._appModule = dfd;
 
             return dfd;
         },
@@ -46772,11 +46781,9 @@ define('xide/data/_Base',[
             });
         },
         destroy:function(){
-            //this.inherited();
             this._emit('destroy',this);
         },
         notify: function () {
-
         },
         refreshItem:function(item){
             this.emit('update', {
@@ -46786,7 +46793,7 @@ define('xide/data/_Base',[
         _queryCache:null,
         query: function (query, options,allowCache) {
             var hash = query ? MD5(JSON.stringify(query),1) : null;
-            if(!has('xcf-ui') && hash){
+            if(!has('xcf-ui') && hash && !has('host-node')){
                 !this._queryCache && (this._queryCache={});
                 if(this._queryCache[hash]){
                     return this._queryCache[hash];
@@ -46883,7 +46890,7 @@ define('xide/data/_Base',[
                 handle.cancel = handle.remove;
                 return handle;
             };
-            if(!has('xcf-ui') && hash){
+            if(!has('xcf-ui') && hash && !has('host-node')){
                 this._queryCache[hash]=queryResults;
             };
             return queryResults;
@@ -54025,7 +54032,6 @@ define('xcf/manager/DeviceManager',[
                                 var _variable = scope.getVariable(parts[3]);
                                 if(_variable){
                                     _debugMQTT && console.info('     received MQTT variable ' +_variable.name + ' = ' +message.value);
-
                                     if(has('xcf-ui')) {
                                         _variable.set('value', message.value);
                                         _variable.refresh();
@@ -54693,14 +54699,11 @@ define('xcf/manager/DeviceManager',[
             }
 
             var hash = item.hash;
-
-            if(!has('xcf-ui') && hash) {
+            if(!has('xcf-ui') && hash && !has('host-node')) {
                 if(this._deviceInfoCache[hash]){
                     return this._deviceInfoCache[hash];
                 }
             }
-
-
             if(!item._store && item.id){
                 var _item = this.getItemById(item.id);
                 if(_item){
@@ -54798,7 +54801,7 @@ define('xcf/manager/DeviceManager',[
 
             item.info = result;
 
-            if(!has('xcf-ui') && hash) {
+            if(!has('xcf-ui') && hash && !has('host-node')) {
                 this._deviceInfoCache[hash] = result;
             }
 
@@ -54953,17 +54956,13 @@ define('xcf/manager/DeviceManager',[
 
             //_debugMQTT && console.log('DeviceManager/onVariableChanged/variable changed: '+name + ' - publish : ' + publish);
 
-            if(name==='value' || publish===false){
+            if(name==='value' || publish===false || !variable){
                 return;
             }
 
             var value = variable.value,
                 driver= scope.driver,
                 device = scope.device;
-
-            if(!name || value==null){
-                console.error('------------invalid params');
-            }
 
             if(device && device.info) {
 
@@ -60217,27 +60216,21 @@ define('xcf/model/Device',[
          * @param silent
          */
         setState:function(state,silent){
-
-            //console.log('state : '+state);
             if(state===this.state){
                 return;
             }
-            
             var oldState = this.state,
                 icon = this.getStateIcon(state);
-
             this.state = state;
             this.set('iconClass',icon);
             this.set('state',state);
-
-            //console.log('state : '+state);
-
             this._emit(types.EVENTS.ON_DEVICE_STATE_CHANGED,{
                 old:oldState,
                 state:state,
                 icon:icon,
                 "public":true
             });
+            this.refresh();
         }
     });
 });
@@ -60245,8 +60238,6 @@ define('xcf/model/Device',[
 /** @module xcf/manager/DeviceManager_DeviceServer */
 define('xcf/manager/DeviceManager_DeviceServer',[
     'dcl/dcl',
-    "xdojo/declare",
-    "dojo/_base/lang",
     'xide/encoding/MD5',
     'xide/types',
     'xide/utils',
@@ -60258,11 +60249,9 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     'require',
     "xcf/model/Variable"
     //'xdojo/has!host-node?nxapp/utils/_console'
-], function (dcl,declare, lang, MD5,
+], function (dcl,MD5,
              types, utils, factory, has,
              Deferred,ReloadMixin,EventedMixin,require,Variable,_console) {
-
-
 
     var isServer = has('host-node'),
         isIDE = has('xcf-ui'),
@@ -60326,9 +60315,9 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     //debug device - server messages
     var debug = false;
     // debug device server connectivity
-    var debugDevice = false;
-    var debugStrangers = false;
-    var debugConnect = false;
+    var debugDevice = true;
+    var debugStrangers = true;
+    var debugConnect = true;
     var debugServerCommands = false;
     var debugCreateInstance = false;
     var debugServerMessages = false;
@@ -60622,7 +60611,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
 
             if(isServer && !device.isServerSide()){
-                dfd.reject('DeviceManager_DeviceServer: wont create driver instance! I am server and device isnt server side');
+                dfd.reject('DeviceManager_DeviceServer: wont create driver instance! I am server and device isnt server side : ' + deviceInfo.title);
                 return dfd;
             }
             debugCreateInstance && console.info('------create driver instance with DriverBase at '+requirePath + ' with driver prefix : ' + driverPrefix,this.driverScopes);
@@ -62982,7 +62971,7 @@ define('xcf/manager/DriverManager',[
 
             var driver = null;
 
-            if(!has('xcf-ui')){
+            if(!has('xcf-ui') && !has('host-node')){
                 !this._driverQueryCache && (this._driverQueryCache={});
                 if(this._driverQueryCache[id]){
                     return this._driverQueryCache[id];
@@ -63002,7 +62991,7 @@ define('xcf/manager/DriverManager',[
                     break;
                 }
             }
-            if(!has('xcf-ui') && driver){
+            if(!has('xcf-ui') && driver && !has('host-node')){
                 this._driverQueryCache[id] = driver;
             }
 

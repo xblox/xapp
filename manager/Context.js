@@ -534,7 +534,12 @@ define([
                 }
             }
         },
+        _appModule:null,
         loadAppModule:function (item) {
+
+            if(this._appModule){
+                //return _appModule;
+            }
 
             var dfd = new Deferred();
 
@@ -545,6 +550,7 @@ define([
 
             var itemUrl = item.path.replace('./','').replace('.dhtml','');
             var mid = item.mount.replace('/','')  + '/' + itemUrl;
+            mid = mid.split(' ').join('%20');
             var url = require.toUrl(item.mount.replace('/','')  + '/' + itemUrl);
             debugBoot && console.log('load default app.js ' + mid);
             require.config({
@@ -558,7 +564,7 @@ define([
             try{
                 //probe
                 require([mid],function(appModule){
-                    console.log('got app module');
+                    console.warn('invalid app module ' + mid);
                     dfd.resolve(appModule);
                     require.config({
                         urlArgs:null
@@ -569,6 +575,8 @@ define([
                 console.error('error loading module ',e);
                 dfd.resolve();
             }
+
+            this._appModule = dfd;
 
             return dfd;
         },
