@@ -32343,7 +32343,6 @@ define('xapp/manager/Context',[
             try{
                 //probe
                 require([mid],function(appModule){
-                    console.log('got app module',appModule);
                     console.warn('invalid app module ' + mid);
                     dfd.resolve(appModule);
                     require.config({
@@ -42484,7 +42483,6 @@ define('xcf/model/Command',[
      * @extends module:xblox/model/ModelBase
      */
     return dcl([Block, Contains], {
-        //declaredClass: String (dcl internals, private!)
         declaredClass: "xcf.model.Command",
         /**
          *  3.12.10.3. The “Startup” checkbox indicates whether or not the associated command
@@ -42906,6 +42904,7 @@ define('xcf/model/Command',[
                 this.startup && (out += this.getIcon('fa-bell inline-icon text-warning', 'text-align:right;float:right;', ''));
                 this.auto && this.getInterval() > 0 && (out += this.getIcon('fa-clock-o inline-icon text-warning', 'text-align:right;float:right', ''));
             }
+            out = this.getDriverToText(out) || out;
             return out;
         },
         getInterval: function () {
@@ -42935,6 +42934,12 @@ define('xcf/model/Command',[
                 }
             }
             return DriverModule;
+        },
+        getDriverToText:function(text){
+            var DriverModule = this.getDriverModule();
+            if(DriverModule && DriverModule.toText){
+                return DriverModule.toText(this,text);
+            }
         },
         getDriverFields: function (fields) {
             var DriverModule = this.getDriverModule();
@@ -53261,14 +53266,11 @@ define('xcf/manager/DeviceManager',[
         //
         /////////////////////////////////////////////////////////////////////////////////////
         onRunClassEvent:function (data) {
+
             var id = data.args.id;
 
-            console.log('zzqwqw: x',data);
-
             if(this.running && this.running[id]){
-
                 var runData = this.running[id];
-
                 var delegate = runData.delegate;
                 if(!delegate){
                     return;
@@ -60315,9 +60317,9 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     //debug device - server messages
     var debug = false;
     // debug device server connectivity
-    var debugDevice = true;
-    var debugStrangers = true;
-    var debugConnect = true;
+    var debugDevice = false;
+    var debugStrangers = false;
+    var debugConnect = false;
     var debugServerCommands = false;
     var debugCreateInstance = false;
     var debugServerMessages = false;
@@ -60329,30 +60331,191 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     if(typeof sctx !=='undefined' && sctx){
 
 
-        return;
-
-        var options = {};
         var id = utils.createUUID();
-
-
-        //1. input : LN0x09BLUCOVE0x09270x0d
-        //2.
-        //2. output: LN0x09>LUCOVE0x09270x0d
-
-
         var rm = sctx.getResourceManager();
 
+
+        var application = sctx.getApplication();
+
+        return;
+
+        console.clear();
+
+        application.createExportWizard = function () {
+            var thiz = this,
+                selectView = null,
+                selectItemsView = null,
+                selectedItems = [],
+                selectedItem = null,
+                ctx = thiz.ctx,
+                deviceManager = ctx.getDeviceManager(),
+                driver = thiz.getSelectedItem(),
+                protocolMgr = thiz.ctx.getProtocolManager(),
+                store = protocolMgr.getStore();
+
+
+
+            return;
+            var wizardStruct = Wizards.createWizard('Select Protocol', false, {});
+
+            this._lastWizard = wizardStruct;
+            var wizard = wizardStruct.wizard;
+            var dialog = wizardStruct.dialog;
+            var done = function () {
+                wizard.destroy();
+                dialog.destroy();
+                thiz.importProtocol(selectedItem, selectedItems, driver);
+            };
+            dialog.show().then(function () {
+
+                /**
+                 * First protocol view, select item
+                 */
+                selectView = utils.addWidget(ProtocolTreeView, {
+                    title: 'Protocols',
+                    store: protocolMgr.getStore(),
+                    delegate: protocolMgr,
+                    beanContextName: '3',// thiz.ctx.mainView.beanContextName
+                    _doneFunction: function () {
+                        return false;
+                    },
+                    passFunction: function () {
+                        return true;
+                    },
+                    canGoBack: true,
+                    gridParams: {
+                        showHeader: true
+                    },
+                    editItem: function () {
+
+                        if (!this.isGroup(selectedItem)) {
+                            wizard._forward();
+                        }
+                    }
+
+                }, protocolMgr, wizard, true, null, [WizardPaneBase]).
+                _on(types.EVENTS.ON_ITEM_SELECTED, function (evt) {
+                    selectedItem = evt.item;
+                    wizard.adjustWizardButton('next', selectView.isGroup(evt.item));
+
+                });
+
+
+                /**
+                 * Select commands/variables view
+                 */
+                /**
+                 * First protocol view, select item
+                 */
+                selectItemsView = utils.addWidget(ProtocolTreeView, {
+                    title: 'Protocols',
+                    store: protocolMgr.getStore(),
+                    delegate: protocolMgr,
+                    beanContextName: '3',// thiz.ctx.mainView.beanContextName
+                    doneFunction: function () {
+                        done();
+                        return true;
+                    },
+                    passFunction: function () {
+                        //not used
+                        return true;
+                    },
+                    canGoBack: true,
+                    editItem: function () {
+
+                    },
+                    getRootFilter: function () {
+                        if (selectedItem) {
+                            return {
+                                parentId: selectedItem.path
+                            }
+                        } else {
+                            return {
+                                parentId: ''
+                            }
+                        }
+                    },
+                    canSelect: function (item) {
+                        if (item.virtual === true && item.isDir === false) {
+                            return true;
+                        }
+                        return false;
+                    }
+                }, protocolMgr, wizard, true, null, [WizardPaneBase], null, {
+                    getColumns: function () {
+
+                        var _res = this.inherited(arguments);
+                        _res.push({
+                            label: "Value",
+                            field: "value",
+                            sortable: false,
+                            _formatter: function (name, item) {
+
+                                if (!thiz.isGroup(item) && item['user']) {
+                                    var meta = item['user'].meta;
+                                    var _in = meta ? utils.getCIInputValueByName(meta, types.PROTOCOL_PROPERTY.CF_PROTOCOL_TITLE) : null;
+                                    if (meta) {
+                                        return '<span class="grid-icon ' + 'fa-exchange' + '"></span>' + _in;
+                                    } else {
+                                        return item.name;
+                                    }
+                                    return _in;
+                                } else {
+                                    return item.name;
+                                }
+                            }
+                        });
+                        return _res;
+                    }
+                }).
+                _on(types.EVENTS.ON_ITEM_SELECTED, function (evt) {
+                    selectedItems = selectItemsView.getSelection();
+                    wizard.adjustWizardButton('done', selectedItems.length == 0);
+
+                });
+
+
+                wizard.onNext = function () {
+                    dialog.set('title', 'Select Commands & Variables');
+                    selectItemsView.grid.set('collection', store.filter(selectItemsView.getRootFilter()));
+                    selectItemsView.grid.refresh();
+                }
+            });
+        };
 
         console.log('root : '+rm.getVariable('ROOT'));
         console.log('user : '+rm.getVariable('USER_DIRECTORY'));
         console.log('system : '+rm.getVariable('SYSTEM'));
 
-        //console.log('system : '+rm.getVariable('SYSTEM'));
 
+        var ROOT = rm.getVariable('ROOT');
+        var USER = rm.getVariable('USER_DIRECTORY');
+        var SYSTEM = rm.getVariable('SYSTEM');
+        var DIST = ROOT+'/server/nodejs/dist/';
+        var TARGET = ROOT+'/claycenter/';
+        var linux32 = 'false';
+        var linux64 = 'true';
+        var osx = 'false';
+        var arm = 'false';
+        var windows = 'false';
 
+        var nginxOptions = {
+            port:10002
+        };
 
-        return;
-
+        var options = {
+            linux32:linux32,
+            linux64:linux64,
+            osx:osx,
+            arm:arm,
+            windows:windows,
+            root:ROOT,
+            data:SYSTEM,
+            user:USER + '/claycenter',
+            dist:DIST,
+            target:TARGET,
+            nginxOptions:nginxOptions
+        };
 
         var delegate = {
             onError:function(e){
@@ -60365,19 +60528,10 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 console.error('have finish: ',e);
             }
         };
-
         sctx.getDeviceManager().runClass('nxapp/manager/ExportManager',{
             options:options
         },delegate);
-
-
     }
-
-
-
-
-
-
 
     /***
      *
@@ -60534,7 +60688,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             var baseDriverPrefix = this.driverScopes['system_drivers'],
                 baseDriverRequire = baseDriverPrefix + 'DriverBase';
             var urlBase = require.toUrl(this.driverScopes['system_drivers']);
-            var url = decodeURIComponent(urlBase) + "/DriverBase";
             try {
                 require([baseDriverRequire], function (baseDriver) {
                     baseDriver.prototype.declaredClass = baseDriverRequire;
@@ -60564,7 +60717,40 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
             return dfd;
         },
-        
+        /**
+         *
+         * @param driver
+         * @returns {dojo/Deferred}
+         */
+        getDriverModule:function(driver){
+            var dfd = new Deferred();
+            var driverMeta = driver['user'],
+                script = utils.getCIInputValueByName(driverMeta, types.DRIVER_PROPERTY.CF_DRIVER_CLASS);
+
+            var driverScope = driver['scope'];
+            script = script ? script.replace('./', '') : '';
+            //script = script ? script.replace('.js', '') : '';
+            var packageUrl = require.toUrl(driverScope);
+            packageUrl = utils.removeURLParameter(packageUrl,'bust');
+            packageUrl = utils.removeURLParameter(packageUrl,'time');
+            var isRequireJS = !require.cache;
+            if(isRequireJS){
+                packageUrl = packageUrl.replace('/.js','/');
+            }
+            var requirePath = packageUrl + script;
+            requirePath +='&time'+ new Date().getTime();
+            try {
+                require([requirePath], function (driverModule) {
+                    dfd.resolve(driverModule);
+                });
+            }
+            catch (e){
+                console.error('error loading driver module',e);
+                logError(e,'error loading driver module');
+                dfd.reject(e.message);
+            }
+            return dfd;
+        },
         /**
          * Creates a driver instance per device
          * @param deviceInfo {module:xide/types~DeviceInfo} The device info
@@ -82215,6 +82401,7 @@ define('dojo/Deferred',[
 					signalDeferred(deferred, RESOLVED, newResult);
 				}
 			}catch(error){
+				console.error('Error '+error.message,error.stack);
 				signalDeferred(deferred, REJECTED, error);
 			}
 		}else{
