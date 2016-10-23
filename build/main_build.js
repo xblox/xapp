@@ -32385,7 +32385,7 @@ define('xapp/manager/Context',[
             debugBoot && console.info('-app ready',this);
             if(!this.isVE()){
                 this.loadAppModule(settings.item).then(function(){
-                    this.application.onReady();
+                    thiz.application.onReady();
                     console.log('app module loaded from ');
                     setTimeout(function(){
                         thiz.publish('onContextReady',thiz);
@@ -42668,6 +42668,7 @@ define('xcf/model/Command',[
             var context = scope.getContext();
             var params = msg.params;
             if (params.id) {
+                msg.lastResponse && this.storeResult(msg.lastResponse);
                 this._emit('cmd:' + msg.cmd + '_' + params.id, msg);
                 this._emit('error', {
                     msg: msg,
@@ -42739,15 +42740,17 @@ define('xcf/model/Command',[
             }
             return this._solving[id];
         },
-        _resolve: function (string, settings) {
+        _resolve: function (string, settings,useDriverModule) {
 
             var scope = this.scope;
             var value = string || this._get('send');
-            var parse = !(this.flags & types.CIFLAG.DONT_PARSE);
-            var isExpression = (this.flags & types.CIFLAG.EXPRESSION);
-            var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
+            var settings = settings || {};
+            var flags = settings.flags || this.flags;
+            var parse = !(flags & types.CIFLAG.DONT_PARSE);
+            var isExpression = (flags & types.CIFLAG.EXPRESSION);
+            var wait = (flags & types.CIFLAG.WAIT) ? true : false;
 
-            if (this.flags & types.CIFLAG.TO_HEX) {
+            if (flags & types.CIFLAG.TO_HEX) {
                 value = utils.to_hex(value);
             }
 
@@ -42767,7 +42770,7 @@ define('xcf/model/Command',[
             }
             var res = "";
             var DriverModule = this.getDriverModule();
-            if (DriverModule && DriverModule.resolveBefore) {
+            if (DriverModule && DriverModule.resolveBefore && useDriverModule!==false) {
                 value = DriverModule.resolveBefore(this, value);
             }
 
@@ -42777,7 +42780,7 @@ define('xcf/model/Command',[
                 res = '' + value;
             }
 
-            if (DriverModule && DriverModule.resolveAfter) {
+            if (DriverModule && DriverModule.resolveAfter && useDriverModule!==false) {
                 res = DriverModule.resolveAfter(this, res);
             }
 
@@ -49768,7 +49771,7 @@ define('xblox/model/Scope',[
                 try {
 
                     if (obj && obj.stop) {
-                        obj.stop();
+                        obj.stop(true);
                     }
 
                     if (obj && obj.reset) {

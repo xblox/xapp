@@ -606,7 +606,7 @@ define([
             debugBoot && console.info('-app ready',this);
             if(!this.isVE()){
                 this.loadAppModule(settings.item).then(function(){
-                    this.application.onReady();
+                    thiz.application.onReady();
                     console.log('app module loaded from ');
                     setTimeout(function(){
                         thiz.publish('onContextReady',thiz);
