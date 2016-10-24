@@ -61488,7 +61488,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     for (var h = 0; h < consoleViews.length; h++) {
                         var consoleView = consoleViews[h];
                         if (consoleView) {
-
                             var split = true;
                             var hex = false;
 
@@ -61541,14 +61540,11 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
             /****************   Forward to xblox    ******************/
 
-            if (messages.length > 0) {
-
+            if (messages.length > 0 && driverInstance.blockScope) {
                 var scope = driverInstance.blockScope;
-
                 var responseBlocks = scope.getBlocks({
                     group: types.BLOCK_GROUPS.CF_DRIVER_RESPONSE_BLOCKS
                 });
-
                 var responseVariables = scope.getVariables({
                     group: types.BLOCK_GROUPS.CF_DRIVER_RESPONSE_VARIABLES
                 });
@@ -61569,22 +61565,14 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     });
                     scope.blockStore.putSync(responseVariable);
                 }
-
-                //console.log('on device message');
-
                 for (var l = 0; l < messages.length; l++) {
 
                     if (messages[l].length === 0) {
                         continue;
                     }
-
                     responseVariable.value = new String(messages[l]);
                     responseVariable.value.setBytes(bytes[l]);
                     responseVariable.value.setString(messages[l]);
-
-
-                    //console.log('responseVariable.value : ', responseVariable.value.getBytes());
-
                     this.publish(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, {
                         item: responseVariable,
                         scope: scope,
@@ -61593,27 +61581,18 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                         source: types.MESSAGE_SOURCE.DEVICE,  //for prioritizing
                         publishMQTT:false //just for local processing
                     });
-                    var runVariables = false;
-                    var runBlocks = false;
-
                     //now run each top-variabl block in 'conditional process'
                     for (var o = 0; o < responseVariables.length; o++) {
                         var _var = responseVariables[o];
                         if (responseVariables[o].title == 'value') {
                             continue;
                         }
-
                         var _varResult = null;
                         var _cValue = responseVariable.value;
-
-
                         if (!(typeof _cValue == "number")) {
                             _cValue = '' + _cValue;
                             _cValue = "'" + _cValue + "'";
                         }
-
-
-                        var prefix = "var value = " + _cValue + ";";
 
                         _varResult = _cValue;
                         if (_var.target && _var.target != 'None' && _varResult !== null && _varResult != 'null' && _varResult != "'null'") {
