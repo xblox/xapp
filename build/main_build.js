@@ -49386,9 +49386,9 @@ define('xblox/model/Scope',[
                             if (!child) {
                                 this.blockStore.removeSync(block._children[propName]);
                                 if(errorCB){
-                                    errorCB('   couldnt resolve child: ' + block._children[propName])
+                                    errorCB('   couldnt resolve child: ' + block._children[propName] + '@' + block.name+ ':'+block.declaredClass)
                                 }
-                                console.log('   couldnt resolve child: ' + block._children[propName]);
+                                console.log('   couldnt resolve child: ' + block._children[propName]+ '@' + block.name+ ':'+block.declaredClass);
                                 continue;
                             }
                             block[propName] = child;
@@ -49404,9 +49404,9 @@ define('xblox/model/Scope',[
                                 var child = this.getBlockById(block._children[propName][j]);
                                 if (!child) {
                                     if(errorCB){
-                                        errorCB('   couldnt resolve child: ' + block._children[propName])
+                                        errorCB('   couldnt resolve child: ' + block._children[propName]+ '@' + block.name + ':'+block.declaredClass)
                                     }
-                                    console.log('   couldnt resolve child: ' + block._children[propName][j]);
+                                    console.log('   couldnt resolve child: ' + block._children[propName][j]+ '@' + block.name+ ':'+block.declaredClass);
                                     continue;
                                 }
                                 block[propName].push(child);
@@ -68395,7 +68395,7 @@ define('xide/utils/HTMLUtils',[
      */
     utils.getNode = function(target){
         if(target) {
-            return target.domNode || target.containerNode || target;
+            return target.containerNode || target.domNode || target;
         }
         return target;
     };
