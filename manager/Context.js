@@ -597,7 +597,13 @@ define([
                 settings = this.settings;
             }
 
-            var xbloxFiles = this.settings.xbloxScripts;
+            var xbloxFiles = this.settings.xbloxScripts || [];
+            if(xbloxFiles.length==0 && settings.item){
+                xbloxFiles.push({
+                    path:settings.item.path.replace('.dhtml','.xblox').replace('.html','.xblox'),
+                    mount:settings.item.mount,
+                })
+            }
 
             this.loadXBloxFiles(xbloxFiles);
 

@@ -1,4 +1,4 @@
-require.config({"config":{"delite/theme":{"layersMap":{"delite/themes/{{theme}}/common.css":"themes/layer_{{theme}}.css","deliteful/Accordion/themes/{{theme}}/Accordion.css":"themes/layer_{{theme}}.css","xdeliteful/Bar/themes/Bar.css":"themes/layer_{{theme}}.css","deliteful/list/List/themes/{{theme}}/List.css":"themes/layer_{{theme}}.css","delite/Scrollable/themes/{{theme}}/Scrollable.css":"themes/layer_{{theme}}.css","deliteful/ProgressBar/themes/{{theme}}/ProgressBar.css":"themes/layer_{{theme}}.css","deliteful/StarRating/themes/{{theme}}/StarRating.css":"themes/layer_{{theme}}.css","xdeliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css","deliteful/LinearLayout/themes/{{theme}}/LinearLayout.css":"themes/layer_{{theme}}.css","deliteful/SidePane/themes/{{theme}}/SidePane.css":"themes/layer_{{theme}}.css","deliteful/Panel/themes/{{theme}}/Panel.css":"themes/layer_{{theme}}.css","deliteful/ViewStack/themes/{{theme}}/ViewStack.css":"themes/layer_{{theme}}.css","deliteful/ProgressIndicator/themes/{{theme}}/ProgressIndicator.css":"themes/layer_{{theme}}.css","deliteful/Switch/themes/{{theme}}/Switch.css":"themes/layer_{{theme}}.css","deliteful/ToggleButton/themes/{{theme}}/ToggleButton.css":"themes/layer_{{theme}}.css","deliteful/RadioButton/themes/{{theme}}/RadioButton.css":"themes/layer_{{theme}}.css","deliteful/Checkbox/themes/{{theme}}/Checkbox.css":"themes/layer_{{theme}}.css","deliteful/Select/themes/{{theme}}/Select.css":"themes/layer_{{theme}}.css","deliteful/Combobox/themes/{{theme}}/Combobox.css":"themes/layer_{{theme}}.css","delite/DialogUnderlay/themes/{{theme}}/DialogUnderlay.css":"themes/layer_{{theme}}.css","deliteful/Slider/themes/{{theme}}/Slider.css":"themes/layer_{{theme}}.css","deliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css"}}}});require.config({"config":{"requirejs-dplugins/i18n":{"bundlesMap":{"nls/main_build":["deliteful/list/List/nls/List","deliteful/StarRating/nls/StarRating","deliteful/Combobox/nls/Combobox"]},"localesMap":{"nls/main_build":["root"]}}}});require.config({config:{'ecma402/impl/load':{"af":true,"af-NA":true,"am":true,"ar":true,"ar-AE":true,"ar-BH":true,"ar-DZ":true,"ar-EG":true,"ar-IQ":true,"ar-JO":true,"ar-KW":true,"ar-LB":true,"ar-LY":true,"ar-MA":true,"ar-OM":true,"ar-QA":true,"ar-SA":true,"ar-SD":true,"ar-SY":true,"ar-TN":true,"ar-YE":true,"as":true,"az":true,"be":true,"bg":true,"bn":true,"bn-IN":true,"ca":true,"cs":true,"cy":true,"da":true,"de":true,"de-AT":true,"de-LU":true,"de-CH":true,"el":true,"en":true,"en-AU":true,"en-BE":true,"en-CM":true,"en-CA":true,"en-GB":true,"en-GH":true,"en-HK":true,"en-IE":true,"en-IN":true,"en-KE":true,"en-MU":true,"en-NG":true,"en-NZ":true,"en-PH":true,"en-SG":true,"en-TT":true,"en-ZA":true,"en-ZM":true,"es":true,"es-AR":true,"es-BO":true,"es-CL":true,"es-CO":true,"es-CR":true,"es-DO":true,"es-EC":true,"es-GT":true,"es-HN":true,"es-MX":true,"es-NI":true,"es-PA":true,"es-PE":true,"es-PR":true,"es-PY":true,"es-SV":true,"es-US":true,"es-UY":true,"es-VE":true,"eu":true,"fil":true,"fi":true,"fr":true,"fr-BE":true,"fr-CA":true,"fr-CD":true,"fr-CH":true,"fr-CI":true,"fr-CM":true,"fr-DZ":true,"fr-LU":true,"fr-MR":true,"fr-MA":true,"fr-SN":true,"fr-TN":true,"gl":true,"gu":true,"ha":true,"he":true,"hi":true,"hr":true,"hu":true,"hy":true,"id":true,"ig":true,"is":true,"it":true,"it-CH":true,"ja":true,"ka":true,"kk":true,"km":true,"kn":true,"ko":true,"kok":true,"lg":true,"lt":true,"lv":true,"mk":true,"ml":true,"mn":true,"mr":true,"ms":true,"mt":true,"nb":true,"ne":true,"ne-IN":true,"nl":true,"nl-BE":true,"nn":true,"om":true,"or":true,"pa":true,"pl":true,"pt":true,"pt-AO":true,"pt-MZ":true,"pt-PT":true,"ro":true,"root":true,"ru":true,"rw":true,"si":true,"sk":true,"sl":true,"sr":true,"sr-Latn":true,"sq":true,"sv":true,"sw":true,"sw-KE":true,"ta":true,"te":true,"th":true,"tr":true,"uk":true,"ur":true,"ur-IN":true,"uz":true,"uz-Cyrl":true,"vi":true,"yo":true,"zh":true,"zh-Hans":true,"zh-Hans-SG":true,"zh-Hant":true,"zh-Hant-HK":true,"_layerMid":"cldr/main_build"}}});require.config({"config":{"requirejs-dplugins/css":{"layersMap":{"deliteful/ViewStack/transitions/slide.css":"main_build.css","deliteful/ViewStack/transitions/reveal.css":"main_build.css"}}}});define('xapp/mainr',[
+require.config({"config":{"delite/theme":{"layersMap":{"delite/themes/{{theme}}/common.css":"themes/layer_{{theme}}.css","deliteful/Accordion/themes/{{theme}}/Accordion.css":"themes/layer_{{theme}}.css","xdeliteful/Script.css":"themes/layer_{{theme}}.css","xdeliteful/Bar/themes/Bar.css":"themes/layer_{{theme}}.css","deliteful/list/List/themes/{{theme}}/List.css":"themes/layer_{{theme}}.css","delite/Scrollable/themes/{{theme}}/Scrollable.css":"themes/layer_{{theme}}.css","deliteful/ProgressBar/themes/{{theme}}/ProgressBar.css":"themes/layer_{{theme}}.css","deliteful/StarRating/themes/{{theme}}/StarRating.css":"themes/layer_{{theme}}.css","xdeliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css","deliteful/LinearLayout/themes/{{theme}}/LinearLayout.css":"themes/layer_{{theme}}.css","deliteful/SidePane/themes/{{theme}}/SidePane.css":"themes/layer_{{theme}}.css","deliteful/Panel/themes/{{theme}}/Panel.css":"themes/layer_{{theme}}.css","deliteful/ViewStack/themes/{{theme}}/ViewStack.css":"themes/layer_{{theme}}.css","deliteful/ProgressIndicator/themes/{{theme}}/ProgressIndicator.css":"themes/layer_{{theme}}.css","deliteful/Switch/themes/{{theme}}/Switch.css":"themes/layer_{{theme}}.css","deliteful/ToggleButton/themes/{{theme}}/ToggleButton.css":"themes/layer_{{theme}}.css","deliteful/RadioButton/themes/{{theme}}/RadioButton.css":"themes/layer_{{theme}}.css","deliteful/Checkbox/themes/{{theme}}/Checkbox.css":"themes/layer_{{theme}}.css","deliteful/Select/themes/{{theme}}/Select.css":"themes/layer_{{theme}}.css","deliteful/Combobox/themes/{{theme}}/Combobox.css":"themes/layer_{{theme}}.css","delite/DialogUnderlay/themes/{{theme}}/DialogUnderlay.css":"themes/layer_{{theme}}.css","deliteful/Slider/themes/{{theme}}/Slider.css":"themes/layer_{{theme}}.css","deliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css"}}}});require.config({"config":{"requirejs-dplugins/i18n":{"bundlesMap":{"nls/main_build":["deliteful/list/List/nls/List","deliteful/StarRating/nls/StarRating","deliteful/Combobox/nls/Combobox"]},"localesMap":{"nls/main_build":["root"]}}}});require.config({config:{'ecma402/impl/load':{"af":true,"af-NA":true,"am":true,"ar":true,"ar-AE":true,"ar-BH":true,"ar-DZ":true,"ar-EG":true,"ar-IQ":true,"ar-JO":true,"ar-KW":true,"ar-LB":true,"ar-LY":true,"ar-MA":true,"ar-OM":true,"ar-QA":true,"ar-SA":true,"ar-SD":true,"ar-SY":true,"ar-TN":true,"ar-YE":true,"as":true,"az":true,"be":true,"bg":true,"bn":true,"bn-IN":true,"ca":true,"cs":true,"cy":true,"da":true,"de":true,"de-AT":true,"de-LU":true,"de-CH":true,"el":true,"en":true,"en-AU":true,"en-BE":true,"en-CM":true,"en-CA":true,"en-GB":true,"en-GH":true,"en-HK":true,"en-IE":true,"en-IN":true,"en-KE":true,"en-MU":true,"en-NG":true,"en-NZ":true,"en-PH":true,"en-SG":true,"en-TT":true,"en-ZA":true,"en-ZM":true,"es":true,"es-AR":true,"es-BO":true,"es-CL":true,"es-CO":true,"es-CR":true,"es-DO":true,"es-EC":true,"es-GT":true,"es-HN":true,"es-MX":true,"es-NI":true,"es-PA":true,"es-PE":true,"es-PR":true,"es-PY":true,"es-SV":true,"es-US":true,"es-UY":true,"es-VE":true,"eu":true,"fil":true,"fi":true,"fr":true,"fr-BE":true,"fr-CA":true,"fr-CD":true,"fr-CH":true,"fr-CI":true,"fr-CM":true,"fr-DZ":true,"fr-LU":true,"fr-MR":true,"fr-MA":true,"fr-SN":true,"fr-TN":true,"gl":true,"gu":true,"ha":true,"he":true,"hi":true,"hr":true,"hu":true,"hy":true,"id":true,"ig":true,"is":true,"it":true,"it-CH":true,"ja":true,"ka":true,"kk":true,"km":true,"kn":true,"ko":true,"kok":true,"lg":true,"lt":true,"lv":true,"mk":true,"ml":true,"mn":true,"mr":true,"ms":true,"mt":true,"nb":true,"ne":true,"ne-IN":true,"nl":true,"nl-BE":true,"nn":true,"om":true,"or":true,"pa":true,"pl":true,"pt":true,"pt-AO":true,"pt-MZ":true,"pt-PT":true,"ro":true,"root":true,"ru":true,"rw":true,"si":true,"sk":true,"sl":true,"sr":true,"sr-Latn":true,"sq":true,"sv":true,"sw":true,"sw-KE":true,"ta":true,"te":true,"th":true,"tr":true,"uk":true,"ur":true,"ur-IN":true,"uz":true,"uz-Cyrl":true,"vi":true,"yo":true,"zh":true,"zh-Hans":true,"zh-Hans-SG":true,"zh-Hant":true,"zh-Hant-HK":true,"_layerMid":"cldr/main_build"}}});require.config({"config":{"requirejs-dplugins/css":{"layersMap":{"deliteful/ViewStack/transitions/slide.css":"main_build.css","deliteful/ViewStack/transitions/reveal.css":"main_build.css"}}}});define('xapp/mainr',[
     "deliteful/Button",
     "xblox/RunScript",
     "delite/Container",
@@ -5518,7 +5518,8 @@ define('requirejs-dplugins/has',["module"], function (module) {
 define('xdeliteful/Script',[
     "dcl/dcl",
     "delite/register",
-    'xide/mixins/EventedMixin'
+    'xide/mixins/EventedMixin',
+    "delite/theme!xdeliteful/Script.css"
 ], function (dcl, register,EventedMixin) {
 
     var SCRIPT = dcl([EventedMixin.dcl], /** @lends module:delite/Widget# */ {
@@ -32376,7 +32377,13 @@ define('xapp/manager/Context',[
                 settings = this.settings;
             }
 
-            var xbloxFiles = this.settings.xbloxScripts;
+            var xbloxFiles = this.settings.xbloxScripts || [];
+            if(xbloxFiles.length==0 && settings.item){
+                xbloxFiles.push({
+                    path:settings.item.path.replace('.dhtml','.xblox').replace('.html','.xblox'),
+                    mount:settings.item.mount,
+                })
+            }
 
             this.loadXBloxFiles(xbloxFiles);
 
@@ -38239,18 +38246,16 @@ define('xblox/model/code/RunBlock',[
 define('xblox/model/server/Shell',[
     "dcl/dcl",
     "xblox/model/server/ServerBlock",
-    'xide/utils'
-], function (dcl, ServerBlock, utils) {
+    'xide/utils',
+    'xcf/model/Command'
+], function (dcl, ServerBlock, utils,Command) {
     /**
      * Runs a JSON-RPC-2.0 method on the server. This assumes that this block's scope has
      * a 'service object'
      */
-    return dcl(ServerBlock, {
-
+    return dcl([Command,ServerBlock], {
         declaredClass:"xblox.model.server.Shell",
-
         description: 'Runs a JSON-RPC-2.0 method on the server',
-
         /**
          * The name of the block, used in the UI
          * @member {string}
@@ -38285,41 +38290,13 @@ define('xblox/model/server/Shell',[
 
         sharable:true,
         /**
-         * onCommandFinish will be excecuted which a driver did run a command
-         * @param msg {object}
-         * @param msg.id {string} the command job id
-         * @param msg.src {string} the source id, which is this block id
-         * @param msg.cmd {string} the command string being sent
-         */
-        onCommandFinish:function(msg){
-            var scope = this.getScope();
-            var context = scope.getContext();//driver instance
-            debug && console.log('onCommandFinish ' + this.send);
-            if(this.waitForResponse){
-                this._emit('cmd:'+msg.cmd + '_' + msg.id,{
-                    msg:msg
-                });
-            }
-        },
-        onCommandError:function(msg){
-            var scope = this.getScope();
-            var context = scope.getContext();//driver instance
-            debug && console.log('onCommandError',msg);
-            if(this.waitForResponse){
-                this._emit('cmd:'+msg.cmd + '_' + msg.id,msg);
-            }
-
-        },
-        /**
          * Callback when user edited the 'method' field. This will pre-populate the arguments field when empty
          * with the known SMD parameters : if possible.
          * @param newMethod
          * @param cis
          */
         onMethodChanged: function (newMethod, cis) {
-            
             this.method = newMethod;
-
             //we auto populate the arguments field
             if (!utils.isValidString(this.args)) {
 
@@ -38428,7 +38405,6 @@ define('xblox/model/server/Shell',[
             return params;
         },
         onReloaded: function (evt) {
-
             console.log('sdfsd');
             this._solve()
         },
@@ -38446,20 +38422,14 @@ define('xblox/model/server/Shell',[
          * @returns {Array}
          */
         solve: function (scope, settings, isInterface,send,run,error) {
-            
             this._return = [];
             this._lastResult=null;
             var thiz = this;
             var ret = [];
 
             settings = this._lastSettings = settings || this._lastSettings;
-
             var instance = this.getInstance();
-
             console.log('run');
-
-
-
             /*
             var value =utils.getJson(args,true,false);
             if(value === null || value === 0 || value === true || value === false || !_.isObject(value)){
@@ -38498,9 +38468,6 @@ define('xblox/model/server/Shell',[
             var service = this.getService();
             var serviceObject = this.scope.serviceObject;
             //service.callMethodEx(this.getServiceClass(), this.getServiceMethod(), _args, _cbSuccess,_cbError);
-
-            console.error('run deferred');
-
             var dfd = serviceObject.runDeferred(this.getServiceClass(),this.getServiceMethod(),_args);
             if(dfd){
                 dfd.then(function(data){
@@ -38535,9 +38502,8 @@ define('xblox/model/server/Shell',[
 
             fields.push(utils.createCI('value', 25, this.method, {
                 group: 'General',
-                title: 'Method',
+                title: 'Cmd',
                 dst: 'method',
-                description: 'This should be in the format : MyServerClass::myMethod',
                 delegate: {
                     runExpression: function (val, run, error) {
                         var old = thiz.method;
@@ -38590,9 +38556,7 @@ define('xblox/model/server/Shell',[
             return this.getService() != null;
         },
         getService: function () {
-
             var service = this.scope.getService();
-
             if(!service){
                 console.error('have no service object');
             }
@@ -40992,25 +40956,13 @@ define('xblox/model/loops/ForBlock',[
         },
         _currentForIndex:0,
         solveSubs:function(dfd,result,items,settings){
-
             var thiz = this;
-
             settings.override = settings.override || {};
-
             settings.override['args']=[this._currentForIndex];
-
-
-
             //more blocks?
             if(items.length) {
-
-                //console.log('---solve subs');
-
                 var subDfds = thiz.runFrom(items,0,settings);
-
                 all(subDfds).then(function(what){
-                    //console.log('all solved!',what);
-                    //thiz.onDidRunItem(dfd,result,settings);
                 },function(err){
                     console.error('error in chain',err);
                     thiz.onDidRunItem(dfd,err,settings);
@@ -41023,45 +40975,24 @@ define('xblox/model/loops/ForBlock',[
             }
         },
         _solve:function(scope,settings){
-
             var ret=[];
-
             var dfd = new Deferred(),
                 self = this;
 
             var result = this.solveSubs(dfd,null,this.items,settings);
-
-            //console.log('subs' , result);
-
-            /*
-            dfd.then(function(res){
-               console.error('dfd head ',res);
-            });
-            */
-
-            all(result).then(function(res){
-                var falsy = res.indexOf(false);
-                //console.error('subs '+falsy,res);
-                if(self.ignoreErrors!==true && falsy!==-1){
-                    dfd.resolve(false);
-                }else{
-                    dfd.resolve(true);
-                }
-            });
-
-
-            /*
-            for(var n = 0; n < this.items.length ; n++)
-            {
-                //this.addToEnd( ret , this.items[n].solve(scope,settings) );
-                if(this.items[n].enabled) {
-                    //this.addToEnd(ret,this.items[n].solve(scope,settings));
-                    var sub = this.items[n].solve(scope,settings);
-                    ret.push(sub);
-                }
+            if(result) {
+                all(result).then(function (res) {
+                    var falsy = res.indexOf(false);
+                    if (self.ignoreErrors !== true && falsy !== -1) {
+                        dfd.resolve(false);
+                    } else {
+                        dfd.resolve(true);
+                    }
+                });
+            }else{
+                dfd.resolve(true);
             }
-            */
-            //console.dir(ret);
+
             return dfd;
         },
 
@@ -42741,7 +42672,9 @@ define('xcf/model/Command',[
             return this._solving[id];
         },
         _resolve: function (string, settings,useDriverModule) {
-
+            if(_.isNumber(string) || _.isBoolean(string)){
+                return string;
+            }
             var scope = this.scope;
             var value = string || this._get('send');
             var settings = settings || {};
@@ -46801,7 +46734,7 @@ define('xide/data/_Base',[
         _queryCache:null,
         query: function (query, options,allowCache) {
             var hash = query ? MD5(JSON.stringify(query),1) : null;
-            if(!has('xcf-ui') && hash && !has('host-node')){
+            if(!has('xcf-ui') && hash && !has('host-node') && allowCache!==false){
                 !this._queryCache && (this._queryCache={});
                 if(this._queryCache[hash]){
                     return this._queryCache[hash];
@@ -46898,7 +46831,7 @@ define('xide/data/_Base',[
                 handle.cancel = handle.remove;
                 return handle;
             };
-            if(!has('xcf-ui') && hash && !has('host-node')){
+            if(!has('xcf-ui') && hash && !has('host-node') && allowCache!==false){
                 this._queryCache[hash]=queryResults;
             };
             return queryResults;
@@ -48733,8 +48666,8 @@ define('xblox/model/Scope',[
             return result;
         },
         _cached:null,
-        getBlocks:function(query){
-            if(!isIDE){
+        getBlocks:function(query,allowCache){
+            if(!isIDE && allowCache!==false){
                 if(!this._cached){
                     this._cached = {};
                 }
@@ -48751,8 +48684,8 @@ define('xblox/model/Scope',[
                 return [];
             }
             query = query||{id:/\S+/};//all blocks
-            var result = this.blockStore.query(query);
-            if(!isIDE){
+            var result = this.blockStore.query(query,null,allowCache);
+            if(!isIDE && allowCache!==false){
                 var hash = MD5(JSON.stringify(query), 1);
                 this._cached[hash] = result;
             }
@@ -48847,8 +48780,8 @@ define('xblox/model/Scope',[
          *
          * @returns {xblox.model.Block[]}
          */
-        allBlocks:function(block) {
-            return this.getBlocks();
+        allBlocks:function(query,allowCache) {
+            return this.getBlocks({},allowCache);
         },
         /**
          * Returns whether there is any block belongs to a given group
@@ -48856,7 +48789,7 @@ define('xblox/model/Scope',[
          * @returns {boolean}
          */
         hasGroup:function(group){
-            var all = this.allGroups();
+            var all = this.allGroups({},false);
             for (var i = 0; i < all.length; i++) {
                 var obj = all[i];
                 if (obj === group) {
@@ -48871,7 +48804,7 @@ define('xblox/model/Scope',[
          */
         allGroups:function(){
             var result = [];
-            var all = this.allBlocks();
+            var all = this.allBlocks({},false);
             var _has = function(what){
                 for (var i = 0; i < result.length; i++) {
                     if(result[i]===what){
@@ -49373,7 +49306,7 @@ define('xblox/model/Scope',[
 
 
             //2nd pass, update child blocks
-            var allBlocks = this.allBlocks();
+            var allBlocks = this.allBlocks(null,false);
             for(var i = 0; i < allBlocks.length ; i++){
                 var block = allBlocks[i];
                 block._children = childMap[block.id];
@@ -53256,7 +53189,7 @@ define('xcf/manager/DeviceManager',[
         /**
          * @private
          */
-        reconnectDevice: 5000,
+        reconnectDevice: 15000,
         /**
          * @private
          */
@@ -53580,18 +53513,14 @@ define('xcf/manager/DeviceManager',[
          * @param driver {module:xcf/model/Driver} the driver model item
          */
         onDeviceStarted: function (driverInstance, deviceStoreItem, driver) {
-
             if (!driverInstance || !deviceStoreItem || !driver) {
                 _debug && console.log('onDeviceStarted failed, invalid params');
                 return;
             }
-            
-            
+
             var info = this.toDeviceControlInfo(deviceStoreItem),
                 serverSide = info.serverSide,
-                isServer = info.isServer;
-
-
+                _isServer = info.isServer;
             _debug && console.log('onDeviceStarted ',info.user_drivers);
             /**
              * Post work :
@@ -53601,16 +53530,12 @@ define('xcf/manager/DeviceManager',[
              */
 
             //1. fire startup blocks
-            var blockScope = driverInstance.blockScope;// ctx.getBlockManager().getScope(driver.id);
-
-            if( !isServer && ((isServer && serverSide) || (!serverSide && !isServer && runDrivers))) {
-
+            var blockScope = driverInstance.blockScope;
+            if(((isServer && (serverSide || _isServer)) || (!serverSide && !isServer))) {
                 var autoBlocks = [];
-
                 var initBlocks = blockScope.getBlocks({
                     group: types.COMMAND_TYPES.INIT_COMMAND
                 });
-
                 try {
                     _.each(initBlocks, function (block) {
                         if (block.enabled !== false && block.__started!== true) {
@@ -53634,10 +53559,7 @@ define('xcf/manager/DeviceManager',[
                     }
                 }
             }
-
-
             //important to set this before publishing the connected event, otherwise it runs an infity loop
-
             driverInstance.__didStartBlocks = true;
             this.publish(types.EVENTS.ON_DEVICE_DRIVER_INSTANCE_READY, {
                 device: deviceStoreItem,
@@ -53645,21 +53567,13 @@ define('xcf/manager/DeviceManager',[
                 driver: driver,
                 blockScope: blockScope
             });
-
             this.publish(types.EVENTS.ON_DEVICE_CONNECTED, {
                 device: info,
                 instance: driverInstance,
                 driver: driver,
                 blockScope: blockScope
             });
-            
-
             this.ctx.getDriverManager().addDeviceInstance(deviceStoreItem,driver);
-
-            if(this.completeDevice){
-                //this.completeDevice(null,deviceStoreItem,driver);
-            }
-
         },
         getDevice:function(mixed){
             var result = mixed;
@@ -53683,35 +53597,29 @@ define('xcf/manager/DeviceManager',[
         stopDevice: function (item) {
             item = this.getDevice(item) || item;
             if(!item){
-                console.error('cant find device');
+                _debugConnect && console.error('cant find device');
                 return;
             }
             this.checkDeviceServerConnection();
 
             item._userStopped = true;
-
             var cInfo = this.toDeviceControlInfo(item);
             if(!cInfo){
-                console.error('cant find device::no device info',item.toString && item.toString());
+                _debugConnect && console.error('cant find device::no device info',item.toString && item.toString());
                 return;
             }
-
             if(isServer && !cInfo.serverSide){
                 return;
             }
-
             var hash = cInfo.hash;
             if (this.deviceInstances[hash]) {
                 this._removeInstance(this.deviceInstances[hash], hash,item);
                 delete this.deviceInstances[hash];
                 _debugConnect && console.log('-- stop device ' + hash,this.deviceInstances);
-
-            }else{
+            }else {
                 _debugConnect && console.log('cant find instance ' + hash);
             }
-
             !isServer && this.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.MANAGER_STOP_DRIVER, cInfo);
-
         },
         getStores:function(){
             return this.stores;
@@ -60116,17 +60024,18 @@ define('xcf/model/Device',[
             return this.isEnabled();
         },
         reset:function(){
-
             delete this._startDfd;
             this._startDfd = null;
             delete this['blockScope'];
             this['blockScope'] = null;
-
             delete this.serverVariables;
             this.serverVariables = null;
-
             delete this['driverInstance'];
             this['driverInstance'] = null;
+            clearTimeout(this.reconnectTimer);
+            delete this.lastReconnectTime;
+            delete this.reconnectRetry;
+            delete this.isReconnecting;
             this.setState(types.DEVICE_STATE.DISCONNECTED);
         },
         /**
@@ -60753,8 +60662,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 packageUrl = packageUrl.replace('/.js','/');
             }
             var requirePath = packageUrl + script;
-            requirePath +='&time'+ new Date().getTime();
-            try {
+            requirePath+= requirePath.indexOf('?') == -1 ? '?' : '&';
+            requirePath+='time'+ new Date().getTime();            try {
                 require([requirePath], function (driverModule) {
                     dfd.resolve(driverModule);
                 });
@@ -61136,8 +61045,20 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                         if (deviceStoreItem.reconnectTimer) {
                             return;
                         }
+                        deviceStoreItem.isReconnecting = true;
+                        if(!deviceStoreItem.lastReconnectTime){
+                            deviceStoreItem.lastReconnectTime = 1*thiz.reconnectDevice;
+                        }else if(deviceStoreItem.lastReconnectTime>3600){
+                            deviceStoreItem.lastReconnectTime = 3600;
+                        }
+                        if(!deviceStoreItem.reconnectRetry){
+                            deviceStoreItem.reconnectRetry = 0;
+                        }
+
                         deviceStoreItem.reconnectTimer = setTimeout(function () {
                             deviceStoreItem.reconnectTimer = null;
+                            deviceStoreItem.lastReconnectTime *=2;
+                            deviceStoreItem.reconnectRetry +=1;
                             if (deviceStoreItem.shouldReconnect()) {
                                 if (info) {
                                     deviceStoreItem.setState(types.DEVICE_STATE.CONNECTING);
@@ -61147,7 +61068,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                                 //thiz.connectDevice(deviceStoreItem);
                                 thiz.startDevice(deviceStoreItem);
                             }
-                        }, thiz.reconnectDevice);
+                        }, deviceStoreItem.lastReconnectTime);
                     }
                 }
             }
@@ -61685,7 +61606,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
          * @param pause
          */
         sendDeviceCommand: function (driverInstance, data,src,id,print,wait,stop,pause) {
-
             this.checkDeviceServerConnection();
             var options = driverInstance.getDeviceInfo();
             utils.mixin({
@@ -61811,9 +61731,20 @@ define('xcf/manager/DeviceManager_DeviceServer',[
          * @param src
          * @param id
          */
-        runShell: function (driverInstance,method,args,src,id) {
+        runShell: function (driverInstance,cmd,args,src,id) {
+            var options = driverInstance.getDeviceInfo();
+            this.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.RUN_SHELL,{
+                cmd: cmd,
+                args:args,
+                options:utils.mixin(options,{
+                    params: {
+                        id: id,
+                        src: src
+                    }
+                })
+            });
+            /*
             this.checkDeviceServerConnection();
-
             var options = driverInstance.options,
                 sendOptions = {
                     id:id,
@@ -61832,7 +61763,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 this.deviceServerClient.emit(null, dataOut, 'Run_Shell');
             }else{
                 this.onHaveNoDeviceServer();
-            }
+            }*/
         },
         /**
          * 
