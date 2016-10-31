@@ -13,18 +13,14 @@ define([
     'xcf/types/Types',
     'xdojo/has',
     'dojo/Deferred'
-
 ], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, Reloadable,Types,has,Deferred) {
-
     var isIDE = has('xcf-ui');
     var debugWire = false;
     var debugBoot = false;
     var debugRun = false;
-
     var Instance = null;
     var NotifierClass = dcl([EventedMixin.dcl],{});
     var Notifier = new NotifierClass({});
-
     /**
      * Lightweight context for end-user apps
      * @class module:xapp/manager/Context
@@ -62,7 +58,6 @@ define([
             if (!device) {
                 return null;
             }
-
             var driverScope = device.driver;
             //not initiated driver!
             if (driverScope && driverScope.blockScope) {
@@ -70,19 +65,15 @@ define([
             }
 
             if (!driverScope) {
-                console.error('have no driver, use driver from DB');
                 if (device) {
                     var driverId = deviceManager.getMetaValue(device, types.DEVICE_PROPERTY.CF_DEVICE_DRIVER);
                     driverScope = ctx.getBlockManager().getScope(driverId);
                     result = driverScope.getVariableById(driverId + '/' + variableId);
-
                 }
             }
-
             return result;
         },
         wireNode: function (widget, event, block, params) {
-
             var thiz = this,
                 rejectFunction = null,
                 onBeforeRun = null;
@@ -94,9 +85,7 @@ define([
             if(widget['__setup'][block.id]){
                return;
             }
-
             widget['__setup'][block.id]=true;
-
             if (params) {
                 if (event === types.EVENTS.ON_DRIVER_VARIABLE_CHANGED) {
 
@@ -112,7 +101,6 @@ define([
                         if(_variableIn && variable && _variableIn.id === variable.id){
                             return false;
                         }
-
                         if (variable.id === variableId) {
                             return false;
                         }
@@ -415,33 +403,25 @@ define([
                 }, this);
             };
             for (var i = 0; i < allGroups.length; i++) {
-
                 var group = allGroups[i];
-
                 var params = getParams(group);
-
                 if (params && params.widget) {
                     this.wireWidget(scope, params.widget, params.widget.domNode || params.widget, params.event, group, params);
                 }else{
                     console.error('cant resolve group '+group);
                 }
-
                 var blocks = scope.getBlocks({
                     group: group
                 });
-
                 if (!blocks || !blocks.length) {
                     debugWire && console.warn('have no blocks for group : ' + group);
                 }
-
                 if(isIDE) {
                     for (var j = 0; j < blocks.length; j++) {
                         var block = blocks[j];
                         wireBlock(block);
                     }
                 }
-
-
                 params.widget && widgets.indexOf(params.widget) ==-1 && widgets.push(params.widget);
             }
 
@@ -466,7 +446,6 @@ define([
             }
 
             isIDE && scope._on(types.EVENTS.ON_ITEM_ADDED, function (evt) {
-
                 var params = getParams(evt.item.group);
                 if (params && params.widget) {
                     debugWire && console.log('on item added', arguments);
@@ -495,33 +474,25 @@ define([
             }
         },
         loadXBloxFiles: function (files) {
-
             var thiz = this;
-
             function loadXBLOXFiles() {
-
                 thiz.getBlockManager().loadFiles(files).then(function (scopes) {
-
                     debugBoot && console.log('   Checkpoint 8.1. xapp/manager/context->xblox files loaded');
-
                     thiz.onBlockFilesLoaded(scopes);
                 })
             }
 
             files = [];
             if (files.length == 0) {
-
                 var item = this.settings.item;
                 if (item) {
                     var mount = utils.replaceAll('/', '', item.mount);
                     var extension = utils.getFileExtension(item.path);
-
                     var path = item.path.replace('.' + extension, '.xblox');
                     var sceneBloxItem = {
                         mount: mount,
                         path: path
                     };
-
                     files.push(sceneBloxItem);
 
                     var content = {
@@ -536,46 +507,38 @@ define([
         },
         _appModule:null,
         loadAppModule:function (item) {
-
             if(this._appModule){
                 //return _appModule;
             }
-
             var dfd = new Deferred();
-
             if(!item){
                 dfd.resolve();
                 return dfd;
             }
-
             var itemUrl = item.path.replace('./','').replace('.dhtml','');
             var mid = item.mount.replace('/','')  + '/' + itemUrl;
+            var _require = require;
             mid = mid.split(' ').join('%20');
-            var url = require.toUrl(item.mount.replace('/','')  + '/' + itemUrl);
+
+            var url = _require.toUrl(item.mount.replace('/','')  + '/' + itemUrl);
             debugBoot && console.log('load default app.js ' + mid);
-            require.config({
-                //urlArgs:"bust=" +  (new Date()).getTime()
-            });
             try{
-                require.undef(mid);
+                _require.undef && _require.undef(mid);
             }catch(e){
                 console.warn('error unloading app module ' + mid,e);
             }
             try{
                 //probe
-                require([mid],function(appModule){
-                    console.warn('invalid app module ' + mid);
+                _require([mid],function(appModule){
                     dfd.resolve(appModule);
-                    require.config({
+                    _require.config({
                         urlArgs:null
                     });
                 });
-
             }catch(e){
                 console.error('error loading module ',e);
                 dfd.resolve();
             }
-
             this._appModule = dfd;
 
             return dfd;
@@ -601,7 +564,7 @@ define([
             if(xbloxFiles.length==0 && settings.item){
                 xbloxFiles.push({
                     path:settings.item.path.replace('.dhtml','.xblox').replace('.html','.xblox'),
-                    mount:settings.item.mount,
+                    mount:settings.item.mount
                 })
             }
 
@@ -767,24 +730,19 @@ define([
 
         },
         mergeFunctions: function (target, source) {
-
             for (var i in source) {
                 var o = source[i];
-                if (_.isFunction(source[i]) /*&& lang.isFunction(target[i])*/) {
+                if (_.isFunction(source[i])) {
                     debugBoot && console.log('override ' + i);
                     target[i] = o;
                 }
-
             }
-
         },
         onModuleUpdated: function (evt) {
             var _obj = dojo.getObject(evt.moduleClass);
-
             if (_obj && _obj.prototype) {
                 this.mergeFunctions(_obj.prototype, evt.moduleProto);
             }
-
         },
         getApplication: function () {
             return this.application;
@@ -819,14 +777,11 @@ define([
             Instance = this;
             var self = this;
             if(settings){
-
                 this.settings = settings;
                 if(settings.delegate){
                     this.delegate = settings.delegate;
                 }
             }
-
-
             if(this.isVE() && settings.item){
                 this.loadAppModule(settings.item);
             }

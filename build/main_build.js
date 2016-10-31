@@ -31793,18 +31793,14 @@ define('xapp/manager/Context',[
     'xcf/types/Types',
     'xdojo/has',
     'dojo/Deferred'
-
 ], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, Reloadable,Types,has,Deferred) {
-
     var isIDE = has('xcf-ui');
     var debugWire = false;
     var debugBoot = false;
     var debugRun = false;
-
     var Instance = null;
     var NotifierClass = dcl([EventedMixin.dcl],{});
     var Notifier = new NotifierClass({});
-
     /**
      * Lightweight context for end-user apps
      * @class module:xapp/manager/Context
@@ -31842,7 +31838,6 @@ define('xapp/manager/Context',[
             if (!device) {
                 return null;
             }
-
             var driverScope = device.driver;
             //not initiated driver!
             if (driverScope && driverScope.blockScope) {
@@ -31850,19 +31845,15 @@ define('xapp/manager/Context',[
             }
 
             if (!driverScope) {
-                console.error('have no driver, use driver from DB');
                 if (device) {
                     var driverId = deviceManager.getMetaValue(device, types.DEVICE_PROPERTY.CF_DEVICE_DRIVER);
                     driverScope = ctx.getBlockManager().getScope(driverId);
                     result = driverScope.getVariableById(driverId + '/' + variableId);
-
                 }
             }
-
             return result;
         },
         wireNode: function (widget, event, block, params) {
-
             var thiz = this,
                 rejectFunction = null,
                 onBeforeRun = null;
@@ -31874,9 +31865,7 @@ define('xapp/manager/Context',[
             if(widget['__setup'][block.id]){
                return;
             }
-
             widget['__setup'][block.id]=true;
-
             if (params) {
                 if (event === types.EVENTS.ON_DRIVER_VARIABLE_CHANGED) {
 
@@ -31892,7 +31881,6 @@ define('xapp/manager/Context',[
                         if(_variableIn && variable && _variableIn.id === variable.id){
                             return false;
                         }
-
                         if (variable.id === variableId) {
                             return false;
                         }
@@ -32195,33 +32183,25 @@ define('xapp/manager/Context',[
                 }, this);
             };
             for (var i = 0; i < allGroups.length; i++) {
-
                 var group = allGroups[i];
-
                 var params = getParams(group);
-
                 if (params && params.widget) {
                     this.wireWidget(scope, params.widget, params.widget.domNode || params.widget, params.event, group, params);
                 }else{
                     console.error('cant resolve group '+group);
                 }
-
                 var blocks = scope.getBlocks({
                     group: group
                 });
-
                 if (!blocks || !blocks.length) {
                     debugWire && console.warn('have no blocks for group : ' + group);
                 }
-
                 if(isIDE) {
                     for (var j = 0; j < blocks.length; j++) {
                         var block = blocks[j];
                         wireBlock(block);
                     }
                 }
-
-
                 params.widget && widgets.indexOf(params.widget) ==-1 && widgets.push(params.widget);
             }
 
@@ -32246,7 +32226,6 @@ define('xapp/manager/Context',[
             }
 
             isIDE && scope._on(types.EVENTS.ON_ITEM_ADDED, function (evt) {
-
                 var params = getParams(evt.item.group);
                 if (params && params.widget) {
                     debugWire && console.log('on item added', arguments);
@@ -32275,33 +32254,25 @@ define('xapp/manager/Context',[
             }
         },
         loadXBloxFiles: function (files) {
-
             var thiz = this;
-
             function loadXBLOXFiles() {
-
                 thiz.getBlockManager().loadFiles(files).then(function (scopes) {
-
                     debugBoot && console.log('   Checkpoint 8.1. xapp/manager/context->xblox files loaded');
-
                     thiz.onBlockFilesLoaded(scopes);
                 })
             }
 
             files = [];
             if (files.length == 0) {
-
                 var item = this.settings.item;
                 if (item) {
                     var mount = utils.replaceAll('/', '', item.mount);
                     var extension = utils.getFileExtension(item.path);
-
                     var path = item.path.replace('.' + extension, '.xblox');
                     var sceneBloxItem = {
                         mount: mount,
                         path: path
                     };
-
                     files.push(sceneBloxItem);
 
                     var content = {
@@ -32316,46 +32287,38 @@ define('xapp/manager/Context',[
         },
         _appModule:null,
         loadAppModule:function (item) {
-
             if(this._appModule){
                 //return _appModule;
             }
-
             var dfd = new Deferred();
-
             if(!item){
                 dfd.resolve();
                 return dfd;
             }
-
             var itemUrl = item.path.replace('./','').replace('.dhtml','');
             var mid = item.mount.replace('/','')  + '/' + itemUrl;
+            var _require = require;
             mid = mid.split(' ').join('%20');
-            var url = require.toUrl(item.mount.replace('/','')  + '/' + itemUrl);
+
+            var url = _require.toUrl(item.mount.replace('/','')  + '/' + itemUrl);
             debugBoot && console.log('load default app.js ' + mid);
-            require.config({
-                //urlArgs:"bust=" +  (new Date()).getTime()
-            });
             try{
-                require.undef(mid);
+                _require.undef && _require.undef(mid);
             }catch(e){
                 console.warn('error unloading app module ' + mid,e);
             }
             try{
                 //probe
-                require([mid],function(appModule){
-                    console.warn('invalid app module ' + mid);
+                _require([mid],function(appModule){
                     dfd.resolve(appModule);
-                    require.config({
+                    _require.config({
                         urlArgs:null
                     });
                 });
-
             }catch(e){
                 console.error('error loading module ',e);
                 dfd.resolve();
             }
-
             this._appModule = dfd;
 
             return dfd;
@@ -32381,7 +32344,7 @@ define('xapp/manager/Context',[
             if(xbloxFiles.length==0 && settings.item){
                 xbloxFiles.push({
                     path:settings.item.path.replace('.dhtml','.xblox').replace('.html','.xblox'),
-                    mount:settings.item.mount,
+                    mount:settings.item.mount
                 })
             }
 
@@ -32547,24 +32510,19 @@ define('xapp/manager/Context',[
 
         },
         mergeFunctions: function (target, source) {
-
             for (var i in source) {
                 var o = source[i];
-                if (_.isFunction(source[i]) /*&& lang.isFunction(target[i])*/) {
+                if (_.isFunction(source[i])) {
                     debugBoot && console.log('override ' + i);
                     target[i] = o;
                 }
-
             }
-
         },
         onModuleUpdated: function (evt) {
             var _obj = dojo.getObject(evt.moduleClass);
-
             if (_obj && _obj.prototype) {
                 this.mergeFunctions(_obj.prototype, evt.moduleProto);
             }
-
         },
         getApplication: function () {
             return this.application;
@@ -32599,14 +32557,11 @@ define('xapp/manager/Context',[
             Instance = this;
             var self = this;
             if(settings){
-
                 this.settings = settings;
                 if(settings.delegate){
                     this.delegate = settings.delegate;
                 }
             }
-
-
             if(this.isVE() && settings.item){
                 this.loadAppModule(settings.item);
             }
@@ -32799,8 +32754,9 @@ define('xblox/model/Block',[
     "xide/factory",
     "xide/utils",
     "xide/types",
+    "xide/utils/ObjectUtils",
     "xdojo/has!xblox-ui?xblox/model/Block_UI"
-], function (dcl,Deferred, lang, has, ModelBase, factory, utils, types, Block_UI) {
+], function (dcl,Deferred, lang, has, ModelBase, factory, utils, types,ObjectUtils,Block_UI) {
 
     var bases = [ModelBase];
 
@@ -33037,7 +32993,8 @@ define('xblox/model/Block',[
             'isCommand',
             'lastCommand',
             'autoCreateElse',
-            '_postCreated'
+            '_postCreated',
+            '_counter'
         ],
         _parseString: function (string,settings,block,flags) {
             try {
@@ -33875,6 +33832,1015 @@ define('xblox/model/Block',[
     dcl.chainAfter(Block,'onDidRun');
     return Block;
 });;
+define('xide/utils/ObjectUtils',[
+    'xide/utils',
+    'require',
+    "dojo/Deferred",
+    "dojo/_base/json",
+    "dojo/has"
+], function (utils, require, Deferred,json,has) {
+
+    var _debug = false;
+
+    "use strict";
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //  Loader utils
+    //
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    utils.debounce = function(who,methodName,_function,delay,options,now,args){
+        var _place = who[methodName+'_debounced'];
+        if(!_place){
+            _place = who[methodName+'_debounced'] =  _.debounce(_function, delay,options);
+        }
+        if(now==true){
+            if(!who[methodName+'_debouncedFirst']){
+                who[methodName+'_debouncedFirst']=true;
+                _function.apply(who,args);
+            }
+        }
+        return _place();
+    };
+
+    utils.pluck=function(items,prop){
+        var result = [];
+        if(!items){
+            _debug && console.warn('pluck: no items');
+            return result;
+        }
+        for (var i = 0; i < items.length; i++) {
+            result.push(items[i][prop]);
+        }
+        return result;
+
+    };
+
+    /**
+     * Trigger downloadable file
+     * @param filename
+     * @param text
+     */
+    utils.download  = function(filename, text){
+        var element = document.createElement('a');
+        text = _.isString(text) ? text : JSON.stringify(text,null,2);
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+        element.setAttribute('download', filename);
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+    };
+
+    /**
+     * Ask require registry at this path
+     * @param mixed
+     * @param _default
+     * @param ready
+     * @returns {*}
+     */
+    utils.hasObject = function (mixed, _default, ready) {
+        var result = null;
+        var _re = require;
+        try {
+            result = _re(mixed);
+        } catch (e) {
+            console.error('error in utils.hasObject ', e);
+        }
+        return result;
+    };
+    /**
+     * Returns a module by module path
+     * @param mixed {String|Object}
+     * @param _default {Object} default object
+     * @returns {Object|Promise}
+     */
+    utils.getObject = function (mixed, _default) {
+        var result = null;
+        if (utils.isString(mixed)) {
+            var _re = require;
+            try {
+                result = _re(mixed);
+            } catch (e) {
+                _debug && console.warn('utils.getObject::require failed for ' + mixed);
+            }
+            //not a loaded module yet
+            try {
+                if (!result) {
+
+                    var deferred = new Deferred();
+                    //try loader
+                    result = _re([
+                        mixed
+                    ], function (module) {
+                        deferred.resolve(module);
+                    });
+                    return deferred.promise;
+                }
+            }catch(e){
+                _debug &&  console.error('error in requiring '+mixed,e);
+            }
+            return result;
+
+        } else if (utils.isObject(mixed)) {
+            return mixed;//reflect
+        }
+        return result !== null ? result : _default;
+    };
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //  True object utils
+    //
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    utils.toArray = function (obj) {
+        var result = [];
+        for (var c in obj) {
+            result.push({
+                name: c,
+                value: obj[c]
+            });
+        }
+        return result;
+    };
+    /**
+     * Array to object conversion
+     * @param arr
+     * @returns {Object}
+     */
+    utils.toObject = function (arr, lodash) {
+        if (!arr) {
+            return {};
+        }
+        if (lodash !== false) {
+            return _.object(_.map(arr, _.values));
+        } else {
+            //CI related back compat hack
+            if (utils.isObject(arr) && arr[0]) {
+                return arr[0];
+            }
+
+            var rv = {};
+            for (var i = 0; i < arr.length; ++i) {
+                rv[i] = arr[i];
+            }
+            return rv;
+        }
+    };
+
+    /**
+     * Gets an object property by string, eg: utils.byString(someObj, 'part3[0].name');
+     * @deprecated, see objectAtPath below
+     * @param o {Object}    : the object
+     * @param s {String}    : the path within the object
+     * @param defaultValue {Object|String|Number} : an optional default value
+     * @returns {*}
+     */
+    utils.byString = function (o, s, defaultValue) {
+        s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
+        s = s.replace(/^\./, '');           // strip a leading dot
+        var a = s.split('.');
+        while (a.length) {
+            var n = a.shift();
+            if (n in o) {
+                o = o[n];
+            } else {
+                return;
+            }
+        }
+        return o;
+    };
+
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //  Object path
+    //
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    /**
+     * Internals
+     */
+
+    //cache
+    var toStr = Object.prototype.toString,
+        _hasOwnProperty = Object.prototype.hasOwnProperty;
+
+    /**
+     * @private
+     * @param type
+     * @returns {*}
+     */
+    function toString(type) {
+        return toStr.call(type);
+    }
+
+    /**
+     * @private
+     * @param key
+     * @returns {*}
+     */
+    function getKey(key) {
+        var intKey = parseInt(key);
+        if (intKey.toString() === key) {
+            return intKey;
+        }
+        return key;
+    }
+
+    /**
+     * internal set value at path in object
+     * @private
+     * @param obj
+     * @param path
+     * @param value
+     * @param doNotReplace
+     * @returns {*}
+     */
+    function set(obj, path, value, doNotReplace) {
+        if (_.isNumber(path)) {
+            path = [path];
+        }
+        if (_.isEmpty(path)) {
+            return obj;
+        }
+        if (_.isString(path)) {
+            return set(obj, path.split('.').map(getKey), value, doNotReplace);
+        }
+        var currentPath = path[0];
+
+        if (path.length === 1) {
+            var oldVal = obj[currentPath];
+            if (oldVal === void 0 || !doNotReplace) {
+                obj[currentPath] = value;
+            }
+            return oldVal;
+        }
+
+        if (obj[currentPath] === void 0) {
+            //check if we assume an array
+            if (_.isNumber(path[1])) {
+                obj[currentPath] = [];
+            } else {
+                obj[currentPath] = {};
+            }
+        }
+        return set(obj[currentPath], path.slice(1), value, doNotReplace);
+    }
+
+    /**
+     * deletes an property by a path
+     * @param obj
+     * @param path
+     * @returns {*}
+     */
+    function del(obj, path) {
+        if (_.isNumber(path)) {
+            path = [path];
+        }
+        if (_.isEmpty(obj)) {
+            return void 0;
+        }
+
+        if (_.isEmpty(path)) {
+            return obj;
+        }
+        if (_.isString(path)) {
+            return del(obj, path.split('.'));
+        }
+
+        var currentPath = getKey(path[0]);
+        var oldVal = obj[currentPath];
+
+        if (path.length === 1) {
+            if (oldVal !== void 0) {
+                if (_.isArray(obj)) {
+                    obj.splice(currentPath, 1);
+                } else {
+                    delete obj[currentPath];
+                }
+            }
+        } else {
+            if (obj[currentPath] !== void 0) {
+                return del(obj[currentPath], path.slice(1));
+            }
+        }
+        return obj;
+    }
+
+    /**
+     * Private helper class
+     * @private
+     * @type {{}}
+     */
+    var objectPath = {};
+
+    objectPath.has = function (obj, path) {
+        if (_.isEmpty(obj)) {
+            return false;
+        }
+        if (_.isNumber(path)) {
+            path = [path];
+        } else if (_.isString(path)) {
+            path = path.split('.');
+        }
+
+        if (_.isEmpty(path) || path.length === 0) {
+            return false;
+        }
+
+        for (var i = 0; i < path.length; i++) {
+            var j = path[i];
+            if ((_.isObject(obj) || _.isArray(obj)) && _hasOwnProperty.call(obj, j)) {
+                obj = obj[j];
+            } else {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    /**
+     * Define private public 'ensure exists'
+     * @param obj
+     * @param path
+     * @param value
+     * @returns {*}
+     */
+    objectPath.ensureExists = function (obj, path, value) {
+        return set(obj, path, value, true);
+    };
+
+    /**
+     * Define private public 'set'
+     * @param obj
+     * @param path
+     * @param value
+     * @param doNotReplace
+     * @returns {*}
+     */
+    objectPath.set = function (obj, path, value, doNotReplace) {
+        return set(obj, path, value, doNotReplace);
+    };
+
+    /**
+     Define private public 'insert'
+     * @param obj
+     * @param path
+     * @param value
+     * @param at
+     */
+    objectPath.insert = function (obj, path, value, at) {
+        var arr = objectPath.get(obj, path);
+        at = ~~at;
+        if (!isArray(arr)) {
+            arr = [];
+            objectPath.set(obj, path, arr);
+        }
+        arr.splice(at, 0, value);
+    };
+
+    /**
+     * Define private public 'empty'
+     * @param obj
+     * @param path
+     * @returns {*}
+     */
+    objectPath.empty = function (obj, path) {
+        if (_.isEmpty(path)) {
+            return obj;
+        }
+        if (_.isEmpty(obj)) {
+            return void 0;
+        }
+
+        var value, i;
+        if (!(value = objectPath.get(obj, path))) {
+            return obj;
+        }
+
+        if (_.isString(value)) {
+            return objectPath.set(obj, path, '');
+        } else if (_.isBoolean(value)) {
+            return objectPath.set(obj, path, false);
+        } else if (_.isNumber(value)) {
+            return objectPath.set(obj, path, 0);
+        } else if (_.isArray(value)) {
+            value.length = 0;
+        } else if (_.isObject(value)) {
+            for (i in value) {
+                if (_hasOwnProperty.call(value, i)) {
+                    delete value[i];
+                }
+            }
+        } else {
+            return objectPath.set(obj, path, null);
+        }
+    };
+
+    /**
+     * Define private public 'push'
+     * @param obj
+     * @param path
+     */
+    objectPath.push = function (obj, path /*, values */) {
+        var arr = objectPath.get(obj, path);
+        if (!_.isArray(arr)) {
+            arr = [];
+            objectPath.set(obj, path, arr);
+        }
+        arr.push.apply(arr, Array.prototype.slice.call(arguments, 2));
+    };
+
+    /**
+     * Define private public 'coalesce'
+     * @param obj
+     * @param paths
+     * @param defaultValue
+     * @returns {*}
+     */
+    objectPath.coalesce = function (obj, paths, defaultValue) {
+        var value;
+        for (var i = 0, len = paths.length; i < len; i++) {
+            if ((value = objectPath.get(obj, paths[i])) !== void 0) {
+                return value;
+            }
+        }
+        return defaultValue;
+    };
+
+    /**
+     * Define private public 'get'
+     * @param obj
+     * @param path
+     * @param defaultValue
+     * @returns {*}
+     */
+    objectPath.get = function (obj, path, defaultValue) {
+        if (_.isNumber(path)) {
+            path = [path];
+        }
+        if (_.isEmpty(path)) {
+            return obj;
+        }
+        if (_.isEmpty(obj)) {
+            //lodash doesnt seem to work with html nodes
+            if (obj && obj.innerHTML == null) {
+                return defaultValue;
+            }
+        }
+        if (_.isString(path)) {
+            return objectPath.get(obj, path.split('.'), defaultValue);
+        }
+        var currentPath = getKey(path[0]);
+        if (path.length === 1) {
+            if (obj && obj[currentPath] === void 0) {
+                return defaultValue;
+            }
+            if (obj) {
+                return obj[currentPath];
+            }
+        }
+        if (!obj) {
+            return defaultValue;
+        }
+        return objectPath.get(obj[currentPath], path.slice(1), defaultValue);
+    };
+
+    /**
+     * Define private public 'del'
+     * @param obj
+     * @param path
+     * @returns {*}
+     */
+    objectPath.del = function (obj, path) {
+        return del(obj, path);
+    };
+    /////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //  Object path public xide/utils mixin
+    //
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    /**
+     *  Returns a value by a give object path
+     *
+     *  //works also with arrays
+     *    objectPath.get(obj, "a.c.1");  //returns "f"
+     *    objectPath.get(obj, ["a","c","1"]);  //returns "f"
+     *
+     * @param obj {object}
+     * @param path {string}
+     * @param _default {object|null}
+     * @returns {*}
+     */
+    utils.getAt = function (obj, path, _default) {
+        return objectPath.get(obj, path, _default);
+    };
+
+    /**
+     * Sets a value in an object/array at a given path.
+     * @example
+     *
+     * utils.setAt(obj, "a.h", "m"); // or utils.setAt(obj, ["a","h"], "m");
+     *
+     * //set will create intermediate object/arrays
+     * objectPath.set(obj, "a.j.0.f", "m");
+     *
+     * @param obj{Object|Array}
+     * @param path {string}
+     * @param value {mixed}
+     * @returns {Object|Array}
+     */
+    utils.setAt = function (obj, path, value) {
+        return objectPath.set(obj, path, value);
+    };
+
+    /**
+     * Returns there is anything at given path within an object/array.
+     * @param obj
+     * @param path
+     */
+    utils.hasAt = function (obj, path) {
+        return objectPath.has(obj, path);
+    };
+
+    /**
+     * Ensures at given path, otherwise _default will be placed
+     * @param obj
+     * @param path
+     * @returns {*}
+     */
+    utils.ensureAt = function (obj, path, _default) {
+        return objectPath.ensureExists(obj, path, _default);
+    };
+    /**
+     * Deletes at given path
+     * @param obj
+     * @param path
+     * @returns {*}
+     */
+    utils.deleteAt = function (obj, path) {
+        return objectPath.del(obj, path);
+    };
+
+    /**
+     *
+     * @param to
+     * @param from
+     * @returns {*}
+     */
+    utils.merge = function (to, from) {
+        for (var n in from) {
+            if (typeof to[n] != 'object') {
+                to[n] = from[n];
+            } else if (typeof from[n] == 'object') {
+                to[n] = utils.merge(to[n], from[n]);
+            }
+        }
+
+        return to;
+    };
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //  Dojo's most wanted
+    //
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    utils.clone=function(/*anything*/ src){
+        // summary:
+        // Clones objects (including DOM nodes) and all children.
+        // Warning: do not clone cyclic structures.
+        // src:
+        // The object to clone
+        if(!src || typeof src != "object" || utils.isFunction(src)){
+            // null, undefined, any non-object, or function
+            return src; // anything
+        }
+        if(src.nodeType && "cloneNode" in src){
+            // DOM Node
+            return src.cloneNode(true); // Node
+        }
+        if(src instanceof Date){
+            // Date
+            return new Date(src.getTime()); // Date
+        }
+        if(src instanceof RegExp){
+            // RegExp
+            return new RegExp(src); // RegExp
+        }
+        var r, i, l;
+        if(utils.isArray(src)){
+            // array
+            r = [];
+            for(i = 0, l = src.length; i < l; ++i){
+                if(i in src){
+                    r.push(utils.clone(src[i]));
+                }
+            }
+            // we don't clone functions for performance reasons
+            // }else if(d.isFunction(src)){
+            // // function
+            // r = function(){ return src.apply(this, arguments); };
+        }else{
+            // generic objects
+            r = src.constructor ? new src.constructor() : {};
+        }
+        return utils._mixin(r, src, utils.clone);
+    };
+
+    /**
+     * Copies/adds all properties of source to dest; returns dest.
+     * @description All properties, including functions (sometimes termed "methods"), excluding any non-standard extensions
+     * found in Object.prototype, are copied/added to dest. Copying/adding each particular property is
+     * delegated to copyFunc (if any); copyFunc defaults to the Javascript assignment operator if not provided.
+     * Notice that by default, _mixin executes a so-called "shallow copy" and aggregate types are copied/added by reference.
+     * @param dest {object} The object to which to copy/add all properties contained in source.
+     * @param source {object} The object from which to draw all properties to copy into dest.
+     * @param copyFunc {function} The process used to copy/add a property in source; defaults to the Javascript assignment operator.
+     * @returns {object} dest, as modified
+     * @private
+     */
+    utils._mixin=function (dest, source, copyFunc) {
+        var name, s, i, empty = {};
+        for (name in source) {
+            // the (!(name in empty) || empty[name] !== s) condition avoids copying properties in "source"
+            // inherited from Object.prototype.	 For example, if dest has a custom toString() method,
+            // don't overwrite it with the toString() method that source inherited from Object.prototype
+            s = source[name];
+            if (!(name in dest) || (dest[name] !== s && (!(name in empty) || empty[name] !== s))) {
+                dest[name] = copyFunc ? copyFunc(s) : s;
+            }
+        }
+
+        return dest; // Object
+    };
+    /**
+     * Copies/adds all properties of one or more sources to dest; returns dest.
+     * @param dest {object} The object to which to copy/add all properties contained in source. If dest is falsy, then
+     * a new object is manufactured before copying/adding properties begins.
+     *
+     * @param sources One of more objects from which to draw all properties to copy into dest. sources are processed
+     * left-to-right and if more than one of these objects contain the same property name, the right-most
+     * value "wins".
+     *
+     * @returns {object} dest, as modified
+     *
+     * @example
+     * make a shallow copy of an object
+     * var copy = utils.mixin({}, source);
+     *
+     * @example
+     *
+     * many class constructors often take an object which specifies
+     *        values to be configured on the object. In this case, it is
+     *        often simplest to call `lang.mixin` on the `this` object:
+     *        declare("acme.Base", null, {
+    *			constructor: function(properties){
+    *				//property configuration:
+    *				lang.mixin(this, properties);
+    *				console.log(this.quip);
+    *			},
+    *			quip: "I wasn't born yesterday, you know - I've seen movies.",
+    *			* ...
+    *		});
+     *
+     *        //create an instance of the class and configure it
+     *        var b = new acme.Base({quip: "That's what it does!" });
+     *
+     */
+    utils.mixin = function (dest, sources) {
+        if(sources) {
+
+            if (!dest) {
+                dest = {};            }
+
+            var l = arguments.length;
+            for (var i = 1 ; i < l; i++) {
+                utils._mixin(dest, arguments[i]);
+            }
+            return dest; // Object
+        }
+        return dest;
+    };
+
+    /**
+     * Clone object keys
+     * @param defaults
+     * @returns {{}}
+     */
+    utils.cloneKeys = function (defaults, skipEmpty) {
+        var result = {};
+        for (var _class in defaults) {
+            if (skipEmpty === true && !(_class in defaults)) {
+                continue;
+            }
+            result[_class] = defaults[_class];
+        }
+        return result;
+    };
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //
+    //  STD
+    /**
+     *
+     * @param what
+     * @returns {*}
+     */
+    utils.isArray=function(what){
+        return _.isArray(what);
+    };
+    /**
+     *
+     * @param what
+     * @returns {*}
+     */
+    utils.isObject=function(what){
+        return _.isObject(what);
+    };
+    /**
+     *
+     * @param what
+     * @returns {*}
+     */
+    utils.isString=function(what){
+        return _.isString(what);
+    };
+    /**
+     *
+     * @param what
+     * @returns {*}
+     */
+    utils.isNumber=function(what){
+        return _.isNumber(what);
+    };
+    /**
+     *
+     * @param it
+     * @returns {*}
+     */
+    utils.isFunction=function(it){
+        // summary:
+        // Return true if it is a Function
+        // it: anything
+        // Item to test.
+        return _.isFunction(it);
+    };
+    return utils;
+});;
+define('dojo/_base/json',["./kernel", "../json"], function(dojo, json){
+
+// module:
+//		dojo/_base/json
+
+/*=====
+return {
+	// summary:
+	//		This module defines the dojo JSON API.
+};
+=====*/
+
+dojo.fromJson = function(/*String*/ js){
+	// summary:
+	//		Parses a JavaScript expression and returns a JavaScript value.
+	// description:
+	//		Throws for invalid JavaScript expressions. It does not use a strict JSON parser. It
+	//		always delegates to eval(). The content passed to this method must therefore come
+	//		from a trusted source.
+	//		It is recommend that you use dojo/json's parse function for an
+	//		implementation uses the (faster) native JSON parse when available.
+	// js:
+	//		a string literal of a JavaScript expression, for instance:
+	//		`'{ "foo": [ "bar", 1, { "baz": "thud" } ] }'`
+
+	return eval("(" + js + ")"); // Object
+};
+
+/*=====
+dojo._escapeString = function(){
+	// summary:
+	//		Adds escape sequences for non-visual characters, double quote and
+	//		backslash and surrounds with double quotes to form a valid string
+	//		literal.
+};
+=====*/
+dojo._escapeString = json.stringify; // just delegate to json.stringify
+
+dojo.toJsonIndentStr = "\t";
+dojo.toJson = function(/*Object*/ it, /*Boolean?*/ prettyPrint){
+	// summary:
+	//		Returns a [JSON](http://json.org) serialization of an object.
+	// description:
+	//		Returns a [JSON](http://json.org) serialization of an object.
+	//		Note that this doesn't check for infinite recursion, so don't do that!
+	//		It is recommend that you use dojo/json's stringify function for an lighter
+	//		and faster implementation that matches the native JSON API and uses the
+	//		native JSON serializer when available.
+	// it:
+	//		an object to be serialized. Objects may define their own
+	//		serialization via a special "__json__" or "json" function
+	//		property. If a specialized serializer has been defined, it will
+	//		be used as a fallback.
+	//		Note that in 1.6, toJson would serialize undefined, but this no longer supported
+	//		since it is not supported by native JSON serializer.
+	// prettyPrint:
+	//		if true, we indent objects and arrays to make the output prettier.
+	//		The variable `dojo.toJsonIndentStr` is used as the indent string --
+	//		to use something other than the default (tab), change that variable
+	//		before calling dojo.toJson().
+	//		Note that if native JSON support is available, it will be used for serialization,
+	//		and native implementations vary on the exact spacing used in pretty printing.
+	// returns:
+	//		A JSON string serialization of the passed-in object.
+	// example:
+	//		simple serialization of a trivial object
+	//		|	var jsonStr = dojo.toJson({ howdy: "stranger!", isStrange: true });
+	//		|	doh.is('{"howdy":"stranger!","isStrange":true}', jsonStr);
+	// example:
+	//		a custom serializer for an objects of a particular class:
+	//		|	dojo.declare("Furby", null, {
+	//		|		furbies: "are strange",
+	//		|		furbyCount: 10,
+	//		|		__json__: function(){
+	//		|		},
+	//		|	});
+
+	// use dojo/json
+	return json.stringify(it, function(key, value){
+		if(value){
+			var tf = value.__json__||value.json;
+			if(typeof tf == "function"){
+				return tf.call(value);
+			}
+		}
+		return value;
+	}, prettyPrint && dojo.toJsonIndentStr);	// String
+};
+
+return dojo;
+});
+;
+define('dojo/json',["./has"], function(has){
+	"use strict";
+	var hasJSON = typeof JSON != "undefined";
+	has.add("json-parse", hasJSON); // all the parsers work fine
+		// Firefox 3.5/Gecko 1.9 fails to use replacer in stringify properly https://bugzilla.mozilla.org/show_bug.cgi?id=509184
+	has.add("json-stringify", hasJSON && JSON.stringify({a:0}, function(k,v){return v||1;}) == '{"a":1}');
+
+	/*=====
+	return {
+		// summary:
+		//		Functions to parse and serialize JSON
+
+		parse: function(str, strict){
+			// summary:
+			//		Parses a [JSON](http://json.org) string to return a JavaScript object.
+			// description:
+			//		This function follows [native JSON API](https://developer.mozilla.org/en/JSON)
+			//		Throws for invalid JSON strings. This delegates to eval() if native JSON
+			//		support is not available. By default this will evaluate any valid JS expression.
+			//		With the strict parameter set to true, the parser will ensure that only
+			//		valid JSON strings are parsed (otherwise throwing an error). Without the strict
+			//		parameter, the content passed to this method must come
+			//		from a trusted source.
+			// str:
+			//		a string literal of a JSON item, for instance:
+			//		`'{ "foo": [ "bar", 1, { "baz": "thud" } ] }'`
+			// strict:
+			//		When set to true, this will ensure that only valid, secure JSON is ever parsed.
+			//		Make sure this is set to true for untrusted content. Note that on browsers/engines
+			//		without native JSON support, setting this to true will run slower.
+		},
+		stringify: function(value, replacer, spacer){
+			// summary:
+			//		Returns a [JSON](http://json.org) serialization of an object.
+			// description:
+			//		Returns a [JSON](http://json.org) serialization of an object.
+			//		This function follows [native JSON API](https://developer.mozilla.org/en/JSON)
+			//		Note that this doesn't check for infinite recursion, so don't do that!
+			// value:
+			//		A value to be serialized.
+			// replacer:
+			//		A replacer function that is called for each value and can return a replacement
+			// spacer:
+			//		A spacer string to be used for pretty printing of JSON
+			// example:
+			//		simple serialization of a trivial object
+			//	|	define(["dojo/json"], function(JSON){
+			// 	|		var jsonStr = JSON.stringify({ howdy: "stranger!", isStrange: true });
+			//	|		doh.is('{"howdy":"stranger!","isStrange":true}', jsonStr);
+		}
+	};
+	=====*/
+
+	if(has("json-stringify")){
+		return JSON;
+	}else{
+		var escapeString = function(/*String*/str){
+			// summary:
+			//		Adds escape sequences for non-visual characters, double quote and
+			//		backslash and surrounds with double quotes to form a valid string
+			//		literal.
+			return ('"' + str.replace(/(["\\])/g, '\\$1') + '"').
+				replace(/[\f]/g, "\\f").replace(/[\b]/g, "\\b").replace(/[\n]/g, "\\n").
+				replace(/[\t]/g, "\\t").replace(/[\r]/g, "\\r"); // string
+		};
+		return {
+			parse: has("json-parse") ? JSON.parse : function(str, strict){
+				if(strict && !/^([\s\[\{]*(?:"(?:\\.|[^"])*"|-?\d[\d\.]*(?:[Ee][+-]?\d+)?|null|true|false|)[\s\]\}]*(?:,|:|$))+$/.test(str)){
+					throw new SyntaxError("Invalid characters in JSON");
+				}
+				return eval('(' + str + ')');
+			},
+			stringify: function(value, replacer, spacer){
+				var undef;
+				if(typeof replacer == "string"){
+					spacer = replacer;
+					replacer = null;
+				}
+				function stringify(it, indent, key){
+					if(replacer){
+						it = replacer(key, it);
+					}
+					var val, objtype = typeof it;
+					if(objtype == "number"){
+						return isFinite(it) ? it + "" : "null";
+					}
+					if(objtype == "boolean"){
+						return it + "";
+					}
+					if(it === null){
+						return "null";
+					}
+					if(typeof it == "string"){
+						return escapeString(it);
+					}
+					if(objtype == "function" || objtype == "undefined"){
+						return undef; // undefined
+					}
+					// short-circuit for objects that support "json" serialization
+					// if they return "self" then just pass-through...
+					if(typeof it.toJSON == "function"){
+						return stringify(it.toJSON(key), indent, key);
+					}
+					if(it instanceof Date){
+						return '"{FullYear}-{Month+}-{Date}T{Hours}:{Minutes}:{Seconds}Z"'.replace(/\{(\w+)(\+)?\}/g, function(t, prop, plus){
+							var num = it["getUTC" + prop]() + (plus ? 1 : 0);
+							return num < 10 ? "0" + num : num;
+						});
+					}
+					if(it.valueOf() !== it){
+						// primitive wrapper, try again unwrapped:
+						return stringify(it.valueOf(), indent, key);
+					}
+					var nextIndent= spacer ? (indent + spacer) : "";
+					/* we used to test for DOM nodes and throw, but FF serializes them as {}, so cross-browser consistency is probably not efficiently attainable */ 
+				
+					var sep = spacer ? " " : "";
+					var newLine = spacer ? "\n" : "";
+				
+					// array
+					if(it instanceof Array){
+						var itl = it.length, res = [];
+						for(key = 0; key < itl; key++){
+							var obj = it[key];
+							val = stringify(obj, nextIndent, key);
+							if(typeof val != "string"){
+								val = "null";
+							}
+							res.push(newLine + nextIndent + val);
+						}
+						return "[" + res.join(",") + newLine + indent + "]";
+					}
+					// generic object code path
+					var output = [];
+					for(key in it){
+						var keyStr;
+						if(it.hasOwnProperty(key)){
+							if(typeof key == "number"){
+								keyStr = '"' + key + '"';
+							}else if(typeof key == "string"){
+								keyStr = escapeString(key);
+							}else{
+								// skip non-string or number keys
+								continue;
+							}
+							val = stringify(it[key], nextIndent, key);
+							if(typeof val != "string"){
+								// skip non-serializable values
+								continue;
+							}
+							// At this point, the most non-IE browsers don't get in this branch 
+							// (they have native JSON), so push is definitely the way to
+							output.push(newLine + nextIndent + keyStr + ":" + sep + val);
+						}
+					}
+					return "{" + output.join(",") + newLine + indent + "}"; // String
+				}
+				return stringify(value, "", "");
+			}
+		};
+	}
+});
+;
 /** @module xblox/model/ModelBase
  *  @description The base for block related classes, this must be kept small and light as possible
  */
@@ -40899,6 +41865,9 @@ define('xblox/model/loops/ForBlock',[
         sharable:true,
         icon:'',
         ignoreErrors:false,
+        deferred:true,
+        _forState:false,
+        _currentForIndex:0,
         runFrom: function (_blocks, index, settings) {
 
             var thiz = this,
@@ -40919,17 +41888,11 @@ define('xblox/model/loops/ForBlock',[
             };
 
             if (blocks.length) {
-
                 for (var n = index; n < blocks.length; n++) {
-
                     var block = blocks[n];
-
                     if(block.enabled===false){
                         continue;
                     }
-
-                    //console.log('run child');
-
                     if (block.deferred === true) {
                         block._deferredObject = new Deferred();
                         this._currentIndex = n;
@@ -40954,7 +41917,50 @@ define('xblox/model/loops/ForBlock',[
 
             return allDfds;
         },
-        _currentForIndex:0,
+        runFromDirect: function (_blocks, index, settings) {
+
+            var thiz = this,
+                blocks = _blocks || this.items,
+                allDfds = [];
+
+            var onFinishBlock = function (block, results) {
+                block._lastResult = block._lastResult || results;
+                thiz._currentIndex++;
+                thiz.runFrom(blocks, thiz._currentIndex, settings);
+            };
+
+            var wireBlock = function (block) {
+                block._deferredObject.then(function (results) {
+                    onFinishBlock(block, results);
+                });
+            };
+            if (blocks.length) {
+                for (var n = index; n < blocks.length; n++) {
+                    var block = blocks[n];
+                    if (block.enabled === false) {
+                        continue;
+                    }
+                    if (block.deferred === true) {
+                        block._deferredObject = new Deferred();
+                        this._currentIndex = n;
+                        wireBlock(block);
+                        //this.addToEnd(this._return, block.solve(this.scope, settings));
+                        var blockDfd = block.solve(this.scope, settings);
+                        allDfds.push(blockDfd);
+                        break;
+                    } else {
+                        //this.addToEnd(this._return, block.solve(this.scope, settings));
+                        var blockDfd = block.solve(this.scope, settings);
+                        allDfds.push(blockDfd);
+
+                    }
+                }
+            } else {
+                this.onSuccess(this, settings);
+            }
+
+            return allDfds;
+        },
         solveSubs:function(dfd,result,items,settings){
             var thiz = this;
             settings.override = settings.override || {};
@@ -40967,11 +41973,19 @@ define('xblox/model/loops/ForBlock',[
                     console.error('error in chain',err);
                     thiz.onDidRunItem(dfd,err,settings);
                 });
-
                 return subDfds;
 
             }else{
                 thiz.onDidRunItem(dfd,result,settings);
+            }
+        },
+        solveSubsDirect:function(dfd,result,items,settings){
+            var thiz = this;
+            settings.override = settings.override || {};
+            settings.override['args']=[this._currentForIndex];
+            //more blocks?
+            if(items.length) {
+                return thiz.runFromDirect(items,0,settings);
             }
         },
         _solve:function(scope,settings){
@@ -40995,17 +42009,11 @@ define('xblox/model/loops/ForBlock',[
 
             return dfd;
         },
-
         step:function(scope,settings){
-
             var state = this._checkCondition(scope,settings);
-
             var dfd = new Deferred(),
                 self = this;
-
             if(state){
-                //console.log('cond ok');
-
                 //run blocks
                 var subs = this._solve(scope,settings);
                 subs.then(function(result){
@@ -41023,15 +42031,11 @@ define('xblox/model/loops/ForBlock',[
             return dfd;
 
         },
-        _forState:false,
         loop:function(scope,settings){
-
             var stepResult = this.step(scope,settings),
                 self = this;
-
             stepResult.then(function(proceed){
                 self._updateCounter(scope);
-                //console.log('proceed ' + proceed + ' _ ' + self._forState + ' ' + self._counter.value);
                 self._currentForIndex = self._counter.value;
                 if(proceed==true){
                     self.loop(scope,settings);
@@ -41040,14 +42044,24 @@ define('xblox/model/loops/ForBlock',[
                 }
             });
         },
+        _solveDirect:function(scope,settings){
+            return this.solveSubsDirect(null,null,this.items,settings);
+        },
+        stepDirect:function(scope,settings){
+            return this._solveDirect(scope,settings);
+        },
+        loopDirect:function(scope,settings) {
+            var stepResult = this.stepDirect(scope, settings),
+                self = this;
+            for (var index = parseInt(this.initial); index < parseInt(this['final']); index++) {
+                self.stepDirect(scope, settings);
+            }
+        },
 
         // solves the for block (runs the loop)
         solve:function(scope,settings) {
-
             var ret = [];
             var noInfinite = true;
-
-
             // 1. Create and initialize counter variable
             this._counter = new Variable({
                 title : this.counterName,
@@ -41055,100 +42069,31 @@ define('xblox/model/loops/ForBlock',[
                 scope : scope,
                 register:false
             });
-
             var cond = null;
-
             //prepare
             this._forState = true;
-
             this._currentForIndex = this.initial;
-
-
-            this.loop(scope,settings);
-
-
-
-
-            // 2. Compare counter width final using comparator
-            // 3. IF TRUE -
-            //while (this._checkCondition(scope,settings)) {
-                //var p = this.inherited(arguments);
-                //console.error('parents : ' + p);
-                // 4. Run Block
-                //this.addToEnd( ret , this._solve(scope,settings) );
-            /*
-                var subs = this._solve(scope,settings);
-
-                console.log('subs',subs);
-
-                all(subs,function(result){
-                    console.log('subs done',result);
-                });
-
-
-                // 5. Update counter
-                noInfinite = this._updateCounter(scope);
-
-                if (!noInfinite){
-                    break;
-                }
-            */
-                // 6. go back to (2)
-            //}
-            /*
-            while (this._checkCondition(scope,settings)) {
-                //var p = this.inherited(arguments);
-                //console.error('parents : ' + p);
-                // 4. Run Block
-                //this.addToEnd( ret , this._solve(scope,settings) );
-
-                var subs = this._solve(scope,settings);
-
-                console.log('subs',subs);
-
-                all(subs,function(result){
-                   console.log('subs done',result);
-                });
-
-
-                // 5. Update counter
-                noInfinite = this._updateCounter(scope);
-
-                if (!noInfinite){
-                    break;
-                }
-                // 6. go back to (2)
-            }
-            */
-
-
+            this.deferred ? this.loop(scope,settings) : this.loopDirect(scope,settings);
             return ret;
         },
 
         // checks the loop condition
         _checkCondition:function(scope,settings) {
-
             var expression = '' + this._counter.value + this.comparator + this['final'];
             var result = scope.parseExpression(expression);
-            //console.log('FOR LOOP STEP ' + expression + ' = ' + result);
-
             if(result==false){
                 //this.onFailed(this,settings);
             }else{
                 this.onSuccess(this,settings);
             }
-
             this._forState=result;
-
             return result;
         },
-
         // updates the counter
         _updateCounter:function(scope) {
             var value = this._counter.value;
             var expression = '' + value + this.modifier;
             value = scope.parseExpression(expression);
-            //console.log('       update counter ' + expression + " = " + value);
             // Detect infinite loops
             if (value == this._counter.value) {
                 return false;
@@ -41172,7 +42117,6 @@ define('xblox/model/loops/ForBlock',[
          */
         getChildren:function(parent){
             var result=[];
-
             if(this.items){
                 result=result.concat(this.items);
             }
@@ -41198,12 +42142,8 @@ define('xblox/model/loops/ForBlock',[
          * @returns {*[]}
          */
         getFields:function(){
-
             var fields = this.inherited(arguments) || this.getDefaultFields();
-
-
             fields = fields.concat([
-
                 this.utils.createCI('initial',13,this.initial,{
                     group:'General',
                     title:'Initial',
@@ -41228,9 +42168,13 @@ define('xblox/model/loops/ForBlock',[
                     group:'General',
                     title:'Ignore Errors',
                     dst:'ignoreErrors'
+                }),
+                this.utils.createCI('Deferred',0,this.deferred,{
+                    group:'General',
+                    title:'Use Deferred',
+                    dst:'deferred'
                 })
             ]);
-            //fields = fields.concat(this.inherited(arguments));
             return fields;
         }
     });
@@ -42852,7 +43796,6 @@ define('xcf/model/Command',[
             } else if (this.auto && this.getInterval() > 0) {
                 this.scope.loopBlock(this);
             }
-
         },
         /**
          * Return the driver's code module
@@ -43938,261 +44881,6 @@ define('xide/types/Types',[
     };
     return types;
 });;
-define('dojo/_base/json',["./kernel", "../json"], function(dojo, json){
-
-// module:
-//		dojo/_base/json
-
-/*=====
-return {
-	// summary:
-	//		This module defines the dojo JSON API.
-};
-=====*/
-
-dojo.fromJson = function(/*String*/ js){
-	// summary:
-	//		Parses a JavaScript expression and returns a JavaScript value.
-	// description:
-	//		Throws for invalid JavaScript expressions. It does not use a strict JSON parser. It
-	//		always delegates to eval(). The content passed to this method must therefore come
-	//		from a trusted source.
-	//		It is recommend that you use dojo/json's parse function for an
-	//		implementation uses the (faster) native JSON parse when available.
-	// js:
-	//		a string literal of a JavaScript expression, for instance:
-	//		`'{ "foo": [ "bar", 1, { "baz": "thud" } ] }'`
-
-	return eval("(" + js + ")"); // Object
-};
-
-/*=====
-dojo._escapeString = function(){
-	// summary:
-	//		Adds escape sequences for non-visual characters, double quote and
-	//		backslash and surrounds with double quotes to form a valid string
-	//		literal.
-};
-=====*/
-dojo._escapeString = json.stringify; // just delegate to json.stringify
-
-dojo.toJsonIndentStr = "\t";
-dojo.toJson = function(/*Object*/ it, /*Boolean?*/ prettyPrint){
-	// summary:
-	//		Returns a [JSON](http://json.org) serialization of an object.
-	// description:
-	//		Returns a [JSON](http://json.org) serialization of an object.
-	//		Note that this doesn't check for infinite recursion, so don't do that!
-	//		It is recommend that you use dojo/json's stringify function for an lighter
-	//		and faster implementation that matches the native JSON API and uses the
-	//		native JSON serializer when available.
-	// it:
-	//		an object to be serialized. Objects may define their own
-	//		serialization via a special "__json__" or "json" function
-	//		property. If a specialized serializer has been defined, it will
-	//		be used as a fallback.
-	//		Note that in 1.6, toJson would serialize undefined, but this no longer supported
-	//		since it is not supported by native JSON serializer.
-	// prettyPrint:
-	//		if true, we indent objects and arrays to make the output prettier.
-	//		The variable `dojo.toJsonIndentStr` is used as the indent string --
-	//		to use something other than the default (tab), change that variable
-	//		before calling dojo.toJson().
-	//		Note that if native JSON support is available, it will be used for serialization,
-	//		and native implementations vary on the exact spacing used in pretty printing.
-	// returns:
-	//		A JSON string serialization of the passed-in object.
-	// example:
-	//		simple serialization of a trivial object
-	//		|	var jsonStr = dojo.toJson({ howdy: "stranger!", isStrange: true });
-	//		|	doh.is('{"howdy":"stranger!","isStrange":true}', jsonStr);
-	// example:
-	//		a custom serializer for an objects of a particular class:
-	//		|	dojo.declare("Furby", null, {
-	//		|		furbies: "are strange",
-	//		|		furbyCount: 10,
-	//		|		__json__: function(){
-	//		|		},
-	//		|	});
-
-	// use dojo/json
-	return json.stringify(it, function(key, value){
-		if(value){
-			var tf = value.__json__||value.json;
-			if(typeof tf == "function"){
-				return tf.call(value);
-			}
-		}
-		return value;
-	}, prettyPrint && dojo.toJsonIndentStr);	// String
-};
-
-return dojo;
-});
-;
-define('dojo/json',["./has"], function(has){
-	"use strict";
-	var hasJSON = typeof JSON != "undefined";
-	has.add("json-parse", hasJSON); // all the parsers work fine
-		// Firefox 3.5/Gecko 1.9 fails to use replacer in stringify properly https://bugzilla.mozilla.org/show_bug.cgi?id=509184
-	has.add("json-stringify", hasJSON && JSON.stringify({a:0}, function(k,v){return v||1;}) == '{"a":1}');
-
-	/*=====
-	return {
-		// summary:
-		//		Functions to parse and serialize JSON
-
-		parse: function(str, strict){
-			// summary:
-			//		Parses a [JSON](http://json.org) string to return a JavaScript object.
-			// description:
-			//		This function follows [native JSON API](https://developer.mozilla.org/en/JSON)
-			//		Throws for invalid JSON strings. This delegates to eval() if native JSON
-			//		support is not available. By default this will evaluate any valid JS expression.
-			//		With the strict parameter set to true, the parser will ensure that only
-			//		valid JSON strings are parsed (otherwise throwing an error). Without the strict
-			//		parameter, the content passed to this method must come
-			//		from a trusted source.
-			// str:
-			//		a string literal of a JSON item, for instance:
-			//		`'{ "foo": [ "bar", 1, { "baz": "thud" } ] }'`
-			// strict:
-			//		When set to true, this will ensure that only valid, secure JSON is ever parsed.
-			//		Make sure this is set to true for untrusted content. Note that on browsers/engines
-			//		without native JSON support, setting this to true will run slower.
-		},
-		stringify: function(value, replacer, spacer){
-			// summary:
-			//		Returns a [JSON](http://json.org) serialization of an object.
-			// description:
-			//		Returns a [JSON](http://json.org) serialization of an object.
-			//		This function follows [native JSON API](https://developer.mozilla.org/en/JSON)
-			//		Note that this doesn't check for infinite recursion, so don't do that!
-			// value:
-			//		A value to be serialized.
-			// replacer:
-			//		A replacer function that is called for each value and can return a replacement
-			// spacer:
-			//		A spacer string to be used for pretty printing of JSON
-			// example:
-			//		simple serialization of a trivial object
-			//	|	define(["dojo/json"], function(JSON){
-			// 	|		var jsonStr = JSON.stringify({ howdy: "stranger!", isStrange: true });
-			//	|		doh.is('{"howdy":"stranger!","isStrange":true}', jsonStr);
-		}
-	};
-	=====*/
-
-	if(has("json-stringify")){
-		return JSON;
-	}else{
-		var escapeString = function(/*String*/str){
-			// summary:
-			//		Adds escape sequences for non-visual characters, double quote and
-			//		backslash and surrounds with double quotes to form a valid string
-			//		literal.
-			return ('"' + str.replace(/(["\\])/g, '\\$1') + '"').
-				replace(/[\f]/g, "\\f").replace(/[\b]/g, "\\b").replace(/[\n]/g, "\\n").
-				replace(/[\t]/g, "\\t").replace(/[\r]/g, "\\r"); // string
-		};
-		return {
-			parse: has("json-parse") ? JSON.parse : function(str, strict){
-				if(strict && !/^([\s\[\{]*(?:"(?:\\.|[^"])*"|-?\d[\d\.]*(?:[Ee][+-]?\d+)?|null|true|false|)[\s\]\}]*(?:,|:|$))+$/.test(str)){
-					throw new SyntaxError("Invalid characters in JSON");
-				}
-				return eval('(' + str + ')');
-			},
-			stringify: function(value, replacer, spacer){
-				var undef;
-				if(typeof replacer == "string"){
-					spacer = replacer;
-					replacer = null;
-				}
-				function stringify(it, indent, key){
-					if(replacer){
-						it = replacer(key, it);
-					}
-					var val, objtype = typeof it;
-					if(objtype == "number"){
-						return isFinite(it) ? it + "" : "null";
-					}
-					if(objtype == "boolean"){
-						return it + "";
-					}
-					if(it === null){
-						return "null";
-					}
-					if(typeof it == "string"){
-						return escapeString(it);
-					}
-					if(objtype == "function" || objtype == "undefined"){
-						return undef; // undefined
-					}
-					// short-circuit for objects that support "json" serialization
-					// if they return "self" then just pass-through...
-					if(typeof it.toJSON == "function"){
-						return stringify(it.toJSON(key), indent, key);
-					}
-					if(it instanceof Date){
-						return '"{FullYear}-{Month+}-{Date}T{Hours}:{Minutes}:{Seconds}Z"'.replace(/\{(\w+)(\+)?\}/g, function(t, prop, plus){
-							var num = it["getUTC" + prop]() + (plus ? 1 : 0);
-							return num < 10 ? "0" + num : num;
-						});
-					}
-					if(it.valueOf() !== it){
-						// primitive wrapper, try again unwrapped:
-						return stringify(it.valueOf(), indent, key);
-					}
-					var nextIndent= spacer ? (indent + spacer) : "";
-					/* we used to test for DOM nodes and throw, but FF serializes them as {}, so cross-browser consistency is probably not efficiently attainable */ 
-				
-					var sep = spacer ? " " : "";
-					var newLine = spacer ? "\n" : "";
-				
-					// array
-					if(it instanceof Array){
-						var itl = it.length, res = [];
-						for(key = 0; key < itl; key++){
-							var obj = it[key];
-							val = stringify(obj, nextIndent, key);
-							if(typeof val != "string"){
-								val = "null";
-							}
-							res.push(newLine + nextIndent + val);
-						}
-						return "[" + res.join(",") + newLine + indent + "]";
-					}
-					// generic object code path
-					var output = [];
-					for(key in it){
-						var keyStr;
-						if(it.hasOwnProperty(key)){
-							if(typeof key == "number"){
-								keyStr = '"' + key + '"';
-							}else if(typeof key == "string"){
-								keyStr = escapeString(key);
-							}else{
-								// skip non-string or number keys
-								continue;
-							}
-							val = stringify(it[key], nextIndent, key);
-							if(typeof val != "string"){
-								// skip non-serializable values
-								continue;
-							}
-							// At this point, the most non-IE browsers don't get in this branch 
-							// (they have native JSON), so push is definitely the way to
-							output.push(newLine + nextIndent + keyStr + ":" + sep + val);
-						}
-					}
-					return "{" + output.join(",") + newLine + indent + "}"; // String
-				}
-				return stringify(value, "", "");
-			}
-		};
-	}
-});
-;
 define('xcf/model/ModelBase',[
     'dcl/dcl',
     "xblox/model/ModelBase"
@@ -48365,8 +49053,9 @@ define('xblox/model/Scope',[
     "xide/mixins/EventedMixin",
     'dojo/_base/lang',
     'dojo/has',
-    'xide/encoding/MD5'    
-], function(dcl,ModelBase,Expression,factory,utils,types,EventedMixin,lang,has,MD5,tracer,_console){
+    'xide/encoding/MD5',
+    "xcf/model/Variable"
+], function(dcl,ModelBase,Expression,factory,utils,types,EventedMixin,lang,has,MD5,Variable,tracer,_console){
 
     /*
     var console = typeof window !== 'undefined' ? window.console : console;
@@ -48400,6 +49089,59 @@ define('xblox/model/Scope',[
          *  @type {module:xblox/model/Expression}
          */
         expressionModel: null,
+        start:function(){
+            if(this.__didStartBlocks ===true){
+                console.error('already started blocks');
+                return;
+            }
+            this.__didStartBlocks = true;
+            var responseVariable = this.getVariable('value');
+            if (!responseVariable) {
+                responseVariable = new Variable({
+                    id: utils.createUUID(),
+                    name: 'value',
+                    value: '',
+                    scope: this,
+                    type: 13,
+                    group: 'processVariables',
+                    gui: false,
+                    cmd: false
+                });
+
+                this.blockStore.putSync(responseVariable);
+            }
+            var autoBlocks = [];
+            var initBlocks = this.getBlocks({
+                group: types.COMMAND_TYPES.INIT_COMMAND
+            });
+
+            try {
+                _.each(initBlocks, function (block) {
+                    if (block.enabled !== false && block.__started!== true) {
+                        block.solve(scope);
+                        block.__started = true;
+                    }
+
+                });
+            }catch(e){
+                console.error("starting init blocks failed",e);
+            }
+            autoBlocks = autoBlocks.concat(this.getBlocks({
+                group: types.COMMAND_TYPES.BASIC_COMMAND
+            }));
+
+            //console.error('auto blocks : '+autoBlocks.length + ' ' + this.id);
+            for (var i = 0; i < autoBlocks.length; i++) {
+                var block = autoBlocks[i];
+                if(block.__started){
+                    //console.error('block already started');
+                }
+                if(block.enabled && block.start && block.startup && block.__started!==true){
+                    block.start();
+                    block.__started=true;
+                }
+            }
+        },
         /**
          *
          * @returns {module:xblox/model/Expression}
@@ -48574,20 +49316,23 @@ define('xblox/model/Scope',[
             return this.blockStore.query(query);
         },
         loopBlock:function(block,settings){
-            if(block && block.interval > 0 && block.enabled && block._destroyed!==true){
-                var thiz=this;
-                if(block._loop){
-                    clearTimeout(block._loop);
+            if(block._destroyed==true){
+                console.error('block destroyed');
+            }
+            var interval = block.getInterval ? block.getInterval() : 0;
+            if (block && interval > 0 && block.enabled && block._destroyed !== true) {
+                var thiz = this;
+                if (block._loop) {
+                    clearInterval(block._loop);
                 }
-                block._loop  = setInterval(function(){
-                    if(!block.enabled || block._destroyed){
-                        clearTimeout(block._loop);
-                        block._loop=null;
+                block._loop = setInterval(function () {
+                    if (!block.enabled || block._destroyed) {
+                        clearInterval(block._loop);
+                        block._loop = null;
                         return;
                     }
-                    block.solve(thiz,settings || block._lastSettings);
-
-                },block.interval);
+                    block.solve(thiz, settings || block._lastSettings);
+                }, interval);
             }
         },
         getEventsAsOptions:function(selected){
@@ -53201,9 +53946,7 @@ define('xcf/manager/DeviceManager',[
         //
         /////////////////////////////////////////////////////////////////////////////////////
         onRunClassEvent:function (data) {
-
             var id = data.args.id;
-
             if(this.running && this.running[id]){
                 var runData = this.running[id];
                 var delegate = runData.delegate;
@@ -53228,7 +53971,6 @@ define('xcf/manager/DeviceManager',[
             }
         },
         getInstanceByName:function(name){
-
             var instances = this.deviceInstances;
             var self = this;
             for(var instance in instances){
@@ -53505,76 +54247,7 @@ define('xcf/manager/DeviceManager',[
                 }
             }
         },
-        /**
-         * Callback when we are connected to a device.
-         * We use this to fire all looping blocks
-         * @param driverInstance {module:xcf/driver/DriverBase} the instance of the driver
-         * @param deviceStoreItem {module:xcf/model/Device} the device model item
-         * @param driver {module:xcf/model/Driver} the driver model item
-         */
-        onDeviceStarted: function (driverInstance, deviceStoreItem, driver) {
-            if (!driverInstance || !deviceStoreItem || !driver) {
-                _debug && console.log('onDeviceStarted failed, invalid params');
-                return;
-            }
 
-            var info = this.toDeviceControlInfo(deviceStoreItem),
-                serverSide = info.serverSide,
-                _isServer = info.isServer;
-            _debug && console.log('onDeviceStarted ',info.user_drivers);
-            /**
-             * Post work :
-             * 1. Start all commands with the 'startup' flag!
-             * 2. Todo : update last variables from Atomize server
-             * 3. Establish long polling
-             */
-
-            //1. fire startup blocks
-            var blockScope = driverInstance.blockScope;
-            if(((isServer && (serverSide || _isServer)) || (!serverSide && !isServer))) {
-                var autoBlocks = [];
-                var initBlocks = blockScope.getBlocks({
-                    group: types.COMMAND_TYPES.INIT_COMMAND
-                });
-                try {
-                    _.each(initBlocks, function (block) {
-                        if (block.enabled !== false && block.__started!== true) {
-                            block.solve(blockScope);
-                            block.__started = true;
-                        }
-
-                    });
-                }catch(e){
-                    logError(e,"starting init blocks failed");
-                }
-                autoBlocks = autoBlocks.concat(blockScope.getBlocks({
-                    group: types.COMMAND_TYPES.BASIC_COMMAND
-                }));
-
-                for (var i = 0; i < autoBlocks.length; i++) {
-                    var block = autoBlocks[i];
-                    if(block.enabled && block.start &&  block.startup && block.__started!==true){
-                        block.start();
-                        block.__started=true;
-                    }
-                }
-            }
-            //important to set this before publishing the connected event, otherwise it runs an infity loop
-            driverInstance.__didStartBlocks = true;
-            this.publish(types.EVENTS.ON_DEVICE_DRIVER_INSTANCE_READY, {
-                device: deviceStoreItem,
-                instance: driverInstance,
-                driver: driver,
-                blockScope: blockScope
-            });
-            this.publish(types.EVENTS.ON_DEVICE_CONNECTED, {
-                device: info,
-                instance: driverInstance,
-                driver: driver,
-                blockScope: blockScope
-            });
-            this.ctx.getDriverManager().addDeviceInstance(deviceStoreItem,driver);
-        },
         getDevice:function(mixed){
             var result = mixed;
             if(_.isString(mixed)){                
@@ -53594,32 +54267,35 @@ define('xcf/manager/DeviceManager',[
          * Stops a device with a device model item
          * @param item {module:xcf/model/Device|string}
          */
-        stopDevice: function (item) {
-            item = this.getDevice(item) || item;
-            if(!item){
-                _debugConnect && console.error('cant find device');
+        stopDevice: function (_item) {
+            var device = this.getDevice(_item) || _item;
+            if(!device){
+                console.error('cant find device '+_item);
                 return;
             }
             this.checkDeviceServerConnection();
-
-            item._userStopped = true;
-            var cInfo = this.toDeviceControlInfo(item);
+            device._userStopped = true;
+            var cInfo = this.toDeviceControlInfo(device);
             if(!cInfo){
-                _debugConnect && console.error('cant find device::no device info',item.toString && item.toString());
+                _debugConnect && console.error('cant find device::no device info',device.toString && device.toString());
                 return;
             }
-            if(isServer && !cInfo.serverSide){
+            if(isServer && (!cInfo.serverSide && !device.isServer())){
                 return;
             }
+
+
             var hash = cInfo.hash;
             if (this.deviceInstances[hash]) {
-                this._removeInstance(this.deviceInstances[hash], hash,item);
+                this._removeInstance(this.deviceInstances[hash], hash,device);
                 delete this.deviceInstances[hash];
                 _debugConnect && console.log('-- stop device ' + hash,this.deviceInstances);
             }else {
                 _debugConnect && console.log('cant find instance ' + hash);
+                return;
             }
-            !isServer && this.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.MANAGER_STOP_DRIVER, cInfo);
+            this.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.MANAGER_STOP_DRIVER, cInfo);
+            //this.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.STOP_DEVICE, cInfo);
         },
         getStores:function(){
             return this.stores;
@@ -54177,6 +54853,44 @@ define('xcf/manager/DeviceManager',[
                     var device = items[i];
                     var _id = self.getMetaValue(device, DEVICE_PROPERTY.CF_DEVICE_ID);
                     if(_id == id){
+                        return device;
+                    }
+                }
+                return null;
+            }
+
+            var _store = _.isString(store) ? this.getStore(store) : null;
+            if(_store){
+                return search(_store);
+            }else{
+                for (var scope in this.stores){
+                    var item = search(this.stores[scope]);
+                    if(item){
+                        return item;
+                    }
+                }
+            }
+            return null;
+        },
+        /**
+         * Returns a device by id
+         * @param title {string}
+         * @returns {module:xcf/model/Device|null}
+         */
+        getDeviceByName: function (title,store) {
+            var self = this;
+            function search(_store){
+                var items = utils.queryStore(_store, {
+                    isDir: false
+                });
+
+                if (items._S) {
+                    items = [items];
+                }
+                for (var i = 0; i < items.length; i++) {
+                    var device = items[i];
+                    var _id = self.getMetaValue(device, DEVICE_PROPERTY.CF_DEVICE_TITLE);
+                    if(_id == title){
                         return device;
                     }
                 }
@@ -59971,7 +60685,6 @@ define('xcf/model/Device',[
     'xide/types',
     'xide/utils',
     'xide/mixins/EventedMixin',
-
     "xcf/types/Types"
 ], function(dcl,Model,Source,types,utils,EventedMixin){
      /**
@@ -59985,22 +60698,47 @@ define('xcf/model/Device',[
      * @augments module:xide/data/Source
      */
     return dcl('xcf.model.Device',[Model,Source,EventedMixin],{
-
         _userStopped:false,
+        /**
+         * @type {module:xide/types~DEVICE_STATE}
+         * @link module:xide/types/DEVICE_STATE
+         * @see module:xide/types/DEVICE_STATE
+         */
+        state:types.DEVICE_STATE.DISCONNECTED,
+        /**
+         * The driver instance
+         * @private
+         */
+        driverInstance:null,
+        /**
+         * The block scope of the driver instance (if the device is connected and ready)
+         * @private
+         */
+        blockScope:null,
         getParent:function(){
             return this.getStore().getSync(this.parentId);
         },
         isServerSide:function(){
             var driverOptions = this.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS);
-            return (1 << types.DRIVER_FLAGS.RUNS_ON_SERVER & driverOptions);
+            return (1 << types.DRIVER_FLAGS.RUNS_ON_SERVER & driverOptions) ? true : false;
         },
         isServer:function(){
             var driverOptions = this.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS);
-            return (1 << types.DRIVER_FLAGS.SERVER & driverOptions);
+            return (1 << types.DRIVER_FLAGS.SERVER & driverOptions) ? true : false;
+        },
+        setServer:function(isServer){
+            var driverOptions = this.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS);
+            driverOptions.value = driverOptions.value | (1 << types.DRIVER_FLAGS.SERVER);
+            this.setMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS,driverOptions.value);
+        },
+        setServerSide:function(isServer){
+            var driverOptions = this.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS);
+            driverOptions= driverOptions | (1 << types.DRIVER_FLAGS.RUNS_ON_SERVER);
+            this.setMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS,driverOptions);
         },
         isDebug:function(){
             var driverOptions = this.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS);
-            return (1 << types.DRIVER_FLAGS.DEBUG & driverOptions);
+            return (1 << types.DRIVER_FLAGS.DEBUG & driverOptions) ? true : false;
         },
         check:function(){
             if(this._startDfd && this._userStopped===true){
@@ -60016,6 +60754,9 @@ define('xcf/model/Device',[
         },
         isEnabled:function(){
             return this.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_ENABLED) === true;
+        },
+        setEnabled:function(enabled){
+            return this.setMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_ENABLED,enabled);
         },
         shouldReconnect:function(){
             if (this._userStopped) {
@@ -60043,22 +60784,6 @@ define('xcf/model/Device',[
          * @alias module:xcf/model/Device
          */
         constructor:function(){},
-        /**
-         * @type {module:xide/types~DEVICE_STATE}
-         * @link module:xide/types/DEVICE_STATE
-         * @see module:xide/types/DEVICE_STATE
-         */
-        state:types.DEVICE_STATE.DISCONNECTED,
-        /**
-         * The driver instance
-         * @private
-         */
-        driverInstance:null,
-        /**
-         * The block scope of the driver instance (if the device is connected and ready)
-         * @private
-         */
-        blockScope:null,
         /**
          * Returns the block scope of the a driver's instance
          * @returns {module:xblox/model/Scope}
@@ -60184,11 +60909,16 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     'xide/mixins/ReloadMixin',
     'xide/mixins/EventedMixin',
     'require',
-    "xcf/model/Variable"
+    'xcf/model/Variable',
+    'xdojo/has!host-node?nxapp/utils/_console'
 ], function (dcl,MD5,
              types, utils, factory, has,
              Deferred,ReloadMixin,EventedMixin,require,Variable,_console) {
 
+    var console = typeof window !== 'undefined' ? window.console : typeof global !== 'undefined' ? global.console : _console;
+    if(_console){
+        console = _console;
+    }
     var isServer = has('host-node'),
         isIDE = has('xcf-ui'),
         runDrivers = true;
@@ -60241,19 +60971,21 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
         };
     }
+
     /*
     var console = typeof window !== 'undefined' ? window.console : console;
     if(_console && _console.error && _console.warn){
         //console = _console;
     }
     */
+
     //debug mqtt activity
     var _debugMQTT = false;
     //debug device - server messages
     var debug = false;
     // debug device server connectivity
     var debugDevice = false;
-    var debugStrangers = false;
+    var debugStrangers = true;
     var debugConnect = false;
     var debugServerCommands = false;
     var debugCreateInstance = false;
@@ -60469,14 +61201,13 @@ define('xcf/manager/DeviceManager_DeviceServer',[
      *
      * 1. startDevice
      *      ->createDriverInstance
-     *          -> sendManagerCommand(MANAGER_START_DRIVER, cInfo);
+     *          -> sendManagerCommand(CREATE_CONNECTION, cInfo);
      *              ->onDeviceConnected
      *                  serverVariables? ->
      *                      getDeviceServerVariables ->onSetDeviceServerVariables
      *
      *
      */
-
 
     /**
      *
@@ -60486,10 +61217,56 @@ define('xcf/manager/DeviceManager_DeviceServer',[
      */
     return dcl(null,{
         declaredClass:"xcf.manager.DeviceManager_DeviceServer",
-        onReloaded:function(){
-            console.error('-relloada');
-        },
         running:null,
+        /**
+         * Callback when we are connected to a device.
+         * We use this to fire all looping blocks
+         * @param driverInstance {module:xcf/driver/DriverBase} the instance of the driver
+         * @param deviceStoreItem {module:xcf/model/Device} the device model item
+         * @param driver {module:xcf/model/Driver} the driver model item
+         */
+        onDeviceStarted: function (driverInstance, deviceStoreItem, driver) {
+            //debugConnect = true;
+            if (!driverInstance || !deviceStoreItem || !driver) {
+                debugConnect && console.log('onDeviceStarted failed, invalid params');
+                return;
+            }
+
+            var info = this.toDeviceControlInfo(deviceStoreItem),
+                serverSide = info.serverSide,
+                _isServer = info.isServer;
+
+            debugConnect && console.log('onDeviceStarted ' + info.toString(),driverInstance.id );
+            /**
+             * Post work :
+             * 1. Start all commands with the 'startup' flag!
+             * 2. Todo : update last variables from Atomize server
+             * 3. Establish long polling
+             */
+
+                //1. fire startup blocks
+            var blockScope = driverInstance.blockScope;
+
+            if(((isServer && (serverSide || _isServer)) || (!serverSide && !_isServer))) {
+                blockScope.start();
+            }
+            //important to set this before publishing the connected event, otherwise it runs an infity loop
+            driverInstance.__didStartBlocks = true;
+
+            this.publish(types.EVENTS.ON_DEVICE_DRIVER_INSTANCE_READY, {
+                device: deviceStoreItem,
+                instance: driverInstance,
+                driver: driver,
+                blockScope: blockScope
+            });
+            this.publish(types.EVENTS.ON_DEVICE_CONNECTED, {
+                device: info,
+                instance: driverInstance,
+                driver: driver,
+                blockScope: blockScope
+            });
+            this.ctx.getDriverManager().addDeviceInstance(deviceStoreItem,driver);
+        },
         /***
          *
          * @param driverInstance
@@ -60498,7 +61275,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
         runClass: function (_class,args,delegate) {
             this.checkDeviceServerConnection();
             if(this.deviceServerClient) {
-
                 var id = utils.createUUID();
                 args.id = id;
                 var dataOut = {
@@ -60506,17 +61282,12 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     args: args,
                     manager_command: types.SOCKET_SERVER_COMMANDS.RUN_CLASS
                 };
-
-
-
                 !this.running && (this.running = {});
-
                 this.running[id] = {
                     "class":_class,
                     args: args,
                     delegate:delegate
                 };
-
                 this.deviceServerClient.emit(null, dataOut, types.SOCKET_SERVER_COMMANDS.RUN_CLASS);
             }else{
                 this.onHaveNoDeviceServer();
@@ -60524,33 +61295,35 @@ define('xcf/manager/DeviceManager_DeviceServer',[
         },
         /**
          * Starts a device with a device store item
-         * @param item
+         * @param device
          * @param force
+         * @param conn {module:nxapp/model/ClientConnection}
          */
-        startDevice: function (item,force) {
+        startDevice: function (device,force,conn) {
             var thiz = this;
-            if(!item){
+            if(!device){
                 console.error('start device invalid item');
                 return null;
             }
-
             this.checkDeviceServerConnection();
-            item.check();
+            device.check();
+            debugDevice = true;
             var dfd = new Deferred();
-            if(item._startDfd && !item._startDfd.isResolved()){
-                debugDevice && console.error('already starting ' + item.toString());
-                return item._startDfd;
+            if(device._startDfd && !device._startDfd.isResolved()){
+                if(!isServer) {
+                    debugDevice && console.error('already starting ' + device.toString());
+                    return device._startDfd;
+                }
             }else{
-                !item.driverInstance && item.reset();//fresh
+                !device.driverInstance && device.reset();//fresh
             }
 
-            force===true && item.setMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_ENABLED,true,false);
-
-            var enabled = item.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_ENABLED);
-            if(!enabled && force!==true){
-                debugDevice && console.error('---abort start device : device is not enabled!' + item.toString());
+            force===true && device.setMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_ENABLED,true,false);
+            var enabled = device.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_ENABLED);
+            if(!enabled && force!==true && !isServer){
+                debugDevice && console.error('---abort start device : device is not enabled!' + device.toString());
                 this.publish(types.EVENTS.ON_STATUS_MESSAGE,{
-                    text:'Can`t start device because its not enabled! ' + item.toString(),
+                    text:'Can`t start device because its not enabled! ' + device.toString(),
                     type:'error'
                 });
                 setTimeout(function(){
@@ -60559,7 +61332,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 return dfd;
             }
 
-            var cInfo = this.toDeviceControlInfo(item);
+            var cInfo = this.toDeviceControlInfo(device);
             if(!cInfo){
                 console.error('invalid client info, assuming no driver found');
                 dfd.reject('invalid client info, assuming no driver found');
@@ -60573,10 +61346,10 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
 
             var hash = cInfo.hash;
-            var state = item.state;
+            var state = device.state;
             var wasLost = state===types.DEVICE_STATE.LOST_DEVICE_SERVER;
             if (this.deviceInstances[hash] && wasLost!==true) {
-                debugDevice && console.error('device already started' + cInfo.toString());
+                debugDevice && console.warn('device already started : ' + cInfo.toString());
                 dfd.resolve(this.deviceInstances[hash]);
                 return dfd;
             }
@@ -60588,7 +61361,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 return {
                     driverScopeId:driverInstance && driverInstance.blockScope ? driverInstance.blockScope.id : 'have no driver instance',
                     driverId:driverInstance ? driverInstance.driver.id : 'have no driver id',
-                    deviceId:item.path
+                    deviceId:device.path
                 };
             }
 
@@ -60597,39 +61370,54 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     text: 'Trying to re-connect to ' + cInfo.toString(),
                     type: 'info'
                 });
-                thiz.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.MANAGER_START_DRIVER, cInfo);
-                item.setState(types.DEVICE_STATE.CONNECTING);
+                thiz.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.CREATE_CONNECTION, cInfo);
+                device.setState(types.DEVICE_STATE.CONNECTING);
                 dfd.resolve(this.deviceInstances[hash]);
                 return dfd;
 
             }
 
-            item.setState(types.DEVICE_STATE.CONNECTING);
-
-            item._userStopped=null;
-            item._startDfd = dfd;
-
+            device.setState(types.DEVICE_STATE.CONNECTING);
+            device._userStopped=null;
+            device._startDfd = dfd;
             var baseDriverPrefix = this.driverScopes['system_drivers'],
                 baseDriverRequire = baseDriverPrefix + 'DriverBase';
-            //var urlBase = require.toUrl(this.driverScopes['system_drivers']);
+
             try {
                 require([baseDriverRequire], function (baseDriver) {
                     baseDriver.prototype.declaredClass = baseDriverRequire;
-
-                    var sub = thiz.createDriverInstance(cInfo, baseDriver, item).then(function (driverInstance) {
+                    var sub = thiz.createDriverInstance(cInfo, baseDriver, device).then(function (driverInstance) {
+                        if(!driverInstance.id){
+                            driverInstance.id = utils.createUUID();
+                        }
                         debugCreateInstance && console.info('created driver instance for '+ cInfo.toString());                        
-                        cInfo.mqtt = buildMQTTParams(cInfo, driverInstance, item);
+                        cInfo.mqtt = buildMQTTParams(cInfo, driverInstance, device);
                         thiz.publish(types.EVENTS.ON_STATUS_MESSAGE, {
                             text: 'Trying to connect to ' + cInfo.toString(),
                             type: 'info'
                         });
-                        thiz.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.MANAGER_START_DRIVER, cInfo);
+
+                        if(!isServer) {
+                            if(!device.isServerSide() && !device.isServer()) {
+                                thiz.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.CREATE_CONNECTION, cInfo);
+                            }else{
+                                thiz.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.START_DEVICE, cInfo);
+                            }
+                        }else{
+                            //we're already starting
+                            if(device._startDfd && !device._startDfd.isResolved()){
+                                thiz.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.CREATE_CONNECTION, cInfo);
+                            }else{
+                                thiz.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.START_DEVICE, cInfo);
+                            }
+                        }
                         dfd.resolve(thiz.deviceInstances[hash]);
                         delete cInfo.mqtt;
                     });
                     sub.then(function(){
+
                     },function(e){
-                        console.error('DeviceManager_DeviceServer::createDriverInstance error ',e);
+                        debugCreateInstance && console.error('DeviceManager_DeviceServer::createDriverInstance error ',e);
                         dfd.resolve(null);
                     });
                 },function(e){
@@ -60639,40 +61427,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 logError(e,'DeviceManager::startDevice: requiring base driver at ' + baseDriverRequire + ' failed! Base Driver - Prefix : ' + baseDriverPrefix);
             }
 
-            return dfd;
-        },
-        /**
-         *
-         * @param driver
-         * @returns {dojo/Deferred}
-         */
-        getDriverModule:function(driver){
-            var dfd = new Deferred();
-            var driverMeta = driver['user'],
-                script = utils.getCIInputValueByName(driverMeta, types.DRIVER_PROPERTY.CF_DRIVER_CLASS);
-
-            var driverScope = driver['scope'];
-            script = script ? script.replace('./', '') : '';
-            //script = script ? script.replace('.js', '') : '';
-            var packageUrl = require.toUrl(driverScope);
-            packageUrl = utils.removeURLParameter(packageUrl,'bust');
-            packageUrl = utils.removeURLParameter(packageUrl,'time');
-            var isRequireJS = !require.cache;
-            if(isRequireJS){
-                packageUrl = packageUrl.replace('/.js','/');
-            }
-            var requirePath = packageUrl + script;
-            requirePath+= requirePath.indexOf('?') == -1 ? '?' : '&';
-            requirePath+='time'+ new Date().getTime();            try {
-                require([requirePath], function (driverModule) {
-                    dfd.resolve(driverModule);
-                });
-            }
-            catch (e){
-                console.error('error loading driver module',e);
-                logError(e,'error loading driver module');
-                dfd.reject(e.message);
-            }
             return dfd;
         },
         /**
@@ -60695,6 +61449,150 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
             var requirePath = decodeURIComponent(packageUrl) + deviceInfo.driver;
             requirePath = requirePath.replace('', '').trim();
+
+            var thiz = this,
+                ctx = thiz.ctx,
+                meta = device['user'],
+                driverId = utils.getCIInputValueByName(meta, types.DEVICE_PROPERTY.CF_DEVICE_DRIVER),
+                driverManager = ctx.getDriverManager(),
+                driver = driverManager.getDriverById(driverId),
+                dfd = new Deferred(),
+                enabled = device.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_ENABLED),
+                serverSide = deviceInfo.serverSide;
+
+            debugCreateInstance && console.log('create driver instance : ' + device.path +":"+device.scope + ' from ' + requirePath,{
+                driver:driver,
+                device:device,
+                deviceInfo:deviceInfo
+            });
+
+            if(device.isEnabled()===false && !isServer){
+                debugConnect && console.warn('device not enabled, abort ' + deviceInfo.toString());
+                setTimeout(function(){
+                    dfd.reject('device not enabled, abort ' + deviceInfo.toString());
+                });
+                return dfd;
+            }
+
+            if(isServer && (!device.isServerSide() && !device.isServer() && !deviceInfo.isServer && !deviceInfo.serverSide)  ){
+                dfd.reject('DeviceManager_DeviceServer: wont create driver instance! I am server and device isnt server side : ' + deviceInfo.title);
+                return dfd;
+            }
+
+
+            debugCreateInstance && console.info('------create driver instance with DriverBase at '+requirePath + ' with driver prefix : ' + driverPrefix,this.driverScopes);
+
+            try {
+                driverManager.getDriverModule(driver).then(function(driverModule){
+                    var baseClass = driverBase;
+                    var driverProto = dcl([baseClass, EventedMixin.dcl, ReloadMixin.dcl,driverModule],{});
+                    var driverInstance = new driverProto();
+                    driverInstance.declaredClass = requirePath;
+                    driverInstance.options = deviceInfo;
+                    driverInstance.baseClass = baseClass.prototype.declaredClass;
+                    driverInstance.modulePath = utils.replaceAll('//', '/', driverPrefix + deviceInfo.driver).replace('.js','');
+                    driverInstance.delegate = thiz;
+                    driverInstance.driver = driver;
+                    driverInstance.serverSide = deviceInfo.serverSide;
+                    driverInstance.utils = utils;
+                    driverInstance.types = types;
+                    driverInstance.device = device;
+                    driverInstance.Module = driverModule;
+                    driverInstance.id = utils.createUUID();
+                    driverInstance.getDevice = function(){
+                        return this.device;
+                    };
+                    driverInstance.getDeviceInfo = function(){
+                        return this.getDevice().info;
+                    };
+                    var meta = driver['user'];
+                    var commandsCI = utils.getCIByChainAndName(meta, 0, types.DRIVER_PROPERTY.CF_DRIVER_COMMANDS);
+                    if (commandsCI && commandsCI['params']) {
+                        driverInstance.sendSettings = utils.getJson(commandsCI['params']);
+                    }
+
+                    var responseCI = utils.getCIByChainAndName(meta, 0, types.DRIVER_PROPERTY.CF_DRIVER_RESPONSES);
+                    if (responseCI && responseCI['params']) {
+                        driverInstance.responseSettings = utils.getJson(responseCI['params']);
+                    }
+                    try {
+                        driverInstance.start();
+                        driverInstance.initReload();
+                    } catch (e) {
+                        console.error('crash in driver instance startup! ' + device.toString());
+                        logError(e,'crash in driver instance startup!');
+                    }
+
+                    thiz.deviceInstances[hash] = driverInstance;
+
+                    //console.error('created driver instance ' + hash);
+
+
+                    // Build an id basing on : driver id + driver path
+                    // "235eb680-cb87-11e3-9c1a-....ab5_Marantz/Marantz.20.meta.json"
+                    //var scopeId = driverId + '_' + hash + '_' + device.path;
+                    if (!driver.blox || !driver.blox.blocks) {
+                        debugConnect && console.warn('Attention : INVALID driver, have no blocks', deviceInfo.toString());
+                        driver.blox = {
+                            blocks: []
+                        };
+                    }
+                    /*
+                    if (isServer && driver.blockPath) {
+                        utils.getJson(utils.readFile(driver.blockPath));
+                        driver.blox = utils.getJson(utils.readFile(driver.blockPath));
+                    }
+
+                    var scope = ctx.getBlockManager().createScope({
+                        id: scopeId,
+                        device: device,
+                        driver: driver,
+                        instance: driverInstance,
+                        serviceObject: thiz.serviceObject,
+                        ctx: ctx,
+                        serverSide: serverSide,
+                        getContext: function () {
+                            return this.instance;
+                        }
+                    }, utils.clone(driver.blox.blocks),function(error){
+                        if(error){
+                            console.error(error  + ' : in '+driver.name + ' Resave Driver! in scope id ' +scopeId);
+                        }
+                    });
+
+                    //important:
+                    driverInstance.blockScope = scope;
+                    device.blockScope = scope;
+                    */
+                    device.driverInstance = driverInstance;
+                    thiz.getDriverInstance(deviceInfo, true);//triggers to resolve settings
+                    //add variable && command functions:
+                    //isIDE && thiz.completeDriverInstance(driver, driverInstance, device);
+                    driverInstance._id= utils.createUUID();
+                    dfd.resolve(driverInstance);
+                    return driverInstance;
+
+                });
+            }catch(e){
+                console.error('DeviceManager::createDriverInstance:: requiring base driver at ' + requirePath + ' failed ' +e.message,utils.inspect(deviceInfo));
+            }
+            return dfd;
+        },
+        createDriverInstance_bak: function (deviceInfo, driverBase, device) {
+            var hash = deviceInfo.hash,
+                driverPrefix = this.driverScopes[deviceInfo.driverScope],
+                isRequireJS = !require.cache,
+                packageUrl = require.toUrl(driverPrefix);
+
+            packageUrl = utils.removeURLParameter(packageUrl,'bust');
+
+            if(isRequireJS){
+                packageUrl = packageUrl.replace('/.js','/');
+            }
+
+            var requirePath = decodeURIComponent(packageUrl) + deviceInfo.driver;
+            requirePath = requirePath.replace('', '').trim();
+
             var thiz = this,
                 ctx = thiz.ctx,
                 meta = device['user'],
@@ -60726,6 +61624,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             debugCreateInstance && console.info('------create driver instance with DriverBase at '+requirePath + ' with driver prefix : ' + driverPrefix,this.driverScopes);
             try {
                 require([requirePath], function (driverProtoInstance) {
+
                     var baseClass = driverBase;
                     var driverProto = dcl([baseClass, EventedMixin.dcl, ReloadMixin.dcl,driverProtoInstance],{});
                     var driverInstance = new driverProto();
@@ -60741,7 +61640,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     driverInstance.types = types;
                     driverInstance.device = device;
                     driverInstance.Module = driverProtoInstance;
-                    
+
                     driverInstance.getDevice = function(){
                         return this.device;
                     };
@@ -60781,39 +61680,37 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     }
 
                     /*
-                    if (isServer && driver.blockPath) {
-                        utils.getJson(utils.readFile(driver.blockPath));
-                        driver.blox = utils.getJson(utils.readFile(driver.blockPath));
-                    }
+                     if (isServer && driver.blockPath) {
+                     utils.getJson(utils.readFile(driver.blockPath));
+                     driver.blox = utils.getJson(utils.readFile(driver.blockPath));
+                     }
 
-                    var scope = ctx.getBlockManager().createScope({
-                        id: scopeId,
-                        device: device,
-                        driver: driver,
-                        instance: driverInstance,
-                        serviceObject: thiz.serviceObject,
-                        ctx: ctx,
-                        serverSide: serverSide,
-                        getContext: function () {
-                            return this.instance;
-                        }
-                    }, utils.clone(driver.blox.blocks),function(error){
-                        if(error){
-                            console.error(error  + ' : in '+driver.name + ' Resave Driver! in scope id ' +scopeId);
-                        }
-                    });
+                     var scope = ctx.getBlockManager().createScope({
+                     id: scopeId,
+                     device: device,
+                     driver: driver,
+                     instance: driverInstance,
+                     serviceObject: thiz.serviceObject,
+                     ctx: ctx,
+                     serverSide: serverSide,
+                     getContext: function () {
+                     return this.instance;
+                     }
+                     }, utils.clone(driver.blox.blocks),function(error){
+                     if(error){
+                     console.error(error  + ' : in '+driver.name + ' Resave Driver! in scope id ' +scopeId);
+                     }
+                     });
 
-                    //important:
-                    driverInstance.blockScope = scope;
-                    device.blockScope = scope;
-                    */
+                     //important:
+                     driverInstance.blockScope = scope;
+                     device.blockScope = scope;
+                     */
                     device.driverInstance = driverInstance;
-                    
-                    thiz.getDriverInstance(deviceInfo, true);//triggers to resolve settings
 
+                    thiz.getDriverInstance(deviceInfo, true);//triggers to resolve settings
                     //add variable && command functions:
                     //isIDE && thiz.completeDriverInstance(driver, driverInstance, device);
-
                     driverInstance._id= utils.createUUID();
                     dfd.resolve(driverInstance);
                     return driverInstance;
@@ -60830,15 +61727,14 @@ define('xcf/manager/DeviceManager_DeviceServer',[
          * @param data
          */
         onSetDeviceServerVariables:function(data){
-            //console.log('did set device server variables',data);
+            //utils.stack();
+            //console.log('onSetDeviceServerVariables :' + _.keys(this.deviceInstances).length);
             var instance = this.getDriverInstance(data.device, true);
             var device = this.getDeviceStoreItem(data.device);
-
             if(!device){
                 debugDevice && console.log('did set device server variables failed, have no device',data);
                 return;
             }
-
 
             if(!instance.blockScope) {
                 var deviceInfo = device.info;
@@ -60879,12 +61775,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 instance.blockScope = scope;
                 device.blockScope = scope;
                 isIDE && this.completeDriverInstance(driver, instance, device);
-
             }
-
-
-
-
 
             if(instance){
                 var variables = data.variables,
@@ -60906,6 +61797,68 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             delete device.lastError;
             delete device._startDfd;
             device._startDfd = null;
+        },
+        /**
+         *
+         * @param device {module:xcf/model/Device}
+         * @param driverInstance
+         */
+        getDeviceServerVariables:function(device,driverInstance){
+            //console.log('getDeviceServerVariables' + _.keys(this.deviceInstances).length);
+            var driver = driverInstance.driver;
+            if (!driver.blox || !driver.blox.blocks) {
+                debugConnect && console.warn('Attention : INVALID driver, have no blocks', device.toString());
+                driver.blox = {
+                    blocks: []
+                };
+            }
+            var blocks = driver.blox.blocks;
+
+            var basicVariables = [];
+
+            _.each(blocks,function(block){
+                block.group === types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES && basicVariables.push(block);
+            });
+
+            /*
+             var basicVariables = _.find(blocks,{
+             group:types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES
+             }) || [];
+             */
+
+            //basicVariables = _.isObject(basicVariables) ? [basicVariables] : basicVariables;
+
+
+            /*
+             var scope = driverInstance.blockScope;
+             if(!scope){
+             console.error(' have no block scope');
+             return;
+             }
+
+             console.log('variables: ');
+             var basicVariables = scope.getVariables({
+             group: types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES
+             });
+             */
+            var out = [];
+            for (var i = 0; i < basicVariables.length; i++) {
+                out.push({
+                    name:basicVariables[i].name,
+                    value:basicVariables[i].value,
+                    initial:basicVariables[i].value
+                });
+            }
+
+            device.setState(types.DEVICE_STATE.SYNCHRONIZING);/*
+            if(isServer && device.isServerSide()){
+                console.error('abort');
+            }else {*/
+                this.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.GET_DEVICE_VARIABLES, {
+                    device: this.toDeviceControlInfo(device),
+                    variables: out
+                });
+  //          }
         },
         /**
          *
@@ -61024,8 +61977,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 deviceStoreItem.lastError = error;
                 deviceStoreItem.refresh();
 
-                function shouldRecconect(item){                    
-                    
+                function shouldRecconect(item){
                     if(item._userStopped || item.state === types.DEVICE_STATE.DISABLED){
                         return false;
                     }
@@ -61041,13 +61993,12 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 if( (isServer && serverSide) || (!serverSide && !isServer)) {
                     if (deviceStoreItem) {
                         var thiz = this;
-
                         if (deviceStoreItem.reconnectTimer) {
                             return;
                         }
                         deviceStoreItem.isReconnecting = true;
                         if(!deviceStoreItem.lastReconnectTime){
-                            deviceStoreItem.lastReconnectTime = 1*thiz.reconnectDevice;
+                            deviceStoreItem.lastReconnectTime = thiz.reconnectDevice;
                         }else if(deviceStoreItem.lastReconnectTime>3600){
                             deviceStoreItem.lastReconnectTime = 3600;
                         }
@@ -61064,8 +62015,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                                     deviceStoreItem.setState(types.DEVICE_STATE.CONNECTING);
                                     debugConnect && console.info('trying to reconnect to ' + info.toString());
                                 }
-
-                                //thiz.connectDevice(deviceStoreItem);
                                 thiz.startDevice(deviceStoreItem);
                             }
                         }, deviceStoreItem.lastReconnectTime);
@@ -61073,57 +62022,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 }
             }
         },
-        getDeviceServerVariables:function(device,driverInstance){
-            var driver = driverInstance.driver;
-            if (!driver.blox || !driver.blox.blocks) {
-                debugConnect && console.warn('Attention : INVALID driver, have no blocks', device.toString());
-                driver.blox = {
-                    blocks: []
-                };
-            }
-            var blocks = driver.blox.blocks;
 
-            var basicVariables = [];
-
-            _.each(blocks,function(block){
-                block.group === types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES && basicVariables.push(block);
-            });
-
-            /*
-            var basicVariables = _.find(blocks,{
-                group:types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES
-            }) || [];
-            */
-
-            //basicVariables = _.isObject(basicVariables) ? [basicVariables] : basicVariables;
-
-
-            /*
-            var scope = driverInstance.blockScope;
-            if(!scope){
-                console.error(' have no block scope');
-                return;
-            }
-
-            console.log('variables: ');
-            var basicVariables = scope.getVariables({
-                group: types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES
-            });
-            */
-            var out = [];
-            for (var i = 0; i < basicVariables.length; i++) {
-                out.push({
-                    name:basicVariables[i].name,
-                    value:basicVariables[i].value,
-                    initial:basicVariables[i].value
-                });
-            }
-            device.setState(types.DEVICE_STATE.SYNCHRONIZING);
-            this.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.GET_DEVICE_VARIABLES, {
-                device:this.toDeviceControlInfo(device),
-                variables:out
-            });
-        },
         onCommandFinish:function(deviceData,message){
             var driverInstance = this.getDriverInstance(deviceData, true);
             if (!driverInstance) {
@@ -61265,9 +62164,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
 
             var state = device.get('state');
-
             var serverSide = deviceInfo.serverSide;
-
             function clear(message){
                 delete message['resposeSettings'];
                 delete message['driver'];
@@ -61342,6 +62239,31 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 }
             }
 
+            /*
+            TypeError: Cannot read property 'Module' of undefined
+            at eval (eval at <anonymous> (eval at undefined), <anonymous>:1:9)
+            at t.evaluate (eval at undefined, <anonymous>:165:98)
+            at DebugCommandProcessor.t.processDebugJSONRequest (eval at undefined, <anonymous>:458:15)
+            at dcl.getDriverModule (/PMaster/projects/x4mm/Code/client/src/lib/xcf/model/Command.js:468:13)
+            at dcl._resolve (/PMaster/projects/x4mm/Code/client/src/lib/xcf/model/Command.js:312:37)
+            at dcl.solve (/PMaster/projects/x4mm/Code/client/src/lib/xcf/model/Command.js:375:36)
+            at dcl.start (/PMaster/projects/x4mm/Code/client/src/lib/xcf/model/Command.js:458:22)
+            at dcl.start (/PMaster/projects/x4mm/Code/client/src/lib/xblox/model/Scope.js:96:27)
+            at dcl.onDeviceStarted (/PMaster/projects/x4mm/Code/client/src/lib/xcf/manager/DeviceManager_DeviceServer.js:352:28)
+            at dcl.onDeviceConnected (/PMaster/projects/x4mm/Code/client/src/lib/xcf/manager/DeviceManager_DeviceServer.js:1014:26)
+            at dcl.onSetDeviceServerVariables (/PMaster/projects/x4mm/Code/client/src/lib/xcf/manager/DeviceManager_DeviceServer.js:893:18)
+            at dcl.write (nxapp/manager/DeviceServerContext.js:132:29)
+            at dcl.sendClientMessage (nxapp/server/DeviceServer.js:263:24)
+            at dcl.getVariables (nxapp/server/DeviceServer.js:290:26)
+            at dcl.handleManagerCommand (nxapp/server/DeviceServer.js:96:33)
+            at dcl.sendManagerCommand (nxapp/manager/DeviceManager.js:242:30)
+            at dcl.getDeviceServerVariables (/PMaster/projects/x4mm/Code/client/src/lib/xcf/manager/DeviceManager_DeviceServer.js:958:22)
+            at dcl.onDeviceConnected (/PMaster/projects/x4mm/Code/client/src/lib/xcf/manager/DeviceManager_DeviceServer.js:1002:22)
+            at Object.lang.hitch (dojo/_base/lang.js:375:55)
+            at Object.target.(anonymous function).dispatcher [as ononDeviceConnected] (dojo/aspect.js:98:38)
+            at Function.on.emit (dojo/on.js:285:37)
+            at Object.Evented.emit (dojo/Evented.js:32:19)
+            */
 
             if(state !==types.DEVICE_STATE.READY){
                 device.set('state',types.DEVICE_STATE.READY);
@@ -61384,9 +62306,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     consoleViews = this.consoles[viewId];
 
                 debug && console.log('on_device message '+hash,driverInstance.options);
-
                 //device.setState(types.DEVICE_STATE.READY);
-
                 if(debugDevice) {
                     var text = deviceMessageData.data.deviceMessage;
                     if (_.isObject(text)) {
@@ -61629,10 +62549,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             });
 
             debug && console.log("Device.Manager.Send.Message : " + dataOut.command.substr(0,30) + ' = hex = ' + utils.stringToHex(dataOut.command) + ' l = ' + dataOut.command.length, dataOut);//sending device message
-            
             var device = this.getDevice(options.id);
-
-
             if(!device || !_.isObject(device)){
                 console.error('invalid device');
                 return;
@@ -62469,6 +63386,53 @@ define('xcf/manager/DriverManager',[
     has('xcf-ui') && bases.push(DriverManager_UI);
     
     return dcl(bases, {
+        /**
+         *
+         * @param driver
+         * @returns {dojo/Deferred}
+         */
+        getDriverModule:function(driver){
+
+            var dfd = new Deferred();
+
+            var driverMeta = driver['user'],
+                script = utils.getCIInputValueByName(driverMeta, types.DRIVER_PROPERTY.CF_DRIVER_CLASS);
+
+            var driverScope = driver['scope'];
+            script = script ? script.replace('./', '') : '';
+            //script = script ? script.replace('.js', '') : '';
+
+            var packageUrl = require.toUrl(driverScope);
+            packageUrl = utils.removeURLParameter(packageUrl,'bust');
+            packageUrl = utils.removeURLParameter(packageUrl,'time');
+            if(has('debug') && isServer){
+                packageUrl = packageUrl.replace('?','');
+            }
+            packageUrl =  packageUrl.replace('/main.js','');
+            var isRequireJS = !require.cache;
+            if(isRequireJS){
+                packageUrl = packageUrl.replace('/.js','/');
+            }
+
+            var requirePath = packageUrl + '/'+ script;
+
+            if(has('debug') && !isServer){
+                requirePath+= requirePath.indexOf('?') == -1 ? '?' : '&';
+                requirePath+='time'+ new Date().getTime();
+            }
+
+            try {
+                require([requirePath], function (driverModule) {
+                    dfd.resolve(driverModule);
+                });
+            }
+            catch (e){
+                console.error('error loading driver module from  '+packageUrl +'---' + script,e);
+                logError(e,'error loading driver module');
+                dfd.reject(e.message);
+            }
+            return dfd;
+        },
         loadDriverModule:function(driver){
             var baseDriverPrefix = this.driverScopes['system_drivers'],
                 baseDriverRequire = baseDriverPrefix + 'DriverBase';
@@ -62481,6 +63445,7 @@ define('xcf/manager/DriverManager',[
                 _require = require;
 
             _require([baseDriverRequire], function (baseDriver) {
+
                 var driverPrefix = self.driverScopes[driver.scope],
                     isRequireJS = !require.cache;
 
@@ -62502,12 +63467,9 @@ define('xcf/manager/DriverManager',[
                 }
                 var driverMeta = driver['user'];
                 var script = utils.getCIInputValueByName(driverMeta, types.DRIVER_PROPERTY.CF_DRIVER_CLASS);
-
                 script = script.replace('./','');
                 script = script.replace('.js','');
                 script = driver.scope + '/' + script;
-                //var requirePath = decodeURIComponent(packageUrl) + script;
-                //requirePath = requirePath.replace('', '').trim();
                 script = script.replace('', '').trim();
                 try {
                     _require.undef(script);
@@ -62524,7 +63486,6 @@ define('xcf/manager/DriverManager',[
                         dfd.resolve(driverProtoInstance);
                     });
                 }catch(e){
-
                 }
 
             });
@@ -63618,7 +64579,7 @@ define('xcf/types/Types',[
         PUBLISH:0x00000002,
         PUBLISH_IF_SERVER:0x00000004
         
-    }
+    };
     /**
      * Flags to define logging outputs per device or view
      *
@@ -63692,7 +64653,7 @@ define('xcf/types/Types',[
      * @property {string} loggingFlags Absolute path to the user's drivers
      * @property {int} serverSide The device's driver runs server side if 1, otherwise 0
      * @property {string} hash A hash for client side. Its build of MD5(host,port,protocol,driverId,driverScope,id,devicePath,deviceScope,source,user_devices,system_devices,system_drivers,user_drivers)
-     * @property {DRIVER_FLAGS} driverFlags The driver flags
+     * @property {DRIVER_FLAGS} driverOptions The driver flags
      * @property {LOGGING_FLAGS} loggingFlags The device's logging flags
      * @property {object} responseSettings Contains the constants for receiving data from a device its being set at initialization time and has this structure:
      * @property {boolean} responseSettings.start 
@@ -63969,6 +64930,9 @@ define('xcf/types/Types',[
         MANAGER_CLOSE_ALL: 'Close_All_Connections',
         MANAGER_STATUS: 'status',
         MANAGER_START_DRIVER: 'startDriver',
+        START_DEVICE: 'startDevice',
+        STOP_DEVICE: 'stopDevice',
+        CREATE_CONNECTION: 'createConnection',
         MANAGER_STOP_DRIVER: 'stopDriver',
         DEVICE_SEND: 'Device_Send',
         CALL_METHOD: 'Call_Method',
@@ -63985,760 +64949,6 @@ define('xcf/types/Types',[
     return types;
 });
 ;
-define('xide/utils/ObjectUtils',[
-    'xide/utils',
-    'require',
-    "dojo/Deferred",
-    "dojo/_base/json",
-    "dojo/has"
-], function (utils, require, Deferred,json,has) {
-
-    var _debug = false;
-
-    "use strict";
-    /////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    //  Loader utils
-    //
-    //////////////////////////////////////////////////////////////////////////////////////////////
-    utils.debounce = function(who,methodName,_function,delay,options,now,args){
-        var _place = who[methodName+'_debounced'];
-        if(!_place){
-            _place = who[methodName+'_debounced'] =  _.debounce(_function, delay,options);
-        }
-        if(now==true){
-            if(!who[methodName+'_debouncedFirst']){
-                who[methodName+'_debouncedFirst']=true;
-                _function.apply(who,args);
-            }
-        }
-        return _place();
-    };
-
-    utils.pluck=function(items,prop){
-        var result = [];
-        if(!items){
-            _debug && console.warn('pluck: no items');
-            return result;
-        }
-        for (var i = 0; i < items.length; i++) {
-            result.push(items[i][prop]);
-        }
-        return result;
-
-    };
-
-    /**
-     * Trigger downloadable file
-     * @param filename
-     * @param text
-     */
-    utils.download  = function(filename, text){
-        var element = document.createElement('a');
-        text = _.isString(text) ? text : JSON.stringify(text,null,2);
-        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-        element.setAttribute('download', filename);
-        element.style.display = 'none';
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
-    };
-
-    /**
-     * Ask require registry at this path
-     * @param mixed
-     * @param _default
-     * @param ready
-     * @returns {*}
-     */
-    utils.hasObject = function (mixed, _default, ready) {
-        var result = null;
-        var _re = require;
-        try {
-            result = _re(mixed);
-        } catch (e) {
-            console.error('error in utils.hasObject ', e);
-        }
-        return result;
-    };
-    /**
-     * Returns a module by module path
-     * @param mixed {String|Object}
-     * @param _default {Object} default object
-     * @returns {Object|Promise}
-     */
-    utils.getObject = function (mixed, _default) {
-        var result = null;
-        if (utils.isString(mixed)) {
-            var _re = require;
-            try {
-                result = _re(mixed);
-            } catch (e) {
-                _debug && console.warn('utils.getObject::require failed for ' + mixed);
-            }
-            //not a loaded module yet
-            try {
-                if (!result) {
-
-                    var deferred = new Deferred();
-                    //try loader
-                    result = _re([
-                        mixed
-                    ], function (module) {
-                        deferred.resolve(module);
-                    });
-                    return deferred.promise;
-                }
-            }catch(e){
-                _debug &&  console.error('error in requiring '+mixed,e);
-            }
-            return result;
-
-        } else if (utils.isObject(mixed)) {
-            return mixed;//reflect
-        }
-        return result !== null ? result : _default;
-    };
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    //  True object utils
-    //
-    //////////////////////////////////////////////////////////////////////////////////////////////
-    utils.toArray = function (obj) {
-        var result = [];
-        for (var c in obj) {
-            result.push({
-                name: c,
-                value: obj[c]
-            });
-        }
-        return result;
-    };
-    /**
-     * Array to object conversion
-     * @param arr
-     * @returns {Object}
-     */
-    utils.toObject = function (arr, lodash) {
-        if (!arr) {
-            return {};
-        }
-        if (lodash !== false) {
-            return _.object(_.map(arr, _.values));
-        } else {
-            //CI related back compat hack
-            if (utils.isObject(arr) && arr[0]) {
-                return arr[0];
-            }
-
-            var rv = {};
-            for (var i = 0; i < arr.length; ++i) {
-                rv[i] = arr[i];
-            }
-            return rv;
-        }
-    };
-
-    /**
-     * Gets an object property by string, eg: utils.byString(someObj, 'part3[0].name');
-     * @deprecated, see objectAtPath below
-     * @param o {Object}    : the object
-     * @param s {String}    : the path within the object
-     * @param defaultValue {Object|String|Number} : an optional default value
-     * @returns {*}
-     */
-    utils.byString = function (o, s, defaultValue) {
-        s = s.replace(/\[(\w+)\]/g, '.$1'); // convert indexes to properties
-        s = s.replace(/^\./, '');           // strip a leading dot
-        var a = s.split('.');
-        while (a.length) {
-            var n = a.shift();
-            if (n in o) {
-                o = o[n];
-            } else {
-                return;
-            }
-        }
-        return o;
-    };
-
-    /////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    //  Object path
-    //
-    //////////////////////////////////////////////////////////////////////////////////////////////
-    /**
-     * Internals
-     */
-
-    //cache
-    var toStr = Object.prototype.toString,
-        _hasOwnProperty = Object.prototype.hasOwnProperty;
-
-    /**
-     * @private
-     * @param type
-     * @returns {*}
-     */
-    function toString(type) {
-        return toStr.call(type);
-    }
-
-    /**
-     * @private
-     * @param key
-     * @returns {*}
-     */
-    function getKey(key) {
-        var intKey = parseInt(key);
-        if (intKey.toString() === key) {
-            return intKey;
-        }
-        return key;
-    }
-
-    /**
-     * internal set value at path in object
-     * @private
-     * @param obj
-     * @param path
-     * @param value
-     * @param doNotReplace
-     * @returns {*}
-     */
-    function set(obj, path, value, doNotReplace) {
-        if (_.isNumber(path)) {
-            path = [path];
-        }
-        if (_.isEmpty(path)) {
-            return obj;
-        }
-        if (_.isString(path)) {
-            return set(obj, path.split('.').map(getKey), value, doNotReplace);
-        }
-        var currentPath = path[0];
-
-        if (path.length === 1) {
-            var oldVal = obj[currentPath];
-            if (oldVal === void 0 || !doNotReplace) {
-                obj[currentPath] = value;
-            }
-            return oldVal;
-        }
-
-        if (obj[currentPath] === void 0) {
-            //check if we assume an array
-            if (_.isNumber(path[1])) {
-                obj[currentPath] = [];
-            } else {
-                obj[currentPath] = {};
-            }
-        }
-        return set(obj[currentPath], path.slice(1), value, doNotReplace);
-    }
-
-    /**
-     * deletes an property by a path
-     * @param obj
-     * @param path
-     * @returns {*}
-     */
-    function del(obj, path) {
-        if (_.isNumber(path)) {
-            path = [path];
-        }
-        if (_.isEmpty(obj)) {
-            return void 0;
-        }
-
-        if (_.isEmpty(path)) {
-            return obj;
-        }
-        if (_.isString(path)) {
-            return del(obj, path.split('.'));
-        }
-
-        var currentPath = getKey(path[0]);
-        var oldVal = obj[currentPath];
-
-        if (path.length === 1) {
-            if (oldVal !== void 0) {
-                if (_.isArray(obj)) {
-                    obj.splice(currentPath, 1);
-                } else {
-                    delete obj[currentPath];
-                }
-            }
-        } else {
-            if (obj[currentPath] !== void 0) {
-                return del(obj[currentPath], path.slice(1));
-            }
-        }
-        return obj;
-    }
-
-    /**
-     * Private helper class
-     * @private
-     * @type {{}}
-     */
-    var objectPath = {};
-
-    objectPath.has = function (obj, path) {
-        if (_.isEmpty(obj)) {
-            return false;
-        }
-        if (_.isNumber(path)) {
-            path = [path];
-        } else if (_.isString(path)) {
-            path = path.split('.');
-        }
-
-        if (_.isEmpty(path) || path.length === 0) {
-            return false;
-        }
-
-        for (var i = 0; i < path.length; i++) {
-            var j = path[i];
-            if ((_.isObject(obj) || _.isArray(obj)) && _hasOwnProperty.call(obj, j)) {
-                obj = obj[j];
-            } else {
-                return false;
-            }
-        }
-
-        return true;
-    };
-
-    /**
-     * Define private public 'ensure exists'
-     * @param obj
-     * @param path
-     * @param value
-     * @returns {*}
-     */
-    objectPath.ensureExists = function (obj, path, value) {
-        return set(obj, path, value, true);
-    };
-
-    /**
-     * Define private public 'set'
-     * @param obj
-     * @param path
-     * @param value
-     * @param doNotReplace
-     * @returns {*}
-     */
-    objectPath.set = function (obj, path, value, doNotReplace) {
-        return set(obj, path, value, doNotReplace);
-    };
-
-    /**
-     Define private public 'insert'
-     * @param obj
-     * @param path
-     * @param value
-     * @param at
-     */
-    objectPath.insert = function (obj, path, value, at) {
-        var arr = objectPath.get(obj, path);
-        at = ~~at;
-        if (!isArray(arr)) {
-            arr = [];
-            objectPath.set(obj, path, arr);
-        }
-        arr.splice(at, 0, value);
-    };
-
-    /**
-     * Define private public 'empty'
-     * @param obj
-     * @param path
-     * @returns {*}
-     */
-    objectPath.empty = function (obj, path) {
-        if (_.isEmpty(path)) {
-            return obj;
-        }
-        if (_.isEmpty(obj)) {
-            return void 0;
-        }
-
-        var value, i;
-        if (!(value = objectPath.get(obj, path))) {
-            return obj;
-        }
-
-        if (_.isString(value)) {
-            return objectPath.set(obj, path, '');
-        } else if (_.isBoolean(value)) {
-            return objectPath.set(obj, path, false);
-        } else if (_.isNumber(value)) {
-            return objectPath.set(obj, path, 0);
-        } else if (_.isArray(value)) {
-            value.length = 0;
-        } else if (_.isObject(value)) {
-            for (i in value) {
-                if (_hasOwnProperty.call(value, i)) {
-                    delete value[i];
-                }
-            }
-        } else {
-            return objectPath.set(obj, path, null);
-        }
-    };
-
-    /**
-     * Define private public 'push'
-     * @param obj
-     * @param path
-     */
-    objectPath.push = function (obj, path /*, values */) {
-        var arr = objectPath.get(obj, path);
-        if (!_.isArray(arr)) {
-            arr = [];
-            objectPath.set(obj, path, arr);
-        }
-        arr.push.apply(arr, Array.prototype.slice.call(arguments, 2));
-    };
-
-    /**
-     * Define private public 'coalesce'
-     * @param obj
-     * @param paths
-     * @param defaultValue
-     * @returns {*}
-     */
-    objectPath.coalesce = function (obj, paths, defaultValue) {
-        var value;
-        for (var i = 0, len = paths.length; i < len; i++) {
-            if ((value = objectPath.get(obj, paths[i])) !== void 0) {
-                return value;
-            }
-        }
-        return defaultValue;
-    };
-
-    /**
-     * Define private public 'get'
-     * @param obj
-     * @param path
-     * @param defaultValue
-     * @returns {*}
-     */
-    objectPath.get = function (obj, path, defaultValue) {
-        if (_.isNumber(path)) {
-            path = [path];
-        }
-        if (_.isEmpty(path)) {
-            return obj;
-        }
-        if (_.isEmpty(obj)) {
-            //lodash doesnt seem to work with html nodes
-            if (obj && obj.innerHTML == null) {
-                return defaultValue;
-            }
-        }
-        if (_.isString(path)) {
-            return objectPath.get(obj, path.split('.'), defaultValue);
-        }
-        var currentPath = getKey(path[0]);
-        if (path.length === 1) {
-            if (obj && obj[currentPath] === void 0) {
-                return defaultValue;
-            }
-            if (obj) {
-                return obj[currentPath];
-            }
-        }
-        if (!obj) {
-            return defaultValue;
-        }
-        return objectPath.get(obj[currentPath], path.slice(1), defaultValue);
-    };
-
-    /**
-     * Define private public 'del'
-     * @param obj
-     * @param path
-     * @returns {*}
-     */
-    objectPath.del = function (obj, path) {
-        return del(obj, path);
-    };
-    /////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    //  Object path public xide/utils mixin
-    //
-    //////////////////////////////////////////////////////////////////////////////////////////////
-    /**
-     *  Returns a value by a give object path
-     *
-     *  //works also with arrays
-     *    objectPath.get(obj, "a.c.1");  //returns "f"
-     *    objectPath.get(obj, ["a","c","1"]);  //returns "f"
-     *
-     * @param obj {object}
-     * @param path {string}
-     * @param _default {object|null}
-     * @returns {*}
-     */
-    utils.getAt = function (obj, path, _default) {
-        return objectPath.get(obj, path, _default);
-    };
-
-    /**
-     * Sets a value in an object/array at a given path.
-     * @example
-     *
-     * utils.setAt(obj, "a.h", "m"); // or utils.setAt(obj, ["a","h"], "m");
-     *
-     * //set will create intermediate object/arrays
-     * objectPath.set(obj, "a.j.0.f", "m");
-     *
-     * @param obj{Object|Array}
-     * @param path {string}
-     * @param value {mixed}
-     * @returns {Object|Array}
-     */
-    utils.setAt = function (obj, path, value) {
-        return objectPath.set(obj, path, value);
-    };
-
-    /**
-     * Returns there is anything at given path within an object/array.
-     * @param obj
-     * @param path
-     */
-    utils.hasAt = function (obj, path) {
-        return objectPath.has(obj, path);
-    };
-
-    /**
-     * Ensures at given path, otherwise _default will be placed
-     * @param obj
-     * @param path
-     * @returns {*}
-     */
-    utils.ensureAt = function (obj, path, _default) {
-        return objectPath.ensureExists(obj, path, _default);
-    };
-    /**
-     * Deletes at given path
-     * @param obj
-     * @param path
-     * @returns {*}
-     */
-    utils.deleteAt = function (obj, path) {
-        return objectPath.del(obj, path);
-    };
-
-    /**
-     *
-     * @param to
-     * @param from
-     * @returns {*}
-     */
-    utils.merge = function (to, from) {
-        for (var n in from) {
-            if (typeof to[n] != 'object') {
-                to[n] = from[n];
-            } else if (typeof from[n] == 'object') {
-                to[n] = utils.merge(to[n], from[n]);
-            }
-        }
-
-        return to;
-    };
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    //  Dojo's most wanted
-    //
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    utils.clone=function(/*anything*/ src){
-        // summary:
-        // Clones objects (including DOM nodes) and all children.
-        // Warning: do not clone cyclic structures.
-        // src:
-        // The object to clone
-        if(!src || typeof src != "object" || utils.isFunction(src)){
-            // null, undefined, any non-object, or function
-            return src; // anything
-        }
-        if(src.nodeType && "cloneNode" in src){
-            // DOM Node
-            return src.cloneNode(true); // Node
-        }
-        if(src instanceof Date){
-            // Date
-            return new Date(src.getTime()); // Date
-        }
-        if(src instanceof RegExp){
-            // RegExp
-            return new RegExp(src); // RegExp
-        }
-        var r, i, l;
-        if(utils.isArray(src)){
-            // array
-            r = [];
-            for(i = 0, l = src.length; i < l; ++i){
-                if(i in src){
-                    r.push(utils.clone(src[i]));
-                }
-            }
-            // we don't clone functions for performance reasons
-            // }else if(d.isFunction(src)){
-            // // function
-            // r = function(){ return src.apply(this, arguments); };
-        }else{
-            // generic objects
-            r = src.constructor ? new src.constructor() : {};
-        }
-        return utils._mixin(r, src, utils.clone);
-    };
-
-    /**
-     * Copies/adds all properties of source to dest; returns dest.
-     * @description All properties, including functions (sometimes termed "methods"), excluding any non-standard extensions
-     * found in Object.prototype, are copied/added to dest. Copying/adding each particular property is
-     * delegated to copyFunc (if any); copyFunc defaults to the Javascript assignment operator if not provided.
-     * Notice that by default, _mixin executes a so-called "shallow copy" and aggregate types are copied/added by reference.
-     * @param dest {object} The object to which to copy/add all properties contained in source.
-     * @param source {object} The object from which to draw all properties to copy into dest.
-     * @param copyFunc {function} The process used to copy/add a property in source; defaults to the Javascript assignment operator.
-     * @returns {object} dest, as modified
-     * @private
-     */
-    utils._mixin=function (dest, source, copyFunc) {
-        var name, s, i, empty = {};
-        for (name in source) {
-            // the (!(name in empty) || empty[name] !== s) condition avoids copying properties in "source"
-            // inherited from Object.prototype.	 For example, if dest has a custom toString() method,
-            // don't overwrite it with the toString() method that source inherited from Object.prototype
-            s = source[name];
-            if (!(name in dest) || (dest[name] !== s && (!(name in empty) || empty[name] !== s))) {
-                dest[name] = copyFunc ? copyFunc(s) : s;
-            }
-        }
-
-        return dest; // Object
-    };
-    /**
-     * Copies/adds all properties of one or more sources to dest; returns dest.
-     * @param dest {object} The object to which to copy/add all properties contained in source. If dest is falsy, then
-     * a new object is manufactured before copying/adding properties begins.
-     *
-     * @param sources One of more objects from which to draw all properties to copy into dest. sources are processed
-     * left-to-right and if more than one of these objects contain the same property name, the right-most
-     * value "wins".
-     *
-     * @returns {object} dest, as modified
-     *
-     * @example
-     * make a shallow copy of an object
-     * var copy = utils.mixin({}, source);
-     *
-     * @example
-     *
-     * many class constructors often take an object which specifies
-     *        values to be configured on the object. In this case, it is
-     *        often simplest to call `lang.mixin` on the `this` object:
-     *        declare("acme.Base", null, {
-    *			constructor: function(properties){
-    *				//property configuration:
-    *				lang.mixin(this, properties);
-    *				console.log(this.quip);
-    *			},
-    *			quip: "I wasn't born yesterday, you know - I've seen movies.",
-    *			* ...
-    *		});
-     *
-     *        //create an instance of the class and configure it
-     *        var b = new acme.Base({quip: "That's what it does!" });
-     *
-     */
-    utils.mixin = function (dest, sources) {
-        if(sources) {
-
-            if (!dest) {
-                dest = {};            }
-
-            var l = arguments.length;
-            for (var i = 1 ; i < l; i++) {
-                utils._mixin(dest, arguments[i]);
-            }
-            return dest; // Object
-        }
-        return dest;
-    };
-
-    /**
-     * Clone object keys
-     * @param defaults
-     * @returns {{}}
-     */
-    utils.cloneKeys = function (defaults, skipEmpty) {
-        var result = {};
-        for (var _class in defaults) {
-            if (skipEmpty === true && !(_class in defaults)) {
-                continue;
-            }
-            result[_class] = defaults[_class];
-        }
-        return result;
-    };
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //
-    //  STD
-    /**
-     *
-     * @param what
-     * @returns {*}
-     */
-    utils.isArray=function(what){
-        return _.isArray(what);
-    };
-    /**
-     *
-     * @param what
-     * @returns {*}
-     */
-    utils.isObject=function(what){
-        return _.isObject(what);
-    };
-    /**
-     *
-     * @param what
-     * @returns {*}
-     */
-    utils.isString=function(what){
-        return _.isString(what);
-    };
-    /**
-     *
-     * @param what
-     * @returns {*}
-     */
-    utils.isNumber=function(what){
-        return _.isNumber(what);
-    };
-    /**
-     *
-     * @param it
-     * @returns {*}
-     */
-    utils.isFunction=function(it){
-        // summary:
-        // Return true if it is a Function
-        // it: anything
-        // Item to test.
-        return _.isFunction(it);
-    };
-    return utils;
-});;
 define('xaction/types',[
     'xide/types',
     'dojo/_base/lang'
@@ -74009,6 +74219,10 @@ define('xide/manager/Context',[
             var dfd = new Deferred();
             
 
+            if(!isServer && _module.indexOf('nodejs') && _module.indexOf('tests') ){
+                return;
+            }
+
             _module = _module.replace('0/8','0.8');
 
             function handleError(error){
@@ -74071,7 +74285,6 @@ define('xide/manager/Context',[
                         cacheBust: 'time=' + new Date().getTime(),
                         waitSeconds: 5
                     });
-
                     try {
                         _require([_module], function (moduleLoaded) {
                             
