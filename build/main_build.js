@@ -317,8 +317,7 @@ define('deliteful/Accordion',[
 		_numOpenPanels: 0,
 
 		createdCallback: function () {
-
-			this._panelList = this._panelList || [];
+			this._panelList = [];
 
 			// Declarative case (panels specified declaratively inside the declarative Accordion).
 			var panels = Array.prototype.slice.call(this.children);	// copy array since we'll be adding more children
@@ -375,13 +374,6 @@ define('deliteful/Accordion',[
 		},
 
 		_setupUpgradedChild: function (panel) {
-
-			var existing = this._panelList.indexOf(panel);
-			if(existing > -1 ){
-				console.error('already exists');
-				return this._panelList[existing];
-			}
-
 			// Create the header (that displays the panel's title).
 			var header = this.createHeader(panel, {
 				id: panel.id + "_panelHeader",
@@ -7474,7 +7466,7 @@ define('deliteful/list/List',[
 
 		refreshRendering: function (props) {
 			//	List attributes have been updated.
-			/*jshint maxcomplexity:12*/
+			/*jshint maxcomplexity:14*/
 			if ("selectionMode" in props) {
 				// Update aria attributes
 				$(this.containerNode).removeClass(this._cssClasses.selectable);
@@ -7498,13 +7490,15 @@ define('deliteful/list/List',[
 						this.containerNode.setAttribute("aria-multiselectable", "true");
 					}
 					// update aria-selected attribute on unselected items
-					for (i = 0; i < this.containerNode.children.length; i++) {
-						child = this.containerNode.children[i];
-						if (child.tagName.toLowerCase() === this.itemRenderer.tag
-								&& child.renderNode // no renderNode for the loading panel child
-								&& !child.renderNode.hasAttribute("aria-selected")) {
-							child.renderNode.setAttribute("aria-selected", "false");
-							$(child).removeClass(this._cssClasses.selected); // TODO: NOT NEEDED ?
+					if (this.type === "grid" || this.type === "listbox") {
+						for (i = 0; i < this.containerNode.children.length; i++) {
+							child = this.containerNode.children[i];
+							if (child.tagName.toLowerCase() === this.itemRenderer.tag
+									&& child.renderNode // no renderNode for the loading panel child
+									&& !child.renderNode.hasAttribute("aria-selected")) {
+								child.renderNode.setAttribute("aria-selected", "false");
+								$(child).removeClass(this._cssClasses.selected); // TODO: NOT NEEDED ?
+							}
 						}
 					}
 				}
@@ -7686,7 +7680,7 @@ define('deliteful/list/List',[
 		 * @protected
 		 */
 		updateRenderers: function (items) {
-			if (this.selectionMode !== "none") {
+			if (this.selectionMode !== "none" && (this.type === "grid" || this.type === "listbox")) {
 				for (var i = 0; i < items.length; i++) {
 					var currentItem = items[i];
 					var renderer = this.getRendererByItemId(this.getIdentity(currentItem));
@@ -7941,7 +7935,7 @@ define('deliteful/list/List',[
 				parentRole: this.type,
 				tabindex: "-1"
 			});
-			if (this.selectionMode !== "none") {
+			if (this.selectionMode !== "none" && (this.type === "grid" || this.type === "listbox")) {
 				var itemSelected = !!this.isSelected(item);
 				renderer.renderNode.setAttribute("aria-selected", itemSelected ? "true" : "false");
 				$(renderer).toggleClass(this._cssClasses.selected, itemSelected);
@@ -21319,6 +21313,30 @@ define('delite/FormValueWidget',[
  * Call `activationTracker.on("deactivated", func)` or `activationTracker.on("activated", ...)` to monitor when
  * when nodes become active/inactive.
  *
+ * ActivationTracker also provides infrastructure for opening/closing popups merely by hovering/unhovering
+ * a button.  Emits `delite-hover-activated` event on nodes that are hovered for `hoverDelay`
+ * milliseconds, and emits `delite-hover-deactivated` event after a node
+ * and its descendants (ex: DropDownButton's descendant is a Tooltip)
+ * have been unhovered for `hoverDelay` milliseconds.  If the user unhovers a node and then re-hovers within
+ * `hoverDelay` milliseconds, there's no `delite-hover-deactivated` event.
+ *
+ * TO IMPLEMENT: Generally, there is a delay between hovering a node and the "delite-hover-activated" event, and
+ * if the user hovers a node and then unhovers within the delay, there's no "delite-hover-activated"
+ * event.  However, clicking a node sends the "delite-hover-activated" event to it (and its ancestors)
+ * immediately.
+ *
+ * TO IMPLEMENT: Make clicking a blank area of the screen cause immediate delite-hover-deactivated events
+ * for nodes with running timers.  Likewise for keyboard click.
+ *
+ * TO IMPLEMENT: Similarly, waive the delay if there is already a popup open and then the user hovers
+ * another button that shows a popup on hover.  To achieve this, all nodes that show a popup
+ * on the "delite-hover-activated" event must be marked with the attribute "hover-shows-popup".
+ * TODO: How to tell if another popup is opened?  It might have been opened by clicking rather than
+ * by hover.  Or do we care about that case?
+ *
+ * TO IMPLEMENT: Remember whether popup was opened due to a hover event or a click event.  If it was opened
+ * due to a click event then it shouldn't close until another click.
+ *
  * @module delite/activationTracker
  * */
 define('delite/activationTracker',[
@@ -21341,10 +21359,23 @@ define('delite/activationTracker',[
 
 	var ActivationTracker = dcl(Evented, /** @lends module:delite/activationTracker */ {
 		/**
-		 * List of currently active widgets (focused widget and its ancestors).
+		 * Amount of time in milliseconds after a node is hovered to send the delite-hover-activated event,
+		 * and likewise the amount of time after a node is unhovered before sending the
+		 * delite-hover-deactivated event.
+		 */
+		hoverDelay: 500,
+
+		/**
+		 * List of currently active nodes (focused node and its ancestors).
 		 * @property {Element[]} activeStack
 		 */
 		activeStack: [],
+
+		/**
+		 * Currently hovered nodes and its ancestors.
+		 * @property {Element[]} hoverStack
+		 */
+		hoverStack: [],
 
 		/**
 		 * Registers listeners on the specified window to detect when the user has
@@ -21393,17 +21424,23 @@ define('delite/activationTracker',[
 				_this._blurHandler(evt.target);
 			}
 
+			function mouseOverHandler(evt) {
+				_this._mouseOverHandler(evt.target);
+			}
+
 			if (body) {
 				// Listen for touches or mousedowns.
 				body.addEventListener("pointerdown", pointerDownHandler, true);
 				body.addEventListener("focus", focusHandler, true);	// need true since focus doesn't bubble
 				body.addEventListener("blur", blurHandler, true);	// need true since blur doesn't bubble
+				body.addEventListener("mouseover", mouseOverHandler);
 
 				return {
 					remove: function () {
 						body.removeEventListener("pointerdown", pointerDownHandler, true);
 						body.removeEventListener("focus", focusHandler, true);
 						body.removeEventListener("blur", blurHandler, true);
+						body.addEventListener("mouseover", mouseOverHandler);
 					}
 				};
 			}
@@ -21448,20 +21485,14 @@ define('delite/activationTracker',[
 		},
 
 		/**
-		 * Callback when node is focused or pointerdown'd.
-		 * @param {Element} node - The node.
-		 * @param {string} by - "mouse" if the focus/pointerdown was caused by a mouse down event.
+		 * Given a node, return the stack of nodes starting with <body> and ending with that node.
+		 * @param {Element} node
+		 * @param {boolean} byKeyboard - node was navigated to by keyboard rather than mouse
 		 * @private
 		 */
-		_pointerDownOrFocusHandler: function (node, by) {
-			if (this._clearActiveWidgetsTimer) {
-				// forget the recent blur event
-				clearTimeout(this._clearActiveWidgetsTimer);
-				delete this._clearActiveWidgetsTimer;
-			}
+		_getStack: function (node, byKeyboard) {
+			var stack = [];
 
-			// compute stack of active widgets (ex: ComboButton --> Menu --> MenuItem)
-			var newStack = [];
 			try {
 				while (node) {
 					if (node._popupParent) {
@@ -21476,18 +21507,37 @@ define('delite/activationTracker',[
 						// need to do this trick instead). window.frameElement is supported in IE/FF/Webkit
 						node = node.ownerDocument.defaultView.frameElement;
 					} else {
-						// Ignore clicks on disabled widgets (actually focusing a disabled widget still works,
+						// Ignore clicks/hovers on disabled widgets (actually focusing a disabled widget still works,
 						// to support MenuItem).
-						if (by === "mouse" && node.disabled) {
-							newStack = [];
+						if (node.disabled && !byKeyboard) {
+							stack = [];
 						} else {
-							newStack.unshift(node);
+							stack.unshift(node);
 						}
 						node = node.parentNode;
 					}
 				}
 			} catch (e) { /* squelch */
 			}
+
+			return stack;
+		},
+
+		/**
+		 * Callback when node is focused or pointerdown'd.
+		 * @param {Element} node - The node.
+		 * @param {string} by - "mouse" if the focus/pointerdown was caused by a mouse down event.
+		 * @private
+		 */
+		_pointerDownOrFocusHandler: function (node, by) {
+			if (this._clearActiveWidgetsTimer) {
+				// forget the recent blur event
+				clearTimeout(this._clearActiveWidgetsTimer);
+				delete this._clearActiveWidgetsTimer;
+			}
+
+			// Compute stack of active widgets ending at node (ex: ComboButton --> Menu --> MenuItem).
+			var newStack = this._getStack(node, by !== "mouse");
 
 			this._setStack(newStack, by);
 
@@ -21565,6 +21615,71 @@ define('delite/activationTracker',[
 				node = newStack[i];
 				on.emit(node, "delite-activated", {bubbles: false, by: by});
 				this.emit("activated", node, by);
+			}
+		},
+
+		/**
+		 * React to when a new node is hovered.  If a node is hovered long enough it
+		 * will get a `delite-hover-activated` event, and if it and its descendants (ex:
+		 * DropDownButton's descendant Tooltip) lose hover for long enough, it will get a
+		 * `delite-hover-deactivated` event.
+		 * @private
+		 */
+		_mouseOverHandler: function (node) {
+			var oldStack = this.hoverStack, lastOldIdx = oldStack.length - 1;
+			var newStack = this.hoverStack = this._getStack(node), lastNewIdx = newStack.length - 1;
+			var i;
+
+			// For all elements that have left the hover chain, stop timer to
+			// send those elements delite-hover-activated event, or start timer to send
+			// those elements delite-hover-deactivated event.
+			for (i = lastOldIdx; i >= 0 && oldStack[i] !== newStack[i]; i--) {
+				this.onNodeLeaveHoverStack(oldStack[i]);
+			}
+
+			// For all elements that have become hovered, start timer to send
+			// those elements delite-hover-activated event, or clear timer to send
+			// delite-hover-deactivated event.
+			for (i++; i <= lastNewIdx; i++) {
+				this.onNodeEnterHoverStack(newStack[i]);
+			}
+		},
+
+		/**
+		 * Called when a node enters the hover stack.
+		 * @param {Element} hoveredNode
+		 */
+		onNodeEnterHoverStack: function (hoveredNode) {
+			if (hoveredNode.hoverDeactivateTimer) {
+				// This node previously got a delite-hover-activated event,
+				// but didn't yet get a delite-hover-deactivated, so nothing really to do.
+				clearTimeout(hoveredNode.hoverDeactivateTimer);
+				delete hoveredNode.hoverDeactivateTimer;
+			} else {
+				// Set timer so that if node remains hovered, we send a delite-hover-activated event.
+				hoveredNode.hoverActivateTimer = setTimeout(function () {
+					delete hoveredNode.hoverActivateTimer;
+					on.emit(hoveredNode, "delite-hover-activated");
+				}.bind(this), this.hoverDelay);
+			}
+		},
+
+		/**
+		 * Called when a node leaves the hover stack.
+		 * @param {Element} unhoveredNode
+		 */
+		onNodeLeaveHoverStack: function (unhoveredNode) {
+			if (unhoveredNode.hoverActivateTimer) {
+				// Node was hovered but it hadn't gotten a delite-hover-activated event yet, so nothing to do.
+				clearTimeout(unhoveredNode.hoverActivateTimer);
+				delete unhoveredNode.hoverActivateTimer;
+			} else {
+				// Set timer so that if node remains unhovered, we send a delite-hover-deactivated event.
+				unhoveredNode.hoverDeactivateTimer = setTimeout(function () {
+					delete unhoveredNode.hoverDeactivateTimer;
+					unhoveredNode.hoverActivated = false;
+					on.emit(unhoveredNode, "delite-hover-deactivated");
+				}.bind(this), this.hoverDelay);
 			}
 		}
 	});
@@ -23518,10 +23633,7 @@ define('deliteful/features',["requirejs-dplugins/has", "deliteful/channelBreakpo
 			return mqAboveSmall.matches && !mqAboveMedium.matches;
 		});
 		has.add("desktop-like-channel", function () {
-
-			var desktop = mqAboveSmall.matches && mqAboveMedium.matches;
-			console.log('desktop ' + desktop);
-			return desktop;
+			return mqAboveSmall.matches && mqAboveMedium.matches;
 		});
 	}
 
@@ -24725,6 +24837,10 @@ define('deliteful/Combobox',[
 			}
 		},
 
+		postRender: function () {
+			this._prepareInput(this.inputNode);
+		},
+
 		refreshRendering: function (oldValues) {
 			var updateReadOnly = false;
 			if ("list" in oldValues) {
@@ -24825,54 +24941,60 @@ define('deliteful/Combobox',[
 		},
 
 		_initHandlers: function () {
-			this.list.on("keynav-child-navigated", function (evt) {
-				var navigatedChild = evt.newValue; // never null
-				var rend = this.list.getEnclosingRenderer(navigatedChild);
-				var item = rend.item;
-				if (this.selectionMode === "single" && !this.list.isSelected(item)) {
-					this.list.selectFromEvent(evt, item, rend, true);
-				} // else do not change the selection state of an item already selected
-				if (evt.triggerEvent && // only for keyboard navigation
-					(evt.triggerEvent.type === "keydown" || evt.triggerEvent.type === "keypress")) {
-					this._updateScroll(item, true);
-				}
-				this._setActiveDescendant(navigatedChild);
-			}.bind(this));
+			if (this._ListListeners) {
+				this._ListListeners.forEach(function (handle) {
+					handle.remove();
+				});
+			}
 
-			this.list.on("click", function (evt) {
-				if (this.selectionMode === "single") {
-					var rend = this.list.getEnclosingRenderer(evt.target);
-					if (rend && !this.list.isCategoryRenderer(rend)) {
-						this.defer(function () {
-							// deferred such that the user can see the selection feedback
-							// before the dropdown closes.
-							this.closeDropDown(true/*refocus*/);
-						}.bind(this), 100); // worth exposing a property for the delay?
+			this._ListListeners = [
+				this.list.on("keynav-child-navigated", function (evt) {
+					var navigatedChild = evt.newValue; // never null
+					var rend = this.list.getEnclosingRenderer(navigatedChild);
+					var item = rend.item;
+					if (this.selectionMode === "single" && !this.list.isSelected(item)) {
+						this.list.selectFromEvent(evt, item, rend, true);
+					} // else do not change the selection state of an item already selected
+					if (evt.triggerEvent && // only for keyboard navigation
+						(evt.triggerEvent.type === "keydown" || evt.triggerEvent.type === "keypress")) {
+						this._updateScroll(item, true);
 					}
-				}
-			}.bind(this));
+					this._setActiveDescendant(navigatedChild);
+				}.bind(this)),
 
-			// React to interactive changes of selected items
-			this.list.on("selection-change", function () {
-				if (this.selectionMode === "single") {
-					this._validateSingle();
-				}
-				this.handleOnInput(this.value); // emit "input" event
-			}.bind(this));
+				this.list.on("click", function (evt) {
+					if (this.selectionMode === "single") {
+						var rend = this.list.getEnclosingRenderer(evt.target);
+						if (rend && !this.list.isCategoryRenderer(rend)) {
+							this.defer(function () {
+								// deferred such that the user can see the selection feedback
+								// before the dropdown closes.
+								this.closeDropDown(true/*refocus*/);
+							}.bind(this), 100); // worth exposing a property for the delay?
+						}
+					}
+				}.bind(this)),
 
-			// React to programmatic changes of selected items
-			this.list.observe(function (oldValues) {
-				if ("selectedItems" in oldValues) {
+				// React to interactive changes of selected items
+				this.list.on("selection-change", function () {
 					if (this.selectionMode === "single") {
 						this._validateSingle();
-						// do not emit "input" event for programmatic changes
-					} else if (this.selectionMode === "multiple") {
-						this._validateMultiple(this._popupInput || this.inputNode);
 					}
-				}
-			}.bind(this));
+					this.handleOnInput(this.value); // emit "input" event
+				}.bind(this)),
 
-			this._prepareInput(this.inputNode);
+				// React to programmatic changes of selected items
+				this.list.observe(function (oldValues) {
+					if ("selectedItems" in oldValues) {
+						if (this.selectionMode === "single") {
+							this._validateSingle();
+							// do not emit "input" event for programmatic changes
+						} else if (this.selectionMode === "multiple") {
+							this._validateMultiple(this._popupInput || this.inputNode);
+						}
+					}
+				}.bind(this))
+			];
 		},
 
 		/**
@@ -25768,6 +25890,14 @@ define('delite/HasDropDown',[
 		focusOnKeyboardOpen: true,
 
 		/**
+`		 * Make the popup open just by hovering, and close when the user stops hovering this node
+		 * and its popup.
+		 * @member {boolean}
+		 * @default false
+		 */
+		openOnHover: false,
+
+		/**
 		 * Whether or not the drop down is open.
 		 * @member {boolean}
 		 * @readonly
@@ -25942,6 +26072,13 @@ define('delite/HasDropDown',[
 					evt.stopPropagation();
 				}, this.buttonNode)
 			];
+
+			if (this.openOnHover) {
+				this._HasDropDownListeners.push(
+					this.on("delite-hover-activated", this.openDropDown.bind(this), this.buttonNode),
+					this.on("delite-hover-deactivated", this.closeDropDown.bind(this), this.buttonNode)
+				);
+			}
 		},
 
 		detachedCallback: function () {
@@ -26305,6 +26442,19 @@ define('delite/popup',[
 	 */
 
 	/**
+	 * Dispatched on a popup after the popup is shown or when it is repositioned
+	 * due to the size of its content changing.
+	 * @event module:delite/popup#popup-after-position
+	 */
+
+	/**
+	 * Dispatched on a popup after the popup is repositioned
+	 * due to the size of its content changing.
+	 * TODO: remove this?
+	 * @event module:delite/popup#delite-repositioned
+	 */
+
+	/**
 	 * Arguments to `delite/popup#open()` method.
 	 * @typedef {Object} module:delite/popup.OpenArgs
 	 * @property {module:delite/Widget} popup - The Widget to display.
@@ -26554,13 +26704,15 @@ define('delite/popup',[
 		 * popup.open({parent: this, popup: menuWidget, around: this, onClose: function(){...}});
 		 */
 		open: function (args) {
+			// Size and position the popup.
 			this._prepareToOpen(args);
 			this._size(args, true);
-			var position = this._position(args) || {};
+			var position = this._position(args);
 
-			position.around = args.around;
-
-			args.popup.emit("popup-after-show", position);
+			// Emit event on popup.
+			args.popup.emit("popup-after-show", {
+				around: args.around
+			});
 
 			return position;
 		},
@@ -26744,11 +26896,21 @@ define('delite/popup',[
 				DialogUnderlay.showFor(wrapper);
 			} else {
 				var layoutFunc = widget.orient ? widget.orient.bind(widget) : null;
-				return around ?
+				var position = around ?
 					place.around(wrapper, around, orient, ltr, layoutFunc) :
 					place.at(wrapper, args, orient === "R" ? ["TR", "BR", "TL", "BL"] : ["TL", "BL", "TR", "BR"],
 						args.padding, layoutFunc);
+
+				// Emit event telling popup that it was [re]positioned.
+				var event = {
+					around: around
+				};
+				dcl.mix(event, position);
+				widget.emit("popup-after-position", event);
+
+				return position;
 			}
+
 		},
 
 		/**
@@ -33835,13 +33997,9 @@ define('xblox/model/Block',[
 define('xide/utils/ObjectUtils',[
     'xide/utils',
     'require',
-    "dojo/Deferred",
-    "dojo/_base/json",
-    "dojo/has"
-], function (utils, require, Deferred,json,has) {
-
+    "dojo/Deferred"
+], function (utils, require, Deferred) {
     var _debug = false;
-
     "use strict";
     /////////////////////////////////////////////////////////////////////////////////////////////
     //
@@ -33853,7 +34011,7 @@ define('xide/utils/ObjectUtils',[
         if(!_place){
             _place = who[methodName+'_debounced'] =  _.debounce(_function, delay,options);
         }
-        if(now==true){
+        if(now===true){
             if(!who[methodName+'_debouncedFirst']){
                 who[methodName+'_debouncedFirst']=true;
                 _function.apply(who,args);
@@ -33862,17 +34020,9 @@ define('xide/utils/ObjectUtils',[
         return _place();
     };
 
-    utils.pluck=function(items,prop){
-        var result = [];
-        if(!items){
-            _debug && console.warn('pluck: no items');
-            return result;
-        }
-        for (var i = 0; i < items.length; i++) {
-            result.push(items[i][prop]);
-        }
-        return result;
 
+    utils.pluck=function(items,prop){
+        return _.map(items,prop);
     };
 
     /**
@@ -33894,11 +34044,9 @@ define('xide/utils/ObjectUtils',[
     /**
      * Ask require registry at this path
      * @param mixed
-     * @param _default
-     * @param ready
      * @returns {*}
      */
-    utils.hasObject = function (mixed, _default, ready) {
+    utils.hasObject = function (mixed) {
         var result = null;
         var _re = require;
         try {
@@ -34039,7 +34187,7 @@ define('xide/utils/ObjectUtils',[
      * @returns {*}
      */
     function getKey(key) {
-        var intKey = parseInt(key);
+        var intKey = parseInt(key,10);
         if (intKey.toString() === key) {
             return intKey;
         }
@@ -34192,7 +34340,7 @@ define('xide/utils/ObjectUtils',[
     objectPath.insert = function (obj, path, value, at) {
         var arr = objectPath.get(obj, path);
         at = ~~at;
-        if (!isArray(arr)) {
+        if (!_.isArray(arr)) {
             arr = [];
             objectPath.set(obj, path, arr);
         }
@@ -34284,7 +34432,7 @@ define('xide/utils/ObjectUtils',[
         }
         if (_.isEmpty(obj)) {
             //lodash doesnt seem to work with html nodes
-            if (obj && obj.innerHTML == null) {
+            if (obj && obj.innerHTML === null) {
                 return defaultValue;
             }
         }
@@ -34586,261 +34734,6 @@ define('xide/utils/ObjectUtils',[
     };
     return utils;
 });;
-define('dojo/_base/json',["./kernel", "../json"], function(dojo, json){
-
-// module:
-//		dojo/_base/json
-
-/*=====
-return {
-	// summary:
-	//		This module defines the dojo JSON API.
-};
-=====*/
-
-dojo.fromJson = function(/*String*/ js){
-	// summary:
-	//		Parses a JavaScript expression and returns a JavaScript value.
-	// description:
-	//		Throws for invalid JavaScript expressions. It does not use a strict JSON parser. It
-	//		always delegates to eval(). The content passed to this method must therefore come
-	//		from a trusted source.
-	//		It is recommend that you use dojo/json's parse function for an
-	//		implementation uses the (faster) native JSON parse when available.
-	// js:
-	//		a string literal of a JavaScript expression, for instance:
-	//		`'{ "foo": [ "bar", 1, { "baz": "thud" } ] }'`
-
-	return eval("(" + js + ")"); // Object
-};
-
-/*=====
-dojo._escapeString = function(){
-	// summary:
-	//		Adds escape sequences for non-visual characters, double quote and
-	//		backslash and surrounds with double quotes to form a valid string
-	//		literal.
-};
-=====*/
-dojo._escapeString = json.stringify; // just delegate to json.stringify
-
-dojo.toJsonIndentStr = "\t";
-dojo.toJson = function(/*Object*/ it, /*Boolean?*/ prettyPrint){
-	// summary:
-	//		Returns a [JSON](http://json.org) serialization of an object.
-	// description:
-	//		Returns a [JSON](http://json.org) serialization of an object.
-	//		Note that this doesn't check for infinite recursion, so don't do that!
-	//		It is recommend that you use dojo/json's stringify function for an lighter
-	//		and faster implementation that matches the native JSON API and uses the
-	//		native JSON serializer when available.
-	// it:
-	//		an object to be serialized. Objects may define their own
-	//		serialization via a special "__json__" or "json" function
-	//		property. If a specialized serializer has been defined, it will
-	//		be used as a fallback.
-	//		Note that in 1.6, toJson would serialize undefined, but this no longer supported
-	//		since it is not supported by native JSON serializer.
-	// prettyPrint:
-	//		if true, we indent objects and arrays to make the output prettier.
-	//		The variable `dojo.toJsonIndentStr` is used as the indent string --
-	//		to use something other than the default (tab), change that variable
-	//		before calling dojo.toJson().
-	//		Note that if native JSON support is available, it will be used for serialization,
-	//		and native implementations vary on the exact spacing used in pretty printing.
-	// returns:
-	//		A JSON string serialization of the passed-in object.
-	// example:
-	//		simple serialization of a trivial object
-	//		|	var jsonStr = dojo.toJson({ howdy: "stranger!", isStrange: true });
-	//		|	doh.is('{"howdy":"stranger!","isStrange":true}', jsonStr);
-	// example:
-	//		a custom serializer for an objects of a particular class:
-	//		|	dojo.declare("Furby", null, {
-	//		|		furbies: "are strange",
-	//		|		furbyCount: 10,
-	//		|		__json__: function(){
-	//		|		},
-	//		|	});
-
-	// use dojo/json
-	return json.stringify(it, function(key, value){
-		if(value){
-			var tf = value.__json__||value.json;
-			if(typeof tf == "function"){
-				return tf.call(value);
-			}
-		}
-		return value;
-	}, prettyPrint && dojo.toJsonIndentStr);	// String
-};
-
-return dojo;
-});
-;
-define('dojo/json',["./has"], function(has){
-	"use strict";
-	var hasJSON = typeof JSON != "undefined";
-	has.add("json-parse", hasJSON); // all the parsers work fine
-		// Firefox 3.5/Gecko 1.9 fails to use replacer in stringify properly https://bugzilla.mozilla.org/show_bug.cgi?id=509184
-	has.add("json-stringify", hasJSON && JSON.stringify({a:0}, function(k,v){return v||1;}) == '{"a":1}');
-
-	/*=====
-	return {
-		// summary:
-		//		Functions to parse and serialize JSON
-
-		parse: function(str, strict){
-			// summary:
-			//		Parses a [JSON](http://json.org) string to return a JavaScript object.
-			// description:
-			//		This function follows [native JSON API](https://developer.mozilla.org/en/JSON)
-			//		Throws for invalid JSON strings. This delegates to eval() if native JSON
-			//		support is not available. By default this will evaluate any valid JS expression.
-			//		With the strict parameter set to true, the parser will ensure that only
-			//		valid JSON strings are parsed (otherwise throwing an error). Without the strict
-			//		parameter, the content passed to this method must come
-			//		from a trusted source.
-			// str:
-			//		a string literal of a JSON item, for instance:
-			//		`'{ "foo": [ "bar", 1, { "baz": "thud" } ] }'`
-			// strict:
-			//		When set to true, this will ensure that only valid, secure JSON is ever parsed.
-			//		Make sure this is set to true for untrusted content. Note that on browsers/engines
-			//		without native JSON support, setting this to true will run slower.
-		},
-		stringify: function(value, replacer, spacer){
-			// summary:
-			//		Returns a [JSON](http://json.org) serialization of an object.
-			// description:
-			//		Returns a [JSON](http://json.org) serialization of an object.
-			//		This function follows [native JSON API](https://developer.mozilla.org/en/JSON)
-			//		Note that this doesn't check for infinite recursion, so don't do that!
-			// value:
-			//		A value to be serialized.
-			// replacer:
-			//		A replacer function that is called for each value and can return a replacement
-			// spacer:
-			//		A spacer string to be used for pretty printing of JSON
-			// example:
-			//		simple serialization of a trivial object
-			//	|	define(["dojo/json"], function(JSON){
-			// 	|		var jsonStr = JSON.stringify({ howdy: "stranger!", isStrange: true });
-			//	|		doh.is('{"howdy":"stranger!","isStrange":true}', jsonStr);
-		}
-	};
-	=====*/
-
-	if(has("json-stringify")){
-		return JSON;
-	}else{
-		var escapeString = function(/*String*/str){
-			// summary:
-			//		Adds escape sequences for non-visual characters, double quote and
-			//		backslash and surrounds with double quotes to form a valid string
-			//		literal.
-			return ('"' + str.replace(/(["\\])/g, '\\$1') + '"').
-				replace(/[\f]/g, "\\f").replace(/[\b]/g, "\\b").replace(/[\n]/g, "\\n").
-				replace(/[\t]/g, "\\t").replace(/[\r]/g, "\\r"); // string
-		};
-		return {
-			parse: has("json-parse") ? JSON.parse : function(str, strict){
-				if(strict && !/^([\s\[\{]*(?:"(?:\\.|[^"])*"|-?\d[\d\.]*(?:[Ee][+-]?\d+)?|null|true|false|)[\s\]\}]*(?:,|:|$))+$/.test(str)){
-					throw new SyntaxError("Invalid characters in JSON");
-				}
-				return eval('(' + str + ')');
-			},
-			stringify: function(value, replacer, spacer){
-				var undef;
-				if(typeof replacer == "string"){
-					spacer = replacer;
-					replacer = null;
-				}
-				function stringify(it, indent, key){
-					if(replacer){
-						it = replacer(key, it);
-					}
-					var val, objtype = typeof it;
-					if(objtype == "number"){
-						return isFinite(it) ? it + "" : "null";
-					}
-					if(objtype == "boolean"){
-						return it + "";
-					}
-					if(it === null){
-						return "null";
-					}
-					if(typeof it == "string"){
-						return escapeString(it);
-					}
-					if(objtype == "function" || objtype == "undefined"){
-						return undef; // undefined
-					}
-					// short-circuit for objects that support "json" serialization
-					// if they return "self" then just pass-through...
-					if(typeof it.toJSON == "function"){
-						return stringify(it.toJSON(key), indent, key);
-					}
-					if(it instanceof Date){
-						return '"{FullYear}-{Month+}-{Date}T{Hours}:{Minutes}:{Seconds}Z"'.replace(/\{(\w+)(\+)?\}/g, function(t, prop, plus){
-							var num = it["getUTC" + prop]() + (plus ? 1 : 0);
-							return num < 10 ? "0" + num : num;
-						});
-					}
-					if(it.valueOf() !== it){
-						// primitive wrapper, try again unwrapped:
-						return stringify(it.valueOf(), indent, key);
-					}
-					var nextIndent= spacer ? (indent + spacer) : "";
-					/* we used to test for DOM nodes and throw, but FF serializes them as {}, so cross-browser consistency is probably not efficiently attainable */ 
-				
-					var sep = spacer ? " " : "";
-					var newLine = spacer ? "\n" : "";
-				
-					// array
-					if(it instanceof Array){
-						var itl = it.length, res = [];
-						for(key = 0; key < itl; key++){
-							var obj = it[key];
-							val = stringify(obj, nextIndent, key);
-							if(typeof val != "string"){
-								val = "null";
-							}
-							res.push(newLine + nextIndent + val);
-						}
-						return "[" + res.join(",") + newLine + indent + "]";
-					}
-					// generic object code path
-					var output = [];
-					for(key in it){
-						var keyStr;
-						if(it.hasOwnProperty(key)){
-							if(typeof key == "number"){
-								keyStr = '"' + key + '"';
-							}else if(typeof key == "string"){
-								keyStr = escapeString(key);
-							}else{
-								// skip non-string or number keys
-								continue;
-							}
-							val = stringify(it[key], nextIndent, key);
-							if(typeof val != "string"){
-								// skip non-serializable values
-								continue;
-							}
-							// At this point, the most non-IE browsers don't get in this branch 
-							// (they have native JSON), so push is definitely the way to
-							output.push(newLine + nextIndent + keyStr + ":" + sep + val);
-						}
-					}
-					return "{" + output.join(",") + newLine + indent + "}"; // String
-				}
-				return stringify(value, "", "");
-			}
-		};
-	}
-});
-;
 /** @module xblox/model/ModelBase
  *  @description The base for block related classes, this must be kept small and light as possible
  */
@@ -44881,6 +44774,261 @@ define('xide/types/Types',[
     };
     return types;
 });;
+define('dojo/_base/json',["./kernel", "../json"], function(dojo, json){
+
+// module:
+//		dojo/_base/json
+
+/*=====
+return {
+	// summary:
+	//		This module defines the dojo JSON API.
+};
+=====*/
+
+dojo.fromJson = function(/*String*/ js){
+	// summary:
+	//		Parses a JavaScript expression and returns a JavaScript value.
+	// description:
+	//		Throws for invalid JavaScript expressions. It does not use a strict JSON parser. It
+	//		always delegates to eval(). The content passed to this method must therefore come
+	//		from a trusted source.
+	//		It is recommend that you use dojo/json's parse function for an
+	//		implementation uses the (faster) native JSON parse when available.
+	// js:
+	//		a string literal of a JavaScript expression, for instance:
+	//		`'{ "foo": [ "bar", 1, { "baz": "thud" } ] }'`
+
+	return eval("(" + js + ")"); // Object
+};
+
+/*=====
+dojo._escapeString = function(){
+	// summary:
+	//		Adds escape sequences for non-visual characters, double quote and
+	//		backslash and surrounds with double quotes to form a valid string
+	//		literal.
+};
+=====*/
+dojo._escapeString = json.stringify; // just delegate to json.stringify
+
+dojo.toJsonIndentStr = "\t";
+dojo.toJson = function(/*Object*/ it, /*Boolean?*/ prettyPrint){
+	// summary:
+	//		Returns a [JSON](http://json.org) serialization of an object.
+	// description:
+	//		Returns a [JSON](http://json.org) serialization of an object.
+	//		Note that this doesn't check for infinite recursion, so don't do that!
+	//		It is recommend that you use dojo/json's stringify function for an lighter
+	//		and faster implementation that matches the native JSON API and uses the
+	//		native JSON serializer when available.
+	// it:
+	//		an object to be serialized. Objects may define their own
+	//		serialization via a special "__json__" or "json" function
+	//		property. If a specialized serializer has been defined, it will
+	//		be used as a fallback.
+	//		Note that in 1.6, toJson would serialize undefined, but this no longer supported
+	//		since it is not supported by native JSON serializer.
+	// prettyPrint:
+	//		if true, we indent objects and arrays to make the output prettier.
+	//		The variable `dojo.toJsonIndentStr` is used as the indent string --
+	//		to use something other than the default (tab), change that variable
+	//		before calling dojo.toJson().
+	//		Note that if native JSON support is available, it will be used for serialization,
+	//		and native implementations vary on the exact spacing used in pretty printing.
+	// returns:
+	//		A JSON string serialization of the passed-in object.
+	// example:
+	//		simple serialization of a trivial object
+	//		|	var jsonStr = dojo.toJson({ howdy: "stranger!", isStrange: true });
+	//		|	doh.is('{"howdy":"stranger!","isStrange":true}', jsonStr);
+	// example:
+	//		a custom serializer for an objects of a particular class:
+	//		|	dojo.declare("Furby", null, {
+	//		|		furbies: "are strange",
+	//		|		furbyCount: 10,
+	//		|		__json__: function(){
+	//		|		},
+	//		|	});
+
+	// use dojo/json
+	return json.stringify(it, function(key, value){
+		if(value){
+			var tf = value.__json__||value.json;
+			if(typeof tf == "function"){
+				return tf.call(value);
+			}
+		}
+		return value;
+	}, prettyPrint && dojo.toJsonIndentStr);	// String
+};
+
+return dojo;
+});
+;
+define('dojo/json',["./has"], function(has){
+	"use strict";
+	var hasJSON = typeof JSON != "undefined";
+	has.add("json-parse", hasJSON); // all the parsers work fine
+		// Firefox 3.5/Gecko 1.9 fails to use replacer in stringify properly https://bugzilla.mozilla.org/show_bug.cgi?id=509184
+	has.add("json-stringify", hasJSON && JSON.stringify({a:0}, function(k,v){return v||1;}) == '{"a":1}');
+
+	/*=====
+	return {
+		// summary:
+		//		Functions to parse and serialize JSON
+
+		parse: function(str, strict){
+			// summary:
+			//		Parses a [JSON](http://json.org) string to return a JavaScript object.
+			// description:
+			//		This function follows [native JSON API](https://developer.mozilla.org/en/JSON)
+			//		Throws for invalid JSON strings. This delegates to eval() if native JSON
+			//		support is not available. By default this will evaluate any valid JS expression.
+			//		With the strict parameter set to true, the parser will ensure that only
+			//		valid JSON strings are parsed (otherwise throwing an error). Without the strict
+			//		parameter, the content passed to this method must come
+			//		from a trusted source.
+			// str:
+			//		a string literal of a JSON item, for instance:
+			//		`'{ "foo": [ "bar", 1, { "baz": "thud" } ] }'`
+			// strict:
+			//		When set to true, this will ensure that only valid, secure JSON is ever parsed.
+			//		Make sure this is set to true for untrusted content. Note that on browsers/engines
+			//		without native JSON support, setting this to true will run slower.
+		},
+		stringify: function(value, replacer, spacer){
+			// summary:
+			//		Returns a [JSON](http://json.org) serialization of an object.
+			// description:
+			//		Returns a [JSON](http://json.org) serialization of an object.
+			//		This function follows [native JSON API](https://developer.mozilla.org/en/JSON)
+			//		Note that this doesn't check for infinite recursion, so don't do that!
+			// value:
+			//		A value to be serialized.
+			// replacer:
+			//		A replacer function that is called for each value and can return a replacement
+			// spacer:
+			//		A spacer string to be used for pretty printing of JSON
+			// example:
+			//		simple serialization of a trivial object
+			//	|	define(["dojo/json"], function(JSON){
+			// 	|		var jsonStr = JSON.stringify({ howdy: "stranger!", isStrange: true });
+			//	|		doh.is('{"howdy":"stranger!","isStrange":true}', jsonStr);
+		}
+	};
+	=====*/
+
+	if(has("json-stringify")){
+		return JSON;
+	}else{
+		var escapeString = function(/*String*/str){
+			// summary:
+			//		Adds escape sequences for non-visual characters, double quote and
+			//		backslash and surrounds with double quotes to form a valid string
+			//		literal.
+			return ('"' + str.replace(/(["\\])/g, '\\$1') + '"').
+				replace(/[\f]/g, "\\f").replace(/[\b]/g, "\\b").replace(/[\n]/g, "\\n").
+				replace(/[\t]/g, "\\t").replace(/[\r]/g, "\\r"); // string
+		};
+		return {
+			parse: has("json-parse") ? JSON.parse : function(str, strict){
+				if(strict && !/^([\s\[\{]*(?:"(?:\\.|[^"])*"|-?\d[\d\.]*(?:[Ee][+-]?\d+)?|null|true|false|)[\s\]\}]*(?:,|:|$))+$/.test(str)){
+					throw new SyntaxError("Invalid characters in JSON");
+				}
+				return eval('(' + str + ')');
+			},
+			stringify: function(value, replacer, spacer){
+				var undef;
+				if(typeof replacer == "string"){
+					spacer = replacer;
+					replacer = null;
+				}
+				function stringify(it, indent, key){
+					if(replacer){
+						it = replacer(key, it);
+					}
+					var val, objtype = typeof it;
+					if(objtype == "number"){
+						return isFinite(it) ? it + "" : "null";
+					}
+					if(objtype == "boolean"){
+						return it + "";
+					}
+					if(it === null){
+						return "null";
+					}
+					if(typeof it == "string"){
+						return escapeString(it);
+					}
+					if(objtype == "function" || objtype == "undefined"){
+						return undef; // undefined
+					}
+					// short-circuit for objects that support "json" serialization
+					// if they return "self" then just pass-through...
+					if(typeof it.toJSON == "function"){
+						return stringify(it.toJSON(key), indent, key);
+					}
+					if(it instanceof Date){
+						return '"{FullYear}-{Month+}-{Date}T{Hours}:{Minutes}:{Seconds}Z"'.replace(/\{(\w+)(\+)?\}/g, function(t, prop, plus){
+							var num = it["getUTC" + prop]() + (plus ? 1 : 0);
+							return num < 10 ? "0" + num : num;
+						});
+					}
+					if(it.valueOf() !== it){
+						// primitive wrapper, try again unwrapped:
+						return stringify(it.valueOf(), indent, key);
+					}
+					var nextIndent= spacer ? (indent + spacer) : "";
+					/* we used to test for DOM nodes and throw, but FF serializes them as {}, so cross-browser consistency is probably not efficiently attainable */ 
+				
+					var sep = spacer ? " " : "";
+					var newLine = spacer ? "\n" : "";
+				
+					// array
+					if(it instanceof Array){
+						var itl = it.length, res = [];
+						for(key = 0; key < itl; key++){
+							var obj = it[key];
+							val = stringify(obj, nextIndent, key);
+							if(typeof val != "string"){
+								val = "null";
+							}
+							res.push(newLine + nextIndent + val);
+						}
+						return "[" + res.join(",") + newLine + indent + "]";
+					}
+					// generic object code path
+					var output = [];
+					for(key in it){
+						var keyStr;
+						if(it.hasOwnProperty(key)){
+							if(typeof key == "number"){
+								keyStr = '"' + key + '"';
+							}else if(typeof key == "string"){
+								keyStr = escapeString(key);
+							}else{
+								// skip non-string or number keys
+								continue;
+							}
+							val = stringify(it[key], nextIndent, key);
+							if(typeof val != "string"){
+								// skip non-serializable values
+								continue;
+							}
+							// At this point, the most non-IE browsers don't get in this branch 
+							// (they have native JSON), so push is definitely the way to
+							output.push(newLine + nextIndent + keyStr + ":" + sep + val);
+						}
+					}
+					return "{" + output.join(",") + newLine + indent + "}"; // String
+				}
+				return stringify(value, "", "");
+			}
+		};
+	}
+});
+;
 define('xcf/model/ModelBase',[
     'dcl/dcl',
     "xblox/model/ModelBase"
@@ -62046,10 +62194,15 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             var params = message.params || {};
             if(params.src && params.id){
                 var scope = driverInstance.blockScope;
-                var block = scope.getBlockById(params.src);
-                if(block && block.onCommandProgress){
-                    block.onCommandProgress(message);
+                if(scope) {
+                    var block = scope.getBlockById(params.src);
+                    if (block && block.onCommandProgress) {
+                        block.onCommandProgress(message);
+                    }
+                }else{
+                    debugServerMessages && console.warn('onCommandProgress: have no blockscope');
                 }
+
             }
         },
         onCommandPaused:function(deviceData,message){
@@ -67583,14 +67736,9 @@ define('xide/factory/Objects',[
 define('xide/utils/WidgetUtils',[
     'xide/utils',
     'xide/types',
-    'xide/factory',
-    'dojo/aspect',
-    'dojo/dom-class',
     'xide/registry'
-], function (utils,types,factory,aspect,domClass,registry) {
-
+], function (utils,types,registry) {
     "use strict";
-
     utils.getParentWidget=function(start,declaredClass,max){
         //sanitize start
         start = start.containerNode || start.domNode || start;
@@ -67614,35 +67762,6 @@ define('xide/utils/WidgetUtils',[
         }
         return widget;
     };
-
-
-    /**
-     * @param menu
-     * @param emit
-     * @param owner
-     * @param context
-     * @param onAfterOpenFunction
-     */
-    utils.patchMenu=function(menu,emit,owner,context,onAfterOpenFunction){
-        aspect.after(menu, 'onOpen', function () {
-            if(emit) {
-                factory.publish(emit, {
-                    mainMenu: owner,
-                    menu: menu,
-                    item: context
-                });
-            }
-            if (this._popupWrapper && !this._popupWrapper._patched) {
-                var dst = this._popupWrapper;
-                dst._patched=true;
-                domClass.add(dst, 'ui-widget ui-widget-content');
-            }
-            if(onAfterOpenFunction){
-                onAfterOpenFunction(menu,owner);
-            }
-        });
-    };
-
     /**
      *
      * @param type
@@ -67650,7 +67769,6 @@ define('xide/utils/WidgetUtils',[
      */
     utils.getWidgetType = function (type) {
         var res = "";
-
         var root = 'xide.widgets.';
         if (type == types.ECIType.ENUMERATION) {
             res = root  + "Select";
@@ -67702,407 +67820,8 @@ define('xide/utils/WidgetUtils',[
 
         return res;
     };
-    /**
-     * @TODO : find a better way, use xas.widgets._TranslationMixin
-     * Group to title mapping
-     * @param widgetGroup
-     * @return {*}
-     */
-    utils.getWidgetGroupTitle = function (widgetGroup) {
-        switch (widgetGroup) {
-            case types.WidgetGroup.General :
-                return types.WidgetGroupTitle.General;
-            case types.WidgetGroup.Visual:
-                return types.WidgetGroupTitle.Visual;
-            case types.WidgetGroup.All:
-                return types.WidgetGroupTitle.All;
-            case types.WidgetGroup.User:
-                return types.WidgetGroupTitle.User;
-            case types.WidgetGroup.System:
-                return types.WidgetGroupTitle.System;
-        }
-        return types.WidgetGroupTitle.Unknown;
-    };
-
-    /***
-     * @TODO : Find a better way to group CIs
-     * @param ci
-     */
-    utils.getWidgetGroup = function (ci) {
-        if (!ci || utils.toBoolean(ci.visible) === false) {
-            return types.WidgetGroup.Hidden;
-        }
-
-        var ciName = utils.toString(ci.name);
-        //visuals
-        if (
-            ciName == types.DRIVER_PROPERTY.CF_DRIVER_NAME ||
-            ciName == types.DRIVER_PROPERTY.CF_DRIVER_ICON) {
-            return types.WidgetGroup.Visual;
-        }
-
-        if (ciName == types.DRIVER_PROPERTY.CF_DRIVER_CLASS) {
-            return types.WidgetGroup.System;
-        }
-        return types.WidgetGroup.Unknown;
-    };
-
-    /**
-     * Traverses a dijit.tree store model
-     * @param lookfor
-     * @param model
-     * @param buildme
-     * @param item
-     * @returns {*}
-     */
-    utils.recursiveHunt = function (lookfor, model, buildme, item) {
-        return undefined;
-    };
-    /**
-     * Selects an item in a dijit.tree store model
-     * @param tree
-     * @param lookfor
-     * @returns {*}
-     */
-    utils.selectTreeNodeById = function (tree, lookfor) {};
-
     return utils;
 });;
-define('dojo/dom-class',["./_base/lang", "./_base/array", "./dom"], function(lang, array, dom){
-	// module:
-	//		dojo/dom-class
-
-	var className = "className";
-
-	/* Part I of classList-based implementation is preserved here for posterity
-	var classList = "classList";
-	has.add("dom-classList", function(){
-		return classList in document.createElement("p");
-	});
-	*/
-
-	// =============================
-	// (CSS) Class Functions
-	// =============================
-
-	var cls, // exports object
-		spaces = /\s+/, a1 = [""];
-
-	function str2array(s){
-		if(typeof s == "string" || s instanceof String){
-			if(s && !spaces.test(s)){
-				a1[0] = s;
-				return a1;
-			}
-			var a = s.split(spaces);
-			if(a.length && !a[0]){
-				a.shift();
-			}
-			if(a.length && !a[a.length - 1]){
-				a.pop();
-			}
-			return a;
-		}
-		// assumed to be an array
-		if(!s){
-			return [];
-		}
-		return array.filter(s, function(x){ return x; });
-	}
-
-	/* Part II of classList-based implementation is preserved here for posterity
-	if(has("dom-classList")){
-		// new classList version
-		cls = {
-			contains: function containsClass(node, classStr){
-				var clslst = classStr && dom.byId(node)[classList];
-				return clslst && clslst.contains(classStr); // Boolean
-			},
-
-			add: function addClass(node, classStr){
-				node = dom.byId(node);
-				classStr = str2array(classStr);
-				for(var i = 0, len = classStr.length; i < len; ++i){
-					node[classList].add(classStr[i]);
-				}
-			},
-
-			remove: function removeClass(node, classStr){
-				node = dom.byId(node);
-				if(classStr === undefined){
-					node[className] = "";
-				}else{
-					classStr = str2array(classStr);
-					for(var i = 0, len = classStr.length; i < len; ++i){
-						node[classList].remove(classStr[i]);
-					}
-				}
-			},
-
-			replace: function replaceClass(node, addClassStr, removeClassStr){
-				node = dom.byId(node);
-				if(removeClassStr === undefined){
-					node[className] = "";
-				}else{
-					removeClassStr = str2array(removeClassStr);
-					for(var i = 0, len = removeClassStr.length; i < len; ++i){
-						node[classList].remove(removeClassStr[i]);
-					}
-				}
-				addClassStr = str2array(addClassStr);
-				for(i = 0, len = addClassStr.length; i < len; ++i){
-					node[classList].add(addClassStr[i]);
-				}
-			},
-
-			toggle: function toggleClass(node, classStr, condition){
-				node = dom.byId(node);
-				if(condition === undefined){
-					classStr = str2array(classStr);
-					for(var i = 0, len = classStr.length; i < len; ++i){
-						node[classList].toggle(classStr[i]);
-					}
-				}else{
-					cls[condition ? "add" : "remove"](node, classStr);
-				}
-				return condition;   // Boolean
-			}
-		}
-	}
-	*/
-
-	// regular DOM version
-	var fakeNode = {};  // for effective replacement
-	cls = {
-		// summary:
-		//		This module defines the core dojo DOM class API.
-
-		contains: function containsClass(/*DomNode|String*/ node, /*String*/ classStr){
-			// summary:
-			//		Returns whether or not the specified classes are a portion of the
-			//		class list currently applied to the node.
-			// node: String|DOMNode
-			//		String ID or DomNode reference to check the class for.
-			// classStr: String
-			//		A string class name to look for.
-			// example:
-			//		Do something if a node with id="someNode" has class="aSillyClassName" present
-			//	|	if(domClass.contains("someNode","aSillyClassName")){ ... }
-
-			return ((" " + dom.byId(node)[className] + " ").indexOf(" " + classStr + " ") >= 0); // Boolean
-		},
-
-		add: function addClass(/*DomNode|String*/ node, /*String|Array*/ classStr){
-			// summary:
-			//		Adds the specified classes to the end of the class list on the
-			//		passed node. Will not re-apply duplicate classes.
-			//
-			// node: String|DOMNode
-			//		String ID or DomNode reference to add a class string too
-			//
-			// classStr: String|Array
-			//		A String class name to add, or several space-separated class names,
-			//		or an array of class names.
-			//
-			// example:
-			//		Add a class to some node:
-			//	|	require(["dojo/dom-class"], function(domClass){
-			//	|		domClass.add("someNode", "anewClass");
-			//	|	});
-			//
-			// example:
-			//		Add two classes at once:
-			//	|	require(["dojo/dom-class"], function(domClass){
-			//	|		domClass.add("someNode", "firstClass secondClass");
-			//	|	});
-			//
-			// example:
-			//		Add two classes at once (using array):
-			//	|	require(["dojo/dom-class"], function(domClass){
-			//	|		domClass.add("someNode", ["firstClass", "secondClass"]);
-			//	|	});
-			//
-			// example:
-			//		Available in `dojo/NodeList` for multiple additions
-			//	|	require(["dojo/query"], function(query){
-			//	|		query("ul > li").addClass("firstLevel");
-			//	|	});
-
-            if(!node){
-                //console.error('dom class::add failed');
-                return;
-            }
-			node = dom.byId(node);
-			classStr = str2array(classStr);
-			var cls = node[className], oldLen;
-			cls = cls ? " " + cls + " " : " ";
-			oldLen = cls.length;
-			for(var i = 0, len = classStr.length, c; i < len; ++i){
-				c = classStr[i];
-				if(c && cls.indexOf(" " + c + " ") < 0){
-					cls += c + " ";
-				}
-			}
-			if(oldLen < cls.length){
-				node[className] = cls.substr(1, cls.length - 2);
-			}
-		},
-
-		remove: function removeClass(/*DomNode|String*/ node, /*String|Array?*/ classStr){
-			// summary:
-			//		Removes the specified classes from node. No `contains()`
-			//		check is required.
-			//
-			// node: String|DOMNode
-			//		String ID or DomNode reference to remove the class from.
-			//
-			// classStr: String|Array
-			//		An optional String class name to remove, or several space-separated
-			//		class names, or an array of class names. If omitted, all class names
-			//		will be deleted.
-			//
-			// example:
-			//		Remove a class from some node:
-			//	|	require(["dojo/dom-class"], function(domClass){
-			//	|		domClass.remove("someNode", "firstClass");
-			//	|	});
-			//
-			// example:
-			//		Remove two classes from some node:
-			//	|	require(["dojo/dom-class"], function(domClass){
-			//	|		domClass.remove("someNode", "firstClass secondClass");
-			//	|	});
-			//
-			// example:
-			//		Remove two classes from some node (using array):
-			//	|	require(["dojo/dom-class"], function(domClass){
-			//	|		domClass.remove("someNode", ["firstClass", "secondClass"]);
-			//	|	});
-			//
-			// example:
-			//		Remove all classes from some node:
-			//	|	require(["dojo/dom-class"], function(domClass){
-			//	|		domClass.remove("someNode");
-			//	|	});
-			//
-			// example:
-			//		Available in `dojo/NodeList` for multiple removal
-			//	|	require(["dojo/query"], function(query){
-			//	|		query("ul > li").removeClass("foo");
-			//	|	});
-
-			node = dom.byId(node);
-            if(!node){
-                console.error('dom class remove failed');
-                return;
-            }
-			var cls;
-			if(classStr !== undefined){
-				classStr = str2array(classStr);
-				cls = " " + node[className] + " ";
-				for(var i = 0, len = classStr.length; i < len; ++i){
-					cls = cls.replace(" " + classStr[i] + " ", " ");
-				}
-				cls = lang.trim(cls);
-			}else{
-				cls = "";
-			}
-			if(node[className] != cls){ node[className] = cls; }
-		},
-
-		replace: function replaceClass(/*DomNode|String*/ node, /*String|Array*/ addClassStr, /*String|Array?*/ removeClassStr){
-			// summary:
-			//		Replaces one or more classes on a node if not present.
-			//		Operates more quickly than calling dojo.removeClass and dojo.addClass
-			//
-			// node: String|DOMNode
-			//		String ID or DomNode reference to remove the class from.
-			//
-			// addClassStr: String|Array
-			//		A String class name to add, or several space-separated class names,
-			//		or an array of class names.
-			//
-			// removeClassStr: String|Array?
-			//		A String class name to remove, or several space-separated class names,
-			//		or an array of class names.
-			//
-			// example:
-			//	|	require(["dojo/dom-class"], function(domClass){
-			//	|		domClass.replace("someNode", "add1 add2", "remove1 remove2");
-			//	|	});
-			//
-			// example:
-			//	Replace all classes with addMe
-			//	|	require(["dojo/dom-class"], function(domClass){
-			//	|		domClass.replace("someNode", "addMe");
-			//	|	});
-			//
-			// example:
-			//	Available in `dojo/NodeList` for multiple toggles
-			//	|	require(["dojo/query"], function(query){
-			//	|		query(".findMe").replaceClass("addMe", "removeMe");
-			//	|	});
-
-			node = dom.byId(node);
-			fakeNode[className] = node[className];
-			cls.remove(fakeNode, removeClassStr);
-			cls.add(fakeNode, addClassStr);
-			if(node[className] !== fakeNode[className]){
-				node[className] = fakeNode[className];
-			}
-		},
-
-		toggle: function toggleClass(/*DomNode|String*/ node, /*String|Array*/ classStr, /*Boolean?*/ condition){
-			// summary:
-			//		Adds a class to node if not present, or removes if present.
-			//		Pass a boolean condition if you want to explicitly add or remove.
-			//		Returns the condition that was specified directly or indirectly.
-			//
-			// node: String|DOMNode
-			//		String ID or DomNode reference to toggle a class string
-			//
-			// classStr: String|Array
-			//		A String class name to toggle, or several space-separated class names,
-			//		or an array of class names.
-			//
-			// condition:
-			//		If passed, true means to add the class, false means to remove.
-			//		Otherwise dojo.hasClass(node, classStr) is used to detect the class presence.
-			//
-			// example:
-			//	|	require(["dojo/dom-class"], function(domClass){
-			//	|		domClass.toggle("someNode", "hovered");
-			//	|	});
-			//
-			// example:
-			//		Forcefully add a class
-			//	|	require(["dojo/dom-class"], function(domClass){
-			//	|		domClass.toggle("someNode", "hovered", true);
-			//	|	});
-			//
-			// example:
-			//		Available in `dojo/NodeList` for multiple toggles
-			//	|	require(["dojo/query"], function(query){
-			//	|		query(".toggleMe").toggleClass("toggleMe");
-			//	|	});
-
-			node = dom.byId(node);
-			if(condition === undefined){
-				classStr = str2array(classStr);
-				for(var i = 0, len = classStr.length, c; i < len; ++i){
-					c = classStr[i];
-					cls[cls.contains(node, c) ? "remove" : "add"](node, c);
-				}
-			}else{
-				cls[condition ? "add" : "remove"](node, classStr);
-			}
-			return condition;   // Boolean
-		}
-	};
-
-	return cls;
-});
-;
 /** @module xide/utils/HTMLUtils **/
 define('xide/utils/HTMLUtils',[
     'xide/utils',
@@ -68586,6 +68305,341 @@ define('xide/utils/HTMLUtils',[
 
     };
     return utils;
+});
+;
+define('dojo/dom-class',["./_base/lang", "./_base/array", "./dom"], function(lang, array, dom){
+	// module:
+	//		dojo/dom-class
+
+	var className = "className";
+
+	/* Part I of classList-based implementation is preserved here for posterity
+	var classList = "classList";
+	has.add("dom-classList", function(){
+		return classList in document.createElement("p");
+	});
+	*/
+
+	// =============================
+	// (CSS) Class Functions
+	// =============================
+
+	var cls, // exports object
+		spaces = /\s+/, a1 = [""];
+
+	function str2array(s){
+		if(typeof s == "string" || s instanceof String){
+			if(s && !spaces.test(s)){
+				a1[0] = s;
+				return a1;
+			}
+			var a = s.split(spaces);
+			if(a.length && !a[0]){
+				a.shift();
+			}
+			if(a.length && !a[a.length - 1]){
+				a.pop();
+			}
+			return a;
+		}
+		// assumed to be an array
+		if(!s){
+			return [];
+		}
+		return array.filter(s, function(x){ return x; });
+	}
+
+	/* Part II of classList-based implementation is preserved here for posterity
+	if(has("dom-classList")){
+		// new classList version
+		cls = {
+			contains: function containsClass(node, classStr){
+				var clslst = classStr && dom.byId(node)[classList];
+				return clslst && clslst.contains(classStr); // Boolean
+			},
+
+			add: function addClass(node, classStr){
+				node = dom.byId(node);
+				classStr = str2array(classStr);
+				for(var i = 0, len = classStr.length; i < len; ++i){
+					node[classList].add(classStr[i]);
+				}
+			},
+
+			remove: function removeClass(node, classStr){
+				node = dom.byId(node);
+				if(classStr === undefined){
+					node[className] = "";
+				}else{
+					classStr = str2array(classStr);
+					for(var i = 0, len = classStr.length; i < len; ++i){
+						node[classList].remove(classStr[i]);
+					}
+				}
+			},
+
+			replace: function replaceClass(node, addClassStr, removeClassStr){
+				node = dom.byId(node);
+				if(removeClassStr === undefined){
+					node[className] = "";
+				}else{
+					removeClassStr = str2array(removeClassStr);
+					for(var i = 0, len = removeClassStr.length; i < len; ++i){
+						node[classList].remove(removeClassStr[i]);
+					}
+				}
+				addClassStr = str2array(addClassStr);
+				for(i = 0, len = addClassStr.length; i < len; ++i){
+					node[classList].add(addClassStr[i]);
+				}
+			},
+
+			toggle: function toggleClass(node, classStr, condition){
+				node = dom.byId(node);
+				if(condition === undefined){
+					classStr = str2array(classStr);
+					for(var i = 0, len = classStr.length; i < len; ++i){
+						node[classList].toggle(classStr[i]);
+					}
+				}else{
+					cls[condition ? "add" : "remove"](node, classStr);
+				}
+				return condition;   // Boolean
+			}
+		}
+	}
+	*/
+
+	// regular DOM version
+	var fakeNode = {};  // for effective replacement
+	cls = {
+		// summary:
+		//		This module defines the core dojo DOM class API.
+
+		contains: function containsClass(/*DomNode|String*/ node, /*String*/ classStr){
+			// summary:
+			//		Returns whether or not the specified classes are a portion of the
+			//		class list currently applied to the node.
+			// node: String|DOMNode
+			//		String ID or DomNode reference to check the class for.
+			// classStr: String
+			//		A string class name to look for.
+			// example:
+			//		Do something if a node with id="someNode" has class="aSillyClassName" present
+			//	|	if(domClass.contains("someNode","aSillyClassName")){ ... }
+
+			return ((" " + dom.byId(node)[className] + " ").indexOf(" " + classStr + " ") >= 0); // Boolean
+		},
+
+		add: function addClass(/*DomNode|String*/ node, /*String|Array*/ classStr){
+			// summary:
+			//		Adds the specified classes to the end of the class list on the
+			//		passed node. Will not re-apply duplicate classes.
+			//
+			// node: String|DOMNode
+			//		String ID or DomNode reference to add a class string too
+			//
+			// classStr: String|Array
+			//		A String class name to add, or several space-separated class names,
+			//		or an array of class names.
+			//
+			// example:
+			//		Add a class to some node:
+			//	|	require(["dojo/dom-class"], function(domClass){
+			//	|		domClass.add("someNode", "anewClass");
+			//	|	});
+			//
+			// example:
+			//		Add two classes at once:
+			//	|	require(["dojo/dom-class"], function(domClass){
+			//	|		domClass.add("someNode", "firstClass secondClass");
+			//	|	});
+			//
+			// example:
+			//		Add two classes at once (using array):
+			//	|	require(["dojo/dom-class"], function(domClass){
+			//	|		domClass.add("someNode", ["firstClass", "secondClass"]);
+			//	|	});
+			//
+			// example:
+			//		Available in `dojo/NodeList` for multiple additions
+			//	|	require(["dojo/query"], function(query){
+			//	|		query("ul > li").addClass("firstLevel");
+			//	|	});
+
+            if(!node){
+                //console.error('dom class::add failed');
+                return;
+            }
+			node = dom.byId(node);
+			classStr = str2array(classStr);
+			var cls = node[className], oldLen;
+			cls = cls ? " " + cls + " " : " ";
+			oldLen = cls.length;
+			for(var i = 0, len = classStr.length, c; i < len; ++i){
+				c = classStr[i];
+				if(c && cls.indexOf(" " + c + " ") < 0){
+					cls += c + " ";
+				}
+			}
+			if(oldLen < cls.length){
+				node[className] = cls.substr(1, cls.length - 2);
+			}
+		},
+
+		remove: function removeClass(/*DomNode|String*/ node, /*String|Array?*/ classStr){
+			// summary:
+			//		Removes the specified classes from node. No `contains()`
+			//		check is required.
+			//
+			// node: String|DOMNode
+			//		String ID or DomNode reference to remove the class from.
+			//
+			// classStr: String|Array
+			//		An optional String class name to remove, or several space-separated
+			//		class names, or an array of class names. If omitted, all class names
+			//		will be deleted.
+			//
+			// example:
+			//		Remove a class from some node:
+			//	|	require(["dojo/dom-class"], function(domClass){
+			//	|		domClass.remove("someNode", "firstClass");
+			//	|	});
+			//
+			// example:
+			//		Remove two classes from some node:
+			//	|	require(["dojo/dom-class"], function(domClass){
+			//	|		domClass.remove("someNode", "firstClass secondClass");
+			//	|	});
+			//
+			// example:
+			//		Remove two classes from some node (using array):
+			//	|	require(["dojo/dom-class"], function(domClass){
+			//	|		domClass.remove("someNode", ["firstClass", "secondClass"]);
+			//	|	});
+			//
+			// example:
+			//		Remove all classes from some node:
+			//	|	require(["dojo/dom-class"], function(domClass){
+			//	|		domClass.remove("someNode");
+			//	|	});
+			//
+			// example:
+			//		Available in `dojo/NodeList` for multiple removal
+			//	|	require(["dojo/query"], function(query){
+			//	|		query("ul > li").removeClass("foo");
+			//	|	});
+
+			node = dom.byId(node);
+            if(!node){
+                console.error('dom class remove failed');
+                return;
+            }
+			var cls;
+			if(classStr !== undefined){
+				classStr = str2array(classStr);
+				cls = " " + node[className] + " ";
+				for(var i = 0, len = classStr.length; i < len; ++i){
+					cls = cls.replace(" " + classStr[i] + " ", " ");
+				}
+				cls = lang.trim(cls);
+			}else{
+				cls = "";
+			}
+			if(node[className] != cls){ node[className] = cls; }
+		},
+
+		replace: function replaceClass(/*DomNode|String*/ node, /*String|Array*/ addClassStr, /*String|Array?*/ removeClassStr){
+			// summary:
+			//		Replaces one or more classes on a node if not present.
+			//		Operates more quickly than calling dojo.removeClass and dojo.addClass
+			//
+			// node: String|DOMNode
+			//		String ID or DomNode reference to remove the class from.
+			//
+			// addClassStr: String|Array
+			//		A String class name to add, or several space-separated class names,
+			//		or an array of class names.
+			//
+			// removeClassStr: String|Array?
+			//		A String class name to remove, or several space-separated class names,
+			//		or an array of class names.
+			//
+			// example:
+			//	|	require(["dojo/dom-class"], function(domClass){
+			//	|		domClass.replace("someNode", "add1 add2", "remove1 remove2");
+			//	|	});
+			//
+			// example:
+			//	Replace all classes with addMe
+			//	|	require(["dojo/dom-class"], function(domClass){
+			//	|		domClass.replace("someNode", "addMe");
+			//	|	});
+			//
+			// example:
+			//	Available in `dojo/NodeList` for multiple toggles
+			//	|	require(["dojo/query"], function(query){
+			//	|		query(".findMe").replaceClass("addMe", "removeMe");
+			//	|	});
+
+			node = dom.byId(node);
+			fakeNode[className] = node[className];
+			cls.remove(fakeNode, removeClassStr);
+			cls.add(fakeNode, addClassStr);
+			if(node[className] !== fakeNode[className]){
+				node[className] = fakeNode[className];
+			}
+		},
+
+		toggle: function toggleClass(/*DomNode|String*/ node, /*String|Array*/ classStr, /*Boolean?*/ condition){
+			// summary:
+			//		Adds a class to node if not present, or removes if present.
+			//		Pass a boolean condition if you want to explicitly add or remove.
+			//		Returns the condition that was specified directly or indirectly.
+			//
+			// node: String|DOMNode
+			//		String ID or DomNode reference to toggle a class string
+			//
+			// classStr: String|Array
+			//		A String class name to toggle, or several space-separated class names,
+			//		or an array of class names.
+			//
+			// condition:
+			//		If passed, true means to add the class, false means to remove.
+			//		Otherwise dojo.hasClass(node, classStr) is used to detect the class presence.
+			//
+			// example:
+			//	|	require(["dojo/dom-class"], function(domClass){
+			//	|		domClass.toggle("someNode", "hovered");
+			//	|	});
+			//
+			// example:
+			//		Forcefully add a class
+			//	|	require(["dojo/dom-class"], function(domClass){
+			//	|		domClass.toggle("someNode", "hovered", true);
+			//	|	});
+			//
+			// example:
+			//		Available in `dojo/NodeList` for multiple toggles
+			//	|	require(["dojo/query"], function(query){
+			//	|		query(".toggleMe").toggleClass("toggleMe");
+			//	|	});
+
+			node = dom.byId(node);
+			if(condition === undefined){
+				classStr = str2array(classStr);
+				for(var i = 0, len = classStr.length, c; i < len; ++i){
+					c = classStr[i];
+					cls[cls.contains(node, c) ? "remove" : "add"](node, c);
+				}
+			}else{
+				cls[condition ? "add" : "remove"](node, classStr);
+			}
+			return condition;   // Boolean
+		}
+	};
+
+	return cls;
 });
 ;
 define('dojo/dom-construct',["exports", "./_base/kernel", "./sniff", "./_base/window", "./dom", "./dom-attr"],
