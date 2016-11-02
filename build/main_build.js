@@ -43160,14 +43160,12 @@ define('xcf/model/Command',[
     'xide/utils',
     'xide/types',
     'dojo/Deferred',
-    'module',
-    'require',
     'xblox/types/Types'
-], function (dcl, Block, Contains, utils, types, Deferred, module, require, BTypes) {
+], function (dcl, Block, Contains, utils, types, Deferred, BTypes) {
     var debug = false;
     /**
      * The command model. A 'command' consists out of a few parameters and a series of
-     *  XCF - Command - Block expresssions. Those expressions need to be evaluated before send them to the device
+     *  XCF - Command - Block expressions. Those expressions need to be evaluated before send them to the device
      * @class module:xcf/model/Command
      * @augments module:xide/mixins/EventedMixin
      * @extends module:xblox/model/Block_UI
@@ -43219,7 +43217,6 @@ define('xcf/model/Command',[
          */
         onCommandFinish: function (msg) {
             var scope = this.getScope();
-            var context = scope.getContext();//driver instance
             var result = {};
             var dfd = null;
             if (msg.params && msg.params.id) {
@@ -43250,11 +43247,7 @@ define('xcf/model/Command',[
          * @param msg.cmd {string} the command string being sent
          */
         onCommandPaused: function (msg) {
-            var scope = this.getScope();
-            var context = scope.getContext();//driver instance
-            var result = {};
             var params = msg.params;
-
             if (params && params.id) {
                 msg.lastResponse && this.storeResult(msg.lastResponse);
                 this._emit('paused', {
@@ -43277,15 +43270,9 @@ define('xcf/model/Command',[
          */
         onCommandStopped: function (msg) {
             var scope = this.getScope();
-            var context = scope.getContext();//driver instance
             var result = {};
             var params = msg.params;
-
             if (params && params.id) {
-                /*
-                 this._emit('cmd:'+msg.cmd + '_' + params.id,{
-                 msg:msg
-                 });*/
                 msg.lastResponse && this.storeResult(msg.lastResponse);
                 this._emit('stopped', {
                     msg: msg,
@@ -43293,7 +43280,6 @@ define('xcf/model/Command',[
                     id: params.id
                 });
             }
-
             var items = this.getItems(types.BLOCK_OUTLET.STOPPED);
             if (items.length) {
                 this.runFrom(items, 0, this._lastSettings);
@@ -43307,15 +43293,8 @@ define('xcf/model/Command',[
          * @param msg.cmd {string} the command string being sent
          */
         onCommandProgress: function (msg) {
-            var scope = this.getScope();
-            var context = scope.getContext();//driver instance
-            var result = {};
             var params = msg.params;
             if (params && params.id) {
-                /*
-                 this._emit('cmd:'+msg.cmd + '_' + params.id,{
-                 msg:msg
-                 });*/
                 msg.lastResponse && this.storeResult(msg.lastResponse);
                 this._emit('progress', {
                     msg: msg,
@@ -43357,7 +43336,6 @@ define('xcf/model/Command',[
         },
         onCommandError: function (msg) {
             var scope = this.getScope();
-            var context = scope.getContext();
             var params = msg.params;
             if (params.id) {
                 msg.lastResponse && this.storeResult(msg.lastResponse);
@@ -43375,19 +43353,14 @@ define('xcf/model/Command',[
             }
         },
         sendToDevice: function (msg, settings, stop, pause, id) {
-
             if(this._destroyed){
                 return;
             }
-            
             msg = this.replaceAll("'", '', msg);
             id = id || utils.createUUID();
             var self = this;
-
             var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
-
             this.lastCommand = '' + msg;
-
             if (this.scope.instance) {
                 if (wait) {
                     this._on('cmd:' + msg + '_' + id, function (msg) {
@@ -43438,12 +43411,10 @@ define('xcf/model/Command',[
             }
             var scope = this.scope;
             var value = string || this._get('send');
-            var settings = settings || {};
+            settings = settings || {};
             var flags = settings.flags || this.flags;
             var parse = !(flags & types.CIFLAG.DONT_PARSE);
             var isExpression = (flags & types.CIFLAG.EXPRESSION);
-            var wait = (flags & types.CIFLAG.WAIT) ? true : false;
-
             if (flags & types.CIFLAG.TO_HEX) {
                 value = utils.to_hex(value);
             }
@@ -43465,17 +43436,17 @@ define('xcf/model/Command',[
             var res = "";
             var DriverModule = this.getDriverModule();
             if (DriverModule && DriverModule.resolveBefore && useDriverModule!==false) {
-                value = DriverModule.resolveBefore(this, value);
+                value = DriverModule.resolveBefore(this, value) || value;
             }
 
-            if (/*(this.isScript(value) && parse!==false) || */isExpression && parse !== false) {
+            if (isExpression && parse !== false) {
                 res = scope.parseExpression(value, null, _overrides, null, null, null, override.args);
             } else {
                 res = '' + value;
             }
 
             if (DriverModule && DriverModule.resolveAfter && useDriverModule!==false) {
-                res = DriverModule.resolveAfter(this, res);
+                res = DriverModule.resolveAfter(this, res) || res;
             }
 
             return res;
@@ -43495,7 +43466,6 @@ define('xcf/model/Command',[
             }
             var value = send || this._get('send') || this.send;
             var parse = !(this.flags & types.CIFLAG.DONT_PARSE);
-            var isExpression = (this.flags & types.CIFLAG.EXPRESSION);
             var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
             var id = utils.createUUID();
 
@@ -43513,7 +43483,7 @@ define('xcf/model/Command',[
             }
 
             //we're already running
-            if (isInterface == true && this._loop) {
+            if (isInterface === true && this._loop) {
                 this.reset();
             }
             if (wait !== true) {
@@ -43595,7 +43565,7 @@ define('xcf/model/Command',[
                 out += "<span class='text-primary inline-icon'>" + this.getBlockIcon() + "</span>";
             }
             label !== false && (out += "" + this.makeEditable('name', 'bottom', 'text', 'Enter a unique name', 'inline') + "");
-            breakDetail == true && (out += "<br/>");
+            breakDetail === true && (out += "<br/>");
             detail !== false && (out += ("<span class='text-muted small'> Send:<kbd class='text-warning'>" + this.makeEditable('send', 'bottom', 'text', 'Enter the string to send', 'inline')) + "</kbd></span>");
             if (icon !== false) {
                 this.startup && (out += this.getIcon('fa-bell inline-icon text-warning', 'text-align:right;float:right;', ''));
@@ -43605,7 +43575,7 @@ define('xcf/model/Command',[
             return out;
         },
         getInterval: function () {
-            return parseInt(this.interval);
+            return parseInt(this.interval,10);
         },
         start: function () {
             if (this.startup && !this.auto) {
@@ -43740,7 +43710,7 @@ define('xcf/model/Command',[
         onChangeField: function (field, newValue, cis) {
             var interval = this.getInterval();
             if (field == 'auto') {
-                if (newValue == true) {
+                if (newValue === true) {
                     interval > 0 && this.scope.loopBlock(this);
                 } else {
                     if (this._loop) {
@@ -43749,7 +43719,7 @@ define('xcf/model/Command',[
                 }
             }
             if (field == 'enabled') {
-                if (newValue == false) {
+                if (newValue === false) {
                     this.reset();
                 } else {
                     if (interval) {
@@ -43776,7 +43746,7 @@ define('xcf/model/Command',[
             }
         },
         stop: function (isDestroy) {
-            if(isDestroy ==true){
+            if(isDestroy ===true){
                 return;
             }
             this.onSuccess(this, {
@@ -44066,7 +44036,7 @@ define('xide/types/Types',[
          * @type int
          */
         END: 0x00000080
-    }
+    };
     /**
      * A 'Configurable Information's ("CI") type flags for post and pre-processing a value.
      * @enum {string} module:xide/types/CIFlag
@@ -44190,14 +44160,14 @@ define('xide/types/Types',[
          * @type int
          */
         END: 0x000020000
-    }
+    };
     /**
      * A CI's default post-pre processing order.
      *
      * @enum {string} module:xide/types/CI_STATE
      * @memberOf module:xide/types
      */
-    types.CI_CORDER = {}
+    types.CI_CORDER = {};
     /**
      * A 'Configurable Information's ("CI") type information. Every CI has this information. You can
      * re-composite new types with ECIType.STRUCTURE. However all 'beans' (rich objects) in the system all displayed through a set of CIs,
@@ -44396,7 +44366,7 @@ define('xide/types/Types',[
          * @type { int}
          */
         UNKNOWN: -1
-    }
+    };
     /**
      * Stub for registered bean types. This value is needed to let the UI switch between configurations per such type.
      * At the very root is the bean action context which may include more contexts.
@@ -44429,7 +44399,7 @@ define('xide/types/Types',[
          * @constant
          */
         EXPRESSION: 'EXPRESSION'       //xexpression
-    }
+    };
 
     /**
      * Expression Parser is a map of currently existing parsers
@@ -44440,7 +44410,7 @@ define('xide/types/Types',[
      * @memberOf module:xide/types
      */
     if (!types.EXPRESSION_PARSER) {
-        types.EXPRESSION_PARSER = {}
+        types.EXPRESSION_PARSER = {};
     }
     /**
      * Component names stub, might be extended by sub-classing applications
@@ -44454,7 +44424,7 @@ define('xide/types/Types',[
         XACE: 'xace',
         XEXPRESSION: 'xexpression',
         XCONSOLE: 'xconsole'
-    }
+    };
 
     /**
      * WIDGET_REFERENCE_MODE enumerates possible modes to resolve a string expression
@@ -44469,7 +44439,7 @@ define('xide/types/Types',[
         BY_CLASS: 'byclass',
         BY_CSS: 'bycss',
         BY_EXPRESSION: 'expression'
-    }
+    };
     /**
      * Possible split modes for rich editors with preview or live coding views.
      *
@@ -44481,7 +44451,7 @@ define('xide/types/Types',[
         SOURCE: 2,
         SPLIT_VERTICAL: 6,
         SPLIT_HORIZONTAL: 7
-    }
+    };
 
     /**
      * All client resources are through variables on the server side. Here the minimum variables for an xjs application.
@@ -44493,7 +44463,7 @@ define('xide/types/Types',[
         ACE: 'ACE',
         APP_URL: 'APP_URL',
         SITE_URL: 'SITE_URL'
-    }
+    };
     /**
      * Events of xide.*
      * @enum {string} module:xide/types/EVENTS
@@ -44621,7 +44591,7 @@ define('xide/types/Types',[
         ON_REMOVE_CONTAINER: 'onRemoveContainer',
         ON_CONTAINER_REPLACED: 'onContainerReplaced',
         ON_CONTAINER_SPLIT: 'onContainerSplit'
-    }
+    };
     /**
      * To be moved
      * @type {{SIZE_NORMAL: string, SIZE_SMALL: string, SIZE_WIDE: string, SIZE_LARGE: string}}
@@ -44631,7 +44601,7 @@ define('xide/types/Types',[
         SIZE_SMALL: 'size-small',
         SIZE_WIDE: 'size-wide',    // size-wide is equal to modal-lg
         SIZE_LARGE: 'size-large'
-    }
+    };
 
     /**
      * To be moved
@@ -44644,7 +44614,7 @@ define('xide/types/Types',[
         SUCCESS: 'type-success',
         WARNING: 'type-warning',
         DANGER: 'type-danger'
-    }
+    };
     /**
      * @TODO: remove, defined in xideve
      */
@@ -44654,7 +44624,7 @@ define('xide/types/Types',[
         LAYOUT_CENTER_RIGHT: 'LAYOUT_CENTER_RIGHT',
         LAYOUT_LEFT_CENTER_RIGHT: 'LAYOUT_LEFT_CENTER_RIGHT',
         LAYOUT_LEFT_CENTER_RIGHT_BOTTOM: 'LAYOUT_LEFT_CENTER_RIGHT_BOTTOM'
-    })
+    });
 
     /**
      * Hard Dojo override to catch malformed JSON.
@@ -44689,7 +44659,7 @@ define('xide/types/Types',[
                     return {
                         error: '1',
                         message: js
-                    }
+                    };
                 }
                 throw new Error(js);
             }
@@ -73805,8 +73775,6 @@ define('xide/manager/Context',[
         return true;
     }, true);
 
-
-
     var isServer = has('host-node'),
         isBrowser = has('host-browser'),
         bases = isBrowser ? [ContextBase, Context_UI] : [ContextBase],
@@ -73818,52 +73786,6 @@ define('xide/manager/Context',[
      * @extends module:xide/manager/ContextBase
      */
     var Module = dcl(bases, {
-        getMount:function(mount){
-
-            var resourceManager = this.getResourceManager(),
-                vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
-
-            if(vfsConfig && vfsConfig[mount]) {
-                return vfsConfig[mount];
-            }
-            return null;
-        },
-        toVFSShort:function(path,mount){
-
-            var resourceManager = this.getResourceManager(),
-                vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
-
-            if(vfsConfig && vfsConfig[mount]){
-                var mountPath = vfsConfig[mount];
-                mountPath = utils.replaceAll('//','/',mountPath);
-                mountPath = mountPath.replace(/\/+$/, "");
-                if(path.indexOf(mountPath) !==-1){
-                    var _start = mountPath;
-                    _start = _start.replace(/\/+$/, "");
-                    var libPath = path.substr(path.indexOf(_start) + (_start.length + 1 ),path.length);
-                    return libPath;
-                }
-            }
-            return null;
-        },
-        findVFSMount:function(path){
-
-            var resourceManager = this.getResourceManager(),
-                vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
-
-            if(vfsConfig){
-                for (var mount in vfsConfig) {
-                    var mountPath = vfsConfig[mount];
-                    mountPath = utils.replaceAll('//','/',mountPath);
-                    mountPath = mountPath.replace(/\/+$/, "");
-                    if(path.indexOf(mountPath) !==-1){
-                        return mount;
-                    }
-                }
-
-            }
-            return null;
-        },
         declaredClass: "xide.manager.Context",
         application: null,
         contextManager: null,
@@ -73887,15 +73809,12 @@ define('xide/manager/Context',[
          * Global event handlers
          */
         onXIDEMessage: function (data, publish) {
-
             if(!data || !data.event){
                 return;
             }
             var thiz = this;
             if (data.event === types.EVENTS.ON_FILE_CHANGED) {
-
                 debugFileChanges && console.log("on file changed " ,data);
-
                 //inotify plus
                 if (data.data && data.data.mask && data.data.mask.indexOf('delete') !== -1) {
                     thiz.publish(types.EVENTS.ON_FILE_DELETED, data);
@@ -73938,14 +73857,10 @@ define('xide/manager/Context',[
                         path: path
                     });
                 }
-
-
-
                 /**
                  * Try generic
                  */
                 if (path.match(/\.js$/)) {
-
                     var modulePath = data.data.modulePath;
                     if (modulePath) {
                         modulePath = modulePath.replace('.js', '');
@@ -73999,7 +73914,6 @@ define('xide/manager/Context',[
             }
         },
         onNodeServiceStoreReady: function (evt) {
-
             if (this.xideServiceClient) {
                 this.xideServiceClient.destroy();
             }
@@ -74037,7 +73951,6 @@ define('xide/manager/Context',[
          * @param evt
          */
         reloadModules: function (modules, patch) {
-
             var head = new Deferred(),
                 pluginPromises = [],
                 newModules = [],
@@ -74075,17 +73988,12 @@ define('xide/manager/Context',[
             return lang.getObject(utils.replaceAll('/', '.', _module)) || lang.getObject(_module) || (dcl.getObject ? dcl.getObject(_module) || dcl.getObject(utils.replaceAll('/', '.', _module)) : null);
         },
         _reloadModule: function (_module, reload) {
-
             var _errorHandle = null;
             var dfd = new Deferred();
-            
-
-            if(!isServer && _module.indexOf('nodejs') && _module.indexOf('tests') ){
+            if(!isServer && _module.indexOf('nodejs')!==-1){
                 return;
             }
-
             _module = _module.replace('0/8','0.8');
-
             function handleError(error){
                 debugModuleReload && console.log(error.src, error.id);
                 debugModuleReload && console.error('require error ' + _module,error);
@@ -74139,7 +74047,6 @@ define('xide/manager/Context',[
             _require.undef(_module);
 
             var thiz = this;
-
             if (reload) {
                 setTimeout(function () {
                     _require({
@@ -74152,14 +74059,11 @@ define('xide/manager/Context',[
                             _require({
                                 cacheBust: null
                             });
-
                             if (_.isString(moduleLoaded)) {
                                 console.error('module reloaded failed : ' + moduleLoaded + ' for module : ' + _module);
                                 return;
                             }
-
                             moduleLoaded.modulePath = _module;
-
                             if (obj) {
                                 thiz.mergeFunctions(obj.prototype, moduleLoaded.prototype,obj,moduleLoaded);
                                 if (obj.prototype && obj.prototype._onReloaded) {
@@ -74195,15 +74099,11 @@ define('xide/manager/Context',[
             }
             return dfd;
         },
-
-
         onCSSChanged: function (evt) {
             if(isBrowser) {
                 var path = evt.path;
                 var _p = this.findVFSMount(path);
-                console.log('onCSSChanged ' + _p,evt);
                 var _p2 = this.toVFSShort(path,_p);
-                console.log('onCSSChanged ' + _p2,evt);
                 path = utils.replaceAll('//', '/', path);
                 path = path.replace('/PMaster/', '');
                 var reloadFn = window['xappOnStyleSheetChanged'];
@@ -74213,12 +74113,10 @@ define('xide/manager/Context',[
             }
         },
         onDidChangeFileContent: function (evt) {
-
             if (evt['didProcess']) {
                 return;
             }
             evt['didProcess'] = true;
-
             if (!this.vfsMounts) {
                 return;
             }
@@ -74245,7 +74143,6 @@ define('xide/manager/Context',[
             if (!this.vfsMounts[mount]) {
                 return;
             }
-
             module = '' + evt.path;
             module = module.replace('./', '');
             module = module.replace('/', '.');
@@ -74265,6 +74162,46 @@ define('xide/manager/Context',[
         /*
          * get/set
          */
+        getMount:function(mount){
+            var resourceManager = this.getResourceManager();
+            var vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
+            if(vfsConfig && vfsConfig[mount]) {
+                return vfsConfig[mount];
+            }
+            return null;
+        },
+        toVFSShort:function(path,mount){
+            var resourceManager = this.getResourceManager();
+            var vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
+            if(vfsConfig && vfsConfig[mount]){
+                var mountPath = vfsConfig[mount];
+                mountPath = utils.replaceAll('//','/',mountPath);
+                mountPath = mountPath.replace(/\/+$/, "");
+                if(path.indexOf(mountPath) !==-1){
+                    var _start = mountPath;
+                    _start = _start.replace(/\/+$/, "");
+                    var libPath = path.substr(path.indexOf(_start) + (_start.length + 1 ),path.length);
+                    return libPath;
+                }
+            }
+            return null;
+        },
+        findVFSMount:function(path){
+            var resourceManager = this.getResourceManager();
+            var vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
+            if(vfsConfig){
+                for (var mount in vfsConfig) {
+                    var mountPath = vfsConfig[mount];
+                    mountPath = utils.replaceAll('//','/',mountPath);
+                    mountPath = mountPath.replace(/\/+$/, "");
+                    if(path.indexOf(mountPath) !==-1){
+                        return mount;
+                    }
+                }
+
+            }
+            return null;
+        },
         getBlockManager: function () {
             return this.blockManager;
         },
@@ -74302,7 +74239,6 @@ define('xide/manager/Context',[
             this.language = 'en';
             this.subscribe(types.EVENTS.ON_CHANGED_CONTENT, this.onDidChangeFileContent);
             if (has('xnode')) {
-                //this.subscribe(types.EVENTS.ON_MODULE_RELOADED, this.onModuleReloaded);
                 this.subscribe(types.EVENTS.ON_NODE_SERVICE_STORE_READY, this.onNodeServiceStoreReady);
             }
         },
@@ -74325,10 +74261,8 @@ define('xide/manager/Context',[
             return this.args && this.args.file;
         }
     });
-
     dcl.chainAfter(Module, 'constructManagers');
     dcl.chainAfter(Module, 'initManagers');
-
     return Module;
 });;
 /** module:xide/manager/Context_UI **/
@@ -77737,6 +77671,7 @@ define('xide/editor/Registry',[
 
     return editorMixin;
 });;
+/** module:xide/manager/SettingsManager **/
 define('xide/manager/SettingsManager',[
     'dcl/dcl',
     "xide/manager/ServerActionBase",
@@ -77752,15 +77687,20 @@ define('xide/manager/SettingsManager',[
         section: 'settings',
         store:null,
         has: function (section, path, query, data, readyCB) {},
+        getSetting:function(id){
+            var _val = this.getStore().query({
+                id:id
+            });
+            return _val && _val[0] ? _val[0].value : null;
+        },
         getStore: function () {
             return this.settingsStore;
         },
         _createStore: function (data) {
-            var store = new Memory({
+            return new Memory({
                 data: data,
                 idProperty: 'id'
             });
-            return store;
         },
         onSettingsReceived: function (data) {
             this.settingsDataAll = data;
@@ -77822,7 +77762,7 @@ define('xide/manager/SettingsManager',[
             return this.read(this.section, '.', null, this.onSettingsReceived.bind(this));
         },
         init:function(){
-            this.initStore();
+            return this.initStore();
         }
     });
     return Module;
