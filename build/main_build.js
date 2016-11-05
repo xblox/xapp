@@ -7452,9 +7452,9 @@ define('deliteful/list/List',[
 			};
 		}),
 
-		refreshRendering: function (props) {
+		refreshRendering: function (props, isAfterInitialRendering) {
 			//	List attributes have been updated.
-			/*jshint maxcomplexity:14*/
+			/*jshint maxcomplexity:15*/
 			if ("selectionMode" in props) {
 				// Update aria attributes
 				$(this.containerNode).removeClass(this._cssClasses.selectable);
@@ -7506,7 +7506,8 @@ define('deliteful/list/List',[
 				}
 			}
 
-			if ("renderItems" in props && this.renderItems) {
+			if (("renderItems" in props && this.renderItems ||
+					"_displayedPanel" in props) && !isAfterInitialRendering) {
 				// notify the list content changed.
 				this.emit("delite-size-change");
 			}
@@ -26272,15 +26273,13 @@ define('delite/HasDropDown',[
 					}
 				});
 
-				// Set width of drop down if necessary, so that dropdown width + width of scrollbar (from popup wrapper)
+				// Set width of drop down if necessary, so that dropdown width [including scrollbar]
 				// matches width of anchorNode.  Don't do anything for when dropDownPosition=["center"] though,
 				// in which case popup.open() doesn't return a value.
 				if (retVal && (this.forceWidth ||
-						(this.autoWidth && anchorNode.offsetWidth > dropDown._popupWrapper.offsetWidth))) {
+						(this.autoWidth && anchorNode.offsetWidth > dropDown.offsetWidth))) {
 					var widthAdjust = anchorNode.offsetWidth - dropDown._popupWrapper.offsetWidth;
-					dropDown._popupWrapper.style.width = anchorNode.offsetWidth + "px";
 
-					// Workaround apparent iOS bug where width: inherit on dropdown apparently not working.
 					dropDown.style.width = anchorNode.offsetWidth + "px";
 
 					// If dropdown is right-aligned then compensate for width change by changing horizontal position
@@ -26433,6 +26432,17 @@ define('delite/popup',[
 	 * Dispatched on a popup after the popup is shown or when it is repositioned
 	 * due to the size of its content changing.
 	 * @event module:delite/popup#popup-after-position
+	 * @property {string} aroundCorner - Corner of the anchor node, one of:
+	 * - "BL" - bottom left
+	 * - "BR" - bottom right
+	 * - "TL" - top left
+	 * - "TR" - top right
+	 * @property {string} nodeCorner - Corner of the popup node, one of:
+	 * - "BL" - bottom left
+	 * - "BR" - bottom right
+	 * - "TL" - top left
+	 * - "TR" - top right
+	 * @property {Object} size - `{w: 20, h: 30}` type object specifying size of the popup.
 	 */
 
 	/**
@@ -26819,32 +26829,34 @@ define('delite/popup',[
 		_size: function (args, measureSize) {
 			/* jshint maxcomplexity:13 */
 			var widget = args.popup,
-				wrapper = widget._popupWrapper,
 				around = args.around,
 				orient = args.orient || ["below", "below-alt", "above", "above-alt"],
 				viewport = Viewport.getEffectiveBox(widget.ownerDocument);
 
 			if (measureSize) {
 				// Get natural size of popup (i.e. when not squashed to fit within viewport).  First, remove any
-				// previous size restriction set on wrapper.  Note that setting wrapper's height and width to "auto"
+				// previous size restriction set on popup.  Note that setting popups's height and width to "auto"
 				// erases scroll position, so should only be done when popup is first shown, before user has scrolled.
-				wrapper.style.height = "auto";
+				widget.style.height = "auto";
 				if (orient[0] === "center") {
 					// Don't set width to "auto" when orient!=center because it interferes with HasDropDown's
 					// autoWidth/forceWidth.
 					// TODO: maybe this if() check is no longer necessary to due to parent if(measureSize)
-					wrapper.style.width = "auto";
+					widget.style.width = "auto";
 				}
 
-				args._naturalHeight = widget.offsetHeight;
-				args._naturalWidth = widget.offsetWidth;
+				var cs = getComputedStyle(widget),
+					verticalMargin = parseFloat(cs.marginTop) + parseFloat(cs.marginBottom),
+					horizontalMargin = parseFloat(cs.marginLeft) + parseFloat(cs.marginRight);
+				args._naturalHeight = widget.offsetHeight + verticalMargin;
+				args._naturalWidth = widget.offsetWidth + horizontalMargin;
 			}
 
 			if (orient[0] === "center") {
 				// Limit height and width so dialog fits within viewport.
-				wrapper.style.height = args._naturalHeight > viewport.h * 0.9 ? Math.floor(viewport.h * 0.9) + "px" :
+				widget.style.height = args._naturalHeight > viewport.h * 0.9 ? Math.floor(viewport.h * 0.9) + "px" :
 					"auto";
-				wrapper.style.width = args._naturalWidth > viewport.w * 0.9 ? Math.floor(viewport.w * 0.9) + "px" :
+				widget.style.width = args._naturalWidth > viewport.w * 0.9 ? Math.floor(viewport.w * 0.9) + "px" :
 					"auto";
 			} else {
 				// Limit height to space available in viewport either above or below aroundNode (whichever side has
@@ -26861,7 +26873,7 @@ define('delite/popup',[
 						(aroundPos.top + aroundPos.height)));
 				}
 
-				wrapper.style.height = args._naturalHeight > maxHeight ? maxHeight + "px" : "auto";
+				widget.style.height = args._naturalHeight > maxHeight ? maxHeight - verticalMargin + "px" : "auto";
 			}
 		},
 
@@ -26883,11 +26895,10 @@ define('delite/popup',[
 				place.center(wrapper);
 				DialogUnderlay.showFor(wrapper);
 			} else {
-				var layoutFunc = widget.orient ? widget.orient.bind(widget) : null;
 				var position = around ?
-					place.around(wrapper, around, orient, ltr, layoutFunc) :
+					place.around(wrapper, around, orient, ltr) :
 					place.at(wrapper, args, orient === "R" ? ["TR", "BR", "TL", "BL"] : ["TL", "BL", "TR", "BR"],
-						args.padding, layoutFunc);
+						args.padding);
 
 				// Emit event telling popup that it was [re]positioned.
 				var event = {
@@ -27357,26 +27368,6 @@ define('delite/place',[
 	 */
 
 	/**
-	 * Function on popup widget to adjust it based on what position it's being displayed in,
-	 * relative to anchor node.
-	 * @callback module:delite/place.LayoutFunc
-	 * @param {Element} node - The DOM node for the popup widget.
-	 * @param {string} aroundCorner - Corner of the anchor node, one of:
-	 * - "BL" - bottom left
-	 * - "BR" - bottom right
-	 * - "TL" - top left
-	 * - "TR" - top right
-	 * @param {string} nodeCorner - Corner of the popup node, one of:
-	 * - "BL" - bottom left
-	 * - "BR" - bottom right
-	 * - "TL" - top left
-	 * - "TR" - top right
-	 * @param {Object} size - `{w: 20, h: 30}` type object specifying size of the popup.
-	 * @returns {number} Optional.  Amount that the popup needed to be modified to fit in the space provided.
-	 * If no value is returned, it's assumed that the popup fit completely without modification.
-	 */
-
-	/**
 	 * Meta-data about the position chosen for a popup node.
 	 * Specifies the corner of the anchor node and the corner of the popup node that touch each other,
 	 * plus sizing data.
@@ -27405,18 +27396,10 @@ define('delite/place',[
 	 * @param {Element} node
 	 * @param {Array} choices - Array of objects like `{corner: "TL", pos: {x: 10, y: 20} }`.
 	 * This example says to put the top-left corner of the node at (10,20).
-	 * @param {module:delite/place.LayoutFunc} [layoutNode] - Widgets like tooltips are displayed differently an
-	 * have different dimensions based on their orientation relative to the parent.
-	 * This adjusts the popup based on orientation.
-	 * It also passes in the available size for the popup, which is useful for tooltips to
-	 * tell them that their width is limited to a certain amount.  layoutNode() may return a value
-	 * expressing how much the popup had to be modified to fit into the available space.
-	 * This is used to determine what the best placement is.
-	 * @param {module:delite/place.Rectangle} aroundNodeCoords - Size and position of aroundNode.
 	 * @returns {module:delite/place.ChosenPosition} Best position to place node.
 	 * @private
 	 */
-	function _placeAt(node, choices, layoutNode, aroundNodeCoords) {
+	function _placeAt(node, choices) {
 		// get {l: 10, t: 10, w: 100, h:100} type obj representing position of
 		// viewport over document
 		var view = Viewport.getEffectiveBox(node.ownerDocument),
@@ -27452,14 +27435,6 @@ define('delite/place',[
 			// Clear left/right position settings set earlier so they don't interfere with calculations,
 			// specifically when layoutNode() (a.k.a. Tooltip.orient()) measures natural width of Tooltip
 			style.left = style.right = "auto";
-
-			// configure node to be displayed in given position relative to button
-			// (need to do this in order to get an accurate size for the node, because
-			// a tooltip's size changes based on position, due to triangle)
-			if (layoutNode) {
-				var res = layoutNode(node, choice.aroundCorner, corner, spaceAvailable, aroundNodeCoords);
-				overflow = typeof res === "undefined" ? 0 : res;
-			}
 
 			// get node's size
 			var oldDisplay = style.display;
@@ -27511,14 +27486,8 @@ define('delite/place',[
 			return !overflow;
 		});
 
-		// In case the best position is not the last one we checked, need to call
-		// layoutNode() again.
-		if (best.overflow && layoutNode) {
-			layoutNode(node, best.aroundCorner, best.corner, best.spaceAvailable, aroundNodeCoords);
-		}
-
-		// And then position the node.  Do this last, after the layoutNode() above
-		// has sized the node, due to browser quirks when the viewport is scrolled
+		// And then position the node.  Do this last,
+		// due to browser quirks when the viewport is scrolled
 		// (specifically that a Tooltip will shrink to fit as though the window was
 		// scrolled to the left).
 
@@ -27569,7 +27538,6 @@ define('delite/place',[
 		 * - "TR" - top right
 		 * @param {module:delite/place.Position} [padding] - Optional param to set padding, to put some buffer
 		 * around the element you want to position.  Defaults to zero.
-		 * @param {module:delite/place.LayoutFunc} [layoutNode]
 		 * @returns {module:delite/place.ChosenPosition} Position node was placed at.
 		 * @example
 		 * // Try to place node's top right corner at (10,20).
@@ -27577,7 +27545,7 @@ define('delite/place',[
 		 * // bottom left corner at (10,20).
 		 * place.at(node, {x: 10, y: 20}, ["TR", "BL"])
 		 */
-		at: function (node, pos, corners, padding, layoutNode) {
+		at: function (node, pos, corners, padding) {
 			var choices = corners.map(function (corner) {
 				var c = {
 					corner: corner,
@@ -27591,7 +27559,7 @@ define('delite/place',[
 				return c;
 			});
 
-			return _placeAt(node, choices, layoutNode);
+			return _placeAt(node, choices);
 		},
 
 		/**
@@ -27618,9 +27586,6 @@ define('delite/place',[
 		 * - below-alt: drop down goes below anchor node, right sides aligned
 		 * @param {boolean} leftToRight - True if widget is LTR, false if widget is RTL.
 		 * Affects the behavior of "above" and "below" positions slightly.
-		 * @param {module:delite/place.LayoutFunc} [layoutNode] - Widgets like tooltips are displayed differently and
-		 * have different dimensions based on their orientation relative to the parent.
-		 * This adjusts the popup based on orientation.
 		 * @returns {module:delite/place.ChosenPosition} Position node was placed at.
 		 * @example
 		 * // Try to position node such that node's top-left corner is at the same position
@@ -27630,7 +27595,7 @@ define('delite/place',[
 		 * // (i.e., put node above aroundNode, with right edges aligned)
 		 * place.around(node, aroundNode, {'BL':'TL', 'TR':'BR'});
 		 */
-		around: function (node, anchor, positions, leftToRight, layoutNode) {
+		around: function (node, anchor, positions, leftToRight) {
 			/* jshint maxcomplexity:12 */
 
 			// If around is a DOMNode (or DOMNode id), convert to coordinates.
@@ -27760,7 +27725,7 @@ define('delite/place',[
 				}
 			});
 
-			var position = _placeAt(node, choices, layoutNode, {w: width, h: height});
+			var position = _placeAt(node, choices);
 			position.aroundNodePos = aroundNodePos;
 
 			return position;
@@ -43763,9 +43728,8 @@ define('xcf/model/Command',[
 });;
 define('xblox/types/Types',[
     'xide/types/Types',
-    'dojo/_base/lang',
     'xide/utils'
-],function(types,lang,utils){
+],function(types,utils){
 
         types.BLOCK_MODE = {
             NORMAL:0,
@@ -63006,7 +62970,7 @@ define('xcf/manager/BeanManager',[
             if (item) {
                 var view = this.getView(item);
                 if (view) {
-                    utils.destroyWidget(view);
+                    utils.destroy(view);
                 }
             }
         },
@@ -64970,13 +64934,14 @@ define('xaction/types',[
         PHP_CONSOLE: 'File/Console/PHP',
         CONSOLE: 'File/Console/PHP',
         SIZE_STATS: 'View/Show/SizeStats',
-        WELCOME: 'Window/Welcome'
+        WELCOME: 'Window/Welcome',
+        CONTEXT_MENU:'File/ContextMenu'
     };
 
     types.ACTION_TYPE = {
         MULTI_TOGGLE: 'multiToggle',
         SINGLE_TOGGLE: 'singleToggle'
-    }
+    };
 
     types.ACTION_ICON =
     {
@@ -67962,14 +67927,13 @@ define('xide/utils/HTMLUtils',[
         }
     };
     /**
-     * Destroys a widget or HTMLElement savly. When an owner
+     * Destroys a widget or HTMLElement safely. When an owner
      * is specified, 'widget' will be nulled in owner
-     * @param widget {Widget|HTMLElement}
+     * @param widget {Widget|HTMLElement|object}
      * @param callDestroy instruct to call 'destroy'
      * @param owner {Object=}
-     * @deprecated use utils.destroy
      */
-    utils.destroyWidget = function (widget, callDestroy, owner) {
+    utils.destroy = function (widget, callDestroy, owner) {
         if (widget) {
             if (_.isArray(widget)) {
                 for (var i = 0; i < widget.length; i++) {
@@ -67987,17 +67951,6 @@ define('xide/utils/HTMLUtils',[
                 utils._destroyWidget(widget, callDestroy, owner);
             }
         }
-    };
-
-    /**
-     *
-     * @param widget
-     * @param calldestroy
-     * @param owner
-     * @returns {*}
-     */
-    utils.destroy = function (widget, calldestroy, owner) {
-        return utils.destroyWidget(widget, calldestroy, owner);
     };
 
     /**
@@ -68035,6 +67988,7 @@ define('xide/utils/HTMLUtils',[
      * @param height
      * @param width
      * @param force
+     * @param offset
      */
     utils.resizeTo = function (source, target, height, width, force, offset) {
         target = utils.getNode(target);
@@ -68049,10 +68003,6 @@ define('xide/utils/HTMLUtils',[
         if (width === true) {
             var targetWidth = $(target).width();
             $(source).css('width', targetWidth + 'px' + (force === true ? '!important' : ''));
-            if (width == 100) {
-                console.log('- resize to 100' + targetWidth);
-            }
-
         }
     };
 
@@ -70228,8 +70178,9 @@ define('xide/manager/ContextBase',[
     'xide/types',
     'xide/utils',
     'xide/mixins/EventedMixin',
-    'dojo/_base/kernel'
-], function (dcl,factory, types,utils,EventedMixin,dojo) {
+    'dojo/_base/kernel',
+    'dojo/_base/lang'
+], function (dcl,factory, types,utils,EventedMixin,dojo,lang) {
     var _debug = false;
     /**
      * @class module:xide/manager/ContextBase
@@ -70239,6 +70190,9 @@ define('xide/manager/ContextBase',[
         language: "en",
         managers: [],
         mixins: null,
+        getModule:function(_module){
+            return lang.getObject(utils.replaceAll('/', '.', _module)) || lang.getObject(_module) || (dcl.getObject ? dcl.getObject(_module) || dcl.getObject(utils.replaceAll('/', '.', _module)) : null);
+        },
         /***
          * createManager creates and instances and tracks it in a local array.
          * @param clz : class name or prototype
@@ -70247,7 +70201,6 @@ define('xide/manager/ContextBase',[
          * @returns {module:xide/manager/ManagerBase} : instance of the manager
          */
         createManager: function (clz, config, ctrArgs) {
-
             try {
                 if (!this.managers) {
                     this.managers = [];
@@ -70258,8 +70211,6 @@ define('xide/manager/ContextBase',[
                     config: config || this.config
                 };
                 utils.mixin(ctrArgsFinal, ctrArgs);
-
-
                 if (_.isString(clz) && this.namespace) {
                     var _clz = null;
                     if (clz.indexOf('.') == -1) {
@@ -70308,7 +70259,6 @@ define('xide/manager/ContextBase',[
          * @param mixins
          */
         doMixins: function (mixins) {
-
             this.mixins = mixins || this.mixins;
             for (var i = 0; i < mixins.length; i++) {
                 var mixin = mixins[i];
@@ -73456,7 +73406,8 @@ define('xfile/types',[
             ACTION.CONSOLE,
             ACTION.HEADER,
             'File/Compress',
-            'File/New'
+            'File/New',
+            ACTION.CONTEXT_MENU
         ];
 
         types.DEFAULT_FILE_GRID_PERMISSIONS = DEFAULT_PERMISSIONS;
@@ -73767,7 +73718,6 @@ define('xide/manager/Context',[
     'require',
     "dojo/promise/all",
     'xdojo/has!host-browser?xide/manager/Context_UI'
-
 ], function (dcl, lang, json, Deferred, has, ContextBase, factory,
              types, utils, _require, all, Context_UI) {
 
@@ -73983,9 +73933,6 @@ define('xide/manager/Context',[
                 });
             });
             return head;
-        },
-        getModule:function(_module){
-            return lang.getObject(utils.replaceAll('/', '.', _module)) || lang.getObject(_module) || (dcl.getObject ? dcl.getObject(_module) || dcl.getObject(utils.replaceAll('/', '.', _module)) : null);
         },
         _reloadModule: function (_module, reload) {
             var _errorHandle = null;
@@ -75029,7 +74976,6 @@ define('xaction/DefaultActions',[
      * @returns {*}
      */
     var createAction = function(label,command,icon,keycombo,tab,group,filterGroup,onCreate,handler,mixin,shouldShow,shouldDisable,container){
-
         if(keycombo) {
             if (_.isString(keycombo)) {
                 keycombo = [keycombo];
@@ -75075,12 +75021,9 @@ define('xaction/DefaultActions',[
      * @private
      */
     function _afterAction(dfdResult,event,action) {
-
         var who = this;
-
         // call onAfterAction with this results
         var onAfterActionDfd = null;
-
         who.onAfterAction && (onAfterActionDfd = who.onAfterAction(action, dfdResult, event));
 
         who._emit && who._emit('onAfterAction', {
@@ -75096,7 +75039,7 @@ define('xaction/DefaultActions',[
      * - call afterAction
      *
      * As last cal
-     * @param action {module xide}
+     * @param action {module:xaction/ActionModel}
      * @param event
      */
     function defaultHandler(action,event){
@@ -75104,18 +75047,15 @@ define('xaction/DefaultActions',[
             who = this;
 
         who && who.onBeforeAction && who.onBeforeAction(action);
-
         if(who.runAction){
             actionDfd = who.runAction.apply(who,[action,null,event]);
         }else if(action.handler){
             actionDfd = action.handler.apply(who,[action,null,event]);
         }
-
         if(actionDfd && actionDfd.then){
-            //actionDfd.then(_afterAction.bind(who));
             actionDfd.then(function(actionResult){
                 _afterAction.apply(who,[actionResult,event,action]);
-            })
+            });
 
         }else{
             _afterAction.apply(who,[actionDfd,event,action]);
@@ -75209,15 +75149,45 @@ define('xaction/DefaultActions',[
                 }
             }
         }
-
-
         if(hasAction(permissions, ACTION.CLIPBOARD) && grid.getClipboardActions){
-            addAction('Clipboard','Edit/Clipboard','fa-clipboard',null,'Home','New','item|view',null,null,{
-                addPermission:true,
-                dynamic:true
-            },null,null);
+            result.push(creator.createAction({
+                label: 'Clipboard',
+                command: 'Edit/Clipboard',
+                icon: 'fa-clipboard',
+                tab: 'Edit',
+                group: 'Clipboard',
+                mixin:{
+                    addPermission:true,
+                    dynamic:true
+                },
+                onCreate:function(action){
+                    action.setVisibility(VISIBILITY.RIBBON,{
+                        expand:true,
+                        tab:"File"
+                    });
+                }
+            }));
+
             result = result.concat(grid.getClipboardActions(addAction));
         }
+
+        result.push(creator.createAction({
+            label: 'Show',
+            command: 'View/Show',
+            icon: 'fa-eye',
+            tab: 'View',
+            group: 'Show',
+            mixin:{
+                addPermission:true,
+                dynamic:true
+            },
+            onCreate:function(action){
+                action.setVisibility(VISIBILITY.RIBBON,{
+                    expand:true
+                });
+            }
+        }));
+
 
         if(hasAction(permissions,ACTION.LAYOUT) && grid.getRendererActions){
             result = result.concat(grid.getRendererActions());
@@ -75226,13 +75196,11 @@ define('xaction/DefaultActions',[
         if(hasAction(permissions,ACTION.COLUMNS) && grid.getColumnHiderActions){
             result = result.concat(grid.getColumnHiderActions(permissions));
         }
-        var shouldShowDefault = function(action){};
         ///////////////////////////////////////
         //
         //  Open/Edit
         //
         //
-        //addAction('Edit', 'File/Edit', ACTION_ICON.EDIT, ['f4', 'enter','dblclick'], 'Home', 'Open', 'item', null, null, null, null, shouldDisableDefaultFileOnly);
         result.push(creator.createAction({
             label: 'Edit',
             command: 'File/Edit',
@@ -75251,8 +75219,6 @@ define('xaction/DefaultActions',[
         //
         //  Organize
         //
-        //addAction('Delete','File/Delete',ACTION_ICON.DELETE,['f8','delete'],'Home','Organize','item',null,null,null,null,shouldDisableDefaultEmptySelection);
-
         result.push(creator.createAction({
             label: 'Delete',
             command: 'File/Delete',
@@ -75287,7 +75253,7 @@ define('xaction/DefaultActions',[
         //
         addAction('Extract','File/Extract',ACTION_ICON.EXTRACT,['ctrl e'],'Home','File','item|view',null,null,null,null,function(){
             return true;
-            return shouldDisableDefaultFileOnly.apply(this,arguments);
+            //return shouldDisableDefaultFileOnly.apply(this,arguments);
         });
 
         result.push(creator.createAction({
@@ -75351,7 +75317,12 @@ define('xaction/DefaultActions',[
         //  Selection
         //
         if(hasAction(permissions,ACTION.SELECTION)) {
-            result.push(createAction('Select', 'File/Select', 'fa-hand-o-up', null, 'Home', 'Select', 'item|view', null, null, null, null, null,grid.domNode));
+            result.push(createAction('Select', 'File/Select', 'fa-hand-o-up', null, 'Home', 'Select', 'item|view', function(action){
+                action.setVisibility(VISIBILITY.RIBBON,{
+                    expand:true
+                });
+            }, null, null, null, null,grid.domNode));
+
             var _mixin = {
                     owner:owner || grid
                 },
@@ -77058,7 +77029,7 @@ define('xaction/ActionModel',[
 ], function (declare, Action, Model, Source, Path, utils) {
     var debug = false;
     /**
-     * @mixin module:xaction/ActionModel
+     * @class module:xaction.ActionModel
      * @extends module:xide/data/Source
      * @extends module:xaction/Action
      * @extends module:xide/mixins/EventedMixin
@@ -77916,18 +77887,13 @@ define('xide/manager/WindowManager',[
     function clear(what,where,_active){
         where.setActionEmitter(what);
     }
-
-
     var zIndexStart = 1;
-
     var Module = dcl(ManagerBase,{
         declaredClass:'xide.manager.WindowManager',
         actionReceivers:null,
         getActions:function(){
-
             var result = [];
             var thiz = this;
-
             function findFrame(docker){
                 var result = null;
                 var panels = docker.getPanels();
@@ -77946,8 +77912,7 @@ define('xide/manager/WindowManager',[
                 }
                 return result;
             }
-
-            result.push(this.ctx.createAction('Next','View/Next','fa-cube',['alt num_add'],'Home','File',"global",
+            result.push(this.ctx.createAction('Next','View/Next','fa-cube',['alt num_add'],'Home','View',"global",
                 //onCreate
                 function(action){
                 },
@@ -77994,7 +77959,7 @@ define('xide/manager/WindowManager',[
                 "global"
             */
 
-            result.push(this.ctx.createAction('Prev','View/Prev','fa-cube',['alt num_subtract'],'Home','File',"global",
+            result.push(this.ctx.createAction('Prev','View/Prev','fa-cube',['alt num_subtract'],'Home','View',"global",
                 //onCreate
                 function(action){
                 },
@@ -78040,26 +78005,20 @@ define('xide/manager/WindowManager',[
                 this.actionReceivers.push(receiver);
                 receiver._on('destroy',function(){
                     this.actionReceivers.remove(receiver);
-                },this)
+                },this);
             }
         },
         registerView:function(view,active){
-            var thiz = this,
-                toolbar = this.getToolbar(),
-                menu = this.getMainMenu(),
-                breadcrumb = this.getBreadcrumb();
-
+            var toolbar = this.getToolbar(),
+                menu = this.getMainMenu();
             this.publish(types.EVENTS.ON_OPEN_VIEW,{
                 view:view,
                 menu:menu,
                 toolbar:toolbar,
                 src:this
             });
-            //setTimeout(function(){
-                toolbar && register(view,toolbar,active);
-                menu && register(view,menu,active);
-           // },0);
-
+            toolbar && register(view,toolbar,active);
+            menu && register(view,menu,active);
             var receivers = this.actionReceivers;
             _.each(receivers,function(widget){
                 widget && register(view,widget,active);
@@ -78067,8 +78026,7 @@ define('xide/manager/WindowManager',[
             return true;
         },
         clearView:function(view,active){
-            var thiz = this,
-                toolbar = this.getToolbar(),
+            var toolbar = this.getToolbar(),
                 menu = this.getMainMenu(),
                 breadcrumb = this.getBreadcrumb();
             toolbar && clear(view,toolbar,active);
@@ -78236,7 +78194,7 @@ define('xide/manager/WindowManager',[
     Module.nextZ = function(){
         zIndexStart++;
         return zIndexStart;
-    }
+    };
 
     return Module;
 });;
