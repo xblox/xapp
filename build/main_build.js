@@ -75158,7 +75158,8 @@ define('xaction/DefaultActions',[
                 group: 'Clipboard',
                 mixin:{
                     addPermission:true,
-                    dynamic:true
+                    dynamic:true,
+                    quick:true
                 },
                 onCreate:function(action){
                     action.setVisibility(VISIBILITY.RIBBON,{
