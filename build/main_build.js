@@ -74511,8 +74511,9 @@ define('xaction/ActionProvider',[
     'xaction/Action',
     'xide/Keyboard',
     'xide/mixins/EventedMixin',
-    'xaction/DefaultActions'
-], function (declare, dcl, types, utils, Path, ActionStore, Action, Keyboard, EventedMixin, DefaultActions) {
+    'xaction/DefaultActions',
+    'xide/lodash'
+], function (declare, dcl, types, utils, Path, ActionStore, Action, Keyboard, EventedMixin, DefaultActions,_) {
 
     var Implementation = {
         /**
@@ -74606,7 +74607,7 @@ define('xaction/ActionProvider',[
             return action;
         },
         updateAction: function (action, what, value) {
-            action = action || this.getAction(command);
+            action = action || this.getAction(action);
             if (action) {
                 action.set(what, value);
                 setTimeout(function () {
@@ -74677,6 +74678,7 @@ define('xaction/ActionProvider',[
         /**
          * Get all actions via query from Action store
          * @param mixed
+         * @param allowCache
          * @returns {*}
          */
         getActions: function (mixed, allowCache) {
@@ -74688,9 +74690,8 @@ define('xaction/ActionProvider',[
             if (!mixed) {
                 query = {
                     command: /\S+/
-                }
+                };
             }
-
             this.__actions = this.getActionStore().query(query);
             return this.__actions;
 
@@ -74796,8 +74797,7 @@ define('xaction/ActionProvider',[
                 handler = options.handler,
                 container = options.container || thiz.domNode,
                 shouldShow = options.shouldShow,
-                shouldDisable = options.shouldDisable,
-                actionType = options.actionType;
+                shouldDisable = options.shouldDisable;
 
             utils.mixin(mixin, {
                 owner: owner,
@@ -74855,7 +74855,7 @@ define('xaction/ActionProvider',[
                 if (!handler) {
                     handler = function (action) {
                         this.runAction && this.runAction.apply(this, [action]);
-                    }
+                    };
                 }
                 keycombo && _.isString(keycombo) && (keycombo = [keycombo]);
 
@@ -74868,8 +74868,7 @@ define('xaction/ActionProvider',[
             }
         },
         addAction: function (where, action) {
-            var actions = where || [],
-                thiz = this;
+            var actions = where || [];
             var eventCallbackResult = this._emit('addAction', action);
             if (eventCallbackResult === false) {
                 return false;
@@ -74887,7 +74886,6 @@ define('xaction/ActionProvider',[
          */
         _addAction: function (where, action) {
             var actions = where || [],
-                thiz = this,
                 eventCallbackResult = this._emit('addAction', action);
 
             if (eventCallbackResult === false) {
@@ -76022,10 +76020,9 @@ define('xide/Keyboard',[
     'xdojo/declare',
     'dcl/dcl',
     'dojo/_base/lang',
-    "dojo/has",
     'xide/types',
     'xide/utils/ObjectUtils'    //possibly not loaded yet
-], function (declare, dcl, lang, has, types, utils) {
+], function (declare, dcl, lang, types, utils) {
 
     /**
      * First things first, mixin KEYBOARD_FLAGS into core types.
@@ -76324,9 +76321,9 @@ define('xide/Keyboard',[
     var addListenerControls = function (mapping, listeners) {
         mapping.stop = function () {
             return;
-            if(listeners && listeners.length) {
-                _.invoke(listeners, 'stop_listening');
-            }
+            //if(listeners && listeners.length) {
+            //    _.invoke(listeners, 'stop_listening');
+            //}
         };
         mapping.listen = function () {
             _.invoke(listeners, 'listen');
@@ -76371,7 +76368,7 @@ define('xide/Keyboard',[
                 is_exclusive: false,
                 is_solitary: false,
                 is_sequence: true
-            }
+            };
         },
         /**
          * Private listener creation method, accepts multiple key sequences for the same handler.
@@ -76397,7 +76394,9 @@ define('xide/Keyboard',[
          * function an structure per keyboard event. Usually its enough to leave this empty. You can also pass this
          * in the params
 
-         * @param target {HTMLElement|null} the element on the listerner is bound to. Null means global!
+         * @param target {HTMLElement|null} the element on the listener is bound to. Null means global!
+         *
+         * @param eventArgs {array|null} Event arguments passed to the handler. Defaults to keyboard event.
          *
          * @public
          */
@@ -76416,28 +76415,20 @@ define('xide/Keyboard',[
             //normalize to array
             keys = !_.isArray(keys) ? [keys] : keys;
 
-            var _keypress = window['keypress'];
-
             var _listeners = [],
                 ignore = ['ctrl s', 'ctrl l', 'ctrl r', 'ctrl w', 'ctrl f4', 'shift f4', 'alt tab', 'ctrl tab'];
 
             _.each(keys, function (key_seq) {
-
-                var listener = null,
-                    targetId = target && target.id ? target.id : 'global',
+                var targetId = target && target.id ? target.id : 'global',
                     wasCached = target ? !!byNode[targetId] : false,
                     registered = false;
 
-                listener = byNode[targetId];
+                var listener = byNode[targetId];
                 if(listener && listener["_seq"+key_seq]){
                     registered = true;
                 }
 
                 if(!registered) {
-                    if (target && target.tabIndex <= 0) {
-                        //target.tabIndex = 1;
-                    }
-
                     if (!listener) {
                         listener = new keypressProto(target, _defaults);
                         listener.targetId = targetId;
@@ -76449,25 +76440,15 @@ define('xide/Keyboard',[
                             return;
                         }
                         e._did = true;
-
-                        /*
-                         if ((e.metaKey || e.altKey) && (key_seq !== 'alt enter')) {
-                         //return;
-                         }
-                         */
-
                         var className = e.target.className.toLowerCase();
                         //skip input fields
                         if (e.target.tagName!=='BUTTON' && className.indexOf('input') == -1 || className.indexOf('ace_text-input') != -1) {
-
                             if (handler && handler.apply) {
-                                handler.apply(_defaults['this'], eventArgs || e);
+                                handler.apply(_defaults['this'], eventArgs || [e]);
                                 if (ignore.indexOf(key_seq) !== -1) {
                                     e.preventDefault();
                                     e.stopPropagation();
                                 }
-                            } else {
-                                console.warn('keyboard: have no handler!');
                             }
                         }
                     });
