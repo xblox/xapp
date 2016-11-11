@@ -5781,6 +5781,25 @@ define('xide/mixins/EventedMixin',[
             self._on(type, wrapped);
             return this;
         },
+        /*
+        __emit:function(target,type,event){
+            event = event || {};
+            if (typeof target.emit === 'function' && !target.nodeType) {
+                return target.emit(type, event);
+            }
+            if (target.dispatchEvent && target.ownerDocument && target.ownerDocument.createEvent) {
+                var nativeEvent = target.ownerDocument.createEvent('HTMLEvents');
+                nativeEvent.initEvent(type, Boolean(event.bubbles), Boolean(event.cancelable));
+                for (var key in event) {
+                    if (!(key in nativeEvent)) {
+                        nativeEvent[key] = event[key];
+                    }
+                }
+                return target.dispatchEvent(nativeEvent);
+            }
+            throw new Error('Target must be an event emitter');
+        },
+        */
         /**
          * Execute each of the listeners in order with the supplied arguments.
          *
