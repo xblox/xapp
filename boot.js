@@ -1,5 +1,6 @@
 define([
     "dcl/dcl",
+
     "dojo/_base/Deferred",
     "dojo/has",
     "require"
