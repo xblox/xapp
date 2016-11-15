@@ -33143,7 +33143,7 @@ define('xide/model/Base',[
         getID: function () {
             return null;
         }
-    }
+    };
 
     var Module = declare("xide/model/Base",null,Implementation);
     Module.dcl = dcl(null,Implementation);
@@ -49113,6 +49113,14 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 this.onHaveNoDeviceServer();
             }
         },
+        handle:function(msg){
+            var userDirectory = this.ctx.getUserDirectory();
+            var data = msg.data;
+            if(userDirectory && data && data.device && data.device.userDirectory && data.device.userDirectory!==userDirectory){
+                return false;
+            }
+            return true;
+        },
         createDeviceServerClient: function (store) {
             var thiz = this;
             var dfd = new Deferred();
@@ -49150,6 +49158,10 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                             debug && !msg && console.error('invalid incoming message', data);
 
                             msg = msg || {};
+
+                            if(!thiz.handle(msg)){
+                                return;
+                            }
 
 
                             if (msg && msg.data && msg.data.deviceMessage && msg.data.deviceMessage.event === types.EVENTS.ON_COMMAND_FINISH) {
@@ -66598,15 +66610,14 @@ define('xide/serverDebug',[
 });;
 /** @module xide/model/Component **/
 define('xide/model/Component',[
-    "dojo/_base/declare",
+    "dcl/dcl",
     "dojo/Deferred",
     "dojo/has",
     "require",
     "xide/model/Base",
     "xide/types",
-    "xide/mixins/EventedMixin",
-    "xide/mixins/ReloadMixin"
-], function (declare, Deferred, has, require, Base, types, EventedMixin, ReloadMixin) {
+    "xide/mixins/EventedMixin"
+], function (dcl, Deferred, has, require, Base, types, EventedMixin) {
     /**
      * COMPONENT_FLAGS is a number of flags being used for the component's instance creation. Use an object instead of
      * an integer, never know how big this becomes and messing with 64bit integers doesn't worth the effort.
@@ -66629,15 +66640,12 @@ define('xide/model/Component',[
     };
 
     /**
-     *
-     *
      * @class xide/model/Component
-     *
-     * @augments xide/mixins/EventedMixin
-     * @augments xide/mixins/ReloadMixin
-     * @extends xide/model/Base
+     * @extends module:xide/mixins/EventedMixin
+     * @extends module:xide/model/Base
      */
-    return declare("xide/model/Component", [Base, EventedMixin, ReloadMixin], {
+    return dcl([Base.dcl, EventedMixin.dcl], {
+        declaredClass:"xide/model/Component",
         /**
          * Flag indicating that all dependencies are fully loaded
          * @type {boolean}
@@ -66706,7 +66714,7 @@ define('xide/model/Component',[
                 thiz._loaded = true;
                 if (hasName) {
                     has.add(hasName, function () {
-                        return true
+                        return true;
                     });
                 }
                 _defered.resolve();
@@ -71133,15 +71141,15 @@ define('xblox/embedded',[
     }
 });;
 define('xblox/component',[
-    "dojo/_base/declare",
+    "dcl/dcl",
     "xdojo/has",
     "xide/model/Component"
-], function (declare,has,Component) {
+], function (dcl,has,Component) {
     /**
      * @class xblox.component
      * @inheritDoc
      */
-    return declare([Component], {
+    return dcl(Component, {
         /**
          * @inheritDoc
          */
