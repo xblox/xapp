@@ -33194,9 +33194,230 @@ define('xide/utils/_LogMixin',[
 define('xide/data/Memory',[
     "dojo/_base/declare",
 	'dstore/Memory',
-    'xide/data/_Base'
-], function (declare, Memory,_Base) {
-    return declare('xide.data.Memory',[Memory, _Base], {});
+    'xide/data/_Base',
+    'dojo/when',
+    'dojo/Deferred',
+    'xide/lodash'
+], function (declare, Memory,_Base,when,Deferred,lodash) {
+    return declare('xide.data.Memory',[Memory, _Base], {
+        _find:function (query) {
+            var result = lodash.find(this.data,query);
+            if(lodash.isArray(result)){
+                return result;
+            }else if(lodash.isObject(result)){
+                return [result];
+            }
+            return [];
+        },
+        _query:function(query){
+            var dfd = new Deferred();
+            var collection = this.filter(query);
+            when(collection.fetch(), function (data) {
+                dfd.resolve(data);
+            });
+            return dfd;
+        }
+    });
+});
+;
+/** @module xide/lodash **/
+define('xide/lodash',[],function(){
+    /**
+     * temp. wanna be shim for lodash til dojo-2/loader lands here
+     */
+    if(typeof _ !=="undefined"){
+        return _;
+    }
+});
+;
+define('dojo/when',[
+	"./Deferred",
+	"./promise/Promise"
+], function(Deferred, Promise){
+	"use strict";
+
+	// module:
+	//		dojo/when
+
+	return function when(valueOrPromise, callback, errback, progback){
+		// summary:
+		//		Transparently applies callbacks to values and/or promises.
+		// description:
+		//		Accepts promises but also transparently handles non-promises. If no
+		//		callbacks are provided returns a promise, regardless of the initial
+		//		value. Foreign promises are converted.
+		//
+		//		If callbacks are provided and the initial value is not a promise,
+		//		the callback is executed immediately with no error handling. Returns
+		//		a promise if the initial value is a promise, or the result of the
+		//		callback otherwise.
+		// valueOrPromise:
+		//		Either a regular value or an object with a `then()` method that
+		//		follows the Promises/A specification.
+		// callback: Function?
+		//		Callback to be invoked when the promise is resolved, or a non-promise
+		//		is received.
+		// errback: Function?
+		//		Callback to be invoked when the promise is rejected.
+		// progback: Function?
+		//		Callback to be invoked when the promise emits a progress update.
+		// returns: dojo/promise/Promise
+		//		Promise, or if a callback is provided, the result of the callback.
+
+		var receivedPromise = valueOrPromise && typeof valueOrPromise.then === "function";
+		var nativePromise = receivedPromise && valueOrPromise instanceof Promise;
+
+		if(!receivedPromise){
+			if(arguments.length > 1){
+				return callback ? callback(valueOrPromise) : valueOrPromise;
+			}else{
+				return new Deferred().resolve(valueOrPromise);
+			}
+		}else if(!nativePromise){
+			var deferred = new Deferred(valueOrPromise.cancel);
+			valueOrPromise.then(deferred.resolve, deferred.reject, deferred.progress);
+			valueOrPromise = deferred.promise;
+		}
+
+		if(callback || errback || progback){
+			return valueOrPromise.then(callback, errback, progback);
+		}
+		return valueOrPromise;
+	};
+});
+;
+define('dojo/promise/Promise',[
+	"../_base/lang"
+], function(lang){
+	"use strict";
+
+	// module:
+	//		dojo/promise/Promise
+
+	function throwAbstract(){
+		throw new TypeError("abstract");
+	}
+
+	return lang.extend(function Promise(){
+		// summary:
+		//		The public interface to a deferred.
+		// description:
+		//		The public interface to a deferred. All promises in Dojo are
+		//		instances of this class.
+	}, {
+		then: function(callback, errback, progback){
+			// summary:
+			//		Add new callbacks to the promise.
+			// description:
+			//		Add new callbacks to the deferred. Callbacks can be added
+			//		before or after the deferred is fulfilled.
+			// callback: Function?
+			//		Callback to be invoked when the promise is resolved.
+			//		Receives the resolution value.
+			// errback: Function?
+			//		Callback to be invoked when the promise is rejected.
+			//		Receives the rejection error.
+			// progback: Function?
+			//		Callback to be invoked when the promise emits a progress
+			//		update. Receives the progress update.
+			// returns: dojo/promise/Promise
+			//		Returns a new promise for the result of the callback(s).
+			//		This can be used for chaining many asynchronous operations.
+
+			throwAbstract();
+		},
+
+		cancel: function(reason, strict){
+			// summary:
+			//		Inform the deferred it may cancel its asynchronous operation.
+			// description:
+			//		Inform the deferred it may cancel its asynchronous operation.
+			//		The deferred's (optional) canceler is invoked and the
+			//		deferred will be left in a rejected state. Can affect other
+			//		promises that originate with the same deferred.
+			// reason: any
+			//		A message that may be sent to the deferred's canceler,
+			//		explaining why it's being canceled.
+			// strict: Boolean?
+			//		If strict, will throw an error if the deferred has already
+			//		been fulfilled and consequently cannot be canceled.
+			// returns: any
+			//		Returns the rejection reason if the deferred was canceled
+			//		normally.
+
+			throwAbstract();
+		},
+
+		isResolved: function(){
+			// summary:
+			//		Checks whether the promise has been resolved.
+			// returns: Boolean
+
+			throwAbstract();
+		},
+
+		isRejected: function(){
+			// summary:
+			//		Checks whether the promise has been rejected.
+			// returns: Boolean
+
+			throwAbstract();
+		},
+
+		isFulfilled: function(){
+			// summary:
+			//		Checks whether the promise has been resolved or rejected.
+			// returns: Boolean
+
+			throwAbstract();
+		},
+
+		isCanceled: function(){
+			// summary:
+			//		Checks whether the promise has been canceled.
+			// returns: Boolean
+
+			throwAbstract();
+		},
+
+		always: function(callbackOrErrback){
+			// summary:
+			//		Add a callback to be invoked when the promise is resolved
+			//		or rejected.
+			// callbackOrErrback: Function?
+			//		A function that is used both as a callback and errback.
+			// returns: dojo/promise/Promise
+			//		Returns a new promise for the result of the callback/errback.
+
+			return this.then(callbackOrErrback, callbackOrErrback);
+		},
+
+		otherwise: function(errback){
+			// summary:
+			//		Add new errbacks to the promise.
+			// errback: Function?
+			//		Callback to be invoked when the promise is rejected.
+			// returns: dojo/promise/Promise
+			//		Returns a new promise for the result of the errback.
+
+			return this.then(null, errback);
+		},
+
+		trace: function(){
+			return this;
+		},
+
+		traceRejected: function(){
+			return this;
+		},
+
+		toString: function(){
+			// returns: string
+			//		Returns `[object Promise]`.
+
+			return "[object Promise]";
+		}
+	});
 });
 ;
 define('xide/data/_Base',[
@@ -33262,6 +33483,8 @@ define('xide/data/_Base',[
         },
         destroy:function(){
             this._emit('destroy',this);
+            delete this._queryCache;
+            this._queryCache=null;
         },
         notify: function () {
         },
@@ -33278,7 +33501,7 @@ define('xide/data/_Base',[
                 if(this._queryCache[hash]){
                     return this._queryCache[hash];
                 }
-            };
+            }
             /*
             if(!query && !options && allowCache!==false && this.allowCache){
                 return this.data;
@@ -33372,7 +33595,7 @@ define('xide/data/_Base',[
             };
             if(!has('xcf-ui') && hash && !has('host-node') && allowCache!==false){
                 this._queryCache[hash]=queryResults;
-            };
+            }
             return queryResults;
         }
     });
@@ -33693,196 +33916,6 @@ define('dstore/QueryResults',['dojo/_base/lang', 'dojo/when'], function (lang, w
 
 		return data;
 	};
-});
-;
-define('dojo/when',[
-	"./Deferred",
-	"./promise/Promise"
-], function(Deferred, Promise){
-	"use strict";
-
-	// module:
-	//		dojo/when
-
-	return function when(valueOrPromise, callback, errback, progback){
-		// summary:
-		//		Transparently applies callbacks to values and/or promises.
-		// description:
-		//		Accepts promises but also transparently handles non-promises. If no
-		//		callbacks are provided returns a promise, regardless of the initial
-		//		value. Foreign promises are converted.
-		//
-		//		If callbacks are provided and the initial value is not a promise,
-		//		the callback is executed immediately with no error handling. Returns
-		//		a promise if the initial value is a promise, or the result of the
-		//		callback otherwise.
-		// valueOrPromise:
-		//		Either a regular value or an object with a `then()` method that
-		//		follows the Promises/A specification.
-		// callback: Function?
-		//		Callback to be invoked when the promise is resolved, or a non-promise
-		//		is received.
-		// errback: Function?
-		//		Callback to be invoked when the promise is rejected.
-		// progback: Function?
-		//		Callback to be invoked when the promise emits a progress update.
-		// returns: dojo/promise/Promise
-		//		Promise, or if a callback is provided, the result of the callback.
-
-		var receivedPromise = valueOrPromise && typeof valueOrPromise.then === "function";
-		var nativePromise = receivedPromise && valueOrPromise instanceof Promise;
-
-		if(!receivedPromise){
-			if(arguments.length > 1){
-				return callback ? callback(valueOrPromise) : valueOrPromise;
-			}else{
-				return new Deferred().resolve(valueOrPromise);
-			}
-		}else if(!nativePromise){
-			var deferred = new Deferred(valueOrPromise.cancel);
-			valueOrPromise.then(deferred.resolve, deferred.reject, deferred.progress);
-			valueOrPromise = deferred.promise;
-		}
-
-		if(callback || errback || progback){
-			return valueOrPromise.then(callback, errback, progback);
-		}
-		return valueOrPromise;
-	};
-});
-;
-define('dojo/promise/Promise',[
-	"../_base/lang"
-], function(lang){
-	"use strict";
-
-	// module:
-	//		dojo/promise/Promise
-
-	function throwAbstract(){
-		throw new TypeError("abstract");
-	}
-
-	return lang.extend(function Promise(){
-		// summary:
-		//		The public interface to a deferred.
-		// description:
-		//		The public interface to a deferred. All promises in Dojo are
-		//		instances of this class.
-	}, {
-		then: function(callback, errback, progback){
-			// summary:
-			//		Add new callbacks to the promise.
-			// description:
-			//		Add new callbacks to the deferred. Callbacks can be added
-			//		before or after the deferred is fulfilled.
-			// callback: Function?
-			//		Callback to be invoked when the promise is resolved.
-			//		Receives the resolution value.
-			// errback: Function?
-			//		Callback to be invoked when the promise is rejected.
-			//		Receives the rejection error.
-			// progback: Function?
-			//		Callback to be invoked when the promise emits a progress
-			//		update. Receives the progress update.
-			// returns: dojo/promise/Promise
-			//		Returns a new promise for the result of the callback(s).
-			//		This can be used for chaining many asynchronous operations.
-
-			throwAbstract();
-		},
-
-		cancel: function(reason, strict){
-			// summary:
-			//		Inform the deferred it may cancel its asynchronous operation.
-			// description:
-			//		Inform the deferred it may cancel its asynchronous operation.
-			//		The deferred's (optional) canceler is invoked and the
-			//		deferred will be left in a rejected state. Can affect other
-			//		promises that originate with the same deferred.
-			// reason: any
-			//		A message that may be sent to the deferred's canceler,
-			//		explaining why it's being canceled.
-			// strict: Boolean?
-			//		If strict, will throw an error if the deferred has already
-			//		been fulfilled and consequently cannot be canceled.
-			// returns: any
-			//		Returns the rejection reason if the deferred was canceled
-			//		normally.
-
-			throwAbstract();
-		},
-
-		isResolved: function(){
-			// summary:
-			//		Checks whether the promise has been resolved.
-			// returns: Boolean
-
-			throwAbstract();
-		},
-
-		isRejected: function(){
-			// summary:
-			//		Checks whether the promise has been rejected.
-			// returns: Boolean
-
-			throwAbstract();
-		},
-
-		isFulfilled: function(){
-			// summary:
-			//		Checks whether the promise has been resolved or rejected.
-			// returns: Boolean
-
-			throwAbstract();
-		},
-
-		isCanceled: function(){
-			// summary:
-			//		Checks whether the promise has been canceled.
-			// returns: Boolean
-
-			throwAbstract();
-		},
-
-		always: function(callbackOrErrback){
-			// summary:
-			//		Add a callback to be invoked when the promise is resolved
-			//		or rejected.
-			// callbackOrErrback: Function?
-			//		A function that is used both as a callback and errback.
-			// returns: dojo/promise/Promise
-			//		Returns a new promise for the result of the callback/errback.
-
-			return this.then(callbackOrErrback, callbackOrErrback);
-		},
-
-		otherwise: function(errback){
-			// summary:
-			//		Add new errbacks to the promise.
-			// errback: Function?
-			//		Callback to be invoked when the promise is rejected.
-			// returns: dojo/promise/Promise
-			//		Returns a new promise for the result of the errback.
-
-			return this.then(null, errback);
-		},
-
-		trace: function(){
-			return this;
-		},
-
-		traceRejected: function(){
-			return this;
-		},
-
-		toString: function(){
-			// returns: string
-			//		Returns `[object Promise]`.
-
-			return "[object Promise]";
-		}
-	});
 });
 ;
 define('dstore/Tree',[
@@ -42033,16 +42066,6 @@ define('xcf/manager/BlockManager',[
     });
 });
 ;
-/** @module xide/lodash **/
-define('xide/lodash',[],function(){
-    /**
-     * temp. wanna be shim for lodash til dojo-2/loader lands here
-     */
-    if(typeof _ !=="undefined"){
-        return _;
-    }
-});
-;
 define('xblox/manager/BlockManager',[
     'dcl/dcl',
     'dojo/has',
@@ -43363,57 +43386,61 @@ define('xide/data/Model',[
 /** @module xblox/model/Scope **/
 define('xblox/model/Scope',[
     'dcl/dcl',
-    "./ModelBase",
-    "./Expression",
-    "xide/factory",
-    "xide/utils",
-    "xide/types",
-    "xide/mixins/EventedMixin",
+    './ModelBase',
+    './Expression',
+    'xide/factory',
+    'xide/utils',
+    'xide/types',
+    'xide/mixins/EventedMixin',
     'dojo/_base/lang',
     'dojo/has',
     'xide/encoding/MD5',
-    "xcf/model/Variable"
-], function(dcl,ModelBase,Expression,factory,utils,types,EventedMixin,lang,has,MD5,Variable,tracer,_console){
-
-    /*
-    var console = typeof window !== 'undefined' ? window.console : console;
-    if(tracer && tracer.error && console && console.error){
-        console = _console;
+    'xcf/model/Variable',
+    'xdojo/has!host-node?nxapp/utils/_console'
+], function (dcl, ModelBase, Expression, factory, utils, types, EventedMixin, lang, has, MD5, Variable, _console) {
+    var console = typeof window !== 'undefined' ? window.console : typeof global !== 'undefined' ? global.console : _console
+    if (_console) {
+        console = _console
     }
-    */
+    /*
+     var console = typeof window !== 'undefined' ? window.console : console;
+     if(tracer && tracer.error && console && console.error){
+     console = _console;
+     }
+     */
 
-    function mergeNewModule(block,source) {
+    function mergeNewModule(block, source) {
         for (var i in source) {
-            var o = source[i];
-            if (o && _.isFunction(o) /*&& lang.isFunction(target[i])*/) {
-                block[i] = o;//swap
+            var o = source[i]
+            if (o && _.isFunction(o) /* && lang.isFunction(target[i]) */) {
+                block[i] = o// swap
             }
         }
     }
 
-    var debug = false;
-    var isIDE = has('xcf-ui');
+    var debug = false
+    var isIDE = has('xcf-ui')
     /**
      * The scope acts as a real scope as usual. All registered variables and blocks are excecuted in this scope only.
      * @class module:xblox/model/Scope
      */
-    var Module = dcl([ModelBase,EventedMixin.dcl],{
-        declaredClass: "xblox.model.Scope",
-        variableStore:null,
-        serviceObject:null,
-        context:null,
-        blockStore:null,
+    var Module = dcl([ModelBase, EventedMixin.dcl], {
+        declaredClass: 'xblox.model.Scope',
+        variableStore: null,
+        serviceObject: null,
+        context: null,
+        blockStore: null,
         /**
          *  @type {module:xblox/model/Expression}
          */
         expressionModel: null,
-        start:function(){
-            if(this.__didStartBlocks ===true){
-                console.error('already started blocks');
-                return;
+        start: function () {
+            if (this.__didStartBlocks === true) {
+                console.error('already started blocks')
+                return
             }
-            this.__didStartBlocks = true;
-            var responseVariable = this.getVariable('value');
+            this.__didStartBlocks = true
+            var responseVariable = this.getVariable('value')
             if (!responseVariable) {
                 responseVariable = new Variable({
                     id: utils.createUUID(),
@@ -43424,39 +43451,36 @@ define('xblox/model/Scope',[
                     group: 'processVariables',
                     gui: false,
                     cmd: false
-                });
+                })
 
-                this.blockStore.putSync(responseVariable);
+                this.blockStore.putSync(responseVariable)
             }
-            var autoBlocks = [];
+            var autoBlocks = []
             var initBlocks = this.getBlocks({
                 group: types.COMMAND_TYPES.INIT_COMMAND
-            });
+            })
 
             try {
                 _.each(initBlocks, function (block) {
-                    if (block.enabled !== false && block.__started!== true) {
-                        block.solve(scope);
-                        block.__started = true;
+                    if (block.enabled !== false && block.__started !== true) {
+                        block.solve(this)
+                        block.__started = true
                     }
-
-                });
-            }catch(e){
-                console.error("starting init blocks failed",e);
+                }, this)
+            } catch (e) {
+                console.error('starting init blocks failed', e)
+                logError(e, this)
             }
             autoBlocks = autoBlocks.concat(this.getBlocks({
                 group: types.COMMAND_TYPES.BASIC_COMMAND
-            }));
+            }))
 
-            //console.error('auto blocks : '+autoBlocks.length + ' ' + this.id);
+            // console.error('auto blocks : '+autoBlocks.length + ' ' + this.id);
             for (var i = 0; i < autoBlocks.length; i++) {
-                var block = autoBlocks[i];
-                if(block.__started){
-                    //console.error('block already started');
-                }
-                if(block.enabled && block.start && block.startup && block.__started!==true){
-                    block.start();
-                    block.__started=true;
+                var block = autoBlocks[i]
+                if (block.enabled && block.start && block.startup && block.__started !== true) {
+                    block.start()
+                    block.__started = true
                 }
             }
         },
@@ -43464,11 +43488,11 @@ define('xblox/model/Scope',[
          *
          * @returns {module:xblox/model/Expression}
          */
-        getExpressionModel:function(){
-            if(!this.expressionModel){
-                this.expressionModel  = new Expression();
+        getExpressionModel: function () {
+            if (!this.expressionModel) {
+                this.expressionModel = new Expression()
             }
-            return this.expressionModel;
+            return this.expressionModel
         },
         /**
          *
@@ -43476,283 +43500,282 @@ define('xblox/model/Scope',[
          * @param url
          * @returns {*}
          */
-        toFriendlyName:function(block,url){
-            if(!url || !block){
-                return null;
+        toFriendlyName: function (block, url) {
+            if (!url || !block) {
+                return null
             }
             var blockScope = this,
                 ctx = this.ctx,
                 driver = this.driver,
                 device = this.device,
                 deviceManager = ctx.getDeviceManager(),
-                driverManager = ctx.getDriverManager();
+                driverManager = ctx.getDriverManager()
 
-            if(url.indexOf('://')==-1){
-                var _block = blockScope.getBlockById(url);
-                if(_block){
-                    return _block.name;
+            if (url.indexOf('://') == -1) {
+                var _block = blockScope.getBlockById(url)
+                if (_block) {
+                    return _block.name
                 }
-                return url;
+                return url
             }
-            var parts = utils.parse_url(url);//strip scheme
+            var parts = utils.parse_url(url)// strip scheme
 
-            parts = utils.urlArgs(parts.host);//go on with query string
-            var _device = deviceManager.getItemById(parts.device.value);
-            if(_device){
-                var info=deviceManager.toDeviceControlInfo(_device);
-                driver = driverManager.getDriverById(info.driverId);
-                var driverInstance = _device.driverInstance;
-                if(driverInstance || driver) {
-                    blockScope = driver.blockScope ? driver.blockScope : driverInstance ? driverInstance.blockScope : blockScope;
-                    block = blockScope.getStore().getSync(parts.block.value);
-                    if(block){
-                        return info.title + '/' + block.name;
-                    }else if(driverInstance && driverInstance.blockScope){
-                        block = driverInstance.blockScope.getBlock(parts.block.value);
-                        if(block){
-                            return info.title + '/' + block.name;
+            parts = utils.urlArgs(parts.host)// go on with query string
+            var _device = deviceManager.getItemById(parts.device.value)
+            if (_device) {
+                var info = deviceManager.toDeviceControlInfo(_device)
+                driver = driverManager.getDriverById(info.driverId)
+                var driverInstance = _device.driverInstance
+                if (driverInstance || driver) {
+                    blockScope = driver.blockScope ? driver.blockScope : driverInstance ? driverInstance.blockScope : blockScope
+                    block = blockScope.getStore().getSync(parts.block.value)
+                    if (block) {
+                        return info.title + '/' + block.name
+                    } else if (driverInstance && driverInstance.blockScope) {
+                        block = driverInstance.blockScope.getBlock(parts.block.value)
+                        if (block) {
+                            return info.title + '/' + block.name
                         }
                     }
                 }
             }
-            return url;
+            return url
         },
-        getContext:function(){
-            return this.instance;
+        getContext: function () {
+            return this.instance
         },
-        toString:function(){
+        toString: function () {
             var all = {
                 blocks: null,
                 variables: null
-            };
-            var blocks = this.blocksToJson();
-            try {
-                //test integrity
-                utils.fromJson(JSON.stringify(blocks));
-            } catch (e) {
-                debug && console.error('scope::toString : invalid data in scope');
-                return;
             }
-            all.blocks = blocks;
-            return JSON.stringify(all, null, 2);
+            var blocks = this.blocksToJson()
+            try {
+                // test integrity
+                utils.fromJson(JSON.stringify(blocks))
+            } catch (e) {
+                debug && console.error('scope::toString : invalid data in scope')
+                return
+            }
+            all.blocks = blocks
+            return JSON.stringify(all, null, 2)
         },
         /**
          * @param data
          * @param errorCB {function}
          */
-        initWithData:function(data,errorCB){
-            data && this.blocksFromJson(data,null,errorCB);
-            this.clearCache();
+        initWithData: function (data, errorCB) {
+            data && this.blocksFromJson(data, null, errorCB)
+            this.clearCache()
         },
-        /////////////////////////////////////////////////////////
+        // ///////////////////////////////////////////////////////
         //
         //  Service uplink related
         //
-        /////////////////////////////////////////////////////////
+        // ///////////////////////////////////////////////////////
         /** @member {Object} */
-        getService:function(){
-            return this.serviceObject;
+        getService: function () {
+            return this.serviceObject
         },
-        /////////////////////////////////////////////////////////
+        // ///////////////////////////////////////////////////////
         //
         //  Store related
         //
-        /////////////////////////////////////////////////////////
-        getStore:function(){
-            return this.blockStore;
+        // ///////////////////////////////////////////////////////
+        getStore: function () {
+            return this.blockStore
         },
-        reset:function(){
-            this.getExpressionModel().reset();
+        reset: function () {
+            this.getExpressionModel().reset()
         },
         /**
          *
          */
-        empty:function(){
-            this.clearCache();
-            var store = this.blockStore;
-            var allBlocks = this.getBlocks();
-            store.silent(true);
-            _.each(allBlocks,function(block){
-                if(block) {
-                    store.removeSync(block.id);
-                }else{
-                    debug && console.error('have no block');
+        empty: function () {
+            this.clearCache()
+            var store = this.blockStore
+            var allBlocks = this.getBlocks()
+            store.silent(true)
+            _.each(allBlocks, function (block) {
+                if (block) {
+                    store.removeSync(block.id)
+                } else {
+                    debug && console.error('have no block')
                 }
-
-            });
-            store.setData([]);
-            store.silent(false);
+            })
+            store.setData([])
+            store.silent(false)
         },
-        fromScope:function(source){
-            var store = this.blockStore;
-            store.silent(true);
-            this.empty();
-            var _t = source.blocksToJson();
-            this.blocksFromJson(_t);
-            store.silent(false);
+        fromScope: function (source) {
+            var store = this.blockStore
+            store.silent(true)
+            this.empty()
+            var _t = source.blocksToJson()
+            this.blocksFromJson(_t)
+            store.silent(false)
         },
         /**
          *
          */
-        clearCache:function(){
-            this.getExpressionModel().reset();
+        clearCache: function () {
+            this.getExpressionModel().reset()
         },
         /**
          * @returns {dojo/store/Memory}
          */
-        getVariableStore:function(){
-            return this.blockStore;
+        getVariableStore: function () {
+            return this.blockStore
         },
-        getBlockStore:function(){
-            return this.blockStore;
+        getBlockStore: function () {
+            return this.blockStore
         },
-        getVariables:function(query){
-            if(!this.blockStore){
-                return [];
+        getVariables: function (query) {
+            if (!this.blockStore) {
+                return []
             }
-            var all = this.blockStore.data;
-            var out = [];
-            if(query && query.group==='processVariables'){
+            var all = this.blockStore.data
+            var out = []
+            if (query && query.group === 'processVariables') {
                 for (var i = 0; i < all.length; i++) {
-                    if(all[i].group ==='processVariables'){
-                        out.push(all[i]);
+                    if (all[i].group === 'processVariables') {
+                        out.push(all[i])
                     }
                 }
-                return out;
+                return out
             }
-            //query = query || {id:/\S+/};//all variables
-            if(!query){
+            // query = query || {id:/\S+/};//all variables
+            if (!query) {
                 for (var i = 0; i < all.length; i++) {
                     var block = all[i],
-                        cls = block.declaredClass;
-                    if(cls =='xblox.model.variables.Variable'||cls == 'xcf.model.Variable'){
-                        out.push(block);
+                        cls = block.declaredClass
+                    if (cls == 'xblox.model.variables.Variable' || cls == 'xcf.model.Variable') {
+                        out.push(block)
                     }
                 }
-                return out;
+                return out
             }
-            return this.blockStore.query(query);
+            return this.blockStore.query(query)
         },
-        loopBlock:function(block,settings){
-            if(block._destroyed==true){
-                console.error('block destroyed');
+        loopBlock: function (block, settings) {
+            if (block._destroyed == true) {
+                console.error('block destroyed')
             }
-            var interval = block.getInterval ? block.getInterval() : 0;
+            var interval = block.getInterval ? block.getInterval() : 0
             if (block && interval > 0 && block.enabled && block._destroyed !== true) {
-                var thiz = this;
+                var thiz = this
                 if (block._loop) {
-                    clearInterval(block._loop);
+                    clearInterval(block._loop)
                 }
                 block._loop = setInterval(function () {
                     if (!block.enabled || block._destroyed) {
-                        clearInterval(block._loop);
-                        block._loop = null;
-                        return;
+                        clearInterval(block._loop)
+                        block._loop = null
+                        return
                     }
-                    block.solve(thiz, settings || block._lastSettings);
-                }, interval);
+                    block.solve(thiz, settings || block._lastSettings)
+                }, interval)
             }
         },
-        getEventsAsOptions:function(selected){
-            var result = [];
-            for(var e in types.EVENTS){
-                var label = types.EVENTS[e];
+        getEventsAsOptions: function (selected) {
+            var result = []
+            for (var e in types.EVENTS) {
+                var label = types.EVENTS[e]
 
                 var item = {
-                    label:label,
-                    value:types.EVENTS[e]
-                };
-                result.push(item);
+                    label: label,
+                    value: types.EVENTS[e]
+                }
+                result.push(item)
             }
-            result = result.concat([{label:"onclick", value:"onclick"},
-                {label:"ondblclick",value:"ondblclick"},
-                {label:"onmousedown",value:"onmousedown"},
-                {label:"onmouseup",value:"onmouseup"},
-                {label:"onmouseover",value:"onmouseover"},
-                {label:"onmousemove",value:"onmousemove"},
-                {label:"onmouseout",value:"onmouseout"},
-                {label:"onkeypress",value:"onkeypress"},
-                {label:"onkeydown",value:"onkeydown"},
-                {label:"onkeyup",  value:"onkeyup"},
-                {label:"onfocus",  value:"onfocus"},
-                {label:"onblur",  value:"onblur"},
-                {label:"onchange",  value:"onchange"}]);
+            result = result.concat([{label: 'onclick', value: 'onclick'},
+                {label: 'ondblclick', value: 'ondblclick'},
+                {label: 'onmousedown', value: 'onmousedown'},
+                {label: 'onmouseup', value: 'onmouseup'},
+                {label: 'onmouseover', value: 'onmouseover'},
+                {label: 'onmousemove', value: 'onmousemove'},
+                {label: 'onmouseout', value: 'onmouseout'},
+                {label: 'onkeypress', value: 'onkeypress'},
+                {label: 'onkeydown', value: 'onkeydown'},
+                {label: 'onkeyup', value: 'onkeyup'},
+                {label: 'onfocus', value: 'onfocus'},
+                {label: 'onblur', value: 'onblur'},
+                {label: 'onchange', value: 'onchange'}])
 
-            //select the event we are listening to
+            // select the event we are listening to
             for (var i = 0; i < result.length; i++) {
-                var obj = result[i];
-                if(obj.value===selected){
-                    obj.selected=true;
-                    break;
+                var obj = result[i]
+                if (obj.value === selected) {
+                    obj.selected = true
+                    break
                 }
             }
-            return result;
+            return result
         },
         /**
          *
          * @returns {{}}
          */
-        getVariablesAsObject:function() {
-            var variables = this.getVariables();
-            var result = {};
-            for(var i=0; i<variables.length;i++){
-                result[variables[i].title] = variables[i].value;
+        getVariablesAsObject: function () {
+            var variables = this.getVariables()
+            var result = {}
+            for (var i = 0; i < variables.length; i++) {
+                result[variables[i].title] = variables[i].value
             }
-            return result;
+            return result
         },
-        getVariablesAsOptions:function(){
-            var variables = this.getVariables();
-            var result = [];
-            if(variables){
-                for(var i=0; i<variables.length;i++){
+        getVariablesAsOptions: function () {
+            var variables = this.getVariables()
+            var result = []
+            if (variables) {
+                for (var i = 0; i < variables.length; i++) {
                     result.push({
-                        label:variables[i].label,
-                        value:variables[i].variable
+                        label: variables[i].label,
+                        value: variables[i].variable
                     })
                 }
             }
-            return result;
+            return result
         },
-        getCommandsAsOptions:function(labelField){
+        getCommandsAsOptions: function (labelField) {
             var items = this.getBlocks({
-                declaredClass:'xcf.model.Command'
-            });
-            var result = [];
-            if(items){
-                for(var i=0; i<items.length;i++){
-                    var item  = {};
-                    item[labelField||"label"] =items[i].name;
-                    item["value"] =items[i].name;
-                    result.push(item);
+                declaredClass: 'xcf.model.Command'
+            })
+            var result = []
+            if (items) {
+                for (var i = 0; i < items.length; i++) {
+                    var item = {}
+                    item[labelField || 'label'] = items[i].name
+                    item['value'] = items[i].name
+                    result.push(item)
                 }
             }
-            return result;
+            return result
         },
-        _cached:null,
-        getBlocks:function(query,allowCache){
-            if(!isIDE && allowCache!==false){
-                if(!this._cached){
-                    this._cached = {};
+        _cached: null,
+        getBlocks: function (query, allowCache) {
+            if (!isIDE && allowCache !== false) {
+                if (!this._cached) {
+                    this._cached = {}
                 }
-                if(query){
-                    var hash = MD5(JSON.stringify(query), 1);
-                    var cached = this._cached[hash];
-                    if(cached){
-                        return cached;
+                if (query) {
+                    var hash = MD5(JSON.stringify(query), 1)
+                    var cached = this._cached[hash]
+                    if (cached) {
+                        return cached
                     }
                 }
             }
-            //no store,
-            if(!this.blockStore){
-                return [];
+            // no store,
+            if (!this.blockStore) {
+                return []
             }
-            query = query||{id:/\S+/};//all blocks
-            var result = this.blockStore.query(query,null,allowCache);
-            if(!isIDE && allowCache!==false){
-                var hash = MD5(JSON.stringify(query), 1);
-                this._cached[hash] = result;
+            query = query || {id: /\S+/}// all blocks
+            var result = this.blockStore._find(query)
+            if (!isIDE && allowCache !== false) {
+                var hash = MD5(JSON.stringify(query), 1)
+                this._cached[hash] = result
             }
-            return result;
+            return result
         },
         /***
          * Register a variable into the scope
@@ -43761,10 +43784,10 @@ define('xblox/model/Scope',[
          *
          * @param variable  =>  xblox.model.Variable
          */
-        registerVariable:function(variable) {
-            this.variables[variable.title] = variable;
-            if(this.blockStore){
-                this.blockStore.putSync(variable);
+        registerVariable: function (variable) {
+            this.variables[variable.title] = variable
+            if (this.blockStore) {
+                this.blockStore.putSync(variable)
             }
         },
         /***
@@ -43773,16 +43796,15 @@ define('xblox/model/Scope',[
          * @param title => variable title
          * @return variable
          */
-        getVariable:function(title) {
-            var _variables = this.getVariables();
-            var _var = null;
+        getVariable: function (title) {
+            var _variables = this.getVariables()
             for (var i = 0; i < _variables.length; i++) {
-                var obj = _variables[i];
-                if(obj.name === title ){
-                    return obj;
+                var obj = _variables[i]
+                if (obj.name === title) {
+                    return obj
                 }
             }
-            return null;
+            return null
         },
         /***
          * Returns a variable from the scope
@@ -43790,28 +43812,28 @@ define('xblox/model/Scope',[
          * @param title => variable title
          * @return variable
          */
-        getVariableById:function(id) {
-            if(!id){
-                return null;
+        getVariableById: function (id) {
+            if (!id) {
+                return null
             }
-            var parts = id.split('/');
-            var scope = this;
-            if(parts.length==2){
-                var owner = scope.owner;
-                if(owner && owner.hasScope){
-                    if(owner.hasScope(parts[0])){
-                        scope = owner.getScope(parts[0]);
-                    }else{
-                        console.error('have scope id but cant resolve it',this);
+            var parts = id.split('/')
+            var scope = this
+            if (parts.length == 2) {
+                var owner = scope.owner
+                if (owner && owner.hasScope) {
+                    if (owner.hasScope(parts[0])) {
+                        scope = owner.getScope(parts[0])
+                    } else {
+                        console.error('have scope id but cant resolve it', this)
                     }
                 }
-                id = parts[1];
+                id = parts[1]
             }
-            var _var = scope.blockStore.getSync(id);
-            if(_var){
-                return _var;
+            var _var = scope.blockStore.getSync(id)
+            if (_var) {
+                return _var
             }
-            return null;
+            return null
         },
         /***
          * Register a block into the scope
@@ -43820,22 +43842,22 @@ define('xblox/model/Scope',[
          *
          * @param block   =>    xblox.model.Block
          */
-        registerBlock:function(block,publish) {
-            var store = this.blockStore;
-            if(store){
-                var added = store.getSync(block.id);
-                if(added){
-                    debug && console.warn('block already in store! '+block.id,block);
-                    return added;
+        registerBlock: function (block, publish) {
+            var store = this.blockStore
+            if (store) {
+                var added = store.getSync(block.id)
+                if (added) {
+                    debug && console.warn('block already in store! ' + block.id, block)
+                    return added
                 }
-                var result = null;
-                //custom add block to store function
-                if(block.addToStore){
-                    result = block.addToStore(store);
-                }else{
-                    result = store.putSync(block,publish);
+                var result = null
+                // custom add block to store function
+                if (block.addToStore) {
+                    result = block.addToStore(store)
+                } else {
+                    result = store.putSync(block, publish)
                 }
-                return result;
+                return result
             }
         },
         /***
@@ -43843,218 +43865,216 @@ define('xblox/model/Scope',[
          *
          * @returns {xblox.model.Block[]}
          */
-        allBlocks:function(query,allowCache) {
-            return this.getBlocks({},allowCache);
+        allBlocks: function (query, allowCache) {
+            return this.getBlocks({}, allowCache)
         },
         /**
          * Returns whether there is any block belongs to a given group
          * @param group {String}
          * @returns {boolean}
          */
-        hasGroup:function(group){
-            var all = this.allGroups({},false);
+        hasGroup: function (group) {
+            var all = this.allGroups({}, false)
             for (var i = 0; i < all.length; i++) {
-                var obj = all[i];
+                var obj = all[i]
                 if (obj === group) {
-                    return true;
+                    return true
                 }
             }
-            return false;
+            return false
         },
         /**
          * Return all block groups
          * @returns {String[]}
          */
-        allGroups:function(){
-            var result = [];
-            var all = this.allBlocks({},false);
-            var _has = function(what){
+        allGroups: function () {
+            var result = []
+            var all = this.allBlocks({}, false)
+            var _has = function (what) {
                 for (var i = 0; i < result.length; i++) {
-                    if(result[i]===what){
-                        return true;
+                    if (result[i] === what) {
+                        return true
                     }
                 }
-                return false;
-            };
+                return false
+            }
             for (var i = 0; i < all.length; i++) {
-                var obj = all[i];
-                if(obj.parentId){
-                    continue;
+                var obj = all[i]
+                if (obj.parentId) {
+                    continue
                 }
-                if(obj.group){
-                    if(!_has(obj.group)){
-                        result.push(obj.group);
+                if (obj.group) {
+                    if (!_has(obj.group)) {
+                        result.push(obj.group)
                     }
-                }else{
-                    if(!_has('No Group')){
-                        result.push('No Group');
+                } else {
+                    if (!_has('No Group')) {
+                        result.push('No Group')
                     }
                 }
             }
-            return result;
+            return result
         },
         /**
          * Serializes all variables
          * @returns {Array}
          */
-        variablesToJson:function(){
-            var result = [];
-            var data = this.variableStore ? this.getVariables() : this.variables;
-            for(var e in data){
-                var variable = data[e];
-                if(variable.serializeMe===false){
-                    continue;
+        variablesToJson: function () {
+            var result = []
+            var data = this.variableStore ? this.getVariables() : this.variables
+            for (var e in data) {
+                var variable = data[e]
+                if (variable.serializeMe === false) {
+                    continue
                 }
-                if(variable.keys==null){
-                    continue;
+                if (variable.keys == null) {
+                    continue
                 }
-                var varOut={};
-                for(var prop in variable){
-                    //copy all serializables over
-                    if(
-                        this.isString(variable[prop])||
-                        this.isNumber(variable[prop])||
+                var varOut = {}
+                for (var prop in variable) {
+                    // copy all serializables over
+                    if (
+                        this.isString(variable[prop]) ||
+                        this.isNumber(variable[prop]) ||
                         this.isBoolean(variable[prop])
-                        )
-                    {
-                        varOut[prop]=variable[prop];
+                    ) {
+                        varOut[prop] = variable[prop]
                     }
                 }
 
-                result.push(varOut);
+                result.push(varOut)
             }
-            return result;
+            return result
         },
-        isScript:function(val){
+        isScript: function (val) {
             return this.isString(val) && (
-                    val.indexOf('return')!=-1||
-                    val.indexOf(';')!=-1||
-                    val.indexOf('[')!=-1||
-                    val.indexOf('{')!=-1||
-                    val.indexOf('}')!=-1
-                );
+                    val.indexOf('return') != -1 ||
+                    val.indexOf(';') != -1 ||
+                    val.indexOf('[') != -1 ||
+                    val.indexOf('{') != -1 ||
+                    val.indexOf('}') != -1
+                )
         },
         /**
          * Serializes all variables
          * @returns {Array}
          */
-        variablesToJavascriptEx:function(skipVariable,expression){
+        variablesToJavascriptEx: function (skipVariable, expression) {
+            var result = []
+            var data = this.variableStore ? this.getVariables() : this.variables
+            for (var i = 0; i < data.length; i++) {
+                var _var = data[i]
+                if (_var == skipVariable) {
+                    continue
+                }
+                var _varVal = '' + _var.value
 
-            var result=[];
-            var data = this.variableStore ? this.getVariables() : this.variables;
-            for(var i = 0 ; i  < data.length ; i++){
-                var _var = data[i];
-                if(_var == skipVariable){
-                    continue;
+                // optimization
+                if (skipVariable && skipVariable.value && skipVariable.value.indexOf(_var.title) == -1) {
+                    continue
                 }
-                var _varVal = ''+_var.value;
-
-                //optimization
-                if(skipVariable && skipVariable.value && skipVariable.value.indexOf(_var.title)==-1){
-                    continue;
-                }
-                if(expression && expression.indexOf(_var.title)==-1){
-                    continue;
+                if (expression && expression.indexOf(_var.title) == -1) {
+                    continue
                 }
 
-                if(_varVal.length==0){
-                    continue;
+                if (_varVal.length == 0) {
+                    continue
                 }
-                if(!this.isScript(_varVal) && _varVal.indexOf("'")==-1){
-                    _varVal = "'" + _varVal + "'";
+                if (!this.isScript(_varVal) && _varVal.indexOf("'") == -1) {
+                    _varVal = "'" + _varVal + "'"
                 }
-                else if(this.isScript(_varVal)){
-                    _varVal = this.expressionModel.parseVariable(this,_var);
+                else if (this.isScript(_varVal)) {
+                    _varVal = this.expressionModel.parseVariable(this, _var)
                 }
-                if(_varVal==="''"){
-                    _varVal="'0'";
+                if (_varVal === "''") {
+                    _varVal = "'0'"
                 }
-                result.push(_varVal);
+                result.push(_varVal)
             }
 
-            return result;
+            return result
         },
-        variablesToJavascript:function(skipVariable,expression){
-            var result='';
-            var data = this.variableStore ? this.getVariables() : this.variables || [];
-            for(var i = 0 ; i  < data.length ; i++){
-                var _var = data[i];
-                if(_var == skipVariable){
-                    continue;
+        variablesToJavascript: function (skipVariable, expression) {
+            var result = ''
+            var data = this.variableStore ? this.getVariables() : this.variables || []
+            for (var i = 0; i < data.length; i++) {
+                var _var = data[i]
+                if (_var == skipVariable) {
+                    continue
                 }
-                var _varVal = ''+_var.value;
+                var _varVal = '' + _var.value
 
-                //optimization
-                if(skipVariable && skipVariable.value && skipVariable.value.indexOf(_var.title)==-1){
-                    continue;
+                // optimization
+                if (skipVariable && skipVariable.value && skipVariable.value.indexOf(_var.title) == -1) {
+                    continue
                 }
-                if(expression && expression.indexOf(_var.title)==-1){
-                    continue;
-                }
-
-                if(_varVal.length==0){
-                    continue;
-                }
-                if(!this.isScript(_varVal)  && _varVal.indexOf("'")==-1){
-                    _varVal = "'" + _varVal + "'";
-                }
-                else if(this.isScript(_varVal)){
-                    //_varVal = "''";
-                    _varVal = this.expressionModel.parseVariable(this,_var);
+                if (expression && expression.indexOf(_var.title) == -1) {
+                    continue
                 }
 
-                if(_varVal==="''"){
-                    _varVal="'0'";
+                if (_varVal.length == 0) {
+                    continue
                 }
-                result+="var " + _var.title + " = " + _varVal + ";";
-                result+="\n";
+                if (!this.isScript(_varVal) && _varVal.indexOf("'") == -1) {
+                    _varVal = "'" + _varVal + "'"
+                }
+                else if (this.isScript(_varVal)) {
+                    // _varVal = "''";
+                    _varVal = this.expressionModel.parseVariable(this, _var)
+                }
+
+                if (_varVal === "''") {
+                    _varVal = "'0'"
+                }
+                result += 'var ' + _var.title + ' = ' + _varVal + ';'
+                result += '\n'
             }
 
-            return result;
+            return result
         },
         /**
          * Convert from JSON data. Creates all Variables in this scope
          * @param data
          * @returns {Array}
          */
-        variablesFromJson:function(data){
-            var result = [];
-            for(var i = 0; i < data.length ; i++){
-                var variable = data[i];
-                variable['scope']  = this;
-                if(!variable.declaredClass){
-                    console.log('   variable has no class ');
-                    continue;
+        variablesFromJson: function (data) {
+            var result = []
+            for (var i = 0; i < data.length; i++) {
+                var variable = data[i]
+                variable['scope'] = this
+                if (!variable.declaredClass) {
+                    console.log('   variable has no class ')
+                    continue
                 }
-                var _class = utils.replaceAll('.','/',variable.declaredClass);
-                var variableClassProto = require(_class);
-                if(!variableClassProto){
-                    console.log('couldnt resolve ' + _class);
-                    continue;
+                var _class = utils.replaceAll('.', '/', variable.declaredClass)
+                var variableClassProto = require(_class)
+                if (!variableClassProto) {
+                    console.log('couldnt resolve ' + _class)
+                    continue
                 }
-                result.push(new variableClassProto(variable));//looks like a leak but the instance is tracked and destroyed in this scope
+                result.push(new variableClassProto(variable))// looks like a leak but the instance is tracked and destroyed in this scope
             }
-            return result;
+            return result
         },
-        regenerateIDs:function(blocks){
-            var thiz=this;
-            var updateChildren=function(block){
-                var newId = utils.createUUID();
+        regenerateIDs: function (blocks) {
+            var thiz = this
+            var updateChildren = function (block) {
+                var newId = utils.createUUID()
                 var children = thiz.getBlocks({
-                    parentId:block.id
-                });
-                if(children && children.length>0){
-                    for(var i = 0 ; i < children.length ; i ++) {
-                        var child = children[i];
-                        child.parentId=newId;
-                        updateChildren(child);
+                    parentId: block.id
+                })
+                if (children && children.length > 0) {
+                    for (var i = 0; i < children.length; i++) {
+                        var child = children[i]
+                        child.parentId = newId
+                        updateChildren(child)
                     }
                 }
-                block.id=newId;
-            };
-            for(var i = 0 ; i < blocks.length ; i ++){
-                var block=blocks[i];
-                updateChildren(block);
+                block.id = newId
+            }
+            for (var i = 0; i < blocks.length; i++) {
+                var block = blocks[i]
+                updateChildren(block)
             }
         },
         /**
@@ -44062,106 +44082,98 @@ define('xblox/model/Scope',[
          * @param blocks
          * @returns {module:xblox/model/Block[]}
          */
-        cloneBlocks2:function(blocks,forceGroup){
-            var blocksJSON = this.blocksToJson(blocks);
-            var tmpScope = this.owner.getScope(utils.createUUID(),null,false);
-            var newBlocks = tmpScope.blocksFromJson(blocksJSON,false);
-            var store = this.blockStore;
-            newBlocks = tmpScope.allBlocks();
+        cloneBlocks2: function (blocks, forceGroup) {
+            var blocksJSON = this.blocksToJson(blocks)
+            var tmpScope = this.owner.getScope(utils.createUUID(), null, false)
+            var newBlocks = tmpScope.blocksFromJson(blocksJSON, false)
+            var store = this.blockStore
+            newBlocks = tmpScope.allBlocks()
 
-            tmpScope.regenerateIDs(newBlocks);
-            blocksJSON = tmpScope.blocksToJson(newBlocks);
+            tmpScope.regenerateIDs(newBlocks)
+            blocksJSON = tmpScope.blocksToJson(newBlocks)
 
-            if(forceGroup) {
+            if (forceGroup) {
                 for (var i = 0; i < blocksJSON.length; i++) {
-                    var block = blocksJSON[i];
-                    if(block.parentId==null) {//groups are only needed for top level blocks
-                        block.group = forceGroup;
+                    var block = blocksJSON[i]
+                    if (block.parentId == null) { // groups are only needed for top level blocks
+                        block.group = forceGroup
                     }
                 }
             }
-            var result = [];
-            newBlocks = this.blocksFromJson(blocksJSON);//add it to our scope
-            _.each(newBlocks,function(block){
-                result.push(store.getSync(block.id));
-            });
-            return result;
-
+            var result = []
+            newBlocks = this.blocksFromJson(blocksJSON)// add it to our scope
+            _.each(newBlocks, function (block) {
+                result.push(store.getSync(block.id))
+            })
+            return result
         },
         /**
          * Clone blocks
          * @param blocks
          */
-        cloneBlocks:function(blocks){
-            var blocksJSON = this.blocksToJson(blocks);
-            var tmpScope = this.owner.getScope(utils.createUUID(),null,false);
-            var newBlocks = tmpScope.blocksFromJson(blocksJSON,false);
-            newBlocks = tmpScope.allBlocks();
-            for(var i = 0 ; i < newBlocks.length ; i ++){
-                var block=newBlocks[i];
-                block.id = utils.createUUID();
-                block.parentId=null;
+        cloneBlocks: function (blocks) {
+            var blocksJSON = this.blocksToJson(blocks)
+            var tmpScope = this.owner.getScope(utils.createUUID(), null, false)
+            var newBlocks = tmpScope.blocksFromJson(blocksJSON, false)
+            newBlocks = tmpScope.allBlocks()
+            for (var i = 0; i < newBlocks.length; i++) {
+                var block = newBlocks[i]
+                block.id = utils.createUUID()
+                block.parentId = null
             }
 
-            blocksJSON = this.blocksToJson(newBlocks);
-            this.blocksFromJson(newBlocks);//add it us
-            return newBlocks;
+            blocksJSON = this.blocksToJson(newBlocks)
+            this.blocksFromJson(newBlocks)// add it us
+            return newBlocks
         },
         /**
-         * 
+         *
          * @param block
          * @returns {Object}
          */
-        blockToJson:function(block){
-                var blockOut={
-                    // this property is used to recreate the child blocks in the JSON -> blocks process
-                    _containsChildrenIds: []
-                };
-                for(var prop in block){
-
-                    if (prop == 'ctrArgs') {
-                        continue;
-                    }
-
-                    if( typeof block[prop] !=='function' && !block.serializeField(prop)){
-                        continue;
-                    }
-
-                    //copy all strings over
-                    if( this.isString(block[prop])||
-                        this.isNumber(block[prop])||
-                        this.isBoolean(block[prop]))
-                    {
-                        blockOut[prop]=block[prop];
-                    }
-                    //flatten children to ids. Skip "parent" field
-                    if (prop != 'parent') {
-
-                        if ( this.isBlock(block[prop]) )
-                        {
-                            // if the field is a single block container, store the child block's id
-                            blockOut[prop] = block[prop].id;
-
-                            // register this field name as children ID container
-                            blockOut._containsChildrenIds.push(prop);
-
-                        } else if ( this.areBlocks(block[prop]))
-                        {
-                            // if the field is a multiple blocks container, store all the children blocks' id
-                            blockOut[prop] = [];
-
-                            for(var i = 0; i < block[prop].length ; i++){
-                                blockOut[prop].push(block[prop][i].id);
-                            }
-
-                            // register this field name as children IDs container
-                            blockOut._containsChildrenIds.push(prop);
-                        }
-                    }
-
+        blockToJson: function (block) {
+            var blockOut = {
+                // this property is used to recreate the child blocks in the JSON -> blocks process
+                _containsChildrenIds: []
+            }
+            for (var prop in block) {
+                if (prop == 'ctrArgs') {
+                    continue
                 }
 
-            return blockOut;
+                if (typeof block[prop] !== 'function' && !block.serializeField(prop)) {
+                    continue
+                }
+
+                // copy all strings over
+                if (this.isString(block[prop]) ||
+                    this.isNumber(block[prop]) ||
+                    this.isBoolean(block[prop])) {
+                    blockOut[prop] = block[prop]
+                }
+                // flatten children to ids. Skip "parent" field
+                if (prop != 'parent') {
+                    if (this.isBlock(block[prop])) {
+                        // if the field is a single block container, store the child block's id
+                        blockOut[prop] = block[prop].id
+
+                        // register this field name as children ID container
+                        blockOut._containsChildrenIds.push(prop)
+                    } else if (this.areBlocks(block[prop])) {
+                        // if the field is a multiple blocks container, store all the children blocks' id
+                        blockOut[prop] = []
+
+                        for (var i = 0; i < block[prop].length; i++) {
+                            blockOut[prop].push(block[prop][i].id)
+                        }
+
+                        // register this field name as children IDs container
+                        blockOut._containsChildrenIds.push(prop)
+                    }
+                }
+            }
+
+            return blockOut
         },
         /**
          * Serializes all blocks to JSON data.
@@ -44169,339 +44181,326 @@ define('xblox/model/Scope',[
          * object dependencies.
          * @returns {Array}
          */
-        blocksToJson:function(data){
-            try{
-                var result = [];
-                data = (data && data.length) ? data :  (this.blockStore ? this.getBlocks() : this.blocks);
+        blocksToJson: function (data) {
+            try {
+                var result = []
+                data = (data && data.length) ? data : (this.blockStore ? this.getBlocks() : this.blocks)
 
-                for(var b in data){
-                    var block = data[b];
-                    if(block.keys==null){
-                        continue;
+                for (var b in data) {
+                    var block = data[b]
+                    if (block.keys == null) {
+                        continue
                     }
-                    if(block.serializeMe===false){
-                        continue;
+                    if (block.serializeMe === false) {
+                        continue
                     }
-                    var blockOut={
+                    var blockOut = {
                         // this property is used to recreate the child blocks in the JSON -> blocks process
                         _containsChildrenIds: []
-                    };
+                    }
 
-                    for(var prop in block){
-
+                    for (var prop in block) {
                         if (prop == 'ctrArgs') {
-                            continue;
+                            continue
                         }
 
-                        if( typeof block[prop] !=='function' && !block.serializeField(prop)){
-                            continue;
+                        if (typeof block[prop] !== 'function' && !block.serializeField(prop)) {
+                            continue
                         }
 
-                        //copy all strings over
-                        if( this.isString(block[prop])||
-                            this.isNumber(block[prop])||
-                            this.isBoolean(block[prop]))
-                        {
-                            blockOut[prop]=block[prop];
+                        // copy all strings over
+                        if (this.isString(block[prop]) ||
+                            this.isNumber(block[prop]) ||
+                            this.isBoolean(block[prop])) {
+                            blockOut[prop] = block[prop]
                         }
 
-                        if( _.isObject(block[prop]) && block.serializeObject){
-                            if(block.serializeObject(prop)===true){
-                                blockOut[prop]=JSON.stringify(block[prop],null,2);
+                        if (_.isObject(block[prop]) && block.serializeObject) {
+                            if (block.serializeObject(prop) === true) {
+                                blockOut[prop] = JSON.stringify(block[prop], null, 2)
                             }
                         }
 
-
-                        //flatten children to ids. Skip "parent" field
+                        // flatten children to ids. Skip "parent" field
 
                         if (prop != 'parent') {
-                            if ( this.isBlock(block[prop]) ){
+                            if (this.isBlock(block[prop])) {
                                 // if the field is a single block container, store the child block's id
-                                blockOut[prop] = block[prop].id;
+                                blockOut[prop] = block[prop].id
 
                                 // register this field name as children ID container
-                                blockOut._containsChildrenIds.push(prop);
-
-                            } else if ( this.areBlocks(block[prop])){
+                                blockOut._containsChildrenIds.push(prop)
+                            } else if (this.areBlocks(block[prop])) {
                                 // if the field is a multiple blocks container, store all the children blocks' id
-                                blockOut[prop] = [];
+                                blockOut[prop] = []
 
-                                for(var i = 0; i < block[prop].length ; i++){
-                                    blockOut[prop].push(block[prop][i].id);
+                                for (var i = 0; i < block[prop].length; i++) {
+                                    blockOut[prop].push(block[prop][i].id)
                                 }
 
                                 // register this field name as children IDs container
-                                blockOut._containsChildrenIds.push(prop);
+                                blockOut._containsChildrenIds.push(prop)
                             }
                         }
                     }
-                    result.push(blockOut);
+                    result.push(blockOut)
                 }
-            }catch(e){
-                console.error('from json failed : ' +e);
+            } catch (e) {
+                console.error('from json failed : ' + e)
             }
-            return result;
+            return result
         },
-        _createBlockStore:function(){
+        _createBlockStore: function () {
         },
-        blockFromJson:function(block){
-            block['scope']  = this;
-            if(block._containsChildrenIds==null){
-                block._containsChildrenIds=[];
+        blockFromJson: function (block) {
+            block['scope'] = this
+            if (block._containsChildrenIds == null) {
+                block._containsChildrenIds = []
             }
 
             // Store all children references into "children"
-            var children = {};
-            for(var cf = 0 ; cf < block._containsChildrenIds.length ; cf ++)
-            {
-                var propName = block._containsChildrenIds[cf];
-                children[propName] = block[propName];
-                block[propName] = null;
+            var children = {}
+            for (var cf = 0; cf < block._containsChildrenIds.length; cf++) {
+                var propName = block._containsChildrenIds[cf]
+                children[propName] = block[propName]
+                block[propName] = null
             }
-            delete block._containsChildrenIds;
+            delete block._containsChildrenIds
 
             // Create the block
-            if(!block.declaredClass){
-                console.log('   not a class ');
-                return null;
+            if (!block.declaredClass) {
+                console.log('   not a class ')
+                return null
             }
-            var blockClassProto=null;
-            var _class=null;
-            try{
-                _class = utils.replaceAll('.','/',block.declaredClass);
-                blockClassProto = require(_class);
-            }catch(e){
-
+            var blockClassProto = null
+            var _class = null
+            try {
+                _class = utils.replaceAll('.', '/', block.declaredClass)
+                blockClassProto = require(_class)
+            } catch (e) {
                 try {
-                    _class = utils.replaceAll('/','.',block.declaredClass);
-                    blockClassProto = require(_class);
-                }catch(e) {
-                    debug && console.error('couldnt resolve class ' + _class);
+                    _class = utils.replaceAll('/', '.', block.declaredClass)
+                    blockClassProto = require(_class)
+                } catch (e) {
+                    debug && console.error('couldnt resolve class ' + _class)
                 }
-                debug && console.error('couldnt resolve class ' + _class);
+                debug && console.error('couldnt resolve class ' + _class)
+            }
+            if (!blockClassProto) {
+                blockClassProto = dcl.getObject(block.declaredClass)
+            }
+            if (!blockClassProto) {
+                debug && console.log('couldn`t resolve ' + _class)
+                return null
+            }
 
-            }
-            if(!blockClassProto){
-                blockClassProto = dcl.getObject(block.declaredClass);
-            }
-            if(!blockClassProto){
-                debug && console.log('couldn`t resolve ' + _class);
-                return null;
-            }
-
-            var blockOut = null;
-            try{
-                blockOut = factory.createBlock(blockClassProto,block);
-            }catch(e){
-                debug && console.error('error in block creation ' , e);
-                logError(e);
-                return null;
+            var blockOut = null
+            try {
+                blockOut = factory.createBlock(blockClassProto, block)
+            } catch (e) {
+                debug && console.error('error in block creation ', e)
+                logError(e)
+                return null
             }
 
             // assign the children references into block._children
-            blockOut._children=children;
+            blockOut._children = children
 
-            return blockOut;
+            return blockOut
         },
         /**
          * Convert from JSON data. Creates all blocks in this scope
          * @param data
          * @returns {Array}
          */
-        blocksFromJson:function(data,check,errorCB) {
-            var resultSelected = [];
-            var childMap = {};
-            for(var i = 0; i < data.length ; i++){
-                var block = data[i];
-                block['scope']  = this;
+        blocksFromJson: function (data, check, errorCB) {
+            var resultSelected = []
+            var childMap = {}
+            for (var i = 0; i < data.length; i++) {
+                var block = data[i]
+                block['scope'] = this
 
-                if(block._containsChildrenIds==null){
-                    block._containsChildrenIds=[];
+                if (block._containsChildrenIds == null) {
+                    block._containsChildrenIds = []
                 }
 
                 // Store all children references into "children"
-                var children = {};
-                for(var cf = 0 ; cf < block._containsChildrenIds.length ; cf ++)
-                {
-                    var propName = block._containsChildrenIds[cf];
-                    children[propName] = block[propName];
-                    block[propName] = null;
+                var children = {}
+                for (var cf = 0; cf < block._containsChildrenIds.length; cf++) {
+                    var propName = block._containsChildrenIds[cf]
+                    children[propName] = block[propName]
+                    block[propName] = null
                 }
-                delete block._containsChildrenIds;
-
+                delete block._containsChildrenIds
 
                 // Create the block
-                if(!block.declaredClass){
-                    console.log('   not a class ');
-                    continue;
+                if (!block.declaredClass) {
+                    console.log('   not a class ')
+                    continue
                 }
-                var blockClassProto=null;
-                var _class=null;
-                try{
-                    _class = utils.replaceAll('.','/',block.declaredClass);
-                    blockClassProto = require(_class);
-                }catch(e){
-                    console.error('couldnt resolve class '+_class);
+                var blockClassProto = null
+                var _class = null
+                try {
+                    _class = utils.replaceAll('.', '/', block.declaredClass)
+                    blockClassProto = require(_class)
+                } catch (e) {
+                    console.error('couldnt resolve class ' + _class)
+                }
+                if (!blockClassProto) {
+                    blockClassProto = dcl.getObject(block.declaredClass)
+                }
+                if (!blockClassProto) {
+                    console.log('couldnt resolve ' + _class)
+                    continue
+                }
 
-                }
-                if(!blockClassProto){
-                    blockClassProto = dcl.getObject(block.declaredClass);
-                }
-                if(!blockClassProto){
-                    console.log('couldnt resolve ' + _class);
-                    continue;
-                }
-
-                var blockOut = null;
-                try{
-                    blockOut = factory.createBlock(blockClassProto,block,null,false);
-                }catch(e){
-                    console.error('error in block creation ' , e + ' ' + block.declaredClass);
-                    logError(e);
-                    continue;
+                var blockOut = null
+                try {
+                    blockOut = factory.createBlock(blockClassProto, block, null, false)
+                } catch (e) {
+                    console.error('error in block creation ', e + ' ' + block.declaredClass)
+                    logError(e)
+                    continue
                 }
 
                 // assign the children references into block._children
-                blockOut._children=children;
-                childMap[blockOut.id] = children;
-                resultSelected.push(blockOut);
+                blockOut._children = children
+                childMap[blockOut.id] = children
+                resultSelected.push(blockOut)
             }
 
-
-            //2nd pass, update child blocks
-            var allBlocks = this.allBlocks(null,false);
-            for(var i = 0; i < allBlocks.length ; i++){
-                var block = allBlocks[i];
-                block._children = childMap[block.id];
-                if(block._children) {
+            // 2nd pass, update child blocks
+            var allBlocks = this.allBlocks(null, false)
+            for (var i = 0; i < allBlocks.length; i++) {
+                var block = allBlocks[i]
+                block._children = childMap[block.id]
+                if (block._children) {
                     // get all the block container fields
-                    for (var propName in block._children){
-                        if (typeof block._children[propName] == "string"){
+                    for (var propName in block._children) {
+                        if (typeof block._children[propName] == 'string') {
                             // single block
-                            var child = this.getBlockById( block._children[propName] );
+                            var child = this.getBlockById(block._children[propName])
                             if (!child) {
-                                this.blockStore.removeSync(block._children[propName]);
-                                if(errorCB){
-                                    errorCB('   couldnt resolve child: ' + block._children[propName] + '@' + block.name+ ':'+block.declaredClass)
+                                this.blockStore.removeSync(block._children[propName])
+                                if (errorCB) {
+                                    errorCB('   couldnt resolve child: ' + block._children[propName] + '@' + block.name + ':' + block.declaredClass)
                                 }
-                                console.log('   couldnt resolve child: ' + block._children[propName]+ '@' + block.name+ ':'+block.declaredClass);
-                                continue;
+                                console.log('   couldnt resolve child: ' + block._children[propName] + '@' + block.name + ':' + block.declaredClass)
+                                continue
                             }
-                            block[propName] = child;
-                            child.parent=block;
-                            if(child.postCreate){
-                                child.postCreate();
+                            block[propName] = child
+                            child.parent = block
+                            if (child.postCreate) {
+                                child.postCreate()
                             }
                         }
-                        else if (typeof block._children[propName] == "object"){
+                        else if (typeof block._children[propName] == 'object') {
                             // multiple blocks
-                            block[propName] = [];
-                            for(var j = 0; j < block._children[propName].length ; j++){
-                                var child = this.getBlockById(block._children[propName][j]);
+                            block[propName] = []
+                            for (var j = 0; j < block._children[propName].length; j++) {
+                                var child = this.getBlockById(block._children[propName][j])
                                 if (!child) {
-                                    if(errorCB){
-                                        errorCB('   couldnt resolve child: ' + block._children[propName]+ '@' + block.name + ':'+block.declaredClass)
+                                    if (errorCB) {
+                                        errorCB('   couldnt resolve child: ' + block._children[propName] + '@' + block.name + ':' + block.declaredClass)
                                     }
-                                    console.log('   couldnt resolve child: ' + block._children[propName][j]+ '@' + block.name+ ':'+block.declaredClass);
-                                    continue;
+                                    console.log('   couldnt resolve child: ' + block._children[propName][j] + '@' + block.name + ':' + block.declaredClass)
+                                    continue
                                 }
-                                block[propName].push(child);
-                                var _parent = this.getBlockById(child.parentId);
-                                if(_parent){
-                                    child.parent = _parent;
-                                }else{
-                                    console.error('child has no parent');
+                                block[propName].push(child)
+                                var _parent = this.getBlockById(child.parentId)
+                                if (_parent) {
+                                    child.parent = _parent
+                                } else {
+                                    console.error('child has no parent')
                                 }
                             }
-
                         }
                     }
-                    delete block._children;
+                    delete block._children
                 }
 
-                if(check!==false && block.parentId!=null){
-                    var parent = this.getBlockById(block.parentId);
-                    if(parent==null){
-                        debug && console.error('have orphan block!',block);
-                        block.parentId = null;
+                if (check !== false && block.parentId != null) {
+                    var parent = this.getBlockById(block.parentId)
+                    if (parent == null) {
+                        debug && console.error('have orphan block!', block)
+                        block.parentId = null
                     }
-                }                                  
-                block.postCreate();
+                }
+                block.postCreate()
             }
-            var result = this.allBlocks();
-            return resultSelected;
+            var result = this.allBlocks()
+            return resultSelected
         },
         /**
-         * 
+         *
          * @param url {String}
          * @returns {module:xblox/model/Block[]}
          */
-        resolveBlock:function(url){
+        resolveBlock: function (url) {
             var blockScope = this,
                 ctx = this.ctx,
                 driver = this.driver,
                 device = this.device,
                 deviceManager = ctx.getDeviceManager(),
-                driverManager = ctx.getDriverManager();
+                driverManager = ctx.getDriverManager()
 
-            if(url.indexOf('://')==-1){
-                var _block = this.getBlockById(url);
-                if(_block){
-                    return _block;
+            if (url.indexOf('://') == -1) {
+                var _block = this.getBlockById(url)
+                if (_block) {
+                    return _block
                 }
-                return url;
+                return url
             }
-            var parts = utils.parse_url(url);//strip scheme
+            var parts = utils.parse_url(url)// strip scheme
 
-            parts = utils.urlArgs(parts.host);//go on with query string
-            var _device = deviceManager.getItemById(parts.device.value);
-            //support device by name
-            if(!_device){
+            parts = utils.urlArgs(parts.host)// go on with query string
+            var _device = deviceManager.getItemById(parts.device.value)
+            // support device by name
+            if (!_device) {
                 var _instance = deviceManager.getInstanceByName(parts.device.value)
-                if(_instance){
-                    _device = _instance.device;
+                if (_instance) {
+                    _device = _instance.device
                 }
             }
-            if(_device){
-                var info=deviceManager.toDeviceControlInfo(_device);
-                driver = driverManager.getDriverById(info.driverId);
-                var driverInstance = _device.driverInstance;
-                if(driverInstance || driver) {
-                    blockScope = driverInstance ? driverInstance.blockScope : driver.blockScope;
-                    var block = blockScope ? blockScope.getStore().getSync(parts.block.value) : null;
-                    if(block){
-                        return block;
+            if (_device) {
+                var info = deviceManager.toDeviceControlInfo(_device)
+                driver = driverManager.getDriverById(info.driverId)
+                var driverInstance = _device.driverInstance
+                if (driverInstance || driver) {
+                    blockScope = driverInstance ? driverInstance.blockScope : driver.blockScope
+                    var block = blockScope ? blockScope.getStore().getSync(parts.block.value) : null
+                    if (block) {
+                        return block
                     }
                 }
             }
         },
-        getBlock:function(id){
-            return this.getBlockById(id);
+        getBlock: function (id) {
+            return this.getBlockById(id)
         },
         /***
          * Returns a block from the scope
          * @param name {String}
          * @return block {module:xblox/model/Block[]}
          */
-        getBlockByName:function(name) {
-            if(name.indexOf('://')!==-1){
-                var block = this.resolveBlock(name);
-                if(block){
-                    return block;
+        getBlockByName: function (name) {
+            if (name.indexOf('://') !== -1) {
+                var block = this.resolveBlock(name)
+                if (block) {
+                    return block
                 }
             }
-            var allBlocks = this.getBlocks();
+            var allBlocks = this.getBlocks()
             for (var i = 0; i < allBlocks.length; i++) {
-                var block = allBlocks[i];
-                if(block.name===name){
-                    return block;
+                var block = allBlocks[i]
+                if (block.name === name) {
+                    return block
                 }
-
             }
             var blocks = this.blockStore.query({
-                name:name
-            });
-            return blocks && blocks.length>0? blocks[0] : null;
+                name: name
+            })
+            return blocks && blocks.length > 0 ? blocks[0] : null
         },
         /***
          * Returns a block from the scope
@@ -44509,150 +44508,142 @@ define('xblox/model/Scope',[
          * @param name  =>  block name
          * @return block
          */
-        getBlockById:function(id) {
-            return this.blockStore.getSync(id) /*|| this.variableStore.getSync(id)*/;
+        getBlockById: function (id) {
+            return this.blockStore.getSync(id)
+            /* || this.variableStore.getSync(id) */
         },
         /**
          * Returns an array of blocks
          * @param blocks {module:xblox/model/Block[]
          * @returns {module:xblox/model/Block[]}
          */
-        _flatten:function(blocks){
-            var result = [];
-            for(var b in blocks){
-                var block = blocks[b];
-                if(block.keys==null){
-                    continue;
+        _flatten: function (blocks) {
+            var result = []
+            for (var b in blocks) {
+                var block = blocks[b]
+                if (block.keys == null) {
+                    continue
                 }
-                result.push(block);
-                for(var prop in block){
+                result.push(block)
+                for (var prop in block) {
                     if (prop == 'ctrArgs') {
-                        continue;
+                        continue
                     }
-                    //flatten children to ids. Skip "parent" field
+                    // flatten children to ids. Skip "parent" field
                     if (prop !== 'parent') {
-                        if (this.isBlock(block[prop])){
+                        if (this.isBlock(block[prop])) {
                             // if the field is a single block container, store the child block's id
-                            result.push(block[prop]);
-                        } else if (this.areBlocks(block[prop])){
-                            for(var i = 0; i < block[prop].length ; i++){
-                                result.push(block[prop][i]);
+                            result.push(block[prop])
+                        } else if (this.areBlocks(block[prop])) {
+                            for (var i = 0; i < block[prop].length; i++) {
+                                result.push(block[prop][i])
                             }
                         }
                     }
                 }
             }
-            return result;
+            return result
         },
         /**
-         * 
+         *
          * @param blocks {module:xblox/model/Block[]}
          * @returns {module:xblox/model/Block[]}
          */
-        flatten:function(blocks){
-            var result = [];
-            for(var b in blocks){
+        flatten: function (blocks) {
+            var result = []
+            for (var b in blocks) {
+                var block = blocks[b]
 
-                var block = blocks[b];
-
-                if(block.keys==null){
-                    continue;
+                if (block.keys == null) {
+                    continue
                 }
-                var found = _.find(result,{
-                    id:block.id
+                var found = _.find(result, {
+                    id: block.id
                 })
 
-                if(found){
-                    //console.error('already in array  : ' +found.name);
-                }else {
-                    result.push(block);
+                if (found) {
+                    // console.error('already in array  : ' +found.name);
+                } else {
+                    result.push(block)
                 }
 
-                for(var prop in block){
+                for (var prop in block) {
                     if (prop == 'ctrArgs') {
-                        continue;
+                        continue
                     }
-                    //flatten children to ids. Skip "parent" field
+                    // flatten children to ids. Skip "parent" field
                     if (prop !== 'parent') {
-
-                        var value = block[prop];
-                        if (this.isBlock(value)){
+                        var value = block[prop]
+                        if (this.isBlock(value)) {
                             // if the field is a single block container, store the child block's id
-                            found = _.find(result,{
-                                id:value.id
+                            found = _.find(result, {
+                                id: value.id
                             })
-                            if(found){
-                                
-                            }else {
-                                result.push(value);
+                            if (found) {
+
+                            } else {
+                                result.push(value)
                             }
-                        } else if (this.areBlocks(value)){
-                            for(var i = 0; i < value.length ; i++){
-                                var sBlock = value[i];
-                                found = _.find(result,{
-                                    id:sBlock.id
+                        } else if (this.areBlocks(value)) {
+                            for (var i = 0; i < value.length; i++) {
+                                var sBlock = value[i]
+                                found = _.find(result, {
+                                    id: sBlock.id
                                 })
-                                if(found){                                  
-                                }else {
-                                    result.push(sBlock);
+                                if (found) {
+                                } else {
+                                    result.push(sBlock)
                                 }
-                                result = result.concat(this.flatten([sBlock]));
+                                result = result.concat(this.flatten([sBlock]))
                             }
                         }
                     }
                 }
             }
-            result = _.uniq(result,false,function(item){
-                return item.id;
-            });
-            return result;
+            result = _.uniq(result, false, function (item) {
+                return item.id
+            })
+            return result
         },
-        _getSolve:function(block){
-            return block.prototype ? block.prototype.solve : block.__proto__.solve;
+        _getSolve: function (block) {
+            return block.prototype ? block.prototype.solve : block.__proto__.solve
         },
-        /***
-         * Runs the block
-         *
-         * @param mixed
-         * @returns result
-         */
-        solveBlock:function(mixed,settings,force,isInterface) {
+        solveBlock: function (mixed, settings, force, isInterface) {
             settings = settings || {
-                highlight:false
-            };
-            var block = null;
-            if(this.isString(mixed)){
-                block = this.getBlockByName(mixed);
-                if(!block){
-                    block = this.getBlockById(mixed);
+                    highlight: false
                 }
-            }else if(this.isObject(mixed)){
-                block = mixed;
+            var block = null
+            if (this.isString(mixed)) {
+                block = this.getBlockByName(mixed)
+                if (!block) {
+                    block = this.getBlockById(mixed)
+                }
+            } else if (this.isObject(mixed)) {
+                block = mixed
             }
-            var result = null;
-            if(block){
-                if(settings.force !==true && block.enabled==false){
-                    return null;
+            var result = null
+            if (block) {
+                if (settings.force !== true && block.enabled == false) {
+                    return null
                 }
-                if(settings.force===true){
-                    settings.force=false;
+                if (settings.force === true) {
+                    settings.force = false
                 }
-                var _class = block.declaredClass;
-                var _module = lang.getObject(utils.replaceAll('/', '.', _class)) || lang.getObject(_class);
-                if(_module){
-                    if(_module.prototype && _module.prototype.solve){
-                        result = _module.prototype.solve.apply(block,[this,settings]);
+                var _class = block.declaredClass
+                var _module = lang.getObject(utils.replaceAll('/', '.', _class)) || lang.getObject(_class)
+                if (_module) {
+                    if (_module.prototype && _module.prototype.solve) {
+                        result = _module.prototype.solve.apply(block, [this, settings])
                     }
-                }else {
-                    result  = block.solve(block.getScope(), settings,force,isInterface);
-                    delete block.override;
-                    block.override = {};
+                } else {
+                    result = block.solve(block.getScope(), settings, force, isInterface)
+                    delete block.override
+                    block.override = {}
                 }
-
-            }else{
-                debug && console.error('solving block failed, have no block! ' , mixed);
+            } else {
+                debug && console.error('solving block failed, have no block! ', mixed)
             }
-            return result;
+            return result
         },
         /***
          * Solves all the commands into [items]
@@ -44660,12 +44651,12 @@ define('xblox/model/Scope',[
          * @param manager   =>  BlockManager
          * @return  list of commands to send
          */
-        solve:function(scope,settings) {
-            var ret='';
-            for(var n = 0; n < this.items.length ; n++){
-                ret += this.items[n].solve(scope,settings);
+        solve: function (scope, settings) {
+            var ret = ''
+            for (var n = 0; n < this.items.length; n++) {
+                ret += this.items[n].solve(scope, settings)
             }
-            return ret;
+            return ret
         },
         /***
          * Parses an expression
@@ -44674,7 +44665,7 @@ define('xblox/model/Scope',[
          * @returns {String} parsed expression
          */
         /**
-         * 
+         *
          * @param expression
          * @param addVariables
          * @param variableOverrides
@@ -44684,120 +44675,113 @@ define('xblox/model/Scope',[
          * @param args
          * @returns {*}
          */
-        parseExpression:function(expression,addVariables,variableOverrides,runCallback,errorCallback,context,args,flags) {
-            return this.getExpressionModel().parse(this,expression,addVariables,runCallback,errorCallback,context,variableOverrides,args,flags);
+        parseExpression: function (expression, addVariables, variableOverrides, runCallback, errorCallback, context, args, flags) {
+            return this.getExpressionModel().parse(this, expression, addVariables, runCallback, errorCallback, context, variableOverrides, args, flags)
         },
         isString: function (a) {
-            return typeof a == "string"
+            return typeof a == 'string'
         },
         isNumber: function (a) {
-            return typeof a == "number"
+            return typeof a == 'number'
         },
         isBoolean: function (a) {
-            return typeof a == "boolean"
+            return typeof a == 'boolean'
         },
-        isObject:function(a){
-            return typeof a === 'object';
+        isObject: function (a) {
+            return typeof a === 'object'
         },
-        isBlock:function (a) {
-            var ret = false;
+        isBlock: function (a) {
+            var ret = false
 
-            if ( ( typeof a == "object" ) && ( a!=null ) && (a.length == undefined) )
-            {
-                if ( a.serializeMe )
-                {
-                    ret = true;
+            if ((typeof a == 'object') && (a != null) && (a.length == undefined)) {
+                if (a.serializeMe) {
+                    ret = true
                 }
             }
-            return ret;
+            return ret
         },
-        areBlocks:function(a) {
-            var ret = false;
+        areBlocks: function (a) {
+            var ret = false
 
-            if ( ( typeof a == "object" ) && ( a!=null ) && (a.length > 0) )
-            {
-                if ( this.isBlock( a[0] )) {
-                    ret = true;
+            if ((typeof a == 'object') && (a != null) && (a.length > 0)) {
+                if (this.isBlock(a[0])) {
+                    ret = true
                 }
             }
-            return ret;
+            return ret
         },
         /**
          *
          * @private
          */
-        _onVariableChanged:function(evt){
-            if(evt.item && this.getExpressionModel().variableFuncCache[evt.item.title]){
-                delete this.expressionModel.variableFuncCache[evt.item.title];
+        _onVariableChanged: function (evt) {
+            if (evt.item && this.getExpressionModel().variableFuncCache[evt.item.title]) {
+                delete this.expressionModel.variableFuncCache[evt.item.title]
             }
         },
 
-        init:function(){
-            this.getExpressionModel();//create
-            this.subscribe(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED,this._onVariableChanged);
-            var thiz = this;
-            
-            this.subscribe(types.EVENTS.ON_MODULE_RELOADED, function(evt){
+        init: function () {
+            this.getExpressionModel()// create
+            this.subscribe(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, this._onVariableChanged)
+            var thiz = this
+
+            this.subscribe(types.EVENTS.ON_MODULE_RELOADED, function (evt) {
                 var mid = evt.module,
                     newModule = evt.newModule,
                     blocks = thiz.getBlocks(),
-                    instances = blocks.filter(function(block){
-                        if(block.declaredClass == mid || block.declaredClass == utils.replaceAll('/', '.', mid)){
+                    instances = blocks.filter(function (block) {
+                        if (block.declaredClass == mid || block.declaredClass == utils.replaceAll('/', '.', mid)) {
                             return block
                         }
-                        return null;
-                    });
+                        return null
+                    })
 
-                instances && _.each(instances,function(block){
-                    mergeNewModule(block,newModule.prototype);
-                });
-            });            
+                instances && _.each(instances, function (block) {
+                    mergeNewModule(block, newModule.prototype)
+                })
+            })
         },
         /**
          *
          */
-        _destroy:function(){
-            var allblocks = this.allBlocks();
+        _destroy: function () {
+            var allblocks = this.allBlocks()
             for (var i = 0; i < allblocks.length; i++) {
-
-                var obj = allblocks[i];
-                if(!obj){
-                    continue;
+                var obj = allblocks[i]
+                if (!obj) {
+                    continue
                 }
                 try {
-
                     if (obj && obj.stop) {
-                        obj.stop(true);
+                        obj.stop(true)
                     }
 
                     if (obj && obj.reset) {
-                        obj.reset();
+                        obj.reset()
                     }
                     if (obj && obj._destroy) {
-                        obj._destroy();
+                        obj._destroy()
                     }
                     if (obj && obj.destroy) {
-                        obj.destroy();
+                        obj.destroy()
                     }
 
-                    if(obj._emit) {
+                    if (obj._emit) {
                         obj._emit(types.EVENTS.ON_ITEM_REMOVED, {
                             item: obj
-                        });
+                        })
                     }
-
-                }catch(e){
-                    debug && console.error('Scope::_destroy: error destroying block '+e.message, obj ? (obj.id +' ' + obj.name) :'empty');
-                    debug && console.trace();
+                } catch (e) {
+                    debug && console.error('Scope::_destroy: error destroying block ' + e.message, obj ? (obj.id + ' ' + obj.name) : 'empty')
+                    debug && console.trace()
                 }
             }
-
         },
-        destroy:function(){
-            this._destroy();
-            this.reset();
-            this._destroyed=true;
-            delete this.expressionModel;
+        destroy: function () {
+            this._destroy()
+            this.reset()
+            this._destroyed = true
+            delete this.expressionModel
         },
         /**
          *
@@ -44807,168 +44791,163 @@ define('xblox/model/Scope',[
          * @param add
          * @returns {boolean}
          */
-        moveTo:function(source,target,before,add){
+        moveTo: function (source, target, before, add) {
             /**
              * treat first the special case of adding an item
              */
-            if(add){
-
-                //remove it from the source parent and re-parent the source
-                if(target.canAdd && target.canAdd()){
-
-                    var sourceParent = this.getBlockById(source.parentId);
-                    if(sourceParent){
-                        sourceParent.removeBlock(source,false);
+            if (add) {
+                // remove it from the source parent and re-parent the source
+                if (target.canAdd && target.canAdd()) {
+                    var sourceParent = this.getBlockById(source.parentId)
+                    if (sourceParent) {
+                        sourceParent.removeBlock(source, false)
                     }
-                    target.add(source,null,null);
-                    return;
-                }else{
-                    console.error('cant reparent');
-                    return false;
+                    target.add(source, null, null)
+                    return
+                } else {
+                    console.error('cant reparent')
+                    return false
                 }
             }
 
-
-            //for root level move
-            if(!target.parentId && add==false){
-                //if source is part of something, we remove it
-                var sourceParent = this.getBlockById(source.parentId);
-                if(sourceParent && sourceParent.removeBlock){
-                    sourceParent.removeBlock(source,false);
-                    source.parentId=null;
-                    source.group=target.group;
+            // for root level move
+            if (!target.parentId && add == false) {
+                // if source is part of something, we remove it
+                var sourceParent = this.getBlockById(source.parentId)
+                if (sourceParent && sourceParent.removeBlock) {
+                    sourceParent.removeBlock(source, false)
+                    source.parentId = null
+                    source.group = target.group
                 }
 
-                var itemsToBeMoved=[];
+                var itemsToBeMoved = []
                 var groupItems = this.getBlocks({
-                    group:target.group
-                });
+                    group: target.group
+                })
 
-                var rootLevelIndex=[];
-                var store = this.getBlockStore();
+                var rootLevelIndex = []
+                var store = this.getBlockStore()
 
-                var sourceIndex = store.storage.index[source.id];
-                var targetIndex = store.storage.index[target.id];
-                for(var i = 0; i<groupItems.length;i++){
+                var sourceIndex = store.storage.index[source.id]
+                var targetIndex = store.storage.index[target.id]
+                for (var i = 0; i < groupItems.length; i++) {
+                    var item = groupItems[i]
+                    // keep all root-level items
 
-                    var item = groupItems[i];
-                    //keep all root-level items
-
-                    if( groupItems[i].parentId==null && //must be root
-                        groupItems[i]!=source// cant be source
-                        ){
-
-                        var itemIndex = store.storage.index[item.id];
-                        var add = before ? itemIndex >= targetIndex : itemIndex <= targetIndex;
-                        if(add){
-                            itemsToBeMoved.push(groupItems[i]);
-                            rootLevelIndex.push(store.storage.index[groupItems[i].id]);
+                    if (groupItems[i].parentId == null && // must be root
+                        groupItems[i] != source// cant be source
+                    ) {
+                        var itemIndex = store.storage.index[item.id]
+                        var add = before ? itemIndex >= targetIndex : itemIndex <= targetIndex
+                        if (add) {
+                            itemsToBeMoved.push(groupItems[i])
+                            rootLevelIndex.push(store.storage.index[groupItems[i].id])
                         }
                     }
                 }
 
-                //remove them the store
-                for(var j = 0; j<itemsToBeMoved.length;j++){
-                    store.remove(itemsToBeMoved[j].id);
+                // remove them the store
+                for (var j = 0; j < itemsToBeMoved.length; j++) {
+                    store.remove(itemsToBeMoved[j].id)
                 }
 
-                //remove source
-                this.getBlockStore().remove(source.id);
+                // remove source
+                this.getBlockStore().remove(source.id)
 
-                //if before, put source first
-                if(before){
-                    this.getBlockStore().putSync(source);
+                // if before, put source first
+                if (before) {
+                    this.getBlockStore().putSync(source)
                 }
 
-                //now place all back
-                for(var j = 0; j<itemsToBeMoved.length;j++){
-                    store.put(itemsToBeMoved[j]);
+                // now place all back
+                for (var j = 0; j < itemsToBeMoved.length; j++) {
+                    store.put(itemsToBeMoved[j])
                 }
 
-                //if after, place source back
-                if(!before){
-                    this.getBlockStore().putSync(source);
+                // if after, place source back
+                if (!before) {
+                    this.getBlockStore().putSync(source)
                 }
-                return true;
-            //we move from root to lower item
-            }else if( !source.parentId && target.parentId && add==false){
-                source.group = target.group;
+                return true
+                // we move from root to lower item
+            } else if (!source.parentId && target.parentId && add == false) {
+                source.group = target.group
 
-            //we move from root to into root item
-            }else if( !source.parentId && !target.parentId && add){
-
-                if(target.canAdd && target.canAdd()){
-                    source.group=null;
-                    target.add(source,null,null);
+                // we move from root to into root item
+            } else if (!source.parentId && !target.parentId && add) {
+                if (target.canAdd && target.canAdd()) {
+                    source.group = null
+                    target.add(source, null, null)
                 }
-                return true;
+                return true
 
-            // we move within the same parent
-            }else if( source.parentId && target.parentId && add==false && source.parentId === target.parentId){
-                var parent = this.getBlockById(source.parentId);
-                if(!parent){
-                    return false;
+                // we move within the same parent
+            } else if (source.parentId && target.parentId && add == false && source.parentId === target.parentId) {
+                var parent = this.getBlockById(source.parentId)
+                if (!parent) {
+                    return false
                 }
 
-                var maxSteps = 20;
-                var items = parent[parent._getContainer(source)];
-                var cIndexSource = source.indexOf(items,source);
-                var cIndexTarget = source.indexOf(items,target);
-                var direction = cIndexSource > cIndexTarget ? -1 : 1;
-                var distance = Math.abs(cIndexSource - ( cIndexTarget + (before ==true ? -1 : 1)));
-                for(var i = 0 ; i < distance -1;  i++){
-                    parent.move(source,direction);
+                var maxSteps = 20
+                var items = parent[parent._getContainer(source)]
+                var cIndexSource = source.indexOf(items, source)
+                var cIndexTarget = source.indexOf(items, target)
+                var direction = cIndexSource > cIndexTarget ? -1 : 1
+                var distance = Math.abs(cIndexSource - (cIndexTarget + (before == true ? -1 : 1)))
+                for (var i = 0; i < distance - 1; i++) {
+                    parent.move(source, direction)
                 }
-                return true;
+                return true
 
                 // we move within the different parents
-            }else if( source.parentId && target.parentId && add==false && source.parentId !== target.parentId){                console.log('same parent!');
+            } else if (source.parentId && target.parentId && add == false && source.parentId !== target.parentId) {
+                console.log('same parent!')
 
-                var sourceParent = this.getBlockById(source.parentId);
-                if(!sourceParent){
-                    return false;
-                }
-
-                var targetParent = this.getBlockById(target.parentId);
-                if(!targetParent){
-                    return false;
+                var sourceParent = this.getBlockById(source.parentId)
+                if (!sourceParent) {
+                    return false
                 }
 
-
-                //remove it from the source parent and re-parent the source
-                if(sourceParent && sourceParent.removeBlock && targetParent.canAdd && targetParent.canAdd()){
-                    sourceParent.removeBlock(source,false);
-                    targetParent.add(source,null,null);
-                }else{
-                    return false;
+                var targetParent = this.getBlockById(target.parentId)
+                if (!targetParent) {
+                    return false
                 }
 
-                //now proceed as in the case above : same parents
-                var items = targetParent[targetParent._getContainer(source)];
-                if(items==null){
-                    console.error('weird : target parent has no item container');
+                // remove it from the source parent and re-parent the source
+                if (sourceParent && sourceParent.removeBlock && targetParent.canAdd && targetParent.canAdd()) {
+                    sourceParent.removeBlock(source, false)
+                    targetParent.add(source, null, null)
+                } else {
+                    return false
                 }
-                var cIndexSource = targetParent.indexOf(items,source);
-                var cIndexTarget = targetParent.indexOf(items,target);
-                if(!cIndexSource || !cIndexTarget){
-                    console.error(' weird : invalid drop processing state, have no valid item indicies');
-                    return;
+
+                // now proceed as in the case above : same parents
+                var items = targetParent[targetParent._getContainer(source)]
+                if (items == null) {
+                    console.error('weird : target parent has no item container')
                 }
-                var direction = cIndexSource > cIndexTarget ? -1 : 1;
-                var distance = Math.abs(cIndexSource - ( cIndexTarget + (before ==true ? -1 : 1)));
-                for(var i = 0 ; i < distance -1;  i++){
-                    targetParent.move(source,direction);
+                var cIndexSource = targetParent.indexOf(items, source)
+                var cIndexTarget = targetParent.indexOf(items, target)
+                if (!cIndexSource || !cIndexTarget) {
+                    console.error(' weird : invalid drop processing state, have no valid item indicies')
+                    return
                 }
-                return true;
+                var direction = cIndexSource > cIndexTarget ? -1 : 1
+                var distance = Math.abs(cIndexSource - (cIndexTarget + (before == true ? -1 : 1)))
+                for (var i = 0; i < distance - 1; i++) {
+                    targetParent.move(source, direction)
+                }
+                return true
             }
 
-            return false;
+            return false
         }
 
-    });
-    dcl.chainAfter(Module,'destroy');
-    return Module;
-});;
+    })
+    dcl.chainAfter(Module, 'destroy')
+    return Module
+})
+;
 /** @module xblox/model/Expression */
 define('xblox/model/Expression',[
     "xdojo/declare",
@@ -46657,7 +46636,7 @@ define('xcf/manager/DeviceManager',[
                 return;
             }
 
-            if (!isIDE && deviceInfo.hash && this._cachedItems) {
+            if (deviceInfo.hash && this._cachedItems) {
                 var _cached = this._cachedItems[deviceInfo.hash];
                 if (_cached) {
                     return _cached;
@@ -46705,13 +46684,12 @@ define('xcf/manager/DeviceManager',[
                         device = deviceStoreItem;
                     }
 
-                    if (!isIDE && deviceInfo.hash) {
+                    if (deviceInfo.hash) {
                         if (!this._cachedItems) {
                             this._cachedItems = {};
                         }
                         this._cachedItems[deviceInfo.hash] = device;
                     }
-
                     return device;
                 }
             }
@@ -73699,7 +73677,7 @@ define('xide/utils/ObjectUtils',[
                 _function.apply(who,args);
             }
         }
-        return _place();
+        return _place;
     };
 
 
