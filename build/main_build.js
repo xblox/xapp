@@ -43770,7 +43770,7 @@ define('xblox/model/Scope',[
                 return []
             }
             query = query || {id: /\S+/}// all blocks
-            var result = this.blockStore._find(query)
+            var result = _.isEmpty(query) ? this.blockStore.data : this.blockStore.query(query,null,true);
             if (!isIDE && allowCache !== false) {
                 var hash = MD5(JSON.stringify(query), 1)
                 this._cached[hash] = result
@@ -44509,7 +44509,7 @@ define('xblox/model/Scope',[
          * @return block
          */
         getBlockById: function (id) {
-            return this.blockStore.getSync(id)
+            return this.blockStore.getSync(id);
             /* || this.variableStore.getSync(id) */
         },
         /**
@@ -48358,7 +48358,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
         },
         onDeviceDisconnected: function (data) {
-
             if (data && data.device) {
                 var error = data.error;
 
@@ -48444,7 +48443,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 }
             }
         },
-
         onCommandFinish: function (deviceData, message) {
             var driverInstance = this.getDriverInstance(deviceData, true);
             if (!driverInstance) {
@@ -48775,17 +48773,16 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
             if (messages.length > 0 && driverInstance.blockScope) {
                 var scope = driverInstance.blockScope;
-                var responseBlocks = scope.getBlocks({
+
+                var responseBlocks = scope.blockStore._find({
                     group: types.BLOCK_GROUPS.CF_DRIVER_RESPONSE_BLOCKS
                 });
-                var responseVariables = scope.getVariables({
+                var responseVariables = scope.blockStore._find({
                     group: types.BLOCK_GROUPS.CF_DRIVER_RESPONSE_VARIABLES
                 });
 
                 var responseVariable = scope.getVariable('value');
-                if (responseVariable) {
-
-                } else {
+                if (!responseVariable) {
                     responseVariable = new Variable({
                         id: utils.createUUID(),
                         name: 'value',
@@ -48916,8 +48913,10 @@ define('xcf/manager/DeviceManager_DeviceServer',[
          * @param wait
          * @param stop
          * @param pause
+         * @param stop
          */
-        sendDeviceCommand: function (driverInstance, data, src, id, print, wait, stop, pause) {
+        sendDeviceCommand: function (driverInstance, data, src, id, print, wait, stop, pause,command) {
+            console.log('send device command ');
             this.checkDeviceServerConnection();
             var options = driverInstance.getDeviceInfo();
             utils.mixin({
@@ -48926,7 +48925,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
             var dataOut = {
                 command: data,
-                device_command: 'Device_Send',
+                device_command: command||types.SOCKET_SERVER_COMMANDS.DEVICE_SEND,
                 options: options
 
             };
