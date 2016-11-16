@@ -33194,14 +33194,28 @@ define('xide/utils/_LogMixin',[
 define('xide/data/Memory',[
     "dojo/_base/declare",
 	'dstore/Memory',
-    'xide/data/_Base',
+    'xide/data/_Base'
+], function (declare, Memory,_Base) {
+    return declare('xide.data.Memory',[Memory, _Base], {});
+});
+;
+define('xide/data/_Base',[
+    "dojo/_base/declare",
+    'dstore/Memory',
+    'dstore/Tree',
+    'dstore/QueryResults',
+    'xide/mixins/EventedMixin',
+    'xide/encoding/MD5',
+    'xdojo/has',
+    'xide/lodash',
     'dojo/when',
-    'dojo/Deferred',
-    'xide/lodash'
-], function (declare, Memory,_Base,when,Deferred,lodash) {
-    return declare('xide.data.Memory',[Memory, _Base], {
+    'dojo/Deferred'
+], function (declare, Memory, Tree, QueryResults,EventedMixin,MD5,has,lodash,when,Deferred) {
+    return declare("xide/data/_Base",EventedMixin, {
+        __all:null,
+        allowCache:true,
         _find:function (query) {
-            var result = lodash.find(this.data,query);
+            var result = lodash.filter(this.data,query);
             if(lodash.isArray(result)){
                 return result;
             }else if(lodash.isObject(result)){
@@ -33216,20 +33230,187 @@ define('xide/data/Memory',[
                 dfd.resolve(data);
             });
             return dfd;
+        },
+        constructor: function () {
+            var store = this;
+            if (store._getQuerierFactory('filter') || store._getQuerierFactory('sort')) {
+
+                this.queryEngine = function (query, options) {
+                    options = options || {};
+
+                    var filterQuerierFactory = store._getQuerierFactory('filter');
+                    var filter = filterQuerierFactory ? filterQuerierFactory(query) : passthrough;
+
+                    var sortQuerierFactory = store._getQuerierFactory('sort');
+                    var sort = passthrough;
+                    if (sortQuerierFactory) {
+                        sort = sortQuerierFactory(arrayUtil.map(options.sort, function (criteria) {
+                            return {
+                                property: criteria.attribute,
+                                descending: criteria.descending
+                            };
+                        }));
+                    }
+
+                    var range = passthrough;
+                    if (!isNaN(options.start) || !isNaN(options.count)) {
+                        range = function (data) {
+                            var start = options.start || 0,
+                                count = options.count || Infinity;
+
+                            var results = data.slice(start, start + count);
+                            results.total = data.length;
+                            return results;
+                        };
+                    }
+
+                    return function (data) {
+                        return range(sort(filter(data)));
+                    };
+                };
+            }
+            var objectStore = this;
+            // we call notify on events to mimic the old dojo/store/Trackable
+            store.on('add,update,delete', function (event) {
+                var type = event.type;
+                var target = event.target;
+                objectStore.notify(
+                    (type === 'add' || type === 'update') ? target : undefined,
+                    (type === 'delete' || type === 'update') ?
+                        ('id' in event ? event.id : store.getIdentity(target)) : undefined);
+            });
+        },
+        destroy:function(){
+            this._emit('destroy',this);
+            delete this._queryCache;
+            this._queryCache=null;
+        },
+        notify: function () {
+        },
+        refreshItem:function(item){
+            this.emit('update', {
+                target: item
+            });
+        },
+        _queryCache:null,
+        query: function (query, options,allowCache) {
+
+            //no query, return all
+
+
+            if(lodash.isEmpty(query)){
+                return this.data;
+            }else if(!_.some(query,function (value) { return value == null})){
+                //no empty props in query, return lodash.filter
+                //return this._find(query);
+            }
+
+
+            var hash = query ? MD5(JSON.stringify(query),1) : null;
+            if(!has('xcf-ui') && hash && !has('host-node') && allowCache!==false){
+                !this._queryCache && (this._queryCache={});
+                if(this._queryCache[hash]){
+                    return this._queryCache[hash];
+                }
+            }
+            /*
+            if(!query && !options && allowCache!==false && this.allowCache){
+                return this.data;
+            }*/
+
+            // summary:
+            //		Queries the store for objects. This does not alter the store, but returns a
+            //		set of data from the store.
+            // query: String|Object|Function
+            //		The query to use for retrieving objects from the store.
+            // options: dstore/api/Store.QueryOptions
+            //		The optional arguments to apply to the resultset.
+            // returns: dstore/api/Store.QueryResults
+            //		The results of the query, extended with iterative methods.
+            //
+            // example:
+            //		Given the following store:
+            //
+            //	...find all items where "prime" is true:
+            //
+            //	|	store.query({ prime: true }).forEach(function(object){
+            //	|		// handle each object
+            //	|	});
+            options = options || {};
+            query = query || {};
+
+            var results = this.filter(query);
+            var queryResults;
+
+            // Apply sorting
+            var sort = options.sort;
+            if (sort) {
+                if (Object.prototype.toString.call(sort) === '[object Array]') {
+                    var sortOptions;
+                    while ((sortOptions = sort.pop())) {
+                        results = results.sort(sortOptions.attribute, sortOptions.descending);
+                    }
+                } else {
+                    results = results.sort(sort);
+                }
+            }
+
+            var tracked;
+            var _track = false;
+            if (_track && results.track && !results.tracking) {
+                // if it is trackable, always track, so that observe can
+                // work properly.
+                results = results.track();
+                tracked = true;
+            }
+            if ('start' in options) {
+                // Apply a range
+                var start = options.start || 0;
+                // object stores support sync results, so try that if available
+                queryResults = results[results.fetchRangeSync ? 'fetchRangeSync' : 'fetchRange']({
+                    start: start,
+                    end: options.count ? (start + options.count) : Infinity
+                });
+                queryResults.total = queryResults.totalLength;
+            }
+            queryResults = queryResults || new QueryResults(results[results.fetchSync ? 'fetchSync' : 'fetch']());
+            queryResults.observe = function (callback, includeObjectUpdates) {
+                // translate observe to event listeners
+                function convertUndefined(value) {
+                    if (value === undefined && tracked) {
+                        return -1;
+                    }
+                    return value;
+                }
+
+                var addHandle = results.on('add', function (event) {
+                    callback(event.target, -1, convertUndefined(event.index));
+                });
+                var updateHandle = results.on('update', function (event) {
+                    if (includeObjectUpdates || event.previousIndex !== event.index || !isFinite(event.index)) {
+                        callback(event.target, convertUndefined(event.previousIndex), convertUndefined(event.index));
+                    }
+                });
+                var removeHandle = results.on('delete', function (event) {
+                    callback(event.target, convertUndefined(event.previousIndex), -1);
+                });
+                var handle = {
+                    remove: function () {
+                        addHandle.remove();
+                        updateHandle.remove();
+                        removeHandle.remove();
+                    }
+                };
+                handle.cancel = handle.remove;
+                return handle;
+            };
+            if(!has('xcf-ui') && hash && !has('host-node') && allowCache!==false){
+                this._queryCache[hash]=queryResults;
+            }
+            return queryResults;
         }
     });
-});
-;
-/** @module xide/lodash **/
-define('xide/lodash',[],function(){
-    /**
-     * temp. wanna be shim for lodash til dojo-2/loader lands here
-     */
-    if(typeof _ !=="undefined"){
-        return _;
-    }
-});
-;
+});;
 define('dojo/when',[
 	"./Deferred",
 	"./promise/Promise"
@@ -33420,186 +33601,16 @@ define('dojo/promise/Promise',[
 	});
 });
 ;
-define('xide/data/_Base',[
-    "dojo/_base/declare",
-    'dstore/Memory',
-    'dstore/Tree',
-    'dstore/QueryResults',
-    'xide/mixins/EventedMixin',
-    'xide/encoding/MD5',
-    'xdojo/has'
-], function (declare, Memory, Tree, QueryResults,EventedMixin,MD5,has) {
-    return declare("xide/data/_Base",EventedMixin, {
-        __all:null,
-        allowCache:true,
-        constructor: function () {
-            var store = this;
-            if (store._getQuerierFactory('filter') || store._getQuerierFactory('sort')) {
-
-                this.queryEngine = function (query, options) {
-                    options = options || {};
-
-                    var filterQuerierFactory = store._getQuerierFactory('filter');
-                    var filter = filterQuerierFactory ? filterQuerierFactory(query) : passthrough;
-
-                    var sortQuerierFactory = store._getQuerierFactory('sort');
-                    var sort = passthrough;
-                    if (sortQuerierFactory) {
-                        sort = sortQuerierFactory(arrayUtil.map(options.sort, function (criteria) {
-                            return {
-                                property: criteria.attribute,
-                                descending: criteria.descending
-                            };
-                        }));
-                    }
-
-                    var range = passthrough;
-                    if (!isNaN(options.start) || !isNaN(options.count)) {
-                        range = function (data) {
-                            var start = options.start || 0,
-                                count = options.count || Infinity;
-
-                            var results = data.slice(start, start + count);
-                            results.total = data.length;
-                            return results;
-                        };
-                    }
-
-                    return function (data) {
-                        return range(sort(filter(data)));
-                    };
-                };
-            }
-            var objectStore = this;
-            // we call notify on events to mimic the old dojo/store/Trackable
-            store.on('add,update,delete', function (event) {
-                var type = event.type;
-                var target = event.target;
-                objectStore.notify(
-                    (type === 'add' || type === 'update') ? target : undefined,
-                    (type === 'delete' || type === 'update') ?
-                        ('id' in event ? event.id : store.getIdentity(target)) : undefined);
-            });
-        },
-        destroy:function(){
-            this._emit('destroy',this);
-            delete this._queryCache;
-            this._queryCache=null;
-        },
-        notify: function () {
-        },
-        refreshItem:function(item){
-            this.emit('update', {
-                target: item
-            });
-        },
-        _queryCache:null,
-        query: function (query, options,allowCache) {
-            var hash = query ? MD5(JSON.stringify(query),1) : null;
-            if(!has('xcf-ui') && hash && !has('host-node') && allowCache!==false){
-                !this._queryCache && (this._queryCache={});
-                if(this._queryCache[hash]){
-                    return this._queryCache[hash];
-                }
-            }
-            /*
-            if(!query && !options && allowCache!==false && this.allowCache){
-                return this.data;
-            }*/
-
-            // summary:
-            //		Queries the store for objects. This does not alter the store, but returns a
-            //		set of data from the store.
-            // query: String|Object|Function
-            //		The query to use for retrieving objects from the store.
-            // options: dstore/api/Store.QueryOptions
-            //		The optional arguments to apply to the resultset.
-            // returns: dstore/api/Store.QueryResults
-            //		The results of the query, extended with iterative methods.
-            //
-            // example:
-            //		Given the following store:
-            //
-            //	...find all items where "prime" is true:
-            //
-            //	|	store.query({ prime: true }).forEach(function(object){
-            //	|		// handle each object
-            //	|	});
-            options = options || {};
-            query = query || {};
-
-            var results = this.filter(query);
-            var queryResults;
-
-            // Apply sorting
-            var sort = options.sort;
-            if (sort) {
-                if (Object.prototype.toString.call(sort) === '[object Array]') {
-                    var sortOptions;
-                    while ((sortOptions = sort.pop())) {
-                        results = results.sort(sortOptions.attribute, sortOptions.descending);
-                    }
-                } else {
-                    results = results.sort(sort);
-                }
-            }
-
-            var tracked;
-            var _track = false;
-            if (_track && results.track && !results.tracking) {
-                // if it is trackable, always track, so that observe can
-                // work properly.
-                results = results.track();
-                tracked = true;
-            }
-            if ('start' in options) {
-                // Apply a range
-                var start = options.start || 0;
-                // object stores support sync results, so try that if available
-                queryResults = results[results.fetchRangeSync ? 'fetchRangeSync' : 'fetchRange']({
-                    start: start,
-                    end: options.count ? (start + options.count) : Infinity
-                });
-                queryResults.total = queryResults.totalLength;
-            }
-            queryResults = queryResults || new QueryResults(results[results.fetchSync ? 'fetchSync' : 'fetch']());
-            queryResults.observe = function (callback, includeObjectUpdates) {
-                // translate observe to event listeners
-                function convertUndefined(value) {
-                    if (value === undefined && tracked) {
-                        return -1;
-                    }
-                    return value;
-                }
-
-                var addHandle = results.on('add', function (event) {
-                    callback(event.target, -1, convertUndefined(event.index));
-                });
-                var updateHandle = results.on('update', function (event) {
-                    if (includeObjectUpdates || event.previousIndex !== event.index || !isFinite(event.index)) {
-                        callback(event.target, convertUndefined(event.previousIndex), convertUndefined(event.index));
-                    }
-                });
-                var removeHandle = results.on('delete', function (event) {
-                    callback(event.target, convertUndefined(event.previousIndex), -1);
-                });
-                var handle = {
-                    remove: function () {
-                        addHandle.remove();
-                        updateHandle.remove();
-                        removeHandle.remove();
-                    }
-                };
-                handle.cancel = handle.remove;
-                return handle;
-            };
-            if(!has('xcf-ui') && hash && !has('host-node') && allowCache!==false){
-                this._queryCache[hash]=queryResults;
-            }
-            return queryResults;
-        }
-    });
-});;
+/** @module xide/lodash **/
+define('xide/lodash',[],function(){
+    /**
+     * temp. wanna be shim for lodash til dojo-2/loader lands here
+     */
+    if(typeof _ !=="undefined"){
+        return _;
+    }
+});
+;
 define('xide/encoding/MD5',["./_base"], function(base) {
 
 /*	A port of Paul Johnstone's MD5 implementation
@@ -42449,9 +42460,7 @@ define('xblox/data/Store',[
             return parent.items != null && parent.items.length > 0;
         }
     });
-});
-
-;
+});;
 define('xblox/model/BlockModel',[
     'dcl/dcl',
     'xdojo/declare',
@@ -42464,6 +42473,12 @@ define('xblox/model/BlockModel',[
     return declare('xblox.model.BlockModel',[Model,Source],{
         declaredClass:'xblox.model.BlockModel',
         icon:'fa-play',
+        postCreate:function(){
+            console.error('post create');
+        },
+        constructor:function(){
+            console.error('sd');
+        },
         /**
          * Store function override
          * @param parent
@@ -44184,8 +44199,7 @@ define('xblox/model/Scope',[
         blocksToJson: function (data) {
             try {
                 var result = []
-                data = (data && data.length) ? data : (this.blockStore ? this.getBlocks() : this.blocks)
-
+                data = (data && data.length) ? data : (this.blockStore ? this.blockStore.data : this.blocks)
                 for (var b in data) {
                     var block = data[b]
                     if (block.keys == null) {
@@ -48916,7 +48930,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
          * @param stop
          */
         sendDeviceCommand: function (driverInstance, data, src, id, print, wait, stop, pause,command) {
-            console.log('send device command ');
             this.checkDeviceServerConnection();
             var options = driverInstance.getDeviceInfo();
             utils.mixin({
@@ -48949,7 +48962,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             if (device._userStopped) {
                 return;
             }
-
             if (device && (device.state === types.DEVICE_STATE.DISABLED ||
                     device.state === types.DEVICE_STATE.DISCONNECTED ||
                     device.state === types.DEVICE_STATE.CONNECTING
@@ -48959,8 +48971,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
 
             var message = utils.stringFromDecString(dataOut.command);
-
-
             if (device.isDebug()) {
                 this.publish(types.EVENTS.ON_STATUS_MESSAGE, {
                     text: "Did send message : " + '<span class="text-warnin">' + message.substr(0, 30) + '</span>' + " to " + '<span class="text-info">' + options.host + ":" + options.port + "@" + options.protocol + '</span>'
@@ -65695,11 +65705,10 @@ define('xide/editor/Registry',[
     };
 
     editorMixin.unregisterEditor = function (name) {
-        var _store = editorMixin.getStore(),
-            editors = _store.query({
-                name:name
-            });
-
+        var _store = editorMixin.getStore();
+        var editors = _store._find({
+            name:name
+        });
         function unregister(editor){
             _store.removeSync(editor.name);
             _.each(editors,function(_editor){
@@ -65713,22 +65722,17 @@ define('xide/editor/Registry',[
 
     editorMixin.onRegisterEditor = function (eventData) {
         var _store = editorMixin.getStore();
-        var allEditors = _store.query({
+        var allEditors = _store._find({
             name:eventData.name
         });
-
        if(allEditors.length>0){
-
            debug && console.warn('Editor already registered',eventData);
            _.each(allEditors,function(editor){
                _store.removeSync(editor.name);
                editorMixin.unregisterEditor(editor.name);
            });
         }
-
-
         _store.putSync(eventData);
-
         if (!editorMixin._hasEditor(eventData.name,eventData.extensions)) {
             editors.push(eventData);
         }
@@ -65770,7 +65774,7 @@ define('xide/editor/Registry',[
         }
 
         var store = editorMixin.getStore();
-        var _defaultEditor = store.query({
+        var _defaultEditor = store._find({
             defaultEditor:true
         });
 
@@ -73676,7 +73680,7 @@ define('xide/utils/ObjectUtils',[
                 _function.apply(who,args);
             }
         }
-        return _place;
+        return _place();
     };
 
 
