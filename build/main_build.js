@@ -5937,11 +5937,17 @@ define('xide/mixins/EventedMixin',[
 
                     _listener = listeners[i];
                     who = _listener.owner|| this;
-                    args && args[0] && (args[0].owner =args[0] ? args[0].owner || who : null);
+
+                    args && args[0] && (args[0].owner = args[0] ? args[0].owner || who : null);
 
                     _listener.handler && (temp = _listener.handler.apply(who, args));
-                    if (temp !== undefined)
+                    if (temp !== undefined) {
                         returnValue = temp;
+                    }
+
+                    args && args[0] && args[0].owner && (args[0].owner = null);
+
+
                 }
             }
 
@@ -36010,7 +36016,7 @@ define('xide/manager/ServerActionBase',[
                 //check for error messages (non-fatal) and abort
                 if (options.checkErrors) {
                     if (error.code == 1) {
-                        thiz.onError(error,serviceClass + '::' + method);
+                        options.displayError && thiz.onError(error,serviceClass + '::' + method);
                         deferred.reject(error);
                         return;
                     }
@@ -36018,7 +36024,7 @@ define('xide/manager/ServerActionBase',[
                     if (error.code == 1 && options.displayError) {
                         thiz.onError(error,serviceClass + '::' + method);
                     }
-                    if (error && error.code != 0) {
+                    if (error && error.code !== 0) {
                         resolve(res,error);
                         return;
                     }
@@ -36034,6 +36040,7 @@ define('xide/manager/ServerActionBase',[
             }, function (err) {
                 thiz.onError(err);
             });
+
             if(options.returnProm){
                 return promise;
             }
@@ -38994,7 +39001,7 @@ define('dojo/dom',["./sniff", "./_base/window"],
 	return dom;
 });
 ;
-define('dojo/io-query',["./_base/lang"], function(lang){
+define('dojo/io-query',["dojo/_base/lang"], function(lang){
 
 // module:
 //		dojo/io-query
@@ -39198,7 +39205,12 @@ define('xide/manager/RPCService',[
     'xide/mixins/EventedMixin',
     'xide/encoding/SHA1'
 ], function (declare,dojo,lang, Service, JsonRPC, has, Deferred,utils,types,EventedMixin,SHA1) {
-
+    /**
+     * Provides tools to deal with 'persistence' (open files, editors, ..etc to be restored). It also acts as interface.
+     * @class module:xide/manager/RPCService
+     * @extends module:xide/mixins/EventedMixin
+     *
+     **/
     return declare("xide.manager.RPCService", [Service,EventedMixin], {
         extraArgs: null,
         signatureField: 'sig',
@@ -39211,12 +39223,9 @@ define('xide/manager/RPCService',[
             checkErrors: true
         },
         onError: function (err) {
-
             if (err) {
                 if (err.code === 1) {
-
                     if (err.message && _.isArray(err.message)) {
-
                         this.publish(types.EVENTS.ERROR, {message: err.message.join('<br/>')});
                         return;
                     }
@@ -39224,7 +39233,6 @@ define('xide/manager/RPCService',[
                     this.publish(types.EVENTS.STATUS, 'Ok');
                 }
             }
-
             var struct = {
                 error: err
             };
@@ -39232,17 +39240,10 @@ define('xide/manager/RPCService',[
         },
         prepareCall: function () {
             var params = {};
-
-
-
             if (this.config && this.config.RPC_PARAMS) {
-
                 params = utils.mixin(params, this.config.RPC_PARAMS.rpcFixedParams);
-
                 this.extraArgs = params;
-
                 if (this.config.RPC_PARAMS.rpcUserField) {
-
                     params[this.config.RPC_PARAMS.rpcUserField] = this.config.RPC_PARAMS.rpcUserValue;
 
                     this.signatureField = this.config.RPC_PARAMS.rpcSignatureField;
@@ -39251,11 +39252,8 @@ define('xide/manager/RPCService',[
             }
         },
         runDeferred: function (serviceClassIn, method, args, options) {
-
             var deferred = new Deferred();
-
             options = options || this.defaultOptions;
-
 
             //check this method exists
             if (!this.checkCall(serviceClassIn, method, options.omit)) {
@@ -42094,12 +42092,17 @@ define('xblox/manager/BlockManager',[
     "xdojo/has!xblox-ui?xblox/manager/BlockManagerUI",
     "xide/lodash"
 ],function (dcl,has,Deferred,all,types,utils,factory,ModelBase,Scope,BlockModel,ReloadMixin,ManagerBase,Store,BlockManagerUI,_){
+
     var bases = has('host-browser') && has("xblox-ui") ? [BlockManagerUI,ManagerBase,ReloadMixin.dcl] : [ManagerBase,ReloadMixin.dcl];
     var debug = false;
+
     return dcl(bases,{
         declaredClass:"xblox/manager/BlockManager",
         serviceObject:null,
         loaded:{},
+        test:function(){
+
+        },
         /***
          *  scope: storage for all registered variables / commands
          */
@@ -50761,11 +50764,13 @@ define('xblox/model/Block',[
                 clearTimeout(this._loop);
                 this._loop = null;
             }
-            delete this.override;
+            delete this.override;this.override=null;
+            delete this._lastResult;this.override = null;
             this.override = {};
         },
         stop:function(){
             this.reset();
+            this.getItems && _.invoke(this.getItems(),'stop');
         }
 
     });
@@ -55570,7 +55575,7 @@ define('xblox/model/variables/VariableAssignmentBlock',[
 
                 }else{
 
-                    if(_args && _args.length==1){
+                    if(_args && _args.length==1 && value==null){
                         _value = _args[0];
                     }
 
@@ -58060,11 +58065,12 @@ define('xcf/model/Command',[
          * @param msg.cmd {string} the command string being sent
          */
         onCommandStopped: function (msg) {
+            this.reset();
             var scope = this.getScope();
             var result = {};
             var params = msg.params;
             if (params && params.id) {
-                msg.lastResponse && this.storeResult(msg.lastResponse);
+                //msg.lastResponse && this.storeResult(msg.lastResponse);
                 this._emit('stopped', {
                     msg: msg,
                     result: this._lastResult,
@@ -58175,12 +58181,15 @@ define('xcf/model/Command',[
             return id;
         },
         reset: function () {
+            delete this._runningDfd;
             this._lastSettings = {};
-            if (this._loop) {
+            if(this._loop){
                 clearTimeout(this._loop);
                 this._loop = null;
             }
-            delete this._runningDfd;
+            delete this.override;this.override=null;
+            delete this._lastResult;this.override = null;
+            this.override = {};
         },
         _solving: null,
         addDeferred: function (id) {
@@ -60152,9 +60161,10 @@ define('xfile/factory/Store',[
      * @param config
      * @param optionsMixin
      * @param ctx
+     * @param args
      * @returns {*}
      */
-    factory.createFileStore = function (mount,options,config,optionsMixin,ctx){
+    factory.createFileStore = function (mount,options,config,optionsMixin,ctx,args){
         var storeClass = Store;
         options = options || {
             fields:
@@ -60169,7 +60179,7 @@ define('xfile/factory/Store',[
         };
 
         utils.mixin(options,optionsMixin);
-        var store = new storeClass({
+        var store = new storeClass(utils.mixin({
             data:[],
             ctx:ctx,
             config:config,
@@ -60178,7 +60188,7 @@ define('xfile/factory/Store',[
             serviceClass:config.FILES_STORE_SERVICE_CLASS,
             mount:mount,
             options:options
-        });
+        },args));
         store._state = {
             initiated:false,
             filter:null,
@@ -60187,7 +60197,6 @@ define('xfile/factory/Store',[
         store.reset();
         store.setData([]);
         store.init();
-
         ctx && ctx.getFileManager().addStore(store);
         return store;
     };
@@ -60534,10 +60543,11 @@ define('xfile/data/Store',[
              * @param path {string} a unique path, ie: ./ | . | ./myFolder | ./myFolder/and_deeper. If the item isn't
              * fully loaded yet, it just returns the item, if you enable 'load' and does the full load.
              * @param load {boolean} load the item if not already
+             * @param options {object|null} request options
              *
              * @returns {Object|Deferred|null}
              */
-            getItem: function (path, load) {
+            getItem: function (path, load,options) {
                 if (load == false) {
                     return this._getItem(path);
 
@@ -60575,7 +60585,7 @@ define('xfile/data/Store',[
                                             break;
                                         }
                                     }
-                                    thiz._loadPath(partsToLoad[i].path).then(function (items) {
+                                    thiz._loadPath(partsToLoad[i].path,false,options).then(function (items) {
                                         partsToLoad[i].loaded = true;
                                         _loadNext();
                                     }, function (err) {
@@ -60719,29 +60729,39 @@ define('xfile/data/Store',[
              * Here to load an item forcefully (reload/refresh)
              * @param path
              * @param force
+             * @param options {object|null}
              * @returns {*}
              * @private
              */
-            _loadPath: function (path, force) {
+            _loadPath: function (path,force,options) {
                 var thiz = this;
-                return this._request(path).then(function (items) {
-                    var _item = thiz._getItem(path, true);
-                    if (_item) {
-                        if (force) {
-                            if (!_.isEmpty(_item.children)) {
-                                thiz.removeItems(_item.children);
+                var result = this._request(path,options);
+                result.then(function (items) {
+                        var _item = thiz._getItem(path, true);
+                        if (_item) {
+                            if (force) {
+                                if (!_.isEmpty(_item.children)) {
+                                    thiz.removeItems(_item.children);
+                                }
+                            }
+                            _item._EX = true;
+                            thiz.addItems(items, force);
+                            _item.children = items;
+                            return items;
+                        } else {
+                            if(options && options.onError) {
+                                options.onError('Error Requesting path on server : '+path);
+                            }else{
+                                throw new Error('cant get item at ' + path);
                             }
                         }
-                        _item._EX = true;
-                        thiz.addItems(items, force);
-                        _item.children = items;
-                        return items;
-                    } else {
-                        throw new Error('cant get item at ' + path);
-                    }
-                }.bind(this), function (err) {
-                    console.error('error in load');
-                });
+                    }.bind(this),
+                    function (err) {
+                        console.error('error in load');
+                    });
+
+                return result;
+
             },
             /**
              * Creates an object, throws an error if the object already exists.
@@ -60837,11 +60857,6 @@ define('xfile/data/Store',[
             },
             open: function (item) {
                 var thiz = this;
-                function update() {
-                    thiz.emit('update', {
-                        target: item
-                    });
-                }
                 if (!this._isLoaded(item)) {
                     item.isLoading = true;
                     return thiz._request(item.path).then(function (items) {
@@ -60868,7 +60883,11 @@ define('xfile/data/Store',[
                 var item = this.getSync(data.parent);
                 if (item) {
                     if (!this.isItemLoaded(item)) {
+                        item.isLoading = true;
                         this._state.filterDef = this._loadPath(item.path);
+                        this._state.filterDef.then(function(){
+                            item.isLoading = false;
+                        })
                     } else {
                         /*
                         if(item.children) {
@@ -60885,7 +60904,7 @@ define('xfile/data/Store',[
                 this._state.filter = data;
                 return this.inherited(arguments);
             },
-            _request: function (path) {
+            _request: function (path,options) {
                 var collection = this;
                 return this.runDeferred(null, 'ls', {
                         path: path,
@@ -60893,17 +60912,16 @@ define('xfile/data/Store',[
                         options: this.options,
                         recursive:this.recursive
                     },
-                    {
-                        checkErrors: false,
-                        displayError: true
-
-                    }).then(function (response) {
+                    utils.mixin({checkErrors: false,displayError: true},options)).then(function (response) {
                     var results = collection._normalize(response);
                     collection._parse(results);
                     // support items in the results
                     results = results.children || results;
                     return results;
                 }, function (e) {
+                    if(options && options.displayError===false){
+                        return;
+                    }
                     logError(e,'error in FileStore : ' + this.mount + ' :' + e);
                 });
             },
@@ -61694,7 +61712,9 @@ define('xide/manager/Reloadable',[
 
 
 ;
-/** @module xide/manager/PluginManager */
+/**
+ * @module xide/manager/PluginManager
+*/
 define('xide/manager/PluginManager',[
     'dcl/dcl',
     'dojo/has',
@@ -61704,15 +61724,14 @@ define('xide/manager/PluginManager',[
     'xide/factory',
     "dojo/Deferred",
     "dojo/promise/all"
-], function (dcl,has,ManagerBase,utils,types,factory,Deferred,all)
-{
+], function (dcl, has, ManagerBase, utils, types, factory, Deferred, all){
     var _debug = false;
+
     /**
      * Plugin manager which provides loading of additional modules at any time after the main layer(s)
      * have been loaded.
-     *
      * @class module:xide/manager/PluginManager
-     * @extends module:xide/manager/ManagerBase
+     * @extends module:xide/mixins/ReloadMixin
      */
     return dcl(ManagerBase,{
         declaredClass:"xide.manager.PluginManager",
@@ -61852,7 +61871,6 @@ define('xide/manager/PluginManager',[
          */
         loadComponent:function(path,flags,componentArguments,packageLocation,packagePath){
 
-
             //defaults, sanitizing
             componentArguments = componentArguments ==='true' ? {} : componentArguments;
 
@@ -61889,7 +61907,7 @@ define('xide/manager/PluginManager',[
          * Each component has a resource file within its directory with this pattern : resources-config.json.
          * When component is being loaded, we do load also client resources for that component (css,js,...)
          * @param component {xide.model.Component}
-         * @param config {string}
+         * @param path
          */
         loadComponentResources:function(component,path){},
         /**
@@ -61907,8 +61925,7 @@ define('xide/manager/PluginManager',[
          * @deprecated
          * @param pluginResources
          */
-        loadPlugins:function(pluginResources)
-        {
+        loadPlugins:function(pluginResources){
             if(!has('plugins')) {
                 return;
             }
@@ -61918,7 +61935,6 @@ define('xide/manager/PluginManager',[
 
             this.pluginResources = pluginResources;
             this.pluginInstances = [];
-
             if(this.pluginResources){
                 for(var i=0 ; i < this.pluginResources.length; i++){
                     var plug = this.pluginResources[i];
@@ -62165,6 +62181,7 @@ define('xide/manager/Context',[
             }
 
             _module = _module.replace('0/8', '0.8');
+            _module = _module.replace('/src/', '/');
             function handleError(error) {
                 debugModuleReload && console.log(error.src, error.id);
                 debugModuleReload && console.error('require error ' + _module, error);
@@ -73720,6 +73737,19 @@ define('xide/utils/ObjectUtils',[
         return result;
     };
     /**
+     * Safe require.toUrl
+     * @param mid {string}
+     */
+    utils.toUrl = function(mid){
+        var _require = require;
+        //make sure cache bust is off otherwise it appends ?time
+        _require({
+            cacheBust: null,
+            waitSeconds: 5
+        });
+        return _require.toUrl(mid);
+    }
+    /**
      * Returns a module by module path
      * @param mixed {String|Object}
      * @param _default {Object} default object
@@ -73737,7 +73767,6 @@ define('xide/utils/ObjectUtils',[
             //not a loaded module yet
             try {
                 if (!result) {
-
                     var deferred = new Deferred();
                     //try loader
                     result = _re([
@@ -75169,7 +75198,7 @@ define('xide/utils/HTMLUtils',[
      * @param baseClasses
      * @param select
      * @param classExtension
-     * @returns {widgetProto}
+     * @returns {module:xide/_base/_Widget|module:xide/widgets/_Widget|null}
      */
     utils.addWidget = function (widgetProto, ctrArgsIn, delegate, parent, startup, cssClass, baseClasses, select, classExtension) {
         var ctrArgs = {
