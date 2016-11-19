@@ -80458,7 +80458,7 @@ define('dojo/Deferred',[
 					signalDeferred(deferred, RESOLVED, newResult);
 				}
 			}catch(error){
-				logError(error);
+				typeof logError !=='undefined' ? logError(error): console.error('error! ',error);
 				signalDeferred(deferred, REJECTED, error);
 			}
 		}else{
