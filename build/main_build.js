@@ -72118,6 +72118,8 @@ define('xapp/manager/Context',[
                     debugBoot && console.log('Checkpoint 7.0 xapp/Context::init');
 
 
+                    thiz.doMixins(thiz.mixins);
+
                     thiz.blockManager = thiz.createManager(BlockManager);
                     thiz.blockManager.init();
 
