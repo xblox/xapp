@@ -44531,7 +44531,12 @@ define('xblox/model/Scope',[
                 }
             }
             if (_device) {
-                var info = deviceManager.toDeviceControlInfo(_device)
+                var info = deviceManager.toDeviceControlInfo(_device);
+                if(!info){
+                    console.warn('cant get device info for ' + _device.title,device);
+                    return;
+                }
+
                 driver = driverManager.getDriverById(info.driverId)
                 var driverInstance = _device.driverInstance
                 if (driverInstance || driver) {
