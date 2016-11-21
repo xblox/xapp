@@ -32102,7 +32102,15 @@ define('xnode/manager/NodeServiceManager',[
         //
         /////////////////////////////////////////////////////////////////////////////////////
         init: function () {
-            return this.ls();
+            var dfd = new Deferred();
+            var self = this;
+            this.serviceObject.__init.then(function(){
+                self.ls().then(function(){
+                    dfd.resolve();
+                });
+            });
+            return dfd;
+
         },
         /////////////////////////////////////////////////////////////////////////////////////
         //
@@ -35959,6 +35967,23 @@ define('xide/manager/ServerActionBase',[
             return (r ? enc.slice(0, r - 3) : enc) + '==='.slice(r || 3);
 
         },
+        runDeferred: function (serviceClassIn, method, args, options) {
+            var self = this;
+            if(this.serviceObject.__init){
+
+                if(this.serviceObject.__init.isResolved()){
+                    return self._runDeferred(serviceClassIn,method,args,options);
+                }
+                var dfd = new Deferred();
+                this.serviceObject.__init.then(function(){
+                    self._runDeferred(serviceClassIn,method,args,options).then(function(){
+                       dfd.resolve(arguments);
+                    });
+                });
+                return dfd;
+            }
+            return self._runDeferred(serviceClassIn,method,args,options);
+        },
         /**
          * Public main entry, all others below are deprecated
          * @param serviceClassIn
@@ -35967,12 +35992,10 @@ define('xide/manager/ServerActionBase',[
          * @param options
          * @returns {Deferred}
          */
-        runDeferred: function (serviceClassIn, method, args, options) {
+        _runDeferred: function (serviceClassIn, method, args, options) {
             var deferred = new Deferred(),
                 promise;
-
             options = options || this.defaultOptions;
-
             //check we the RPC method is in the SMD
             this.check();
 
@@ -36088,8 +36111,15 @@ define('xide/manager/ServerActionBase',[
                         this.serviceObject = obj.serviceObject;
                         return;
                     }
+                    if(!this.options){
+                        this.options = {};
+                    }
+                    this.options.singleton = this.singleton;
                 }
                 if (!this.serviceObject) {
+
+
+
                     if (!this.serviceUrl) {
                         console.error('have no service url : ' + this.declaredClass);
                         return;
@@ -37045,6 +37075,15 @@ define('dojo/_base/xhr',[
 		}});
 		return result;
 	};
+    dojo.getText = function(url){
+        return dojo.xhrGet({
+            url: url,
+            sync: false,
+            headers: {
+                "X-Requested-With": null
+            }
+        });
+    };
 
 	// Add aliases for static functions to dojo.xhr since dojo.xhr is what's returned from this module
 	lang.mixin(dojo.xhr, {
@@ -37063,6 +37102,7 @@ define('dojo/_base/xhr',[
 		_ioAddQueryToUrl: dojo._ioAddQueryToUrl,
 		_isDocumentOk: dojo._isDocumentOk,
 		_getText: dojo._getText,
+        getText: dojo.getText,
 		get: dojo.xhrGet,
 		post: dojo.xhrPost,
 		put: dojo.xhrPut,
@@ -39473,18 +39513,15 @@ define('xide/manager/RPCService',[
                 _service[_serviceClass][method] != null;
         },
         checkCall: function (serviceClass, method, omit) {
-
             serviceClass = this.getServiceClass(serviceClass);
-
             if (!this.hasMethod(method,serviceClass) && omit === true) {
-
+                debugger;
                 this.onError({
                     code: 1,
                     message: ['Sorry, server doesnt know ' + method]
                 });
                 return false;
             }
-
             return true;
         },
 
@@ -39600,7 +39637,6 @@ define('xide/manager/RPCService',[
             });
         },
         callMethod: function (serviceClass, method, args, readyCB, errorCB, omitError) {
-
             /***
              * Check we the RPC method is in the SMD
              */
@@ -39608,6 +39644,7 @@ define('xide/manager/RPCService',[
                 var thiz = this;
                 if (this[serviceClass][method] == null) {
                     if (omitError === true && errorCB) {
+                        debugger;
                         errorCB({
                             code: 1,
                             message: ['Sorry, server doesnt know ' + method]
@@ -39650,10 +39687,7 @@ define('xide/manager/RPCService',[
                 });
             } catch (e) {
                 console.error('crash! ' + e);
-                //thiz.onError(e);
             }
-
-
         }
 
     });
@@ -39863,8 +39897,9 @@ define('xide/rpc/Service',[
     "dojo/_base/declare",
     "xide/rpc/AdapterRegistry",
     "dojo/_base/url",
-    "xide/utils"
-], function(dojo,lang,xhr,declare,AdapterRegistry,url,utils){
+    "xide/utils",
+    "xide/lodash"
+], function(dojo,lang,xhr,declare,AdapterRegistry,url,utils,_){
     var transportRegistry = new AdapterRegistry(true);
     var envelopeRegistry = new AdapterRegistry(true);
     var _nextId  = 1;
@@ -39912,6 +39947,7 @@ define('xide/rpc/Service',[
 
             var url;
             var self = this;
+            var singleton = options ? options.singleton : false;
             function processSmd(smd){
                 smd._baseUrl = new dojo._Url((dojo.isBrowser ? location.href : dojo.config.baseUrl) ,url || '.') + '';
                 self._smd = smd;
@@ -39938,19 +39974,27 @@ define('xide/rpc/Service',[
             }
             if(smd){
                 //ifthe arg is a string, we assume it is a url to retrieve an smd definition from
-                if( (dojo.isString(smd)) || (smd instanceof dojo._Url)){
+                if( (_.isString(smd)) || (smd instanceof dojo._Url)){
                     if(smd instanceof dojo._Url){
                         url = smd + "";
                     }else{
                         url = smd;
                     }
 
-                    var text = xhr._getText(url);
+                    this.__init = xhr.getText(url);
+                    var self = this;
+                    this.__init.then(function(data){
+                        processSmd(utils.fromJson(data));
+                    });
+                    /*
+
                     if(!text){
                         throw new Error("Unable to load SMD from " + smd);
                     }else{
                         processSmd(utils.fromJson(text));
                     }
+                    */
+
                 }else{
                     processSmd(smd);
                 }
@@ -39966,7 +40010,6 @@ define('xide/rpc/Service',[
             method.name = serviceName;
 
             var func = dojo.hitch(this, "_executeMethod",method);
-
 
             var transport = transportRegistry.match(method.transport || this._smd.transport);
             if(transport.getExecutor){
@@ -41005,6 +41048,7 @@ define('xcf/manager/DriverManager',[
          */
         ls: function (scope,track) {
 
+
             var dfd = new Deferred();
             function data(data) {
                 try {
@@ -41027,6 +41071,13 @@ define('xcf/manager/DriverManager',[
                     logError(e, 'error ls drivers');
                 }
             }
+
+            if(this.prefetch && this.prefetch[scope]){
+                data.apply(this,[this.prefetch[scope]]);
+                delete this.prefetch[scope];
+                return dfd;
+            }
+
 
             if(has('php')) {
                 this.runDeferred(null, 'ls', [scope]).then(data.bind(this));
@@ -45735,7 +45786,7 @@ define('xcf/manager/DeviceManager',[
             if (!this.deviceServerClient && this.ctx.getNodeServiceManager) {
                 var store = this.ctx.getNodeServiceManager().getStore();
                 if (!store) {
-                    console.error('checkDeviceServerConnection : have no service store');
+                    //console.error('checkDeviceServerConnection : have no service store');
                     return false;
                 }
                 this.createDeviceServerClient(store);
@@ -47416,12 +47467,16 @@ define('xcf/manager/DeviceManager',[
                         store: store,
                         type: this.itemType
                     });
-
                     dfd.resolve(store);
 
                 } catch (e) {
                     logError(e, 'error ls drivers');
                 }
+            }
+            if(this.prefetch && this.prefetch[scope]){
+                data.apply(this,[this.prefetch[scope]]);
+                delete this.prefetch[scope];
+                return dfd;
             }
 
             if (has('php')) {
@@ -60020,7 +60075,10 @@ define('xfile/manager/FileManager',[
                 logError(e,'error ');
             }
         },
-        _initService: function () {
+        init:function(){
+            this.filesToUpload = [];
+        },
+        __initService: function () {
             this.filesToUpload = [];
             if (!this.serviceObject) {
                 if(this.serviceUrl) {
@@ -62538,7 +62596,6 @@ define('xide/manager/Context_UI',[
          * @returns {*}
          */
         createEditor: function (ctrArgs, item, editorOverrides, where, owner) {
-
             var dfd = new Deferred(),
                 registerInWindowManager = owner && owner.registerEditors === true ? true : true;
 
@@ -62593,6 +62650,7 @@ define('xide/manager/Context_UI',[
             }, this);
 
 
+            root.set('loading',true);
             var editor = utils.addWidget(ctrArgs.editorClass, ctrArgsFinal, thiz, root, true, null, null, null, editorOverrides);
 
             //- tell everybody
@@ -62611,29 +62669,29 @@ define('xide/manager/Context_UI',[
                     this.getWindowManager().registerView(editor, false);
                 }
             }
-
             //-resize if possible
             root.resize && root.resize();
 
-
+            if(dfd.then){
+                dfd.then(function(){
+                    root.set('loading',false);
+                })
+            }
             return dfd;
-
         },
         /**
          *
          * @param name
          * @param extensions
          * @param iconClass
-         * @param owner
+         * @param owner {module:xide/model/Component|*|null}
          * @param isDefault
          * @param onEdit
          * @param editorClass
          * @param editorArgs
          */
         registerEditorExtension: function (name, extensions, iconClass, owner, isDefault, onEdit, editorClass, editorArgs) {
-
             iconClass = iconClass || 'el-icon-brush';
-
             var thiz = this,
                 _editorArgs = {
                     name: name,
@@ -62646,22 +62704,29 @@ define('xide/manager/Context_UI',[
                 };
 
             if (editorArgs) {
-                _editorArgs = lang.mixin(_editorArgs, editorArgs);
+                _editorArgs = utils.mixin(_editorArgs, editorArgs);
             }
             if (!onEdit) {
-                _editorArgs.onEdit = function (item, owner, overrides) {
-                    return thiz.createEditor(_editorArgs, item, overrides, null, owner);
+                _editorArgs.onEdit = function (item, _owner, overrides) {
+                    //some components may have an additional bootstrap in top of 'run':
+                    if(owner && owner.onCreateEditor){
+                        var dfd = new Deferred();
+                        owner.onCreateEditor().then(function(){
+                            var editor = thiz.createEditor(_editorArgs, item, overrides, null, _owner);
+                            dfd.resolve(editor);
+                        });
+                        return dfd;
+                    }
+
+                    return thiz.createEditor(_editorArgs, item, overrides, null, _owner);
                 }
             }
 
             if (_.isString(extensions) && extensions.indexOf(',') == -1) {
                 types.registerCustomMimeIconExtension(extensions, iconClass);
             }
-
             Registry.onRegisterEditor(_editorArgs);
-
             this.publish(types.EVENTS.REGISTER_EDITOR, _editorArgs);
-
         },
         /***********************************************************************/
         /*
@@ -65834,8 +65899,9 @@ define('xide/manager/SettingsManager',[
     "xide/manager/ServerActionBase",
     "xide/utils",
     "xide/manager/ManagerBase",
-    "xide/data/Memory"
-], function (dcl,ServerActionBase, utils, ManagerBase,Memory) {
+    "xide/data/Memory",
+    "dojo/Deferred"
+], function (dcl,ServerActionBase, utils, ManagerBase,Memory,Deferred) {
     var Module = dcl([ManagerBase, ServerActionBase], {
         declaredClass:"xide.manager.SettingsManager",
         serviceClass: 'XApp_Store',
@@ -65916,10 +65982,19 @@ define('xide/manager/SettingsManager',[
             }
         },
         initStore: function () {
-            return this.read(this.section, '.', null, this.onSettingsReceived.bind(this));
+            var dfd = new Deferred();
+            var self = this;
+            this.serviceObject.__init.then(function() {
+                self.read(self.section, '.', null, self.onSettingsReceived.bind(self));
+                dfd.resolve();
+            });
+            return dfd;
         },
         init:function(){
-            return this.initStore();
+            var dfd = new Deferred();
+            var self = this;
+            dfd.resolve();
+            return dfd;
         }
     });
     return Module;
@@ -81894,7 +81969,7 @@ define('dojo/_base/lang',["./kernel", "../has", "../sniff"], function(dojo, has)
 				// inherited from Object.prototype.	 For example, if dest has a custom toString() method,
 				// don't overwrite it with the toString() method that source inherited from Object.prototype
 				s = source[name];
-				if(!(name in dest) || (dest[name] !== s && (!(name in empty) || empty[name] !== s))){
+                if(!(name in dest) || (dest[name] !== s && (!(name in empty) || empty[name] !== s))){
 					dest[name] = copyFunc ? copyFunc(s) : s;
 				}
 			}
