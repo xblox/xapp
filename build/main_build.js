@@ -49079,6 +49079,45 @@ define('xcf/manager/DeviceManager_DeviceServer',[
         },
         /**
          *
+         * @param protocol CONNECTION_PROTOCOL
+         * @param method {string} The method
+         * @param args {array} The arguments for the protocol method being called on the server
+         * @returns module:dojo/Deferred
+         */
+        protocolMethod: function (protocol,method,args) {
+            var dfd = new Deferred();
+            var event = types.SOCKET_SERVER_COMMANDS.PROTOCOL_METHOD;
+            var id = utils.createUUID();
+            var task = event + '_' + id;
+            var data = {
+                protocol:protocol,
+                method:method,
+                options:{
+                    args:args,
+                    id:id
+                }
+            };
+            var self = this;
+
+            var timer = setTimeout(function(){
+                self.unsubscribe(task);
+                dfd.reject('timeout');
+                console.error('protocol method timeout');
+            },8000);
+
+
+            var handler = function(e){
+                self.unsubscribe(task);
+                clearTimeout(timer);
+                dfd.resolve(e);
+            };
+            this.subscribe(task,handler);
+            this.sendManagerCommand(event,data);
+            return dfd;
+
+        },
+        /**
+         *
          * @param driverInstance
          * @param method
          * @param args
@@ -49203,17 +49242,12 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                             } catch (e) {
                                 msg = dataIn;
                             }
-
-
                             debug && !msg && console.error('invalid incoming message', data);
-
                             msg = msg || {};
 
                             if(!thiz.handle(msg)){
                                 return;
                             }
-
-
                             if (msg && msg.data && msg.data.deviceMessage && msg.data.deviceMessage.event === types.EVENTS.ON_COMMAND_FINISH) {
                                 thiz.onCommandFinish(msg.data.device, msg.data.deviceMessage);
                                 return;
@@ -49253,6 +49287,13 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                                 return;
                             }
 
+
+                            if (msg.event === types.SOCKET_SERVER_COMMANDS.PROTOCOL_METHOD) {
+                                var event = types.SOCKET_SERVER_COMMANDS.PROTOCOL_METHOD + '_' + msg.data.options.id;
+                                thiz.publish(event, msg.data);
+                                return;
+                            }
+
                             if (msg.event === types.EVENTS.ON_SERVER_LOG_MESSAGE) {
                                 thiz.publish(types.EVENTS.ON_SERVER_LOG_MESSAGE, msg.data);
                                 return;
@@ -49263,6 +49304,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                                 thiz.onMQTTMessage(msg.data);
                                 return;
                             }
+
 
                             if (msg.event === types.EVENTS.ON_FILE_CHANGED) {
                                 return thiz.ctx.onXIDEMessage(utils.fromJson(data.data));
@@ -58847,7 +58889,8 @@ define('xcf/types/Types',[
     };
 
     /**
-     *
+     * @enum {string} CONNECTION_PROTOCOL
+     * @global
      */
     types.PROTOCOL = {
         TCP: 'tcp',
@@ -59082,7 +59125,7 @@ define('xcf/types/Types',[
     /**
      * Device Server Socket Commands
      * @enum {string} SERVER_COMMAND
-     * @global
+     * @global SERVER_COMMAND
      */
     types.SOCKET_SERVER_COMMANDS =
     {
@@ -59107,7 +59150,8 @@ define('xcf/types/Types',[
         MQTT_SUBSCRIBE:'MQTT_SUBSCRIBE',
         GET_DEVICE_VARIABLES: 'getVariables',
         WRITE_LOG_MESSAGE:'Write_Log_Message',
-        INIT_DEVICES:'INIT_DEVICES'
+        INIT_DEVICES:'INIT_DEVICES',
+        PROTOCOL_METHOD:'PROTOCOL_METHOD'
     };
     return types;
 });
