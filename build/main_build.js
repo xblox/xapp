@@ -73455,10 +73455,11 @@ define('xide/manager/ContextBase',[
     return Module;
 });;
 define('xfile/types',[
-    'dojo/_base/lang',
+    'xide/utils',
     'xide/types',
-    'xide/types/Types'
-],function(lang,types){
+    'xide/types/Types',
+    'xaction/types'
+],function(utils,types){
         /**
          * Public mime registry setter
          * @param type
@@ -73493,13 +73494,13 @@ define('xfile/types',[
             ACTION.TOOLBAR,
             ACTION.STATUSBAR,
             ACTION.UPLOAD,
-            ACTION.SOURCE,
             ACTION.SIZE_STATS,
             ACTION.CONSOLE,
             ACTION.HEADER,
             'File/Compress',
             'File/New',
-            ACTION.CONTEXT_MENU
+            ACTION.CONTEXT_MENU,
+            ACTION.SOURCE
         ];
 
         types.DEFAULT_FILE_GRID_PERMISSIONS = DEFAULT_PERMISSIONS;
@@ -73583,7 +73584,7 @@ define('xfile/types',[
             SELF:'self'
         };
 
-        lang.mixin(types.ITEM_TYPE,{
+        utils.mixin(types.ITEM_TYPE,{
             FILE:'BTFILE'
         });
 
@@ -73596,7 +73597,7 @@ define('xfile/types',[
          * @enum module:xide/types/EVENTS
          * @memberOf module:xide/types
          */
-        lang.mixin(types.EVENTS,{
+        utils.mixin(types.EVENTS,{
             STORE_CHANGED:'onStoreChange',
             BEFORE_STORE_CHANGE:'onBeforeStoreChange',
             STORE_REFRESHED:'onStoreRefreshed',
