@@ -75043,29 +75043,29 @@ define('xide/utils/StoreUtils',[
      * @returns {string|null}
      */
     utils.toString = function (val) {
-        if (val !== null) {
+        if (val != null) {
             if (!dojo.isArray(val)) {
                 return '' + val;
             }
             if (val && val.length == 1 && val[0] == null) {
                 return null;
             }
-            return '' + (val[0] !== null ? val[0] : val);
+            return '' + (val[0] != null ? val[0] : val);
         }
         return null;
     };
     utils.toBoolean = function (data) {
         var resInt = false;
-        if (data !== null) {
+        if (data != null) {
             var _dataStr = data[0] ? data[0] : data;
-            if (_dataStr !== null) {
+            if (_dataStr != null) {
                 resInt = !!(( _dataStr === true || _dataStr === 'true' || _dataStr === '1'));
             }
         }
         return resInt;
     };
     utils.toObject = function (data) {
-        if (data !== null) {
+        if (data != null) {
             return data[0] ? data[0] : data;
         }
         return null;
@@ -75077,7 +75077,7 @@ define('xide/utils/StoreUtils',[
         var resInt = -1;
         if (data!=null) {
             var _dataStr = data.length > 1 ? data : data[0] ? data[0] : data;
-            if (_dataStr !== null) {
+            if (_dataStr != null) {
                 try {
                     resInt = parseInt(_dataStr, 10);
                 } catch (e) {
@@ -75164,7 +75164,7 @@ define('xide/utils/StoreUtils',[
         if (res && res.length == 1) {
             return res[0];
         }
-        if (nullEmpty !== null && nullEmpty === true) {
+        if (nullEmpty === true) {
             if (res && res.length === 0) {
                 return null;
             }
