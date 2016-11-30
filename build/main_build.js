@@ -33210,7 +33210,18 @@ define('xide/data/Memory',[
 	'dstore/Memory',
     'xide/data/_Base'
 ], function (declare, Memory,_Base) {
-    return declare('xide.data.Memory',[Memory, _Base], {});
+    return declare('xide.data.Memory',[Memory, _Base], {
+        putSync:function(item){
+            var self = this;
+            item = this.inherited(arguments);
+            item && !item._store && Object.defineProperty(item, '_store', {
+                get: function () {
+                    return self;
+                }
+            });
+            return item;
+        }
+    });
 });
 ;
 define('xide/data/_Base',[
@@ -33301,9 +33312,10 @@ define('xide/data/_Base',[
         },
         notify: function () {
         },
-        refreshItem:function(item){
-            this.emit('update', {
-                target: item
+        refreshItem:function(item,property){
+            this.emit('update',{
+                target: item,
+                property:property
             });
         },
         _queryCache:null,
@@ -33313,7 +33325,9 @@ define('xide/data/_Base',[
 
 
             if(lodash.isEmpty(query)){
-                return this.data;
+                return _.map(this.data,function(item){
+                    return this.getSync(item[this.idProperty]);
+                },this);
             }else if(!_.some(query,function (value) { return value == null})){
                 //no empty props in query, return lodash.filter
                 //return this._find(query);
@@ -33321,10 +33335,12 @@ define('xide/data/_Base',[
 
 
             var hash = query ? MD5(JSON.stringify(query),1) : null;
-            if(!has('xcf-ui') && hash && !has('host-node') && allowCache!==false){
-                !this._queryCache && (this._queryCache={});
-                if(this._queryCache[hash]){
-                    return this._queryCache[hash];
+            if(has('xcf-ui')) {
+                if (hash && !has('host-node') && allowCache !== false) {
+                    !this._queryCache && (this._queryCache = {});
+                    if (this._queryCache[hash]) {
+                        return this._queryCache[hash];
+                    }
                 }
             }
             /*
@@ -33419,6 +33435,7 @@ define('xide/data/_Base',[
                 return handle;
             };
             if(!has('xcf-ui') && hash && !has('host-node') && allowCache!==false){
+                !this._queryCache && (this._queryCache={});
                 this._queryCache[hash]=queryResults;
             }
             return queryResults;
@@ -33986,6 +34003,7 @@ define('dstore/Tree',[
 	});
 });
 ;
+/** @module dstore/Memory **/
 define('dstore/Memory',[
 	'dojo/_base/declare',
 	'dojo/_base/array',
@@ -33994,9 +34012,9 @@ define('dstore/Memory',[
 	'./SimpleQuery',
 	'./QueryResults'
 ], function (declare, arrayUtil, Store, Promised, SimpleQuery, QueryResults) {
-
-	// module:
-	//		dstore/Memory
+    /**
+     * @class module:dstore/Memory
+     */
 	return declare([Store, Promised, SimpleQuery ], {
 		constructor: function () {
 			// summary:
@@ -34472,8 +34490,9 @@ define('dstore/Store',[
 	'dojo/_base/declare',
 	'dstore/QueryMethod',
 	'dstore/Filter',
-	'dojo/Evented'
-], function (lang, arrayUtil, aspect, has, when, Deferred, declare, QueryMethod, Filter, Evented) {
+	'dojo/Evented',
+    'dcl/dcl'
+], function (lang, arrayUtil, aspect, has, when, Deferred, declare, QueryMethod, Filter, Evented,dcl) {
 
 	// module:
 	//		dstore/Store
@@ -34509,14 +34528,17 @@ define('dstore/Store',[
 		constructor: function (options) {
 			// perform the mixin
 			options && declare.safeMixin(this, options);
+            if (this.Model && this.Model.createSubclass) {
 
-			if (this.Model && this.Model.createSubclass) {
 				// we need a distinct model for each store, so we can
 				// save the reference back to this store on it.
 				// we always create a new model to be safe.
-				this.Model = this.Model.createSubclass([]).extend({
+                var self = this;
+                this.Model = this.Model.createSubclass([],{
+
+                }).extend({
 					// give a reference back to the store for saving, etc.
-					_store: this
+                    _store:this
 				});
 			}
 
@@ -35295,19 +35317,25 @@ define('dojo/aspect',[], function(){
 	};
 });
 ;
+/** @module xide/manager/BeanManager */
 define('xide/manager/BeanManager',[
     'dcl/dcl',
     "dojo/_base/lang",
+    "xdojo/has",
     "xide/utils",
     'xide/encoding/MD5',
     'xide/registry',
     'xide/data/TreeMemory'
-], function (dcl,lang, utils, MD5, registry, TreeMemory) {
+], function (dcl, lang, has, utils, MD5, registry, TreeMemory) {
 
-    return dcl(null,{
-        declaredClass:'xide.manager.BeanManager',
+    /**
+     * @class module:xide/manager/BeanManager
+     */
+    var Base = dcl(null, {
+        declaredClass: 'xide.manager.BeanManager',
         beanNamespace: 'beanNS',
         beanName: 'beanName',
+        beanPriority: -1,
         /**
          *
          * @param title
@@ -35337,68 +35365,6 @@ define('xide/manager/BeanManager',[
             var path = this.itemMetaPath || 'user';
             return utils.getCIInputValueByName(utils.getAt(item, path), title);
         },
-        /***********************************************************************/
-        /*
-         * @Obselete
-         */
-        setCurrentItem: function (item) {},
-        getItem: function () {},
-        onItemSelected: function (evt) {},
-        onItemAdded: function (res) {},
-        onItemRemoved: function (res) {},
-        reload: function (){},
-
-
-        /////////////////////////////////////////////////////////////////////////////////////
-        //
-        //  UX related utils
-        //
-        /////////////////////////////////////////////////////////////////////////////////////
-        /***
-         * Determine a parent container for new views. Currently
-         * the 'Application' holds a 'mainView' instance which
-         * prepares us a tab container.
-         *
-         * @returns {*}
-         */
-        getViewTarget: function () {
-            var mainView = this.ctx.getApplication().mainView;
-            return mainView.getNewAlternateTarget();
-        },
-        getRightTopTarget: function (clear, open, style, className) {
-            var mainView = this.ctx.getApplication().mainView;
-            return mainView.getRightTopTarget(clear, open, style, className);
-        },
-        getLayoutRightMain: function (clear, open) {
-            var mainView = this.ctx.getApplication().mainView;
-            return mainView.getLayoutRightMain(clear, open);
-        },
-        getRightBottomTarget: function (clear, open) {
-            var mainView = this.ctx.getApplication().mainView;
-            return mainView.getRightBottomTarget(clear, open);
-        },
-        /***
-         * getViewId generates a unique id upon a driver's scope and the drivers path.
-         * @param item
-         * @returns {string}
-         */
-        getViewId: function (item, suffix) {
-            return this.beanNamespace + MD5(utils.toString(item.scope) + utils.toString(item.path), 1) + (suffix != null ? suffix : '');
-        },
-        /**
-         *
-         * @param item
-         */
-        getView: function (item, suffix) {
-            var id = this.getViewId(item, suffix);
-            var view = registry.byId(id);
-            return view;
-        },
-        /////////////////////////////////////////////////////////////////////////////////////
-        //
-        //  Data related
-        //
-        /////////////////////////////////////////////////////////////////////////////////////
         /***
          * @returns {dojo.data.ItemFileWriteStore}
          */
@@ -35413,9 +35379,10 @@ define('xide/manager/BeanManager',[
             return this.store != null;
         },
         /***
+         * @TODO:remove
          * Inits the store with the driver data
          * @param data
-         * @returns {xide.data.TreeMemory}
+         * @returns {module:xide/data/TreeMemory}
          */
         initStore: function (data) {
             this.store = new TreeMemory({
@@ -35428,78 +35395,138 @@ define('xide/manager/BeanManager',[
         /**
          * Stub
          */
-        onStoreReady: function () {},
-        /////////////////////////////////////////////////////////////////////////////////////
-        //
-        //  Server methods
-        //
-        /////////////////////////////////////////////////////////////////////////////////////
-        createGroup: function (scope, name, readyCB) {
-            return this.callMethodEx(null, 'createGroup', [scope, name], readyCB, true);
+        onStoreReady: function () {
         },
-        removeGroup: function (scope, path, name, readyCB) {
-            return this.callMethodEx(null, 'removeGroup', [scope, path, name], readyCB, true);
-        },
-        removeItem: function (scope, path, name, readyCB) {
-            return this.callMethodEx(null, 'removeItem', [scope, path, name], readyCB, true);
-        },
-        /**
-         * Shared for consumer
-         * @param ci
-         * @param newValue
-         * @param oldValue
-         * @param storeRef
-         */
-        updateCI: function (ci, newValue, oldValue, storeRef) {
-
-            if (ci && storeRef) {
-
-                this.updateItemMetaData(
-                    utils.toString(storeRef.scope), //the scope of the driver
-                    utils.toString(storeRef.path),  //the relative path of the driver
-                    this.itemMetaStorePath || '/inputs',  //the path of the CIS in the meta db
-                    {
-                        id: utils.toString(ci.id)
-                    },
-                    {
-                        value: newValue
-                    }
-                );
-            }
-        },
-        /**
-         * updateItemMetaData updates a CI in the drivers meta data store
-         * @param scope {string}
-         * @param driverMetaPath {string}
-         * @param dataPath {string} : /inputs
-         * @param query
-         * @param value
-         * @param readyCB
-         * @param errorCB
-         * @returns {*}
-         */
-        updateItemMetaData: function (scope, driverMetaPath, dataPath, query, value, readyCB, errorCB) {
-            return this.callMethodEx(null, 'updateItemMetaData', [scope, driverMetaPath, dataPath, query, value], readyCB, false);
-        },
-        mergeNewModule: function (source) {
-            for (var i in source) {
-                var o = source[i];
-                if (o && _.isFunction(o)) {
-                    this[i] = o;
-                }
-            }
-        },
-        _onReloaded:function(newModule){
+        _onReloaded: function (newModule) {
             this.mergeNewModule(newModule.prototype);
             var _class = this.declaredClass;
             var _module = lang.getObject(utils.replaceAll('/', '.', _class)) || lang.getObject(_class);
-            if(_module){
-                if(_module.prototype && _module.prototype.solve){
+            if (_module) {
+                if (_module.prototype && _module.prototype.solve) {
                     this.mergeNewModule(_module.prototype);
                 }
             }
         }
     });
+
+    if (has('host-browser')) {
+        /**
+         * @class module:xide/manager/BeanManager
+         */
+        return dcl(Base, {
+            /////////////////////////////////////////////////////////////////////////////////////
+            //
+            //  UX related utils
+            //
+            /////////////////////////////////////////////////////////////////////////////////////
+            /***
+             * Determine a parent container for new views. Currently
+             * the 'Application' holds a 'mainView' instance which
+             * prepares us a tab container.
+             *
+             * @returns {*}
+             */
+            getViewTarget: function () {
+                var mainView = this.ctx.getApplication().mainView;
+                return mainView.getNewAlternateTarget();
+            },
+            getRightTopTarget: function (clear, open, style, className) {
+                var mainView = this.ctx.getApplication().mainView;
+                return mainView.getRightTopTarget(clear, open, style, className);
+            },
+            getLayoutRightMain: function (clear, open) {
+                var mainView = this.ctx.getApplication().mainView;
+                return mainView.getLayoutRightMain(clear, open);
+            },
+            getRightBottomTarget: function (clear, open) {
+                var mainView = this.ctx.getApplication().mainView;
+                return mainView.getRightBottomTarget(clear, open);
+            },
+            /***
+             * getViewId generates a unique id upon a driver's scope and the drivers path.
+             * @param item
+             * @param suffix {string}
+             * @returns {string}
+             */
+            getViewId: function (item, suffix) {
+                return this.beanNamespace + MD5(utils.toString(item.scope) + utils.toString(item.path), 1) + (suffix != null ? suffix : '');
+            },
+            /**
+             *
+             * @param item
+             */
+            getView: function (item, suffix) {
+                var id = this.getViewId(item, suffix);
+                return registry.byId(id);
+            },
+            /////////////////////////////////////////////////////////////////////////////////////
+            //
+            //  Data related
+            //
+            /////////////////////////////////////////////////////////////////////////////////////
+
+            /////////////////////////////////////////////////////////////////////////////////////
+            //
+            //  Server methods
+            //
+            /////////////////////////////////////////////////////////////////////////////////////
+            createGroup: function (scope, name, readyCB) {
+                return this.callMethodEx(null, 'createGroup', [scope, name], readyCB, true);
+            },
+            removeGroup: function (scope, path, name, readyCB) {
+                return this.callMethodEx(null, 'removeGroup', [scope, path, name], readyCB, true);
+            },
+            removeItem: function (scope, path, name, readyCB) {
+                return this.callMethodEx(null, 'removeItem', [scope, path, name], readyCB, true);
+            },
+            /**
+             * Shared for consumer
+             * @param ci
+             * @param newValue
+             * @param oldValue
+             * @param storeRef
+             */
+            updateCI: function (ci, newValue, oldValue, storeRef) {
+                if (ci && storeRef) {
+                    this.updateItemMetaData(
+                        utils.toString(storeRef.scope), //the scope of the driver
+                        utils.toString(storeRef.path),  //the relative path of the driver
+                        this.itemMetaStorePath || '/inputs',  //the path of the CIS in the meta db
+                        {
+                            id: utils.toString(ci.id)
+                        },
+                        {
+                            value: newValue
+                        }
+                    );
+                }
+            },
+            /**
+             * updateItemMetaData updates a CI in the drivers meta data store
+             * @param scope {string}
+             * @param driverMetaPath {string}
+             * @param dataPath {string} : /inputs
+             * @param query
+             * @param value
+             * @param readyCB
+             * @param errorCB
+             * @returns {*}
+             */
+            updateItemMetaData: function (scope, driverMetaPath, dataPath, query, value, readyCB, errorCB) {
+                return this.callMethodEx(null, 'updateItemMetaData', [scope, driverMetaPath, dataPath, query, value], readyCB, false);
+            },
+            mergeNewModule: function (source) {
+                for (var i in source) {
+                    var o = source[i];
+                    if (o && _.isFunction(o)) {
+                        this[i] = o;
+                    }
+                }
+            }
+        });
+    }else{
+        return Base;
+    }
 });;
 /** @module xide/data/TreeMemory **/
 define('xide/data/TreeMemory',[
@@ -35509,15 +35536,12 @@ define('xide/data/TreeMemory',[
     'dojo/Deferred',
     'dstore/QueryResults'
 ], function (declare, Memory, Tree, Deferred, QueryResults) {
-
-    /**
-     * 
-     */
     return declare('xide.data.TreeMemory', [Memory, Tree], {
         _state: {
             filter: null
         },
         parentField: 'parentId',
+        parentProperty: 'parentId',
         reset: function () {
             this._state.filter = null;
             this.resetQueryLog();
@@ -35548,8 +35572,7 @@ define('xide/data/TreeMemory',[
             var thiz = this;
             if (this._state.filter) {
                 //the parent query
-                if (this._state && this._state.filter && this._state.filter['parent']) {
-
+                if (this._state.filter['parent']) {
                     var _item = this.getSync(this._state.filter.parent);
                     if (_item) {
                         this.reset();
@@ -35564,7 +35587,7 @@ define('xide/data/TreeMemory',[
                 }
 
                 //the group query
-                if (this._state && this._state.filter && this._state.filter['group']) {
+                if (this._state.filter['group']) {
                     var _items = this.getSync(this._state.filter.parent);
                     if (_item) {
                         this.reset();
@@ -40532,6 +40555,7 @@ define('xcf/manager/DriverManager_Server',[
     });
 });
 ;
+/** @module xcf/manager/DriverManager **/
 define('xcf/manager/DriverManager',[
     'dcl/dcl',
     "dojo/_base/declare",
@@ -40570,8 +40594,154 @@ define('xcf/manager/DriverManager',[
     runDrivers = has('runDrivers'),
     debugDeviceMessages = false;
     has('xcf-ui') && bases.push(DriverManager_UI);
-    
+
+    /**
+     * @class module:xcf/manager/DriverManager
+     * @extends module:xcf/manager/BeanManager
+     * @extends module:xcf/manager/DriverManager_UI
+     */
     return dcl(bases, {
+        onStoreCreated: function (evt) {
+            var type = evt.type,
+                store = evt.store,
+                items = store.query({
+                    isDir: false
+                });
+
+            if(type!==types.ITEM_TYPE.DRIVER){
+                return;
+            }
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                if (item._completed != null || item.name === 'Default') {
+                    continue;
+                }
+                item._completed = true;
+                if(has('xcf-ui')) {
+                    this.completeDriver(store, item, item);
+                }
+            }
+        },
+        removeDriverInstance:function(instance,device){
+            var info = this.getContext().getDeviceManager().toDeviceControlInfo(device),
+                driver = this.getDriverById(instance.device.info.driverId),
+                driverStore = driver._store,
+                parentId = driver.path,
+                deviceId = device.path,
+                instanceId = parentId + '_instances_instance_'+deviceId,
+                instanceReferenceItem = driverStore.getSync(instanceId);
+
+            instanceReferenceItem && driverStore.removeSync(instanceId);
+
+            //"Audio-Player/VLC.meta.json_instances_instance_Audio-Player/VLC.meta.json"
+            var instanceReference = _.find(driver.instances,{
+                path:instanceId
+            });
+
+            if(instanceReference){
+                //instanceReference.destroy();
+                driver.instances.remove(instanceReference);
+            }
+            device.removeReference(instanceReferenceItem);
+            if(instanceReferenceItem) {
+                instanceReferenceItem.refresh();
+                driverStore.getSync(parentId + '_instances').refresh();
+            }else{
+                debug && console.error('bad!! cant find reference for instance',arguments);
+            }
+        },
+        /**
+         * @param driver {module:xcf/model/Driver}
+         * @returns {module:xblox/model/Scope}
+         */
+        createDriverBlockScope:function(driver){
+            var blocks = utils.clone(driver.blox && driver.blox.blocks ? driver.blox.blocks : []);
+            var scope = driver.blockScope = this.ctx.getBlockManager().createScope({
+                id: driver.id,
+                device: null,
+                driver: driver,
+                instance: null,
+                ctx: this.ctx,
+                getContext: function () {
+                    return this.instance;
+                }
+            }, blocks, function (error) {
+                if (error) {
+                    console.error(error + ' : in ' + driver.name + ' Resave Driver!');
+                }
+            });
+            return scope;
+        },
+        /**
+         *
+         * @param device
+         * @param driver
+         */
+        addDeviceInstance:function(device,driver){
+            return;
+
+            driver.directory = true;
+            var store = driver._store,
+                parentId = driver.path,
+                deviceManager = this.ctx.getDeviceManager(),
+                instances = store.getSync(parentId + '_instances');
+
+            instances = instances || store.putSync({
+                    path: parentId + '_instances',
+                    name: 'Instances',
+                    isDir: true,
+                    type: 'leaf',
+                    parentId: parentId,
+                    virtual: true,
+                    isCommand:false,
+                    icon:'fa-folder',
+                    children:[]
+                });
+
+
+
+            var deviceName = deviceManager.getMetaValue(device, types.DEVICE_PROPERTY.CF_DEVICE_TITLE),
+                deviceId = device.path,
+                instance  = store.putSync(new Reference({
+                    name:deviceName,
+                    isCommand:false,
+                    path: instances.path + '_instance_'+deviceId,
+                    isDir: false,
+                    type: 'driver_instance',
+                    parentId:instances.path,
+                    device:device,
+                    driver:driver,
+                    _mayHaveChildren:false,
+                    icon:device.iconClass,
+                    state:device.state
+                }));
+
+            instances.children.push(instance);
+
+            device.addReference(instance,{
+                properties: {
+                    "name":true,
+                    "enabled":true,
+                    "state":true,
+                    "iconClass":true
+                },
+                onDelete:false
+            },true);
+
+
+            !driver.instances && (driver.instances =[]);
+
+            var instanceReference = _.find(driver.instances,{
+                path:instance.path
+            });
+
+            if(instanceReference){
+                console.log('instance already added ');
+                driver.instances.remove(instanceReference);
+            }
+
+            driver.instances.push(instance);
+        },
         declaredClass:"xcf.manager.DriverManager",
         /***
          * The Bean-Manager needs a unique name of the bean:
@@ -40611,11 +40781,11 @@ define('xcf/manager/DriverManager',[
          */
         rawData: null,
         /***
-         * {module:xide/data/TreeMemory}
+         * @type {module:xide/data/TreeMemory}
          */
         store: null,
         /***
-         * {xcf.views.DriverTreeView}
+         * @type {module:xcf/views/DriverTreeView}
          */
         treeView: null,
         /**
@@ -40737,106 +40907,6 @@ define('xcf/manager/DriverManager',[
             var parts = utils.parse_url(url);
             parts = utils.urlArgs(parts.host);//go on with query string
             return this.getItemById(parts.driver.value);
-        },
-        /**
-         *
-         * @param device
-         * @param driver
-         */
-        addDeviceInstance:function(device,driver){
-            driver.directory = true;
-            var store = driver._store,
-                parentId = driver.path,
-                deviceManager = this.ctx.getDeviceManager(),
-                instances = store.getSync(parentId + '_instances');
-
-            instances = instances || store.putSync({
-                    path: parentId + '_instances',
-                    name: 'Instances',
-                    isDir: true,
-                    type: 'leaf',
-                    parentId: parentId,
-                    virtual: true,
-                    isCommand:false,
-                    icon:'fa-folder',
-                    children:[]
-                });
-
-
-
-            var deviceName = deviceManager.getMetaValue(device, types.DEVICE_PROPERTY.CF_DEVICE_TITLE),
-                deviceId = device.path,
-                instance  = store.putSync(new Reference({
-                    name:deviceName,
-                    isCommand:false,
-                    path: instances.path + '_instance_'+deviceId,
-                    isDir: false,
-                    type: 'driver_instance',
-                    parentId:instances.path,
-                    device:device,
-                    driver:driver,
-                    _mayHaveChildren:false,
-                    icon:device.iconClass,
-                    state:device.state
-                }));
-
-            instances.children.push(instance);
-
-            device.addReference(instance,{
-                properties: {
-                    "name":true,
-                    "enabled":true,
-                    "state":true,
-                    "iconClass":true
-                },
-                onDelete:false
-            },true);
-
-
-            !driver.instances && (driver.instances =[]);
-
-            var instanceReference = _.find(driver.instances,{
-                path:instance.path
-            });
-
-            if(instanceReference){
-                console.log('instance already added ');
-                driver.instances.remove(instanceReference);
-            }
-
-            driver.instances.push(instance);
-        },
-        removeDriverInstance:function(instance,device){
-
-            var driver = instance.driver,
-                driverStore = driver._store,
-                parentId = driver.path,
-                deviceId = device.path,
-                instanceId = parentId + '_instances_instance_'+deviceId,
-                instanceReferenceItem = driverStore.getSync(instanceId);
-
-            instanceReferenceItem && driverStore.removeSync(instanceId);
-
-            //"Audio-Player/VLC.meta.json_instances_instance_Audio-Player/VLC.meta.json"
-            var instanceReference = _.find(driver.instances,{
-                path:instanceId
-            });
-
-            if(instanceReference){
-                //instanceReference.destroy();
-                driver.instances.remove(instanceReference);
-            }
-
-
-            device.removeReference(instanceReferenceItem);
-
-            if(instanceReferenceItem) {
-                instanceReferenceItem.refresh();
-                driverStore.getSync(parentId + '_instances').refresh();
-            }else{
-                debug && console.error('bad!! cant find reference for instance',arguments);
-            }
-
         },
         /////////////////////////////////////////////////////////////////////////////////////
         //
@@ -40975,28 +41045,6 @@ define('xcf/manager/DriverManager',[
         onStoreReady: function (store) {
             has('xcf-ui') && types.registerEnumeration('Driver', this.getDriversAsEnumeration(store));
         },
-        onStoreCreated: function (evt) {
-            var type = evt.type,
-                store = evt.store,
-                items = store.query({
-                    isDir: false
-                });
-
-            if(type!==types.ITEM_TYPE.DRIVER){
-                return;
-            }
-            for (var i = 0; i < items.length; i++) {
-                var item = items[i];
-                if (item._completed != null || item.name === 'Default') {
-                    continue;
-                }
-                item._completed = true;
-                if(has('xcf-ui')) {
-                    this.completeDriver(store, item, item);
-                }
-            }
-        },
-
         /***
          * Init the store with the driver data
          * @param data
@@ -41007,7 +41055,7 @@ define('xcf/manager/DriverManager',[
         createStore:function(data,scope,track){
             var storeClass = declare('driverStore',[TreeMemory,Trackable,ObservableStore],{});
             var store = new storeClass({
-                data: data.items,
+                data: [],
                 Model:Driver,
                 idProperty: 'path',
                 scope:scope,
@@ -41017,6 +41065,13 @@ define('xcf/manager/DriverManager',[
                     "enabled"
                 ]
             });
+
+            if(data && data.items){
+                store.setData(data.items);
+                _.each(data.items,function(item){
+                    item._store = store;
+                })
+            }
             if(scope && track!==false){
                 this.setStore(scope,store);
             }
@@ -41047,38 +41102,28 @@ define('xcf/manager/DriverManager',[
          * @returns {Deferred}
          */
         ls: function (scope,track) {
-
-
             var dfd = new Deferred();
             function data(data) {
                 try {
-
                     var store = this.createStore(data, scope,track);
                     track!==false && this.setStore(scope,store);
-
                     this.onStoreReady(store);
-
                     track!==false && this.publish(types.EVENTS.ON_STORE_CREATED, {
                         data: data,
                         owner: this,
                         store: store,
                         type: this.itemType
                     });
-
                     dfd.resolve(store);
-
                 } catch (e) {
                     logError(e, 'error ls drivers');
                 }
             }
-
             if(this.prefetch && this.prefetch[scope]){
                 data.apply(this,[this.prefetch[scope]]);
                 delete this.prefetch[scope];
                 return dfd;
             }
-
-
             if(has('php')) {
                 this.runDeferred(null, 'ls', [scope]).then(data.bind(this));
             }else{
@@ -41091,16 +41136,15 @@ define('xcf/manager/DriverManager',[
                     dfd.resolve({items:[]});
                 }
             }
-
             return dfd;
         },
         /***
          * Common manager function, called by the context of the application
          */
         init: function () {
-            var thiz = this,
-                EVENTS = types.EVENTS;
-            this.stores = {};
+            var thiz = this;
+            var EVENTS = types.EVENTS;
+
             this.subscribe([
                 EVENTS.ON_SCOPE_CREATED,
                 EVENTS.ON_STORE_CREATED
@@ -41108,7 +41152,6 @@ define('xcf/manager/DriverManager',[
 
             //replay block exceptions to log messages
             this.subscribe(EVENTS.ON_BLOCK_EXPRESSION_FAILED, function (evt) {
-
                 thiz.publish(EVENTS.ON_SERVER_LOG_MESSAGE, {
                     data: {
                         type: 'Expression',
@@ -41286,15 +41329,17 @@ define('xide/mixins/ReloadMixin',[
 /** @module xide/data/Reference **/
 define('xide/data/Reference',[
     "dojo/_base/declare",
-    "xide/utils"
-], function (declare,utils) {
-
+    "xide/utils",
+    "xide/lodash",
+    "xide/mixins/EventedMixin"
+], function (declare,utils,lodash,EventedMixin) {
     var debug = false;
     /**
      * @class module:xide/data/Reference
      */
     var Implementation = {
         _sources: [],
+        destroyOnRemove:true,
         removeSource: function (source) {
         },
         updateSource: function (sources) {
@@ -41308,26 +41353,40 @@ define('xide/data/Reference',[
         onItemChanged: function (args) {
         },
         destroy: function () {
-            if (!this.item.removeReference) {
+            if (this.item && !this.item.removeReference) {
                 debug && console.error('item has no removeReference');
             } else {
-                this.item.removeReference(this);
+                this.item && this.item.removeReference(this);
             }
-            this.inherited(arguments);
-        },
-        addSource: function (item, settings) {
+            this.inherited && this.inherited(arguments);
 
+            for (var i = 0; i < this._sources.length; i++) {
+                var link = this._sources[i];
+                if(link.item) {
+                    link.item.removeReference && link.item.removeReference(this);
+                }
+            }
+            this._sources = null;
+        },
+        hasSource:function(source){
+            return lodash.find(this._sources,{item:source});
+        },
+        addSource: function (source, settings) {
+            if(this.hasSource(source)){
+                console.warn('already have source');
+                return;
+            }
             this._sources.push({
-                item: item,
+                item: source,
                 settings: settings
             });
             var thiz = this;
             if (settings && settings.onDelete) {
-                item._store.on('delete', function (evt) {
-                    if (evt.target == item) {
-                        thiz._store.removeSync(thiz[thiz._store['idProperty']]);
+                this.addHandle('delete',source._store.on('delete', function (evt) {
+                    if (evt.target == source) {
+                        this._store.removeSync(this[this._store['idProperty']]);
                     }
-                })
+                }.bind(this)));
             }
         },
         updateSources: function (args) {
@@ -41351,7 +41410,7 @@ define('xide/data/Reference',[
     };
 
     //package via declare
-    var _class = declare('xgrid.data.Reference', null, Implementation);
+    var _class = declare('xgrid.data.Reference', [EventedMixin], Implementation);
     _class.Implementation = Implementation;
     return _class;
 });;
@@ -41868,7 +41927,6 @@ define('xide/data/ObservableStore',[
     "xide/types",
     "xide/mixins/EventedMixin"
 ], function (declare, types,EventedMixin) {
-
     var _debug = false;
     var _debugChange = false;
     /**
@@ -41878,24 +41936,47 @@ define('xide/data/ObservableStore',[
         _ignoreChangeEvents: true,
         observedProperties: [],
         mute:false,
+        destroy:function(){
+            _.each(this.query(),function(item){
+                if(item.destroyOnRemove===true){
+                    item.destroy && item.destroy();
+                }
+            });
+            return this.inherited(arguments);
+        },
+        /**
+         *
+         * @param silent {boolean|null}
+         */
         silent:function(silent){
-            this._ignoreChangeEvents = silent;
+            if(silent===true || silent===false && silent!==this._ignoreChangeEvents){
+                this._ignoreChangeEvents = silent;
+            }
         },
         putSync: function (item,publish) {
-            this._ignoreChangeEvents = true;
+            this.silent(!publish);
             var res = this.inherited(arguments);
-            this._ignoreChangeEvents = false;
+            var self = this;
             publish!==false && this.emit('added', res);
+
+            res && !res._store && Object.defineProperty(res, '_store', {
+                get: function () {
+                    return self;
+                }
+            });
+
+            this.silent(false);
             return res;
         },
-        removeSync: function (id) {
+        removeSync: function (id,silent) {
+            this.silent(silent);
             var _item = this.getSync(id);
             _item && _item.onRemove && _item.onRemove();
             var res = this.inherited(arguments);
+            this.silent(false);
             return res;
         },
         postscript: function () {
-
             var thiz = this;
             thiz.inherited(arguments);
             if (!thiz.on) {
@@ -41906,10 +41987,6 @@ define('xide/data/ObservableStore',[
                 thiz._observe(_item);
                 if (!_item._store) {
                     _item._store = thiz;
-                }
-                _item._onCreated && _item._onCreated();
-                if(!_item._onCreated && _debug){
-                    console.warn('item doesnt have _onCreated',_item);
                 }
                 _item.onAdd && _item.onAdd(_item);
             });
@@ -41926,9 +42003,6 @@ define('xide/data/ObservableStore',[
             if (this._ignoreChangeEvents) {
                 return;
             }
-
-            _debug && console.log('item changed', arguments);
-
             var args = {
                 target: item,
                 property: property,
@@ -41946,20 +42020,21 @@ define('xide/data/ObservableStore',[
                 props = props.concat(item.observed);
             }
             props && props.forEach(function (property) {
-                //_debug && console.log('observe item : ' + item.command + ' for ' + property);
-                item.property(property).observe(function (value) {
-                    if (!thiz._ignoreChangeEvents) {
-                        _debugChange && console.log('property changed: ' + property);
+                if(item.property) {
+                    item.property(property).observe(function (value) {
                         thiz._onItemChanged(item, property, value, thiz);
-                    }
-                });
+                    });
+                }else{
+                    console.error('item.prop !');
+                }
+
             });
         },
         setData: function (data) {
             this.inherited(arguments);
-            this._ignoreChangeEvents = true;
+            this.silent(true);
             data && _.each(data,this._observe, this);
-            this._ignoreChangeEvents = false;
+            this.silent(false);
         }
     });
 });;
@@ -42467,6 +42542,7 @@ define('xblox/data/Store',[
     return declare("xblox.data.Store", [TreeMemory, Trackable, ObservableStore], {
         idProperty: 'id',
         parentField: 'parentId',
+        parentProperty: 'parentId',
         filter: function (data) {
             var _res = this.inherited(arguments);
             delete this._state.filter;
@@ -42482,7 +42558,7 @@ define('xblox/data/Store',[
             var _items;
             if (this._state.filter) {
                 //the parent query
-                if (this._state && this._state.filter && this._state.filter['parentId']) {
+                if (this._state.filter['parentId']) {
                     var _item = this.getSync(this._state.filter.parentId);
                     if (_item) {
                         this.reset();
@@ -42560,10 +42636,11 @@ define('xblox/model/BlockModel',[
 define('xide/data/Source',[
     'dcl/dcl',
     "dojo/_base/declare",
-    'xide/utils'
-], function (dcl, declare, utils) {
+    'xide/utils',
+    'xide/lodash'
+], function (dcl, declare, utils,lodash) {
 
-    var _debug = false;
+    var _debug = true;
     /**
      * @class module:xide/data/Source
      */
@@ -42578,60 +42655,58 @@ define('xide/data/Source',[
         },
         updateReference: function () {
         },
+        destroy:function(){
+            this._references=null;
+        },
         getReferences: function () {
             return this._references ? utils.pluck(this._references, 'item') : [];
         },
-        addReference: function (item, settings, addSource) {
-
-            if (!this._references) {
-                this._references = [];
+        hasReference:function(source){
+            return lodash.find(this._sources,{item:source});
+        },
+        addReference: function (reference, settings, addSource) {
+            !this._references && (this._references = []);
+            if(this.hasReference(reference)){
+                console.warn('already have reference');
+                return;
             }
-
             this._references.push({
-                item: item,
+                item: reference,
                 settings: settings
             });
-
             var thiz = this;
-
             if (settings && settings.onDelete) {
-                if (item._store) {
-                    item._store.on('delete', function (evt) {
-                        if (evt.target == item) {
+                if (reference._store) {
+                    reference._store.on('delete', function (evt) {
+                        if (evt.target == reference) {
                             thiz._store.removeSync(thiz[thiz._store['idProperty']]);
+                            thiz._references.remove(evt.target);
                         }
                     })
                 }
             }
-
             if (addSource) {
-                if (item.addSource) {
-                    item.addSource(this, settings);
-                } else {
-                    _debug && console.log('empty: ', item.command);
+                if (reference.addSource) {
+                    reference.addSource(this, settings);
                 }
             }
         },
         removeReference: function (Reference) {
-            _debug && console.log('remove reference ' + Reference.label, Reference);
             this._references && _.each(this._references, function (ref) {
                 if (ref && ref.item == Reference) {
                     this._references && this._references.remove(ref);
+                    return true;
                 }
             }, this);
         },
         updateReferences: function (args) {
-
-
             var property = args.property,
                 value = args.value;
 
             if (!this._references) {
                 this._references = [];
             }
-
             for (var i = 0; i < this._references.length; i++) {
-
                 var link = this._references[i],
                     item = link.item,
                     settings = link.settings,
@@ -42640,15 +42715,13 @@ define('xide/data/Source',[
                 if (this._originReference == item) {
                     continue;
                 }
-
                 if (args.property && settings.properties && settings.properties[args.property]) {
-
                     if (store) {
                         store._ignoreChangeEvents = true;
                     }
                     try {
                         if (item.onSourceChanged) {
-                            item.onSourceChanged(property, value);
+                            item.onSourceChanged(property, value,args.type);
                         } else {
                             item.set(property, value);
                         }
@@ -42671,7 +42744,7 @@ define('xide/data/Source',[
             this.updateReferences(args);
         }
     };
-    //package via declare
+    //exports for declare & dcl
     var Module = declare('xgrid.data.Source', null, Implementation);
     Module.dcl = dcl(null, Implementation);
     Module.Implementation = Implementation;
@@ -42679,778 +42752,784 @@ define('xide/data/Source',[
 });
 ;
 define('xide/data/Model',[
-	'dcl/dcl',
-	'dojo/_base/declare',
-	'dojo/_base/lang',
-	'dojo/Deferred',
-	'dojo/aspect',
-	'dojo/when'
-], function (dcl,declare, lang, Deferred, aspect, when) {
+    'dcl/dcl',
+    'dojo/Deferred',
+    'dojo/aspect',
+    'dojo/when',
+    'xide/utils'
+], function (dcl,Deferred, aspect, when,utils) {
 
-	function getSchemaProperty(object, key) {
-		// this function will retrieve the individual property definition
-		// from the schema, for the provided object and key
-		var definition = object.schema[key];
-		if (definition !== undefined && !(definition instanceof Property)) {
-			definition = new Property(definition);
-			definition._parent = object;
-		}
-		if (definition) {
-			definition.name = key;
-		}
-		return definition;
-	}
 
-	function validate(object, key) {
-		// this performs validation, delegating validation, and coercion
-		// handling to the property definitions objects.
-		var hasOwnPropertyInstance,
-			property = object.hasOwnProperty('_properties') && object._properties[key];
-		
-		hasOwnPropertyInstance = property;
+    function getSchemaProperty(object, key) {
+        // this function will retrieve the individual property definition
+        // from the schema, for the provided object and key
+        var definition = object.schema[key];
+        if (definition !== undefined && !(definition instanceof Property)) {
+            definition = new Property(definition);
+            definition._parent = object;
+        }
+        if (definition) {
+            definition.name = key;
+        }
+        return definition;
+    }
 
-		if (!property) {
-			// or, if we don't our own property object, we inherit from the schema
-			property = getSchemaProperty(object, key);
-			if (property && property.validate) {
-				property = lang.delegate(property, {
-					_parent: object,
-					key: key
-				});
-			}
-		}
+    function validate(object, key) {
+        /*
+         // this performs validation, delegating validation, and coercion
+         // handling to the property definitions objects.
+         var hasOwnPropertyInstance,
+         property = object.hasOwnProperty('_properties') && object._properties[key];
 
-		if (property && property.validate) {
-			return when(property.validate(), function (isValid) {
-				if (!isValid) {
-					// errors, so don't perform set
-					if (!hasOwnPropertyInstance) {
-						// but we do need to store our property
-						// instance if we don't have our own
-						(object.hasOwnProperty('_properties') ?
-							object._properties :
-							object._properties = new Hidden())[key] = property;
-					}
-				}
-				return isValid;
-			});
-		}
-		return true;
-	}
+         hasOwnPropertyInstance = property;
 
-	function whenEach(iterator) {
-		// this is responsible for collecting values from an iterator,
-		// and waiting for the results if promises are returned, returning
-		// a new promise represents the eventual completion of all the promises
-		// this will consistently preserve a sync (non-promise) return value if all
-		// sync values are provided
-		var deferred;
-		var remaining = 1;
-		// start the iterator
-		iterator(function (value, callback, key) {
-			if (value && value.then) {
-				// it is a promise, have to wait for it
-				remaining++;
-				if (!deferred) {
-					// make sure we have a deferred
-					deferred = new Deferred();
-				}
-				value.then(function (value) {
-					// result received, call callback, and then indicate another item is done
-					doneItem(callback(value, key));
-				}).then(null, deferred.reject);
-			} else {
-				// not a promise, just a direct sync callback
-				callback(value, key);
-			}
-		});
-		if (deferred) {
-			// if we have a deferred, decrement one more time
-			doneItem();
-			return deferred.promise;
-		}
-		function doneItem() {
-			// called for each promise as it is completed
-			remaining--;
-			if (!remaining) {
-				// all done
-				deferred.resolve();
-			}
-		}
-	}
-	var slice = [].slice;
+         if (!property) {
+         // or, if we don't our own property object, we inherit from the schema
+         property = getSchemaProperty(object, key);
+         if (property && property.validate) {
+         property = lang.delegate(property, {
+         _parent: object,
+         key: key
+         });
+         }
+         }
 
-	var Model = declare('xide/data/Model',null,{
-		//	summary:
-		//		A base class for modelled data objects.
+         if (property && property.validate) {
+         return when(property.validate(), function (isValid) {
+         if (!isValid) {
+         // errors, so don't perform set
+         if (!hasOwnPropertyInstance) {
+         // but we do need to store our property
+         // instance if we don't have our own
+         (object.hasOwnProperty('_properties') ?
+         object._properties :
+         object._properties = new Hidden())[key] = property;
+         }
+         }
+         return isValid;
+         });
+         }
+         */
+        return true;
+    }
 
-		//	schema: Object | dstore/Property
-		//		A hash map where the key corresponds to a property definition. 
-		//		This can be a string corresponding to a JavaScript
-		//		primitive values (string, number, boolean), a constructor, a
-		//		null (to allow any type), or a Property object with more advanced
-		//		definitions.
-		schema: {},
+    function whenEach(iterator) {
+        // this is responsible for collecting values from an iterator,
+        // and waiting for the results if promises are returned, returning
+        // a new promise represents the eventual completion of all the promises
+        // this will consistently preserve a sync (non-promise) return value if all
+        // sync values are provided
+        var deferred;
+        var remaining = 1;
+        // start the iterator
+        iterator(function (value, callback, key) {
+            if (value && value.then) {
+                // it is a promise, have to wait for it
+                remaining++;
+                if (!deferred) {
+                    // make sure we have a deferred
+                    deferred = new Deferred();
+                }
+                value.then(function (value) {
+                    // result received, call callback, and then indicate another item is done
+                    doneItem(callback(value, key));
+                }).then(null, deferred.reject);
+            } else {
+                // not a promise, just a direct sync callback
+                callback(value, key);
+            }
+        });
+        if (deferred) {
+            // if we have a deferred, decrement one more time
+            doneItem();
+            return deferred.promise;
+        }
+        function doneItem() {
+            // called for each promise as it is completed
+            remaining--;
+            if (!remaining) {
+                // all done
+                deferred.resolve();
+            }
+        }
+    }
+    var slice = [].slice;
+    var Model = dcl(null,{
+        declaredClass:'xide/data/Model',
+        //	summary:
+        //		A base class for modelled data objects.
 
-		//	additionalProperties: boolean
-		//		This indicates whether properties are allowed that are not 
-		//		defined in the schema.
-		additionalProperties: true,
+        //	schema: Object | dstore/Property
+        //		A hash map where the key corresponds to a property definition.
+        //		This can be a string corresponding to a JavaScript
+        //		primitive values (string, number, boolean), a constructor, a
+        //		null (to allow any type), or a Property object with more advanced
+        //		definitions.
+        schema: {},
 
-		//	_scenario: string
-		//		The scenario that is used to determine which validators should
-		//		apply to this model. There are two standard values for _scenario,
-		//		"insert" and "update", but it can be set to any arbitrary value
-		//		for more complex validation scenarios.
-		_scenario: 'update',
+        //	additionalProperties: boolean
+        //		This indicates whether properties are allowed that are not
+        //		defined in the schema.
+        additionalProperties: true,
 
-		constructor: function (options) {
-			this.init(options);
-		},
+        //	_scenario: string
+        //		The scenario that is used to determine which validators should
+        //		apply to this model. There are two standard values for _scenario,
+        //		"insert" and "update", but it can be set to any arbitrary value
+        //		for more complex validation scenarios.
+        _scenario: 'update',
 
-		refresh:function(silent){
+        constructor: function (options) {
+            this.init(options);
+        },
 
-			var _store = this._store;
-			_store && _store.refreshItem(this,silent);
+        refresh:function(silent,property){
+            var _store = this._store;
+            _store && _store.refreshItem(this,silent,property);
+        },
+        getStore:function(){
+            return this._store;
+        },
 
-		},
-		getStore:function(){
-			return this._store;
-		},
+        init: function (values) {
+            // if we are being constructed, we default to the insert scenario
+            this._scenario = 'insert';
+            // copy in the default values
+            values = this._setValues(values);
+            // set any defaults
+            for (var key in this.schema) {
+                var definition = this.schema[key];
+                if (definition && typeof definition === 'object' && 'default' in definition &&
+                    !values.hasOwnProperty(key)) {
+                    var defaultValue = definition['default'];
+                    values[key] = typeof defaultValue === 'function' ? defaultValue.call(this) : defaultValue;
+                }
+            }
+        },
 
-		init: function (values) {
-			// if we are being constructed, we default to the insert scenario
-			this._scenario = 'insert';
-			// copy in the default values
-			values = this._setValues(values);
+        _setValues: function (values) {
+            return utils.mixin(this, values);
+        },
 
-			// set any defaults
-			for (var key in this.schema) {
-				var definition = this.schema[key];
-				if (definition && typeof definition === 'object' && 'default' in definition &&
-						!values.hasOwnProperty(key)) {
-					var defaultValue = definition['default'];
-					values[key] = typeof defaultValue === 'function' ? defaultValue.call(this) : defaultValue;
-				}
-			}
-			
-		},
+        _getValues: function () {
+            return this._values || this;
+        },
 
-		_setValues: function (values) {
-			return lang.mixin(this, values);
-		},
-
-		_getValues: function () {
-			return this._values || this;
-		},
-
-		save: function (/*Object*/ options) {
-			//	summary:
-			//		Saves this object, calling put or add on the attached store.
-			//	options.skipValidation:
-			//		Normally, validation is performed to ensure that the object
-			//		is not invalid before being stored. Set `skipValidation` to
-			//		true to skip it.
-			//	returns: any
-
-			var object = this;
-			return when((options && options.skipValidation) ? true : this.validate(), function (isValid) {
-				if (!isValid) {
-					throw object.createValidationError(object.errors);
-				}
-				var scenario = object._scenario;
-				// suppress any non-date from serialization output
-				object.prepareForSerialization();
-				return object._store && when(object._store[scenario === 'insert' ? 'add' : 'put'](object),
-						function (returned) {
-					// receive any updates from the server
-					object.set(returned);
-					object._scenario = 'update';
-					return object;
-				});
-			});
-		},
-
-		remove: function () {
-			var store = this._store;
-			return store.remove(store.getIdentity(this));
-		},
-
-		prepareForSerialization: function () {
-			//	summary:
-			//		This method is responsible for cleaing up any properties on the instance
-			//		object to ensure it can easily be serialized (by JSON.stringify at least)
-			this._scenario = undefined;
-			if (this._inherited) {
-				this._inherited.toJSON = toJSONHidden;
-			}
-		},
-
-		createValidationError: function (errors) {
-			//	summary:
-			//		This is called when a save is attempted and a validation error was found.
-			//		This can be overriden with locale-specific messages
-			//	errors:
-			//		Errors that were found in validation
-			return new Error('Validation error');
-		},
-
-		property: function (/*String...*/ key, nextKey) {
-			//	summary:
-			//		Gets a new reactive property object, representing the present and future states
-			//		of the provided property. The returned property object gives access to methods for changing,
-			//		retrieving, and observing the property value, any validation errors, and property metadata.
-			//	key: String...
-			//		The name of the property to retrieve. Multiple key arguments can be provided
-			//		nested property access.
-
-			// create the properties object, if it doesn't exist yet
-			var properties = this.hasOwnProperty('_properties') ? this._properties :
-				(this._properties = new Hidden());
-			var property = properties[key];
-			// if it doesn't exist, create one, delegated from the schema's property definition
-			// (this gives an property instance, owning the current property value and listeners,
-			// while inheriting metadata from the schema's property definitions)
-			if (!property) {
-				property = getSchemaProperty(this, key);
-				// delegate, or just create a new instance if no schema definition exists
-				property = properties[key] = property ? lang.delegate(property) : new Property();
-				property.name = key;
-				// give it the correct initial value
-				property._parent = this;
-			}
-			if (nextKey) {
-				// go to the next property, if there are multiple
-				return property.property.apply(property, slice.call(arguments, 1));
-			}
-			return property;
-		},
-
-		get: function (/*string*/ key) {
-			// TODO: add listener parameter back in
-			//	summary:
-			//		Standard get() function to retrieve the current value
-			//		of a property, augmented with the ability to listen
-			//		for future changes
-
-			var property, definition = this.schema[key];
-			// now we need to see if there is a custom get involved, or if we can just
-			// shortcut to retrieving the property value
-			definition = property || this.schema[key];
-			if (definition && definition.valueOf &&
-					(definition.valueOf !== simplePropertyValueOf || definition.hasCustomGet)) {
-				// we have custom get functionality, need to create at least a temporary property
-				// instance
-				property = property || (this.hasOwnProperty('_properties') && this._properties[key]);
-				if (!property) {
-					// no property instance, so we create a temporary one
-					property = lang.delegate(getSchemaProperty(this, key), {
-						name: key,
-						_parent: this
-					});
-				}
-				// let the property instance handle retrieving the value
-				return property.valueOf();
-			}
-			// default action of just retrieving the property value
-			return this._getValues()[key];
-		},
-
-		set: function (/*string*/ key, /*any?*/ value) {
+        save: function (/*Object*/ options) {
             //	summary:
-			//		Only allows setting keys that are defined in the schema,
-			//		and remove any error conditions for the given key when
-			//		its value is set.
-			if (typeof key === 'object') {
-				startOperation();
-				try {
-					for (var i in key) {
-						value = key[i];
-						if (key.hasOwnProperty(i) && !(value && value.toJSON === toJSONHidden)) {
-							this.set(i, value);
-						}
-					}
-				} finally {
-					endOperation();
-				}
-				return;
-			}
-			var definition = this.schema[key];
-			if (!definition && !this.additionalProperties) {
-				// TODO: Shouldn't this throw an error instead of just giving a warning?
-				return console.warn('Schema does not contain a definition for', key);
-			}
-			var property = this.hasOwnProperty('_properties') && this._properties[key];
-			if (!property &&
-					// we need a real property instance if it is an object or if we have a custom put method
-					((value && typeof value === 'object') ||
-						(definition && definition.put !== simplePropertyPut))) {
-				property = this.property(key);
-			}
-			if (property) {
-				// if the property instance exists, use this to do the set
-				property.put(value);
-			} else {
-				if (definition && definition.coerce) {
-					// if a schema definition exists, and has a coerce method,
-					// we can use without creating a new instance
-					value = definition.coerce(value);
-				}
-				// we can shortcut right to just setting the object property
-				this._getValues()[key] = value;
-				// check to see if we should do validation
-				if (definition && definition.validateOnSet !== false) {
-					validate(this, key);
-				}
-			}
+            //		Saves this object, calling put or add on the attached store.
+            //	options.skipValidation:
+            //		Normally, validation is performed to ensure that the object
+            //		is not invalid before being stored. Set `skipValidation` to
+            //		true to skip it.
+            //	returns: any
 
-			return value;
-		},
+            var object = this;
+            return when((options && options.skipValidation) ? true : this.validate(), function (isValid) {
+                if (!isValid) {
+                    throw object.createValidationError(object.errors);
+                }
+                var scenario = object._scenario;
+                // suppress any non-date from serialization output
+                object.prepareForSerialization();
+                return object._store && when(object._store[scenario === 'insert' ? 'add' : 'put'](object),
+                        function (returned) {
+                            // receive any updates from the server
+                            object.set(returned);
+                            object._scenario = 'update';
+                            return object;
+                        });
+            });
+        },
 
-		observe: function (/*string*/ key, /*function*/ listener, /*object*/ options) {
-			//	summary:
-			//		Registers a listener for any changes in the specified property
-			//	key:
-			//		The name of the property to listen to
-			//	listener:
-			//		Function to be called for each change
-			//	options.onlyFutureUpdates
-			//		If this is true, it won't call the listener for the current value,
-			//		just future updates. If this is true, it also won't return
-			//		a new reactive object
-			return this.property(key).observe(listener, options);
-		},
+        remove: function () {
+            var store = this._store;
+            return store.remove(store.getIdentity(this));
+        },
 
-		validate: function (/*string[]?*/ fields) {
-			//	summary:
-			//		Validates the current object.
-			//	fields:
-			//		If provided, only the fields listed in the array will be
-			//		validated.
-			//	returns: boolean | dojo/promise/Promise
-			//		A boolean or a promise that resolves to a boolean indicating whether
-			//		or not the model is in a valid state.
+        prepareForSerialization: function () {
+            //	summary:
+            //		This method is responsible for cleaing up any properties on the instance
+            //		object to ensure it can easily be serialized (by JSON.stringify at least)
+            this._scenario = undefined;
+            if (this._inherited) {
+                this._inherited.toJSON = toJSONHidden;
+            }
+        },
 
-			var object = this,
-				isValid = true,
-				errors = [],
-				fieldMap;
+        createValidationError: function (errors) {
+            //	summary:
+            //		This is called when a save is attempted and a validation error was found.
+            //		This can be overriden with locale-specific messages
+            //	errors:
+            //		Errors that were found in validation
+            return new Error('Validation error');
+        },
 
-			if (fields) {
-				fieldMap = {};
-				for (var i = 0; i < fields.length; i++) {
-					fieldMap[i] = true;
-				}
-			}
-			return when(whenEach(function (whenItem) {
-				// iterate through the keys in the schema.
-				// note that we will always validate every property, regardless of when it fails,
-				// and we will execute all the validators immediately (async validators will
-				// run in parallel)
-				for (var key in object.schema) {
-					// check to see if we are allowed to validate this key
-					if (!fieldMap || (fieldMap.hasOwnProperty(key))) {
-						// run validation
-						whenItem(validate(object, key), function (isValid, key) {
-							if (!isValid) {
-								notValid(key);
-							}
-						}, key);
-					}
-				}
-			}), function () {
-				object.set('errors', isValid ? undefined : errors);
-				// it wasn't async, so we just return the synchronous result
-				return isValid;
-			});
-			function notValid(key) {
-				// found an error, mark valid state and record the errors
-				isValid = false;
-				errors.push.apply(errors, object.property(key).errors);
-			}
-		},
+        property: function (/*String...*/ key, nextKey) {
+            //	summary:
+            //		Gets a new reactive property object, representing the present and future states
+            //		of the provided property. The returned property object gives access to methods for changing,
+            //		retrieving, and observing the property value, any validation errors, and property metadata.
+            //	key: String...
+            //		The name of the property to retrieve. Multiple key arguments can be provided
+            //		nested property access.
 
-		isValid: function () {
-			//	summary:
-			//		Returns whether or not there are currently any errors on
-			//		this model due to validation failures. Note that this does
-			//		not run validation but merely returns the result of any
-			//		prior validation.
-			//	returns: boolean
+            // create the properties object, if it doesn't exist yet
+            var properties = this.hasOwnProperty('_properties') ? this._properties :
+                (this._properties = new Hidden());
+            var property = properties[key];
+            // if it doesn't exist, create one, delegated from the schema's property definition
+            // (this gives an property instance, owning the current property value and listeners,
+            // while inheriting metadata from the schema's property definitions)
+            if (!property) {
+                property = getSchemaProperty(this, key);
+                // delegate, or just create a new instance if no schema definition exists
+                property = properties[key] = property ? utils.delegate(property) : new Property();
+                property.name = key;
+                // give it the correct initial value
+                property._parent = this;
+            }
+            if (nextKey) {
+                // go to the next property, if there are multiple
+                return property.property.apply(property, slice.call(arguments, 1));
+            }
+            return property;
+        },
 
-			var isValid = true,
-				key;
+        get: function (/*string*/ key) {
+            // TODO: add listener parameter back in
+            //	summary:
+            //		Standard get() function to retrieve the current value
+            //		of a property, augmented with the ability to listen
+            //		for future changes
 
-			for (key in this.schema) {
-				var property = this.hasOwnProperty('_properties') && this._properties[key];
-				if (property && property.errors && property.errors.length) {
-					isValid = false;
-				}
-			}
-			return isValid;
-		}
-	});
+            var property, definition = this.schema[key];
+            // now we need to see if there is a custom get involved, or if we can just
+            // shortcut to retrieving the property value
+            definition = property || this.schema[key];
+            if (definition && definition.valueOf &&
+                (definition.valueOf !== simplePropertyValueOf || definition.hasCustomGet)) {
+                // we have custom get functionality, need to create at least a temporary property
+                // instance
+                property = property || (this.hasOwnProperty('_properties') && this._properties[key]);
+                if (!property) {
+                    // no property instance, so we create a temporary one
+                    property = utils.delegate(getSchemaProperty(this, key), {
+                        name: key,
+                        _parent: this
+                    });
+                }
+                // let the property instance handle retrieving the value
+                return property.valueOf();
+            }
+            // default action of just retrieving the property value
+            return this._getValues()[key];
+        },
 
-	// define the start and end markers of an operation, so we can
-	// fire notifications at the end of the operation, by default
-	function startOperation() {
-		setCallDepth++;
-	}
-	function endOperation() {
-		// if we are ending this operation, start executing the queue
-		if (setCallDepth < 2 && onEnd) {
-			onEnd();
-			onEnd = null;
-		}
-		setCallDepth--;
-	}
-	var setCallDepth = 0;
-	var callbackQueue;
-	var onEnd;
-	// the default nextTurn executes at the end of the current operation
-	// The intent with this function is that it could easily be replaced
-	// with something like setImmediate, setTimeout, or nextTick to provide
-	// next turn handling
-	(Model.nextTurn = function (callback) {
-		// set the callback for the end of the current operation
-		onEnd = callback;
-	}).atEnd = true;
+        set: function (/*string*/ key, /*any?*/ value) {
+            //	summary:
+            //		Only allows setting keys that are defined in the schema,
+            //		and remove any error conditions for the given key when
+            //		its value is set.
+            if (typeof key === 'object') {
+                startOperation();
+                try {
+                    for (var i in key) {
+                        value = key[i];
+                        if (key.hasOwnProperty(i) && !(value && value.toJSON === toJSONHidden)) {
+                            this.set(i, value);
+                        }
+                    }
+                } finally {
+                    endOperation();
+                }
+                return;
+            }
+            var definition = this.schema[key];
+            if (!definition && !this.additionalProperties) {
+                // TODO: Shouldn't this throw an error instead of just giving a warning?
+                return console.warn('Schema does not contain a definition for', key);
+            }
+            var property = this.hasOwnProperty('_properties') && this._properties[key];
+            if (!property &&
+                // we need a real property instance if it is an object or if we have a custom put method
+                ((value && typeof value === 'object') ||
+                (definition && definition.put !== simplePropertyPut))) {
+                property = this.property(key);
+            }
+            if (property) {
+                // if the property instance exists, use this to do the set
+                property.put(value);
+            } else {
+                if (definition && definition.coerce) {
+                    // if a schema definition exists, and has a coerce method,
+                    // we can use without creating a new instance
+                    value = definition.coerce(value);
+                }
+                // we can shortcut right to just setting the object property
+                this._getValues()[key] = value;
+                // check to see if we should do validation
+                if (definition && definition.validateOnSet !== false) {
+                    validate(this, key);
+                }
+            }
 
-	var Reactive = declare([Model], {
-		//	summary:
-		//		A reactive object is a data model that can contain a value,
-		//		and notify listeners of changes to that value, in the future.
-		observe: function (/*function*/ listener, /*object*/ options) {
-			//	summary:
-			//		Registers a listener for any changes in the current value
-			//	listener:
-			//		Function to be called for each change
-			//	options.onlyFutureUpdates
-			//		If this is true, it won't call the listener for the current value,
-			//		just future updates. If this is true, it also won't return
-			//		a new reactive object
-			
-			var reactive;
-			if (typeof listener === 'string') {
-				// a property key was provided, use the Model's method
-				return this.inherited(arguments);
-			}
-			if (!options || !options.onlyFutureUpdates) {
-				// create a new reactive to contain the results of the execution
-				// of the provided function
-				reactive = new Reactive();
-				if (this._has()) {
-					// we need to notify of the value of the present (as well as future)
-					reactive.value = listener(this.valueOf());
-				}
-			}
-			// add to the listeners
-			var handle = this._addListener(function (value) {
-				var result = listener(value);
-				if (reactive) {
-					// TODO: once we have a real notification API again, call that, instead 
-					// of requesting a change
-					reactive.put(result);
-				}
-			});
-			if (reactive) {
-				reactive.remove = handle.remove;
-				return reactive;
-			} else {
-				return handle;
-			}
-		},
+            return value;
+        },
 
-		//	validateOnSet: boolean
-		//		Indicates whether or not to perform validation when properties
-		//		are modified.
-		//		This can provided immediate feedback and on the success
-		//		or failure of a property modification. And Invalid property 
-		//		values will be rejected. However, if you are
-		//		using asynchronous validation, invalid property values will still
-		//		be set.
-		validateOnSet: false,
+        observe: function (/*string*/ key, /*function*/ listener, /*object*/ options) {
+            //	summary:
+            //		Registers a listener for any changes in the specified property
+            //	key:
+            //		The name of the property to listen to
+            //	listener:
+            //		Function to be called for each change
+            //	options.onlyFutureUpdates
+            //		If this is true, it won't call the listener for the current value,
+            //		just future updates. If this is true, it also won't return
+            //		a new reactive object
+            return this.property(key).observe(listener, options);
+        },
 
-		//	validators: Array
-		//		An array of additional validators to apply to this property
-		validators: null,
+        validate: function (/*string[]?*/ fields) {
+            //	summary:
+            //		Validates the current object.
+            //	fields:
+            //		If provided, only the fields listed in the array will be
+            //		validated.
+            //	returns: boolean | dojo/promise/Promise
+            //		A boolean or a promise that resolves to a boolean indicating whether
+            //		or not the model is in a valid state.
 
-		_addListener: function (listener) {
-			// add a listener for the property change event
-			return aspect.after(this, 'onchange', listener, true);
-		},
+            /*
+             var object = this,
+             isValid = true,
+             errors = [],
+             fieldMap;
 
-		valueOf: function () {
-			return this._get();
-		},
+             if (fields) {
+             fieldMap = {};
+             for (var i = 0; i < fields.length; i++) {
+             fieldMap[i] = true;
+             }
+             }
+             return when(whenEach(function (whenItem) {
+             // iterate through the keys in the schema.
+             // note that we will always validate every property, regardless of when it fails,
+             // and we will execute all the validators immediately (async validators will
+             // run in parallel)
+             for (var key in object.schema) {
+             // check to see if we are allowed to validate this key
+             if (!fieldMap || (fieldMap.hasOwnProperty(key))) {
+             // run validation
+             whenItem(validate(object, key), function (isValid, key) {
+             if (!isValid) {
+             notValid(key);
+             }
+             }, key);
+             }
+             }
+             }), function () {
+             object.set('errors', isValid ? undefined : errors);
+             // it wasn't async, so we just return the synchronous result
+             return isValid;
+             });
+             function notValid(key) {
+             // found an error, mark valid state and record the errors
+             isValid = false;
+             errors.push.apply(errors, object.property(key).errors);
+             }
+             */
+        },
 
-		_get: function () {
-			return this.value;
-		},
+        isValid: function () {
+            //	summary:
+            //		Returns whether or not there are currently any errors on
+            //		this model due to validation failures. Note that this does
+            //		not run validation but merely returns the result of any
+            //		prior validation.
+            //	returns: boolean
 
-		_has: function () {
-			return this.hasOwnProperty('value');
-		},
-		setValue: function (value) {
-			//	summary:
-			//		This method is responsible for storing the value. This can
-			//		be overriden to define a custom setter
-			//	value: any
-			//		The value to be stored
-			//	parent: Object
-			//		The parent object of this propery
-			this.value = value;
-		},
+            var isValid = true,
+                key;
 
-		put: function (/*any*/ value) {
-			//	summary:
-			//		Indicates a new value for this reactive object
+            for (key in this.schema) {
+                var property = this.hasOwnProperty('_properties') && this._properties[key];
+                if (property && property.errors && property.errors.length) {
+                    isValid = false;
+                }
+            }
+            return isValid;
+        }
+    });
 
-			// notify all the listeners of this object, that the value has changed
-			var oldValue = this._get();
-			value = this.coerce(value);
-			if (this.errors) {
-				// clear any errors
-				this.set('errors', undefined);
-			}
-			var property = this;
-			// call the setter and wait for it
-			startOperation();
-			return when(this.setValue(value, this._parent), function (result) {
-				if (result !== undefined) {
-					// allow the setter to change the value
-					value = result;
-				}
-				// notify listeners
-				if (property.onchange) {
-					// queue the callback
-					property._queueChange(property.onchange, oldValue);
-				}
-				// if this was set to an object (or was an object), we need to notify.
-				// update all the sub-property objects, so they can possibly notify their
-				// listeners
-				var key,
-					hasOldObject = oldValue && typeof oldValue === 'object' && !(oldValue instanceof Array),
-					hasNewObject = value && typeof value === 'object' && !(value instanceof Array);
-				if (hasOldObject || hasNewObject) {
-					// we will iterate through the properties recording the changes
-					var changes = {};
-					if (hasOldObject) {
-						oldValue = oldValue._getValues ? oldValue._getValues() : oldValue;
-						for (key in oldValue) {
-							changes[key] = {old: oldValue[key]};
-						}
-					}
-					if (hasNewObject) {
-						value = value._getValues ? value._getValues() : value;
-						for (key in value) {
-							(changes[key] = changes[key] || {}).value = value[key];
-						}
-					}
-					property._values = hasNewObject && value;
-					for (key in changes) {
-						// now for each change, we can notify the property object
-						var change = changes[key];
-						var subProperty = property._properties && property._properties[key];
-						if (subProperty && subProperty.onchange) {
-							// queue the callback
-							subProperty._queueChange(subProperty.onchange, change.old);
-						}
-					}
-				}
-				if (property.validateOnSet) {
-					property.validate();
-				}
-				endOperation();
-			});
-		},
+    //xhack: make dstore happy
+    Model.createSubclass=function(mixins, props){
+        var sub = dcl([this].concat(mixins), props || {});
+        sub.extend = function(props){
+            utils.mixin(this.prototype,props);
+            return this;
+        }
+        return sub;
+    }
+    // define the start and end markers of an operation, so we can
+    // fire notifications at the end of the operation, by default
+    function startOperation() {
+        setCallDepth++;
+    }
+    function endOperation() {
+        // if we are ending this operation, start executing the queue
+        if (setCallDepth < 2 && onEnd) {
+            onEnd();
+            onEnd = null;
+        }
+        setCallDepth--;
+    }
+    var setCallDepth = 0;
+    var callbackQueue;
+    var onEnd;
+    // the default nextTurn executes at the end of the current operation
+    // The intent with this function is that it could easily be replaced
+    // with something like setImmediate, setTimeout, or nextTick to provide
+    // next turn handling
+    (Model.nextTurn = function (callback) {
+        // set the callback for the end of the current operation
+        onEnd = callback;
+    }).atEnd = true;
 
-		coerce: function (value) {
-			//	summary:
-			//		Given an input value, this method is responsible
-			//		for converting it to the appropriate type for storing on the object.
+    var Reactive = dcl(Model, {
+        //	summary:
+        //		A reactive object is a data model that can contain a value,
+        //		and notify listeners of changes to that value, in the future.
+        observe: function (/*function*/ listener, /*object*/ options) {
+            //	summary:
+            //		Registers a listener for any changes in the current value
+            //	listener:
+            //		Function to be called for each change
+            //	options.onlyFutureUpdates
+            //		If this is true, it won't call the listener for the current value,
+            //		just future updates. If this is true, it also won't return
+            //		a new reactive object
 
-			var type = this.type;
-			if (type) {
-				if (type === 'string') {
-					value = '' + value;
-				}
-				else if (type === 'number') {
-					value = +value;
-				}
-				else if (type === 'boolean') {
-					// value && value.length check is because dijit/_FormMixin
-					// returns an array for checkboxes; an array coerces to true,
-					// but an empty array should be set as false
-					value = (value === 'false' || value === '0' || value instanceof Array && !value.length) ?
-						false : !!value;
-				}
-				else if (typeof type === 'function' && !(value instanceof type)) {
-					/* jshint newcap: false */
-					value = new type(value);
-				}
-			}
-			return value;
-		},
+            var reactive;
+            if (typeof listener === 'string') {
+                // a property key was provided, use the Model's method
+                console.error('fff');
+                return this.inherited(arguments);
+            }
+            if (!options || !options.onlyFutureUpdates) {
+                // create a new reactive to contain the results of the execution
+                // of the provided function
+                reactive = new Reactive();
+                if (this._has()) {
+                    // we need to notify of the value of the present (as well as future)
+                    reactive.value = listener(this.valueOf());
+                }
+            }
+            // add to the listeners
+            var handle = this._addListener(function (value) {
+                var result = listener(value);
+                if (reactive) {
+                    // TODO: once we have a real notification API again, call that, instead
+                    // of requesting a change
+                    reactive.put(result);
+                }
+            });
+            if (reactive) {
+                reactive.remove = handle.remove;
+                return reactive;
+            } else {
+                return handle;
+            }
+        },
 
-		addError: function (error) {
-			//	summary:
-			//		Add an error to the current list of validation errors
-			//	error: String
-			//		Error to add
-			this.set('errors', (this.errors || []).concat([error]));
-		},
+        //	validateOnSet: boolean
+        //		Indicates whether or not to perform validation when properties
+        //		are modified.
+        //		This can provided immediate feedback and on the success
+        //		or failure of a property modification. And Invalid property
+        //		values will be rejected. However, if you are
+        //		using asynchronous validation, invalid property values will still
+        //		be set.
+        validateOnSet: false,
 
-		checkForErrors: function (value) {
-			//	summary:
-			//		This method can be implemented to simplify validation.
-			//		This is called with the value, and this method can return
-			//		an array of any errors that were found. It is recommended
-			//		that you call this.inherited(arguments) to permit any
-			//		other validators to perform validation
-			//	value:
-			//		This is the value to validate.
-			var errors = [];
-			if (this.type && !(typeof this.type === 'function' ? (value instanceof this.type) :
-				(this.type === typeof value))) {
-				errors.push(value + ' is not a ' + this.type);
-			}
-			
-			if (this.required && !(value != null && value !== '')) {
-				errors.push('required, and it was not present');
-			}
-			return errors;
-		},
+        //	validators: Array
+        //		An array of additional validators to apply to this property
+        validators: null,
 
-		validate: function () {
-			//	summary:
-			//		This method is responsible for validating this particular
-			//		property instance.
-			var property = this;
-			var model = this._parent;
-			var validators = this.validators;
-			var value = this.valueOf();
-			var totalErrors = [];
+        _addListener: function (listener) {
+            // add a listener for the property change event
+            return aspect.after(this, 'onchange', listener, true);
+        },
 
-			return when(whenEach(function (whenItem) {
-				// iterator through any validators (if we have any)
-				if (validators) {
-					for (var i = 0; i < validators.length; i++) {
-						whenItem(validators[i].checkForErrors(value, property, model), addErrors);
-					}
-				}
-				// check our own validation
-				whenItem(property.checkForErrors(value, property, model), addErrors);
-				function addErrors(errors) {
-					if (errors) {
-						// if we have an array of errors, add it to the total of all errors
-						totalErrors.push.apply(totalErrors, errors);
-					}
-				}
-			}), function () {
-				if (totalErrors.length) {
-					// errors exist
-					property.set('errors', totalErrors);
-					return false;
-				}
-				// no errors, valid value, if there were errors before, remove them
-				if(property.get('errors') !== undefined){
-					property.set('errors', undefined);
-				}
-				return true;
-			});
-		},
-		_queueChange: function (callback, oldValue) {
-			// queue up a notification callback
-			if (!callback._queued) {
-				// make sure we only queue up once before it is called by flagging it
-				callback._queued = true;
-				var reactive = this;
-				// define a function for when it is called that will clear the flag
-				// and provide the correct args
-				var dispatch = function () {
-					callback._queued = false;
-					callback.call(reactive, reactive._get(), oldValue);
-				};
+        valueOf: function () {
+            return this._get();
+        },
 
-				if (callbackQueue) {
-					// we already have a waiting queue of callbacks, add our callback
-					callbackQueue.push(dispatch);
-				}
-				if (!callbackQueue) {
-					// no waiting queue, check to see if we have a custom nextTurn
-					// or we are in an operation
-					if (!Model.nextTurn.atEnd || setCallDepth > 0) {
-						// create the queue (starting with this callback)
-						callbackQueue = [dispatch];
-						// define the callback executor for the next turn
-						Model.nextTurn(function () {
-							// pull out all the callbacks
-							for (var i = 0; i < callbackQueue.length; i++) {
-								// call each one
-								callbackQueue[i]();
-							}
-							// clear it
-							callbackQueue = null;
-						});
-					} else {
-						// no set call depth, so just immediately execute
-						dispatch();
-					}
-				}
-			}
-		},
-		toJSON: function () {
-			return this._values || this;
-		}
-	});
-	// a function that returns a function, to stop JSON serialization of an
-	// object
-	function toJSONHidden() {
-		return toJSONHidden;
-	}
-	// An object that will be hidden from JSON serialization
-	var Hidden = function () {
-	};
-	Hidden.prototype.toJSON = toJSONHidden;
+        _get: function () {
+            return this.value;
+        },
 
-	var Property = Model.Property = declare(Reactive, {
-		//	summary:
-		//		A Property represents a time-varying property value on an object,
-		//		along with meta-data. One can listen to changes in this value (through
-		//		receive), as well as access and monitor metadata, like default values,
-		//		validation information, required status, and any validation errors.
+        _has: function () {
+            return this.hasOwnProperty('value');
+        },
+        setValue: function (value) {
+            //	summary:
+            //		This method is responsible for storing the value. This can
+            //		be overriden to define a custom setter
+            //	value: any
+            //		The value to be stored
+            //	parent: Object
+            //		The parent object of this propery
+            this.value = value;
+        },
 
-		//	value: any
-		//		This represents the value of this property, which can be
-		//		monitored for changes and validated
+        put: function (/*any*/ value) {
+            //	summary:
+            //		Indicates a new value for this reactive object
 
-		init: function (options) {
-			// handle simple definitions
-			if (typeof options === 'string' || typeof options === 'function') {
-				options = {type: options};
-			}
-			// and/or mixin any provided properties
-			if (options) {
-				declare.safeMixin(this, options);
-			}
-		},
+            // notify all the listeners of this object, that the value has changed
+            var oldValue = this._get();
+            value = this.coerce(value);
+            if (this.errors) {
+                // clear any errors
+                this.set('errors', undefined);
+            }
+            var property = this;
+            // call the setter and wait for it
+            startOperation();
+            return when(this.setValue(value, this._parent), function (result) {
+                if (result !== undefined) {
+                    // allow the setter to change the value
+                    value = result;
+                }
+                // notify listeners
+                if (property.onchange) {
+                    // queue the callback
+                    property._queueChange(property.onchange, oldValue);
+                }
+                // if this was set to an object (or was an object), we need to notify.
+                // update all the sub-property objects, so they can possibly notify their
+                // listeners
+                var key,
+                    hasOldObject = oldValue && typeof oldValue === 'object' && !(oldValue instanceof Array),
+                    hasNewObject = value && typeof value === 'object' && !(value instanceof Array);
+                if (hasOldObject || hasNewObject) {
+                    // we will iterate through the properties recording the changes
+                    var changes = {};
+                    if (hasOldObject) {
+                        oldValue = oldValue._getValues ? oldValue._getValues() : oldValue;
+                        for (key in oldValue) {
+                            changes[key] = {old: oldValue[key]};
+                        }
+                    }
+                    if (hasNewObject) {
+                        value = value._getValues ? value._getValues() : value;
+                        for (key in value) {
+                            (changes[key] = changes[key] || {}).value = value[key];
+                        }
+                    }
+                    property._values = hasNewObject && value;
+                    for (key in changes) {
+                        // now for each change, we can notify the property object
+                        var change = changes[key];
+                        var subProperty = property._properties && property._properties[key];
+                        if (subProperty && subProperty.onchange) {
+                            // queue the callback
+                            subProperty._queueChange(subProperty.onchange, change.old);
+                        }
+                    }
+                }
+                if (property.validateOnSet) {
+                    property.validate();
+                }
+                endOperation();
+            });
+        },
 
-		_get: function () {
-			return this._parent._getValues()[this.name];
-		},
-		_has: function () {
-			return this.name in this._parent._getValues();
-		},
-		setValue: function (value, parent) {
-			parent._getValues()[this.name] = value;
-		}
-	});
+        coerce: function (value) {
+            //	summary:
+            //		Given an input value, this method is responsible
+            //		for converting it to the appropriate type for storing on the object.
 
-	var simplePropertyValueOf = Property.prototype.valueOf;
-	var simplePropertyPut = Property.prototype.put;
+            var type = this.type;
+            if (type) {
+                if (type === 'string') {
+                    value = '' + value;
+                }
+                else if (type === 'number') {
+                    value = +value;
+                }
+                else if (type === 'boolean') {
+                    // value && value.length check is because dijit/_FormMixin
+                    // returns an array for checkboxes; an array coerces to true,
+                    // but an empty array should be set as false
+                    value = (value === 'false' || value === '0' || value instanceof Array && !value.length) ?
+                        false : !!value;
+                }
+                else if (typeof type === 'function' && !(value instanceof type)) {
+                    /* jshint newcap: false */
+                    value = new type(value);
+                }
+            }
+            return value;
+        },
 
-	return Model;
+        addError: function (error) {
+            //	summary:
+            //		Add an error to the current list of validation errors
+            //	error: String
+            //		Error to add
+            this.set('errors', (this.errors || []).concat([error]));
+        },
+
+        checkForErrors: function (value) {
+            //	summary:
+            //		This method can be implemented to simplify validation.
+            //		This is called with the value, and this method can return
+            //		an array of any errors that were found. It is recommended
+            //		that you call this.inherited(arguments) to permit any
+            //		other validators to perform validation
+            //	value:
+            //		This is the value to validate.
+            var errors = [];
+            if (this.type && !(typeof this.type === 'function' ? (value instanceof this.type) :
+                    (this.type === typeof value))) {
+                errors.push(value + ' is not a ' + this.type);
+            }
+
+            if (this.required && !(value != null && value !== '')) {
+                errors.push('required, and it was not present');
+            }
+            return errors;
+        },
+
+        validate: function () {
+            //	summary:
+            //		This method is responsible for validating this particular
+            //		property instance.
+            var property = this;
+            var model = this._parent;
+            var validators = this.validators;
+            var value = this.valueOf();
+            var totalErrors = [];
+
+            return when(whenEach(function (whenItem) {
+                // iterator through any validators (if we have any)
+                if (validators) {
+                    for (var i = 0; i < validators.length; i++) {
+                        whenItem(validators[i].checkForErrors(value, property, model), addErrors);
+                    }
+                }
+                // check our own validation
+                whenItem(property.checkForErrors(value, property, model), addErrors);
+                function addErrors(errors) {
+                    if (errors) {
+                        // if we have an array of errors, add it to the total of all errors
+                        totalErrors.push.apply(totalErrors, errors);
+                    }
+                }
+            }), function () {
+                if (totalErrors.length) {
+                    // errors exist
+                    property.set('errors', totalErrors);
+                    return false;
+                }
+                // no errors, valid value, if there were errors before, remove them
+                if(property.get('errors') !== undefined){
+                    property.set('errors', undefined);
+                }
+                return true;
+            });
+        },
+        _queueChange: function (callback, oldValue) {
+            // queue up a notification callback
+            if (!callback._queued) {
+                // make sure we only queue up once before it is called by flagging it
+                callback._queued = true;
+                var reactive = this;
+                // define a function for when it is called that will clear the flag
+                // and provide the correct args
+                var dispatch = function () {
+                    callback._queued = false;
+                    callback.call(reactive, reactive._get(), oldValue);
+                };
+
+                if (callbackQueue) {
+                    // we already have a waiting queue of callbacks, add our callback
+                    callbackQueue.push(dispatch);
+                }
+                if (!callbackQueue) {
+                    // no waiting queue, check to see if we have a custom nextTurn
+                    // or we are in an operation
+                    if (!Model.nextTurn.atEnd || setCallDepth > 0) {
+                        // create the queue (starting with this callback)
+                        callbackQueue = [dispatch];
+                        // define the callback executor for the next turn
+                        Model.nextTurn(function () {
+                            // pull out all the callbacks
+                            for (var i = 0; i < callbackQueue.length; i++) {
+                                // call each one
+                                callbackQueue[i]();
+                            }
+                            // clear it
+                            callbackQueue = null;
+                        });
+                    } else {
+                        // no set call depth, so just immediately execute
+                        dispatch();
+                    }
+                }
+            }
+        },
+        toJSON: function () {
+            return this._values || this;
+        }
+    });
+    // a function that returns a function, to stop JSON serialization of an
+    // object
+    function toJSONHidden() {
+        return toJSONHidden;
+    }
+    // An object that will be hidden from JSON serialization
+    var Hidden = function () {};
+    Hidden.prototype.toJSON = toJSONHidden;
+    var Property = Model.Property = dcl(Reactive, {
+        //	summary:
+        //		A Property represents a time-varying property value on an object,
+        //		along with meta-data. One can listen to changes in this value (through
+        //		receive), as well as access and monitor metadata, like default values,
+        //		validation information, required status, and any validation errors.
+
+        //	value: any
+        //		This represents the value of this property, which can be
+        //		monitored for changes and validated
+
+        init: function (options) {
+            // handle simple definitions
+            if (typeof options === 'string' || typeof options === 'function') {
+                options = {type: options};
+            }
+            // and/or mixin any provided properties
+            if (options) {
+                utils.mixin(this, options);
+            }
+        },
+
+        _get: function () {
+            return this._parent._getValues()[this.name];
+        },
+        _has: function () {
+            return this.name in this._parent._getValues();
+        },
+        setValue: function (value, parent) {
+            parent._getValues()[this.name] = value;
+        }
+    });
+    var simplePropertyValueOf = Property.prototype.valueOf;
+    var simplePropertyPut = Property.prototype.put;
+    return Model;
 });;
 /** @module xblox/model/Scope **/
 define('xblox/model/Scope',[
@@ -45547,6 +45626,7 @@ define('xcf/manager/DeviceManager',[
     'xide/mixins/EventedMixin',
     './DeviceManager_Server',
     './DeviceManager_DeviceServer',
+    'xide/data/Memory',
     'xide/data/TreeMemory',
     'dojo/has',
     'xide/data/ObservableStore',
@@ -45564,7 +45644,7 @@ define('xcf/manager/DeviceManager',[
     //"xdojo/has!host-node?nxapp/utils"
 ], function (dcl, declare, lang, MD5,
              types, utils, factory, BeanManager, ReloadMixin, EventedMixin,
-             DeviceManager_Server, DeviceManager_DeviceServer, TreeMemory, has,
+             DeviceManager_Server, DeviceManager_DeviceServer, Memory, TreeMemory, has,
              ObservableStore, Trackable, Device, Deferred, ServerActionBase, Reference, StringUtils,
              LogMixin,
              DeviceManager_UI, Expression, all, _console, xUtils) {
@@ -45613,6 +45693,9 @@ define('xcf/manager/DeviceManager',[
          * @private
          */
         beanName: 'Device',
+        beanUrlPattern: "{id}",
+        breanScheme: "device://",
+        beanPriority: 1,
         /**
          * the icon class for bean edit views
          * @private
@@ -46918,21 +47001,53 @@ define('xcf/manager/DeviceManager',[
         getDriverScriptContent: function (scope, path, readyCB, errorCB) {
             return this.callMethodEx(null, 'getDriverContent', [scope, path], readyCB, true);
         },
+        /**
+         *
+         * @param data
+         * @param scope
+         * @param track
+         */
         createStore: function (data, scope, track) {
-            var storeClass = declare('deviceStore', [TreeMemory, Trackable, ObservableStore], {});
+            var storeClass = has('xcf-ui') ? declare('deviceStore', [TreeMemory, Trackable, ObservableStore], {}) : declare('deviceStore', [Memory], {}),
+                self = this;
             var store = new storeClass({
-                data: data.items,
-                idProperty: 'path',
-                Model: Device,
-                id: utils.createUUID(),
-                scope: scope,
-                observedProperties: [
-                    "name",
-                    "state",
-                    "iconClass",
-                    "enabled"
-                ]
-            });
+                    data: data.items,
+                    idProperty: 'path',
+                    parentProperty: 'parentId',
+                    Model: Device,
+                    id: utils.createUUID(),
+                    scope: scope,
+                    ctx: this.getContext(),
+                    mayHaveChildren: function (parent) {
+                        if (parent._mayHaveChildren === false) {
+                            return false;
+                        }
+                        if (parent.isDevice) {
+                            var device = parent;
+                            if (device.driverInstance) {
+                                return true;
+                            }
+                            //no instance yet
+                            var info = self.toDeviceControlInfo(device);
+                            var driver = self.getContext().getDriverManager().getDriverById(info.driverId);
+                            if (driver) {
+                                if (!driver.blockScope) {
+                                    this.ctx.getDriverManager().createDriverBlockScope(driver);
+                                    self.completeDevice(device, driver);
+                                }
+                                return true;
+                            }
+
+                        }
+                        return true;
+                    },
+                    observedProperties: [
+                        "name",
+                        "state",
+                        "iconClass",
+                        "enabled"
+                    ]
+                });
 
             if (scope && track !== false) {
                 this.setStore(scope, store);
@@ -46953,163 +47068,6 @@ define('xcf/manager/DeviceManager',[
         //  Utils
         //
         /////////////////////////////////////////////////////////////////////////////////////
-        /**
-         *
-         * @param item
-         * @private
-         */
-        fixDeviceCI: function (item) {
-            var meta = item['user'];
-            var driverOptions = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS);
-            if (!driverOptions) {
-                meta.inputs.push({
-                    "chainType": 0,
-                    "class": "cmx.types.ConfigurableInformation",
-                    "dataRef": "",
-                    "dataSource": "",
-                    "description": null,
-                    "enabled": true,
-                    "enumType": "-1",
-                    "flags": -1,
-                    "group": 'Common',
-                    "id": DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS,
-                    "name": DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS,
-                    "order": 1,
-                    "params": null,
-                    "platform": null,
-                    "title": "Driver Options",
-                    "type": 5,
-                    "uid": "-1",
-                    "value": 0,
-                    "data": [
-                        {
-                            value: 2,
-                            label: 'Runs Server Side'
-                        },
-                        {
-                            value: 4,
-                            label: 'Show Debug Messages'
-                        },
-                        {
-                            value: 8,
-                            label: 'Allow Multiple Device Connections'
-                        },
-                        {
-                            value: 16,
-                            label: 'Server'
-                        }
-
-                    ],
-                    "visible": true,
-                    "device": item
-                });
-            } else {
-                driverOptions.data = [
-                    {
-                        value: 2,
-                        label: 'Runs Server Side'
-                    },
-                    {
-                        value: 4,
-                        label: 'Show Debug Messages'
-                    },
-                    {
-                        value: 8,
-                        label: 'Allow Multiple Device Connections'
-                    },
-                    {
-                        value: 16,
-                        label: 'Server'
-                    }
-
-                ];
-
-                driverOptions.group = 'Common';
-            }
-
-
-            var loggingFlags = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_LOGGING_FLAGS);
-            if (!loggingFlags) {
-                meta.inputs.push({
-                    "chainType": 0,
-                    "class": "cmx.types.ConfigurableInformation",
-                    "dataRef": "",
-                    "dataSource": "",
-                    "description": null,
-                    "enabled": true,
-                    "enumType": "-1",
-                    "flags": -1,
-                    "group": 'Logging',
-                    "id": DEVICE_PROPERTY.CF_DEVICE_LOGGING_FLAGS,
-                    "name": DEVICE_PROPERTY.CF_DEVICE_LOGGING_FLAGS,
-                    "order": 1,
-                    "params": null,
-                    "platform": null,
-                    "title": "Logging Flags",
-                    "type": DEVICE_PROPERTY.CF_DEVICE_LOGGING_FLAGS,
-                    "uid": "-1",
-                    "value": 0,
-                    "data": [
-                        {
-                            value: 2,
-                            label: 'On Connected'
-                        },
-                        {
-                            value: 4,
-                            label: 'On Disconnected'
-                        },
-                        {
-                            value: 8,
-                            label: 'On Error'
-                        },
-                        {
-                            value: 16,
-                            label: 'Commands'
-                        },
-                        {
-                            value: 32,
-                            label: 'Responses'
-                        }
-                    ],
-                    "visible": true,
-                    "device": item
-                });
-            } else {
-                loggingFlags.group = "Logging";
-            }
-
-
-            var protocolCI = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_PROTOCOL);
-            if (protocolCI) {
-                protocolCI.type = 3;
-                protocolCI.options = [
-                    {
-                        label: "TCP",
-                        value: "tcp"
-                    },
-                    {
-                        label: "UDP",
-                        value: "udp"
-                    },
-                    {
-                        label: "Driver",
-                        value: "driver"
-                    },
-                    {
-                        label: "SSH",
-                        value: "ssh"
-                    },
-                    {
-                        label: "Serial",
-                        value: "serial"
-                    },
-                    {
-                        label: "MQTT",
-                        value: "mqtt"
-                    }
-                ];
-            }
-        },
         _deviceInfoCache: null,
         /**
          * Return handy info for a device
@@ -47298,10 +47256,12 @@ define('xcf/manager/DeviceManager',[
                     console.error('cant find ' + items[i].path);
                     continue;
                 }
-                if (item._completed != null) {
+                if (item._completed) {
                     continue;
                 }
+
                 item._completed = true;
+                item.isDevice = true;
 
                 var driverId = this.getMetaValue(item, DEVICE_PROPERTY.CF_DEVICE_DRIVER);
                 if (!driverId) {
@@ -47319,7 +47279,7 @@ define('xcf/manager/DeviceManager',[
                 });
                 if (!_.isEmpty(driver)) {
                     if (isIDE) {
-                        this.completeDevice(store, item, driver);
+                        this.completeDevice(item, driver);
                         item.iconClass = item.getStateIcon();
                     }
                 }
@@ -47478,8 +47438,9 @@ define('xcf/manager/DeviceManager',[
                     logError(e, 'error ls drivers');
                 }
             }
-            if(this.prefetch && this.prefetch[scope]){
-                data.apply(this,[this.prefetch[scope]]);
+
+            if (this.prefetch && this.prefetch[scope]) {
+                data.apply(this, [this.prefetch[scope]]);
                 delete this.prefetch[scope];
                 return dfd;
             }
@@ -47505,6 +47466,193 @@ define('xcf/manager/DeviceManager',[
          */
         hasStore: function (scope) {
             return this.stores[scope];
+        },
+        /**
+         * @param item {module:xcf/model/Device}
+         * @private
+         */
+        fixDeviceCI: function (item) {
+            var DEVICE_PROPERTY = types.DEVICE_PROPERTY;
+            var meta = item['user'];
+            var driverOptions = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS);
+            if (!driverOptions) {
+                meta.inputs.push({
+                    "chainType": 0,
+                    "class": "cmx.types.ConfigurableInformation",
+                    "dataRef": "",
+                    "dataSource": "",
+                    "description": null,
+                    "enabled": true,
+                    "enumType": "-1",
+                    "flags": -1,
+                    "group": 'Common',
+                    "id": DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS,
+                    "name": DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS,
+                    "order": 1,
+                    "params": null,
+                    "platform": null,
+                    "title": "Driver Options",
+                    "type": 5,
+                    "uid": "-1",
+                    "value": 0,
+                    "data": [
+                        {
+                            value: 2,
+                            label: 'Runs Server Side'
+                        },
+                        {
+                            value: 4,
+                            label: 'Show Debug Messages'
+                        },
+                        {
+                            value: 8,
+                            label: 'Allow Multiple Device Connections'
+                        },
+                        {
+                            value: 16,
+                            label: 'Server'
+                        }
+
+                    ],
+                    "visible": true,
+                    "device": item
+                });
+            } else {
+                driverOptions.data = [
+                    {
+                        value: 2,
+                        label: 'Runs Server Side'
+                    },
+                    {
+                        value: 4,
+                        label: 'Show Debug Messages'
+                    },
+                    {
+                        value: 8,
+                        label: 'Allow Multiple Device Connections'
+                    },
+                    {
+                        value: 16,
+                        label: 'Server'
+                    }
+
+                ];
+
+                driverOptions.group = 'Common';
+            }
+
+
+            var loggingFlags = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_LOGGING_FLAGS);
+            if (!loggingFlags) {
+                meta.inputs.push({
+                    "chainType": 0,
+                    "class": "cmx.types.ConfigurableInformation",
+                    "dataRef": "",
+                    "dataSource": "",
+                    "description": null,
+                    "enabled": true,
+                    "enumType": "-1",
+                    "flags": -1,
+                    "group": 'Logging',
+                    "id": DEVICE_PROPERTY.CF_DEVICE_LOGGING_FLAGS,
+                    "name": DEVICE_PROPERTY.CF_DEVICE_LOGGING_FLAGS,
+                    "order": 1,
+                    "params": null,
+                    "platform": null,
+                    "title": "Logging Flags",
+                    "type": DEVICE_PROPERTY.CF_DEVICE_LOGGING_FLAGS,
+                    "uid": "-1",
+                    "value": 0,
+                    "data": [
+                        {
+                            value: 2,
+                            label: 'On Connected'
+                        },
+                        {
+                            value: 4,
+                            label: 'On Disconnected'
+                        },
+                        {
+                            value: 8,
+                            label: 'On Error'
+                        },
+                        {
+                            value: 16,
+                            label: 'Commands'
+                        },
+                        {
+                            value: 32,
+                            label: 'Responses'
+                        }
+                    ],
+                    "visible": true,
+                    "device": item
+                });
+            } else {
+                loggingFlags.group = "Logging";
+            }
+
+
+            var protocolCI = utils.getCIByChainAndName(meta, 0, DEVICE_PROPERTY.CF_DEVICE_PROTOCOL);
+            if (protocolCI) {
+                protocolCI.type = 3;
+                protocolCI.options = [
+                    {
+                        label: "TCP",
+                        value: "tcp"
+                    },
+                    {
+                        label: "UDP",
+                        value: "udp"
+                    },
+                    {
+                        label: "Driver",
+                        value: "driver"
+                    },
+                    {
+                        label: "SSH",
+                        value: "ssh"
+                    },
+                    {
+                        label: "Serial",
+                        value: "serial"
+                    },
+                    {
+                        label: "MQTT",
+                        value: "mqtt"
+                    }
+                ];
+            }
+
+            var optionsCI = utils.getCIByChainAndName(meta, 0, types.DEVICE_PROPERTY.CF_DEVICE_OPTIONS);
+            if (!optionsCI) {
+                meta.inputs.push({
+                    "chainType": 0,
+                    "class": "cmx.types.ConfigurableInformation",
+                    "dataRef": "",
+                    "dataSource": "",
+                    "description": null,
+                    "enabled": true,
+                    "enumType": "-1",
+                    "flags": -1,
+                    "group": 'Network',
+                    "id": "options",
+                    "name": "options",
+                    "order": 1,
+                    "params": null,
+                    "platform": null,
+                    "title": "Options",
+                    "type": 28,
+                    "uid": "-1",
+                    "value": {},
+                    "visible": true,
+                    "device": item
+
+                });
+            } else {
+                optionsCI.device = item;
+            }
+
         }
     });
 });
@@ -47810,7 +47958,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
      * @augments module:xcf/manager/DeviceManager
      * @augments module:xide/mixins/EventedMixin
      */
-    return dcl(null, {
+    var Module = dcl(null, {
         declaredClass: "xcf.manager.DeviceManager_DeviceServer",
         running: null,
         /**
@@ -47821,6 +47969,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
          * @param driver {module:xcf/model/Driver} the driver model item
          */
         onDeviceStarted: function (driverInstance, deviceStoreItem, driver) {
+            console.log('on device started');
             //debugConnect = true;
             if (!driverInstance || !deviceStoreItem || !driver) {
                 debugConnect && console.log('onDeviceStarted failed, invalid params');
@@ -48139,119 +48288,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
             return dfd;
         },
-        createDriverInstance_bak: function (deviceInfo, driverBase, device) {
-            var hash = deviceInfo.hash,
-                driverPrefix = this.driverScopes[deviceInfo.driverScope],
-                isRequireJS = !require.cache,
-                packageUrl = require.toUrl(driverPrefix);
-
-            packageUrl = utils.removeURLParameter(packageUrl, 'bust');
-
-            if (isRequireJS) {
-                packageUrl = packageUrl.replace('/.js', '/');
-            }
-
-            var requirePath = decodeURIComponent(packageUrl) + deviceInfo.driver;
-            requirePath = requirePath.replace('', '').trim();
-
-            var thiz = this,
-                ctx = thiz.ctx,
-                meta = device['user'],
-                driverId = utils.getCIInputValueByName(meta, types.DEVICE_PROPERTY.CF_DEVICE_DRIVER),
-                driverManager = ctx.getDriverManager(),
-                driver = driverManager.getDriverById(driverId),
-                dfd = new Deferred(),
-                enabled = device.getMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_ENABLED),
-                serverSide = deviceInfo.serverSide;
-
-            debugCreateInstance && console.log('create driver instance : ' + device.path + ":" + device.scope + ' from ' + requirePath, {
-                driver: driver,
-                device: device,
-                deviceInfo: deviceInfo
-            });
-
-            if (device.isEnabled() === false) {
-                debugConnect && console.warn('device not enabled, abort ' + deviceInfo.toString());
-                setTimeout(function () {
-                    dfd.reject();
-                });
-                return dfd;
-            }
-
-            if (isServer && !device.isServerSide()) {
-                dfd.reject('DeviceManager_DeviceServer: wont create driver instance! I am server and device isnt server side : ' + deviceInfo.title);
-                return dfd;
-            }
-            debugCreateInstance && console.info('------create driver instance with DriverBase at ' + requirePath + ' with driver prefix : ' + driverPrefix, this.driverScopes);
-            try {
-                require([requirePath], function (driverProtoInstance) {
-
-                    var baseClass = driverBase;
-                    var driverProto = dcl([baseClass, EventedMixin.dcl, ReloadMixin.dcl, driverProtoInstance], {});
-                    var driverInstance = new driverProto();
-                    driverInstance.declaredClass = requirePath;
-                    driverInstance.options = deviceInfo;
-                    driverInstance.baseClass = baseClass.prototype.declaredClass;
-                    //driverInstance.modulePath = utils.replaceAll('//', '/', requirePath);
-                    driverInstance.modulePath = utils.replaceAll('//', '/', driverPrefix + deviceInfo.driver).replace('.js', '');
-                    driverInstance.delegate = thiz;
-                    driverInstance.driver = driver;
-                    driverInstance.serverSide = deviceInfo.serverSide;
-                    driverInstance.utils = utils;
-                    driverInstance.types = types;
-                    driverInstance.device = device;
-                    driverInstance.Module = driverProtoInstance;
-
-                    driverInstance.getDevice = function () {
-                        return this.device;
-                    };
-                    driverInstance.getDeviceInfo = function () {
-                        return this.getDevice().info;
-                    };
-
-                    var meta = driver['user'];
-
-                    var commandsCI = utils.getCIByChainAndName(meta, 0, types.DRIVER_PROPERTY.CF_DRIVER_COMMANDS);
-                    if (commandsCI && commandsCI['params']) {
-                        driverInstance.sendSettings = utils.getJson(commandsCI['params']);
-                    }
-
-                    var responseCI = utils.getCIByChainAndName(meta, 0, types.DRIVER_PROPERTY.CF_DRIVER_RESPONSES);
-                    if (responseCI && responseCI['params']) {
-                        driverInstance.responseSettings = utils.getJson(responseCI['params']);
-                    }
-                    try {
-                        driverInstance.start();
-                        driverInstance.initReload();
-                    } catch (e) {
-                        console.error('crash in driver instance startup! ' + device.toString());
-                        logError(e, 'crash in driver instance startup!');
-                    }
-
-                    thiz.deviceInstances[hash] = driverInstance;
-                    // Build an id basing on : driver id + driver path
-                    // "235eb680-cb87-11e3-9c1a-....ab5_Marantz/Marantz.20.meta.json"
-                    var scopeId = driverId + '_' + hash + '_' + device.path;
-                    if (!driver.blox || !driver.blox.blocks) {
-                        debugConnect && console.warn('Attention : INVALID driver, have no blocks', deviceInfo.toString());
-                        driver.blox = {
-                            blocks: []
-                        };
-                    }
-                    device.driverInstance = driverInstance;
-                    thiz.getDriverInstance(deviceInfo, true);//triggers to resolve settings
-                    //add variable && command functions:
-                    //isIDE && thiz.completeDriverInstance(driver, driverInstance, device);
-                    driverInstance._id = utils.createUUID();
-                    dfd.resolve(driverInstance);
-                    return driverInstance;
-
-                });
-            } catch (e) {
-                console.error('DeviceManager::createDriverInstance:: requiring base driver at ' + requirePath + ' failed ' + e.message, utils.inspect(deviceInfo));
-            }
-            return dfd;
-        },
         /**
          * Callback when server returns the variables of a device
          * @param data.device {module:xide/types~DeviceInfo}
@@ -48435,90 +48471,93 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
         },
         onDeviceDisconnected: function (data) {
-            if (data && data.device) {
-                var error = data.error;
+            if (!data && !data.device) {
+                return;
+            }
 
-                var code = error && error.code ? error.code : error || '';
-                var deviceStoreItem = this.getDeviceStoreItem(data.device);
-                if (!deviceStoreItem) {
-                    debugDevice && isIDE && console.error('deviceStoreItem is null');
-                    return;
-                }
-                if (data.stopped === true) {
-                    this.stopDevice(deviceStoreItem);
-                    return;
-                }
+            var error = data.error;
 
-                this.publish(types.EVENTS.ON_STATUS_MESSAGE, {
-                    text: 'Device has been disconnected ' + '<span class="text-warning">' + data.device.host + ':' + data.device.port + '</span>' + ' :  ' + '<span class="text-danger">' + code + '</span>',
-                    type: 'info'
-                });
+            var code = error && error.code ? error.code : error || '';
+            var deviceStoreItem = this.getDeviceStoreItem(data.device);
+            if (!deviceStoreItem) {
+                debugDevice && isIDE && console.error('deviceStoreItem is null');
+                return;
+            }
+            if (data.stopped === true) {
+                this.stopDevice(deviceStoreItem);
+                return;
+            }
 
-                var info = this.toDeviceControlInfo(deviceStoreItem);
-                if (info && isServer && !info.serverSide) {
-                    return;
-                }
+            this.publish(types.EVENTS.ON_STATUS_MESSAGE, {
+                text: 'Device has been disconnected ' + '<span class="text-warning">' + data.device.host + ':' + data.device.port + '</span>' + ' :  ' + '<span class="text-danger">' + code + '</span>',
+                type: 'info'
+            });
 
-                //kill old instance
-                var instance = this.getDriverInstance(data.device, true);
-                if (instance) {
-                    this.removeDriverInstance(data.device);
-                }
-                deviceStoreItem.reset();
+            var info = this.toDeviceControlInfo(deviceStoreItem);
+            if (info && isServer && !info.serverSide) {
+                return;
+            }
 
-                if (deviceStoreItem.state === types.DEVICE_STATE.DISABLED) {
-                    deviceStoreItem.setState(types.DEVICE_STATE.DISCONNECTED);
-                    return;
-                }
+            //kill old instance
+            var instance = this.getDriverInstance(data.device, true);
+            if (instance) {
+                this.removeDriverInstance(data.device);
+            }
+            deviceStoreItem.reset();
 
+            if (deviceStoreItem.state === types.DEVICE_STATE.DISABLED) {
                 deviceStoreItem.setState(types.DEVICE_STATE.DISCONNECTED);
-                deviceStoreItem.lastError = error;
-                deviceStoreItem.refresh();
+                return;
+            }
 
-                function shouldRecconect(item) {
-                    if (item._userStopped || item.state === types.DEVICE_STATE.DISABLED) {
-                        return false;
-                    }
-                    var enabled = thiz.getMetaValue(item, types.DEVICE_PROPERTY.CF_DEVICE_ENABLED);
-                    if (!enabled) {
-                        return false;
-                    }
-                    return true;
+            deviceStoreItem.setState(types.DEVICE_STATE.DISCONNECTED);
+            deviceStoreItem.lastError = error;
+            deviceStoreItem.refresh();
+
+            function shouldRecconect(item) {
+                if (item._userStopped || item.state === types.DEVICE_STATE.DISABLED) {
+                    return false;
                 }
+                var enabled = thiz.getMetaValue(item, types.DEVICE_PROPERTY.CF_DEVICE_ENABLED);
+                if (!enabled) {
+                    return false;
+                }
+                return true;
+            }
 
-                var serverSide = info.serverSide;
+            var serverSide = info.serverSide;
 
-                if ((isServer && serverSide) || (!serverSide && !isServer)) {
-                    if (deviceStoreItem) {
-                        var thiz = this;
-                        if (deviceStoreItem.reconnectTimer) {
-                            return;
-                        }
-                        deviceStoreItem.isReconnecting = true;
-                        if (!deviceStoreItem.lastReconnectTime) {
-                            deviceStoreItem.lastReconnectTime = thiz.reconnectDevice;
-                        } else if (deviceStoreItem.lastReconnectTime > 3600) {
-                            deviceStoreItem.lastReconnectTime = 3600;
-                        }
-                        if (!deviceStoreItem.reconnectRetry) {
-                            deviceStoreItem.reconnectRetry = 0;
-                        }
-
-                        deviceStoreItem.reconnectTimer = setTimeout(function () {
-                            deviceStoreItem.reconnectTimer = null;
-                            deviceStoreItem.lastReconnectTime *= 2;
-                            deviceStoreItem.reconnectRetry += 1;
-                            if (deviceStoreItem.shouldReconnect()) {
-                                if (info) {
-                                    deviceStoreItem.setState(types.DEVICE_STATE.CONNECTING);
-                                    debugConnect && console.info('trying to reconnect to ' + info.toString());
-                                }
-                                thiz.startDevice(deviceStoreItem);
-                            }
-                        }, deviceStoreItem.lastReconnectTime);
+            if ((isServer && serverSide) || (!serverSide && !isServer)) {
+                if (deviceStoreItem) {
+                    var thiz = this;
+                    if (deviceStoreItem.reconnectTimer) {
+                        return;
                     }
+                    deviceStoreItem.isReconnecting = true;
+                    if (!deviceStoreItem.lastReconnectTime) {
+                        deviceStoreItem.lastReconnectTime = thiz.reconnectDevice;
+                    } else if (deviceStoreItem.lastReconnectTime > 3600) {
+                        deviceStoreItem.lastReconnectTime = 3600;
+                    }
+                    if (!deviceStoreItem.reconnectRetry) {
+                        deviceStoreItem.reconnectRetry = 0;
+                    }
+
+                    deviceStoreItem.reconnectTimer = setTimeout(function () {
+                        deviceStoreItem.reconnectTimer = null;
+                        deviceStoreItem.lastReconnectTime *= 2;
+                        deviceStoreItem.reconnectRetry += 1;
+                        if (deviceStoreItem.shouldReconnect()) {
+                            if (info) {
+                                deviceStoreItem.setState(types.DEVICE_STATE.CONNECTING);
+                                debugConnect && console.info('trying to reconnect to ' + info.toString());
+                            }
+                            thiz.startDevice(deviceStoreItem);
+                        }
+                    }, deviceStoreItem.lastReconnectTime);
                 }
             }
+
         },
         onCommandFinish: function (deviceData, message) {
             var driverInstance = this.getDriverInstance(deviceData, true);
@@ -49084,7 +49123,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
          * @param args {array} The arguments for the protocol method being called on the server
          * @returns module:dojo/Deferred
          */
-        protocolMethod: function (protocol,method,args) {
+        protocolMethod: function (protocol,method,args,device) {
             var dfd = new Deferred();
             var event = types.SOCKET_SERVER_COMMANDS.PROTOCOL_METHOD;
             var id = utils.createUUID();
@@ -49094,7 +49133,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 method:method,
                 options:{
                     args:args,
-                    id:id
+                    id:id,
+                    device:device
                 }
             };
             var self = this;
@@ -49325,6 +49365,11 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             return this.deviceServerClient;
         }
     });
+
+    dcl.chainAfter(Module,'onDeviceStarted');
+    dcl.chainAfter(Module,'onDeviceDisconnected');
+    return Module;
+
 });
 ;
 define('xcf/manager/DeviceManager_Server',["dcl/dcl"], function (dcl) {
@@ -49333,21 +49378,25 @@ define('xcf/manager/DeviceManager_Server',["dcl/dcl"], function (dcl) {
 /** @module xcf/manager/BeanManager **/
 define('xcf/manager/BeanManager',[
     'dcl/dcl',
+    'xdojo/has',
     "dojo/_base/lang",
     'xide/types',
     'xide/utils',
     'xide/manager/BeanManager',
     "dojo/Deferred",
+    "xide/noob",
+    "xdojo/has!xcf-ui?xide/interface/Track",
     'xdojo/has!xcf-ui?xide/views/ActionDialog',
     'xdojo/has!xcf-ui?xide/views/CIActionDialog',
     'xdojo/has!xcf-ui?xide/views/CIGroupedSettingsView'
-], function (dcl, lang, types, utils, BeanManager, Deferred, registry, ActionDialog, CIActionDialog, CIGroupedSettingsView) {
+], function (dcl,has,lang, types, utils, BeanManager, Deferred, noob,Track, ActionDialog, CIActionDialog, CIGroupedSettingsView) {
+
     /**
-     * @class module:xcf/manager/BeanManager
+     * @class module:xcf/manager/BeanManager_Base
      * @extends {module:xide/manager/BeanManager}
+     * @augments {module:xide/manager/ManagerBase}
      */
-    return dcl(BeanManager, {
-        declaredClass: "xcf.manager.BeanManager",
+    var Base = dcl(BeanManager,{
         setStore: function (scope, store) {
             var current = this.stores[scope];
             if (current) {
@@ -49357,235 +49406,6 @@ define('xcf/manager/BeanManager',[
             this.stores[scope] = store;
             return store;
         },
-        /**
-         *
-         * @param bean
-         * @returns {*}
-         */
-        getFile: function (bean) {
-            var dfd = new Deferred();
-            var ctx = this.ctx;
-            var fileManager = ctx.getFileManager();
-            var fileStore = fileManager.getStore(bean.scope);
-            fileStore.initRoot().then(function () {
-                fileStore._loadPath('.', true).then(function () {
-                    fileStore.getItem(bean.path, true).then(function (item) {
-                        dfd.resolve(item);
-                    });
-                });
-            });
-            return dfd;
-        },
-        /**
-         * Url generator for device/driver/[command|block|variable]
-         *
-         * @param device
-         * @param driver
-         * @param block
-         * @param prefix
-         * @returns {*}
-         */
-        toUrl: function (device, driver, block, prefix) {
-            prefix = prefix || '';
-            var pattern = prefix + "deviceScope={deviceScope}&device={deviceId}&driver={driverId}&driverScope={driverScope}&block={block}";
-            var url = lang.replace(
-                pattern,
-                {
-                    deviceId: device.id,
-                    deviceScope: device.scope,
-                    driverId: driver.id,
-                    driverScope: driver.scope,
-                    block: block.id
-                });
-            return url;
-        },
-        /////////////////////////////////////////////////////////////////////////////////////
-        //
-        //  Bean Editing
-        //
-        /////////////////////////////////////////////////////////////////////////////////////
-        /***
-         * openItemSettings creates a new settings view for a protocol
-         * @param item
-         * @returns {xide.views.CIGroupedSettingsView|null}
-         */
-        openItemSettings: function (item, device) {
-            //1. sanity check
-            var userData = item.user;
-            if (!userData || !userData.inputs) {
-                return null;
-            }
-
-            //2. check its not open already
-            var viewId = this.getViewId(item);
-            var view = registry.byId(viewId);
-            try {
-                if (view) {
-                    if (view.parentContainer) {
-                        view.parentContainer.selectChild(view);
-                    }
-                    return null;
-                }
-            } catch (e) {
-                utils.destroy(view);
-            }
-
-            var docker = this.ctx.mainView.getDocker(),
-                title = this.getMetaValue(item, this.itemMetaTitleField),
-                devinfo = device ? this.ctx.getDeviceManager().toDeviceControlInfo(device) : null;
-
-            var parent = docker.addTab(null, {
-                title: (title || item.name) + '' + (device ? ':' + device.name + ':' + devinfo.host + ':' : ''),
-                icon: this.beanIconClass
-            });
-
-
-            //@Todo:driver, store device temporarly in Commands CI
-            var commandsCI = utils.getCIByChainAndName(userData, 0, types.DRIVER_PROPERTY.CF_DRIVER_COMMANDS);
-            if (commandsCI) {
-                commandsCI.device = device;
-            }
-
-            if (item.blockScope && !item.blockScope.serviceObject) {
-                item.blockScope.serviceObject = this.serviceObject;
-
-            }
-            return utils.addWidget(CIGroupedSettingsView, {
-                cis: userData.inputs,
-                storeItem: item,
-                iconClass: this.beanIconClass,
-                id: viewId,
-                delegate: this,
-                storeDelegate: this,
-                blockManager: this.ctx.getBlockManager(),
-                options: {
-                    groupOrder: {
-                        'General': 1,
-                        'Settings': 2,
-                        'Visual': 3
-                    }
-                }
-            }, this, parent, true);
-
-        },
-        /////////////////////////////////////////////////////////////////////////////////////
-        //
-        //  Bean Management
-        //
-        /////////////////////////////////////////////////////////////////////////////////////
-        /**
-         * Creates new group item dialog
-         */
-        newGroup: function () {
-            var thiz = this,
-                currentItem = this.getItem(),
-                parent = currentItem ? currentItem.isDir === true ? currentItem.path : '' : '';
-
-            var actionDialog = new CIActionDialog({
-                title: 'New ' + this.groupType,
-                delegate: {
-                    onOk: function (dlg, data) {
-
-                        var title = utils.getCIInputValueByName(data, 'Title');
-                        var scope = utils.getCIInputValueByName(data, 'Scope');
-                        var _final = parent + '/' + title;
-
-                        thiz.createGroup(scope, _final, function () {
-                            var newItem = thiz.createNewGroupItem(title, scope, parent);
-                            thiz.store.putSync(newItem);
-                            thiz.publish(types.EVENTS.ON_STORE_CHANGED, {
-                                owner: thiz,
-                                store: thiz.store,
-                                action: types.NEW_DIRECTORY,
-                                item: newItem
-                            });
-                        });
-                    }
-                },
-                cis: [
-                    utils.createCI('Title', 13, ''),
-                    utils.createCI('Scope', 3, this.defaultScope, {
-                        "options": [
-                            {
-                                label: 'System',
-                                value: this.defaultScope
-                            },
-                            {
-                                label: 'User',
-                                value: this.userScope
-                            },
-                            {
-                                label: 'App',
-                                value: this.appScope
-                            }
-                        ]
-                    })
-                ]
-            });
-            actionDialog.startup();
-            actionDialog.show();
-        },
-        onDeleteItem: function (item) {
-
-            var isDir = utils.toBoolean(item.isDir) === true;
-            var removeFn = isDir ? 'removeGroup' : 'removeItem';
-            var thiz = this;
-            var actionDialog = new ActionDialog({
-                title: 'Remove ' + this.beanName + (isDir ? ' Group' : '') + ' ' + "\"" + item.name + "\"  ",
-                style: 'max-width:400px',
-                titleBarClass: 'text-danger',
-                delegate: {
-                    isRemoving: false,
-                    onOk: function () {
-                        thiz[removeFn](
-                            utils.toString(item.scope),
-                            utils.toString(item.path),
-                            utils.toString(item.name),
-                            function () {
-                                thiz.onItemDeleted(item);
-                                thiz.publish(types.EVENTS.ON_STORE_CHANGED, {
-                                    owner: thiz,
-                                    store: thiz.store,
-                                    action: types.DELETE,
-                                    item: item
-                                });
-                            });
-                    }
-                }
-            });
-            actionDialog.show();
-        },
-        /////////////////////////////////////////////////////////////////////////////////////
-        //
-        //  Bean protocol
-        //
-        /////////////////////////////////////////////////////////////////////////////////////
-        hasItemActions: function () {
-            return true;
-        },
-        onItemDeleted: function (item) {
-
-            //delete subs
-            this.store.removeSync(item.path);
-
-            if (item == this.currentItem) {
-                this.currentItem = null;
-            }
-            if (item) {
-                var view = this.getView(item);
-                if (view) {
-                    utils.destroy(view);
-                }
-            }
-        },
-        onItemSelected: function (item) {
-            this.currentItem = item;
-        },
-        /////////////////////////////////////////////////////////////////////////////////////
-        //
-        //  UI-Callbacks
-        //
-        /////////////////////////////////////////////////////////////////////////////////////
         onCIUpdate: function (evt) {
             if (evt['owner'] === this) {
                 this.updateCI(evt.ci, evt.newValue, evt.oldValue, evt.storeItem);
@@ -49593,56 +49413,233 @@ define('xcf/manager/BeanManager',[
         },
         /////////////////////////////////////////////////////////////////////////////////////
         //
-        //  Bean utils
-        //
-        /////////////////////////////////////////////////////////////////////////////////////
-        createNewGroupItem: function (title, scope, parent) {
-            return this.createItemStruct(title, scope, parent, title, true, this.groupType);
-        },
-        createNewItem: function (title, scope, parent) {
-            return this.createItemStruct(title, scope, parent, parent + "/" + title, false, this.itemType);
-        },
-        /////////////////////////////////////////////////////////////////////////////////////
-        //
-        // main
+        // std impl.
         //
         /////////////////////////////////////////////////////////////////////////////////////
         init: function () {
+            this.stores = {};
             this.subscribe(types.EVENTS.ON_CI_UPDATE);
-        },
-        /////////////////////////////////////////////////////////////////////////////////////
-        //
-        //  Server methods (PHP)
-        //
-        /////////////////////////////////////////////////////////////////////////////////////
-        createItem: function (scope, path, title, meta, code) {
-            return this.runDeferred(null, 'createItem', [scope, path, title, meta, code]);
-        },
-        /***
-         * ls is enumerating all drivers in a given scope
-         * @param scope{string}
-         * @returns {Deferred}
-         */
-        ls: function (scope) {
-
-            return this.runDeferred(null, 'ls', [scope]).then(function (data) {
-                try {
-                    this.rawData = data;
-                    this.initStore(data);
-                    this.publish(types.EVENTS.ON_STORE_CREATED, {
-                        data: data,
-                        owner: this,
-                        store: this.store,
-                        type: this.itemType
-                    });
-                } catch (e) {
-                    logError(e, 'error ls');
-                }
-            }.bind(this));
         }
     });
+
+
+
+
+    if(has('xcf-ui')) {
+        /**
+         * @class module:xcf/manager/BeanManager
+         * @extends {module:xcf/manager/BeanManager_Base}
+         */
+        return dcl(Base, {
+            declaredClass: "xcf.manager.BeanManager",
+            /**
+             * Bean protocol impl.
+             */
+            getViewClass: function (trackImpl) {
+                trackImpl = trackImpl || {};
+                utils.mixin(trackImpl,{
+                    startup:function(){
+                        if(Track) {
+                            this.getContext().getTrackingManager().track(
+                                this.getTrackingCategory(),
+                                this.getTrackingLabel(),
+                                this.getTrackingUrl(),
+                                types.ACTION.OPEN,
+                                this.getContext().getUserDirectory()
+                            );
+                        }
+                        if(this.inherited) {
+                            return this.inherited(arguments);
+                        }
+                    }
+                })
+                return dcl([CIGroupedSettingsView, Track ? Track.dcl : noob],trackImpl);
+            },
+            /**
+             *
+             * @param bean
+             * @returns {module:xfile/model/File}
+             */
+            getFile: function (bean) {
+                var dfd = new Deferred();
+                var ctx = this.getContext();
+                var fileManager = ctx.getFileManager();
+                var fileStore = fileManager.getStore(bean.scope);
+                fileStore.initRoot().then(function () {
+                    fileStore._loadPath('.', true).then(function () {
+                        fileStore.getItem(bean.path, true).then(function (item) {
+                            dfd.resolve(item);
+                        });
+                    });
+                });
+                return dfd;
+            },
+            /**
+             * Url generator for device/driver/[command|block|variable]
+             *
+             * @param device {string} the device id
+             * @param driver {string} the driver id
+             * @param block {string} the block id
+             * @param prefix {string} protocol schema
+             * @returns {*}
+             */
+            toUrl: function (device, driver, block, prefix) {
+                var pattern = (prefix || '') + "deviceScope={deviceScope}&device={deviceId}&driver={driverId}&driverScope={driverScope}&block={block}";
+                return lang.replace(
+                    pattern,
+                    {
+                        deviceId: device.id,
+                        deviceScope: device.scope,
+                        driverId: driver.id,
+                        driverScope: driver.scope,
+                        block: block ? block.id : ""
+                    });
+            },
+            /////////////////////////////////////////////////////////////////////////////////////
+            //
+            //  Bean Management
+            //
+            /////////////////////////////////////////////////////////////////////////////////////
+            /**
+             * Creates new group item dialog
+             */
+            newGroup: function () {
+                var thiz = this,
+                    currentItem = this.getItem(),
+                    parent = currentItem ? currentItem.isDir === true ? currentItem.path : '' : '';
+
+                var actionDialog = new CIActionDialog({
+                    title: 'New ' + this.groupType,
+                    delegate: {
+                        onOk: function (dlg, data) {
+
+                            var title = utils.getCIInputValueByName(data, 'Title');
+                            var scope = utils.getCIInputValueByName(data, 'Scope');
+                            var _final = parent + '/' + title;
+
+                            thiz.createGroup(scope, _final, function () {
+                                var newItem = thiz.createNewGroupItem(title, scope, parent);
+                                thiz.store.putSync(newItem);
+                                thiz.publish(types.EVENTS.ON_STORE_CHANGED, {
+                                    owner: thiz,
+                                    store: thiz.store,
+                                    action: types.NEW_DIRECTORY,
+                                    item: newItem
+                                });
+                            });
+                        }
+                    },
+                    cis: [
+                        utils.createCI('Title', 13, ''),
+                        utils.createCI('Scope', 3, this.defaultScope, {
+                            "options": [
+                                {
+                                    label: 'System',
+                                    value: this.defaultScope
+                                },
+                                {
+                                    label: 'User',
+                                    value: this.userScope
+                                }
+                            ]
+                        })
+                    ]
+                });
+                actionDialog.startup();
+                actionDialog.show();
+            },
+            onDeleteItem: function (item) {
+
+                var isDir = utils.toBoolean(item.isDir) === true;
+                var removeFn = isDir ? 'removeGroup' : 'removeItem';
+                var thiz = this;
+                var actionDialog = new ActionDialog({
+                    title: 'Remove ' + this.beanName + (isDir ? ' Group' : '') + ' ' + "\"" + item.name + "\"  ",
+                    style: 'max-width:400px',
+                    titleBarClass: 'text-danger',
+                    delegate: {
+                        isRemoving: false,
+                        onOk: function () {
+                            thiz[removeFn](
+                                utils.toString(item.scope),
+                                utils.toString(item.path),
+                                utils.toString(item.name),
+                                function () {
+                                    thiz.onItemDeleted(item);
+                                    thiz.publish(types.EVENTS.ON_STORE_CHANGED, {
+                                        owner: thiz,
+                                        store: thiz.store,
+                                        action: types.DELETE,
+                                        item: item
+                                    });
+                                });
+                        }
+                    }
+                });
+                actionDialog.show();
+            },
+            /////////////////////////////////////////////////////////////////////////////////////
+            //
+            //  Bean protocol
+            //
+            /////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////
+            //
+            //  UI-Callbacks
+            //
+            /////////////////////////////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////////////////////////////
+            //
+            //  Bean utils
+            //
+            /////////////////////////////////////////////////////////////////////////////////////
+            createNewGroupItem: function (title, scope, parent) {
+                return this.createItemStruct(title, scope, parent, title, true, this.groupType);
+            },
+            createNewItem: function (title, scope, parent) {
+                return this.createItemStruct(title, scope, parent, parent + "/" + title, false, this.itemType);
+            },
+            /////////////////////////////////////////////////////////////////////////////////////
+            //
+            //  Server methods (PHP)
+            //
+            /////////////////////////////////////////////////////////////////////////////////////
+            createItem: function (scope, path, title, meta, code) {
+                return this.runDeferred(null, 'createItem', [scope, path, title, meta, code]);
+            },
+            /***
+             * ls is enumerating all drivers in a given scope
+             * @param scope{string}
+             * @returns {Deferred}
+             */
+            ls: function (scope) {
+                return this.runDeferred(null, 'ls', [scope]).then(function (data) {
+                    try {
+                        this.rawData = data;
+                        this.initStore(data);
+                        this.publish(types.EVENTS.ON_STORE_CREATED, {
+                            data: data,
+                            owner: this,
+                            store: this.store,
+                            type: this.itemType
+                        });
+                    } catch (e) {
+                        logError(e, 'error ls');
+                    }
+                }.bind(this));
+            }
+        });
+    }else{
+        return Base;
+    }
 });
 ;
+define('xide/noob',['xdojo/declare','dcl/dcl'], function (declare,dcl) {
+
+    var Module = declare("noob",null,{});
+    Module.dcl = dcl(null,{});
+    return Module;
+});;
 define('xcf/factory/Blocks',[
     'xblox/factory/Blocks',
     "xcf/model/Command",
@@ -57764,10 +57761,11 @@ define('xcf/model/ModelBase',[
 });;
 /** @module xcf/model/Driver */
 define('xcf/model/Driver',[
-    "dojo/_base/declare",
+    'xdojo/declare',
+    "dcl/dcl",
     "xide/data/Model",
     "xide/utils"
-], function(dcl,Model,utils){
+], function(declare,dcl,Model,utils){
     /**
      *
      * Model for a driver. It extends the base model class
@@ -57778,7 +57776,7 @@ define('xcf/model/Driver',[
      * @augments module:xide/data/Model
      * @augments module:xide/data/Source
      */
-    return dcl(Model,{
+    var Module = dcl(Model,{
         itemMetaPath:'user.meta',
         getStore:function(){
             return this._store;
@@ -57801,18 +57799,17 @@ define('xcf/model/Driver',[
          * @returns {void|null}
          */
         setMetaValue: function (what,value,publish) {
-
             var item = this;
             var meta = this.user;
             var ci = utils.getCIByChainAndName(meta, 0, what);
             if(!ci){
-                return null;
+                return;
             }
             var oldValue = this.getMetaValue(what);
             utils.setCIValueByField(ci, 'value', value);
             this[what] = value;
             if(publish!==false){
-                return this.publish(types.EVENTS.ON_CI_UPDATE,{
+                this.publish(types.EVENTS.ON_CI_UPDATE,{
                     owner: this.owner,
                     ci: ci,
                     newValue: value,
@@ -57828,11 +57825,13 @@ define('xcf/model/Driver',[
             return this._store.getSync(this.parentId);
         }
     });
+
+    return Module;
 });
 ;
 /** @module xcf/model/Device */
 define('xcf/model/Device',[
-    "xdojo/declare",
+    "dcl/dcl",
     "xide/data/Model",
     'xide/data/Source',
     'xide/types',
@@ -57840,7 +57839,8 @@ define('xcf/model/Device',[
     'xide/mixins/EventedMixin',
     "xcf/types/Types"
 ], function(dcl,Model,Source,types,utils,EventedMixin){
-     /**
+
+    /**
      *
      * Model for a device. It extends the base model class
      * and acts a source.
@@ -57850,7 +57850,8 @@ define('xcf/model/Device',[
      * @augments module:xide/data/Model
      * @augments module:xide/data/Source
      */
-    return dcl('xcf.model.Device',[Model,Source,EventedMixin],{
+    var Module = dcl([Model,Source.dcl,EventedMixin.dcl],{
+        declaredClass:'xcf.model.Device',
         _userStopped:false,
         /**
          * @type {module:xide/types~DEVICE_STATE}
@@ -57942,7 +57943,8 @@ define('xcf/model/Device',[
          * @returns {module:xblox/model/Scope}
          */
         getBlockScope:function(){
-            return this.blockScope;
+            //return this.blockScope;
+            return this.driverInstance && this.driverInstance.blockScope ? this.driverInstance.blockScope : this.blockScope;
         },
         /**
          * Returns the driver instance
@@ -58045,9 +58047,11 @@ define('xcf/model/Device',[
                 icon:icon,
                 "public":true
             });
-            this.refresh();
+            this.refresh('state');
         }
     });
+    Module.createSubclass = Model.createSubclass;
+    return Module;
 });
 ;
 /** @module xcf/model/Command */
@@ -61137,15 +61141,16 @@ define('xfile/data/Store',[
 });;
 /** @module xfile/model/File **/
 define('xfile/model/File',[
-    "xdojo/declare",
+    "dcl/dcl",
     "xide/data/Model",
     "xide/utils",
     "xide/types"
-], function (declare, Model, utils, types) {
+], function (dcl, Model, utils, types) {
     /**
      * @class module:xfile/model/File
      */
-    return declare('xfile.model.File', [Model], {
+    return dcl(Model, {
+        declaredClass:'xfile.model.File',
         getFolder: function () {
             var path = this.getPath();
             if (this.directory) {
@@ -61297,7 +61302,7 @@ define('dstore/Cache',[
 				// now put result in cache (note we don't do add, because add may have
 				// called put() and already added it)
 				var cachedPutResult =
-					cachingStore.put(object && typeof result === 'object' ? result : object, directives);
+					cachingStore.put(result && typeof result === 'object' ? result : object, directives);
 				// the result from the add should be dictated by the master store and be unaffected by the cachingStore,
 				// unless the master store doesn't implement add
 				return result || cachedPutResult;
@@ -61310,7 +61315,7 @@ define('dstore/Cache',[
 			return when(this.inherited(arguments), function (result) {
 				// now put result in cache
 				var cachedPutResult =
-					cachingStore.put(object && typeof result === 'object' ? result : object, directives);
+					cachingStore.put(result && typeof result === 'object' ? result : object, directives);
 				// the result from the put should be dictated by the master store and be unaffected by the cachingStore,
 				// unless the master store doesn't implement put
 				return result || cachedPutResult;
@@ -61345,6 +61350,7 @@ define('dstore/Cache',[
 
 		sort: cachingQuery('sort'),
 		filter: cachingQuery('filter'),
+		select: cachingQuery('select'),
 
 		_getQuerierFactory: function (type) {
 			var cachingStore = this.cachingStore;
@@ -62559,31 +62565,21 @@ define('xide/manager/Context',[
 /** module:xide/manager/Context_UI **/
 define('xide/manager/Context_UI',[
     'dcl/dcl',
-    'xdojo/declare',
-    'dojo/_base/lang',
-    'dojo/_base/json',
     'dojo/Deferred',
     'dojo/has',
-    'xide/manager/ContextBase',
-    'xide/factory',
     'xide/types',
     'xide/utils',
     'xide/mixins/EventedMixin',
     'require',
     'xide/manager/PluginManager',
-    "dojo/promise/all",
     'xide/manager/WindowManager',
     'xide/manager/NotificationManager',
     'xide/manager/SettingsManager',
     'xide/editor/Registry',
     'xaction/ActionProvider',
-    'dojo/has!xlog?xlog/manager/LogManager',
-    'dojo/has!xreload?xide/client/WebSocket'
-
-], function (dcl,declare, lang, json, Deferred, has, ContextBase, factory,
-             types, utils, EventedMixin, _require, PluginManager,
-             all, WindowManager, NotificationManager,SettingsManager,
-             Registry, ActionProvider, LogManager, WebSocket) {
+    'xide/lodash',
+    'xide/manager/Router'
+], function (dcl, Deferred, has, types, utils, EventedMixin, _require, PluginManager,WindowManager, NotificationManager, SettingsManager, Registry, ActionProvider, _,Router) {
 
 
     !has('host-browser') && has.add('xlog', function () {
@@ -62601,12 +62597,35 @@ define('xide/manager/Context_UI',[
      *
      */
     var Module = dcl([EventedMixin.dcl, ActionProvider.dcl, Registry], {
-        declaredClass:"xide.manager.Context_UI",
+        declaredClass: "xide.manager.Context_UI",
         widgetManager: null,
         settingsManager: null,
+        trackingManager: null,
+        mainView: null,
+        routes:null,
+        /**
+         * @type {module:xide/manager/Router}
+         */
+        router:null,
+        /**
+         *
+         * @returns {module:xide/manager/Router}
+         */
+        getRouter:function(){
+            return this.router;
+        },
+
+        /**
+         *
+         * @returns {null|module:xide/manager/WindowManager}
+         */
         getWindowManager: function () {
             return this.windowManager;
         },
+        /**
+         *
+         * @returns {null|module:xideve/manager/WindowManager}
+         */
         getWidgetManager: function () {
             return this.widgetManager;
         },
@@ -62616,16 +62635,21 @@ define('xide/manager/Context_UI',[
         getSettingsManager: function () {
             return this.settingsManager;
         },
+        getTrackingManager: function () {
+            return this.trackingManager;
+        },
+        getMainView: function () {
+            return this.mainView;
+        },
         /**
          * Run global actions here
-         * @param action
-         * @returns {*}
+         * @param action {string|module:xaction/ActionModel}
+         * @returns {module:dojo/Deferred}
          */
         runAction: function (action) {
             action = this.getAction(action);
             var actionDfd = this.inherited(arguments),
                 who = this;
-
             if (actionDfd == null && action.handler) {
                 actionDfd = action.handler.apply(who, [action]);
             }
@@ -62637,14 +62661,15 @@ define('xide/manager/Context_UI',[
          */
         /**
          * Create editor
-         * @param ctrArgs
-         * @param item
+         * @param ctrArgs {object} ctor args
+         * @param item {module:xfile/model/File}
          * @param editorOverrides
-         * @param where
-         * @param owner
-         * @returns {*}
+         * @param where {HTMLElement|module:xide/widgets/_Widget}
+         * @param owner {*|null}
+         * @returns {module:dojo/Deferred}
          */
         createEditor: function (ctrArgs, item, editorOverrides, where, owner) {
+
             var dfd = new Deferred(),
                 registerInWindowManager = owner && owner.registerEditors === true ? true : true;
 
@@ -62653,7 +62678,7 @@ define('xide/manager/Context_UI',[
             }
 
             var thiz = this,
-                title = item && item.name ? item.name :  (utils.pathinfo(item.path,'PATHINFO_FILENAME') + '.'+ utils.pathinfo(item.path,'PATHINFO_EXTENSION')),
+                title = item && item.name ? item.name : (utils.pathinfo(item.path, 'PATHINFO_FILENAME') + '.' + utils.pathinfo(item.path, 'PATHINFO_EXTENSION')),
                 ctx = this,
                 mainView = ctx.mainView,
                 docker = mainView.getDocker(),
@@ -62665,16 +62690,13 @@ define('xide/manager/Context_UI',[
                     closeable: true,
                     closable: true
                 };
-
             utils.mixin(ctrArgsFinal, ctrArgs);
-
             if (_.isString(ctrArgs.editorClass)) {
                 //test this really exists
-                if (!dojo.getObject(ctrArgs.editorClass) || !dcl.getObject(ctrArgs.editorClass)) {
+                if (!this.getModule(ctrArgs.editorClass)) {
                     return null;
                 }
             }
-
 
             if (ctrArgs.runFunctionOnly === true) {
                 ctrArgs.editorClass.apply(this, [item]);
@@ -62699,7 +62721,7 @@ define('xide/manager/Context_UI',[
             }, this);
 
 
-            root.set('loading',true);
+            root.set('loading', true);
             var editor = utils.addWidget(ctrArgs.editorClass, ctrArgsFinal, thiz, root, true, null, null, null, editorOverrides);
 
             //- tell everybody
@@ -62713,7 +62735,6 @@ define('xide/manager/Context_UI',[
             if (editor.openItem) {
                 var _dfd = editor.openItem(item);
                 dfd.resolve(editor);
-
                 if (registerInWindowManager) {
                     this.getWindowManager().registerView(editor, false);
                 }
@@ -62721,9 +62742,9 @@ define('xide/manager/Context_UI',[
             //-resize if possible
             root.resize && root.resize();
 
-            if(dfd.then){
-                dfd.then(function(){
-                    root.set('loading',false);
+            if (dfd.then) {
+                dfd.then(function () {
+                    root.set('loading', false);
                 })
             }
             return dfd;
@@ -62758,9 +62779,9 @@ define('xide/manager/Context_UI',[
             if (!onEdit) {
                 _editorArgs.onEdit = function (item, _owner, overrides) {
                     //some components may have an additional bootstrap in top of 'run':
-                    if(owner && owner.onCreateEditor){
+                    if (owner && owner.onCreateEditor) {
                         var dfd = new Deferred();
-                        owner.onCreateEditor().then(function(){
+                        owner.onCreateEditor().then(function () {
                             var editor = thiz.createEditor(_editorArgs, item, overrides, null, _owner);
                             dfd.resolve(editor);
                         });
@@ -62821,13 +62842,9 @@ define('xide/manager/Context_UI',[
             }
             this.application && this.application.init();
             this.windowManager && this.windowManager.init();
-
-
-            var thiz = this;
-
+            var self = this;
             this.registerEditorExtension('Browser', 'php|html|mp4|doc|xls|pdf|zip|tar|iso|avi|gz|mp3|mkv|ogg|png|jpg|cfhtml', 'fa-play-circle-o', this, false, null, function (item) {
-                var url = thiz.getFileManager().getImageUrl(item);
-                window.open(url);
+                window.open(self.getFileManager().getImageUrl(item));
             }, {
                 ctx: this.ctx,
                 registerView: false,
@@ -62836,9 +62853,15 @@ define('xide/manager/Context_UI',[
             });
 
         },
-        /***
-         * Construct Managers : Only
-         */
+        registerRoute:function(config){
+            if(!this.routes){
+                this.routes = [];
+            }
+            this.routes.push(config);
+        },
+        ready:function(){
+            this.router = new Router({routes:this.routes});
+        },
         constructManagers: function () {
             this.pluginManager = this.createManager(PluginManager);
             this.windowManager = this.createManager(WindowManager);
@@ -62847,10 +62870,565 @@ define('xide/manager/Context_UI',[
         }
     });
 
-    dcl.chainAfter(Module,'constructManagers');
-    dcl.chainAfter(Module,'initManagers');
+    dcl.chainAfter(Module, 'constructManagers');
+    dcl.chainAfter(Module, 'initManagers');
+    dcl.chainAfter(Module, 'ready');
 
     return Module;
+});;
+/** module:xide/manager/Router **/
+define('xide/manager/Router',['xide/utils'], function (utils) {
+    /**
+     * @param {Object} object
+     * @param {Function} callback
+     * @param {Object} [ctx]
+     * @returns {Object}
+     */
+    var map = function (object, callback, ctx) {
+        var copy = {};
+        for (var key in object) {
+            if (object.hasOwnProperty(key)) {
+                copy[key] = callback.call(ctx, object[key], key, object);
+            }
+        }
+        return copy;
+    };
+
+    /**
+     * merges objects
+     * @returns {{}}
+     */
+    var merge = function () {
+        var result = {};
+        Array.prototype.forEach.call(arguments, function (o) {
+            for (var key in o) {
+                if (o.hasOwnProperty(key)) {
+                    result[key] = o[key];
+                }
+            }
+        });
+        return result;
+    };
+
+    /**
+     * @param {*} o
+     * @returns {*}
+     */
+    var clone = function (o) {
+        if (Array.isArray(o)) {
+            return o.map(clone);
+        }
+        if (o instanceof RegExp || [
+                'string',
+                'number',
+                'boolean',
+                'object'
+            ].indexOf(typeof o) > -1 || o == null) {
+            return o;
+        }
+        return map(o, clone);
+    };
+
+    /**
+     * @typedef {Object} module:xide/interface/RouteDefinition
+     * @property {String} id
+     * @property {String} path
+     * @property {String} [host]
+     * @property {String} [prefix]
+     * @property {Object.<String|Number>} [defaults]
+     * @property {Object.<String>} [requirements]
+     * @property {Array.<String>} [methods]
+     * @property {Array.<String>} [schemes]
+     * @property {module:xide/interface/Route} delegate
+     */
+
+    /**
+     * @typedef {Object} RoutesDefinition
+     * @property {String} [prefix]
+     * @property {Array.<RouteDefinition|RoutesDefinition>} routes
+     */
+
+    /**
+     * @typedef {Object} RouteDefinitionParsed
+     * @property {String} id
+     * @property {RegExp} pattern
+     * @property {String} path
+     * @property {Array.<String>} parameters
+     * @property {RegExp} hostPattern
+     * @property {String} host
+     * @property {Array.<String>} hostParameters
+     * @property {Object.<RegExp>} requirements
+     * @property {Object.<String>} defaults
+     * @property {Array.<String>} methods
+     * @property {Array.<String>} schemes
+     * @property {{RouteDefinition}} definition
+     */
+
+    /**
+     * @typedef {Object} Route
+     * @property {String} id
+     * @property {RouteDefinition} definition
+     * @property {Object.<String>} [parameters]
+     */
+
+    /**
+     * @class module:xide/manager/Router
+     * @param {Object} options
+     * @param {Array.<RouteDefinition|RoutesDefinition>} options.routes
+     * @param {Array.<String>} [options.defaultMethods=['GET', 'POST', 'PUT', 'DELETE']]
+     * @param {Array.<String>} [options.defaultSchemes=['http', 'https']]
+     * @param {Object} [options.symbols]
+     * @param {String} [options.symbols.defaultParameterRequirement='[^\\/.]*']
+     * @param {String} [options.symbols.parametersDelimiters='\.|\/']
+     * @param {String} [options.symbols.parameterStart='\{']
+     * @param {String} [options.symbols.parameterMatcher='.*?']
+     * @param {String} [options.symbols.parameterEnd='\}']
+     */
+    var RouterBase = function (options) {
+        var symbols = options.symbols || {},
+            paramsDelimiters = symbols.parametersDelimiters || '\\.|\\/',
+            paramStart = symbols.parameterStart || '\\{',
+            paramMatcher = symbols.parameterMatcher || '.*?',
+            paramEnd = symbols.parameterEnd || '\\}';
+
+        /**
+         * @const {{regexp: RegExp, parameters: Array}}
+         * @private
+         */
+        this._NO_HOST = {
+            regexp: /.*/,
+            parameters: []
+        };
+
+        /**
+         * @type {string}
+         * @private
+         */
+        this._defaultParameterRequirement = symbols.defaultParameterRequirement || '[^\\/.]*';
+
+        /**
+         * @type {RegExp}
+         * @private
+         */
+        this._paramsReplaceRegExp = new RegExp('(' + paramsDelimiters + ')?' + paramStart +
+            '(' + paramMatcher + ')' + paramEnd, 'g');
+
+        /**
+         * @type {Array.<String>}
+         * @private
+         */
+        this._defaultMethods = options.defaultMethods || ['GET', 'POST', 'PUT', 'DELETE'];
+
+        /**
+         * @type {Array.<String>}
+         * @private
+         */
+        this._defaultSchemes = options.defaultSchemes || ['http', 'https'];
+
+        /**
+         * @type {Array.<RouteDefinition>}
+         * @private
+         */
+        this._routesDefinitions = this._unifyRoutes(options.routes);
+
+        /**
+         * @type {Array.<RouteDefinitionParsed>}
+         * @private
+         */
+        this._routes = this._parseRoutes(this._routesDefinitions);
+
+        /**
+         * @type {Object.<RouteDefinitionParsed>}
+         * @private
+         */
+        this._routeIdToParsedDefinitionMap = {};
+    };
+
+    /**
+     * @param {Array.<RouteDefinition|RoutesDefinition>} routes
+     * @param {RouteDefinition} [parentRoute]
+     * @returns {Array.<RouteDefinition>}
+     * @private
+     */
+    RouterBase.prototype._unifyRoutes = function (routes, parentRoute) {
+        var unifiedRoutes = [];
+        routes.forEach(function (route) {
+            unifiedRoutes = unifiedRoutes.concat(this._unifyRoute(route, parentRoute));
+        }, this);
+        return unifiedRoutes;
+    };
+
+    /**
+     * @param {RouteDefinition|RoutesDefinition} route
+     * @param {RouteDefinition} [parentRoute]
+     * @returns {RouteDefinition|Array.<RouteDefinition>}
+     * @private
+     */
+    RouterBase.prototype._unifyRoute = function (route, parentRoute) {
+        parentRoute = parentRoute || {};
+        route.defaults = map(merge(parentRoute.defaults, route.defaults), function (prop) {
+            return String(prop);
+        });
+        route.requirements = merge(parentRoute.requirements, route.requirements);
+        if (parentRoute.prefix) {
+            route.path = parentRoute.prefix + route.path;
+            route.prefix = route.prefix ? parentRoute.prefix + route.prefix : parentRoute.prefix;
+        }
+        route.host = route.host || parentRoute.host;
+        route.methods = route.methods || parentRoute.methods || this._defaultMethods;
+        route.schemes = route.schemes || parentRoute.schemes || this._defaultSchemes;
+        for (var key in parentRoute) {
+            if (parentRoute.hasOwnProperty(key) && key !== 'routes' && !route[key]) {
+                route[key] = parentRoute[key];
+            }
+        }
+        return route.routes ? this._unifyRoutes(route.routes, route) : route;
+    };
+
+    /**
+     * @param {Array.<RouteDefinition|RoutesDefinition>} routes
+     * @returns {Array.<RouteDefinitionParsed>}
+     * @private
+     */
+    RouterBase.prototype._parseRoutes = function (routes) {
+        return routes.map(this._parseRoute, this);
+    };
+
+    /**
+     * @param {RouteDefinition} route
+     * @param {Number} i
+     * @returns {RouteDefinitionParsed}
+     * @private
+     */
+    RouterBase.prototype._parseRoute = function (route, i) {
+        var defaults = route.defaults,
+            requirements = route.requirements,
+            path = route.path,
+            host = route.host,
+            parsedHost = host ? this._parsePath(host, requirements, defaults) : this._NO_HOST,
+            parsedPath = this._parsePath(path, requirements, defaults);
+        return {
+            id: route.id,
+            pattern: parsedPath.regexp,
+            path: path,
+            parameters: parsedPath.parameters,
+            hostPattern: parsedHost.regexp,
+            host: host,
+            hostParameters: parsedHost.parameters,
+            requirements: map(requirements, function (prop) {
+                return new RegExp('^' + prop + '$');
+            }),
+            defaults: defaults,
+            methods: route.methods,
+            schemes: route.schemes,
+            definition: this._routesDefinitions[i]
+        };
+    };
+
+    /**
+     * @param {String} path
+     * @param {Object} [requirements]
+     * @param {Object} [defaults]
+     * @returns {{regexp: RegExp, parameters: Array.<String>}}
+     * @private
+     */
+    RouterBase.prototype._parsePath = function (path, requirements, defaults) {
+        var parameters = [],
+            defaultParameterRequirement = this._defaultParameterRequirement,
+            regexp = new RegExp('^' +
+                path
+                    .replace(/([\/\.\|])/g, '\\$1')
+                    .replace(this._paramsReplaceRegExp, function (match, delimiter, parameterName) {
+                        var optional = parameterName in defaults;
+                        parameters.push(parameterName);
+                        return (delimiter || '') + (optional && delimiter ? '?' : '') +
+                            '(' + (requirements[parameterName] ? requirements[parameterName] : defaultParameterRequirement) + ')' +
+                            (optional ? '?' : '');
+                    }) +
+                '$');
+        return {
+            regexp: regexp,
+            parameters: parameters
+        };
+    };
+
+    /**
+     * @param {{path: String, method: String, host: String|undefined, scheme: String|undefined}} request
+     * @returns {?Route}
+     * @public
+     */
+    RouterBase.prototype.match = function (request) {
+        var routes = this._routes,
+            route,
+            pathParts = request.path.split('?'),
+            path = pathParts[0],
+            query = pathParts[1] ? this._parseQuery(pathParts[1]) : null,
+            execPathResult,
+            execHostResult,
+            isMethodValid,
+            isSchemeValid;
+
+        request.method = 'GET';
+
+        for (var i = 0, l = routes.length; i < l; i++) {
+            route = routes[i];
+            execPathResult = route.pattern.exec(path);
+            if (!execPathResult) {
+                continue;
+            }
+            execHostResult = route.hostPattern.exec(request.host);
+            if (!execHostResult) {
+                continue;
+            }
+            isMethodValid = route.methods.indexOf(request.method) > -1;
+            if (!isMethodValid) {
+                continue;
+            }
+            isSchemeValid = !request.scheme || route.schemes.indexOf(request.scheme) > -1;
+            if (isSchemeValid) {
+                execPathResult.shift();
+                execHostResult.shift();
+                return {
+                    id: route.id,
+                    parameters: this._retrieveParameters(route, execPathResult, execHostResult, query),
+                    definition: clone(this._routesDefinitions[i])
+                };
+            }
+        }
+        return null;
+    };
+
+    /**
+     * @param {String} query
+     * @returns {{}}
+     * @protected
+     */
+    RouterBase.prototype._parseQuery = function (query) {
+        var obj = {};
+
+        if (typeof query !== 'string' || query.length === 0) {
+            return obj;
+        }
+
+        var regexp = /\+/g;
+        query = query.split('&');
+
+        var len = query.length;
+
+        for (var i = 0; i < len; ++i) {
+            var x = query[i].replace(regexp, '%20'),
+                idx = x.indexOf('='),
+                kstr, vstr, k, v;
+
+            if (idx >= 0) {
+                kstr = x.substr(0, idx);
+                vstr = x.substr(idx + 1);
+            } else {
+                kstr = x;
+                vstr = '';
+            }
+
+            k = decodeURIComponent(kstr);
+            v = decodeURIComponent(vstr);
+
+            if (!obj.hasOwnProperty(k)) {
+                obj[k] = v;
+            } else if (Array.isArray(obj[k])) {
+                obj[k].push(v);
+            } else {
+                obj[k] = [obj[k], v];
+            }
+        }
+
+        return obj;
+    };
+
+    /**
+     * @param {RouteDefinitionParsed} route
+     * @param {Array.<String>} parsedParameters
+     * @param {Array.<String>} parsedHostParameters
+     * @param {Object.<String>} [query={}]
+     * @returns {Object.<String>}
+     * @private
+     */
+    RouterBase.prototype._retrieveParameters = function (route, parsedParameters, parsedHostParameters, query) {
+        var parameters = query || {};
+        for (var key in route.defaults) {
+            if (route.defaults.hasOwnProperty(key)) {
+                parameters[key] = route.defaults[key];
+            }
+        }
+        this._extendParameters(parsedParameters, route.parameters, parameters);
+        this._extendParameters(parsedHostParameters, route.hostParameters, parameters);
+        return parameters;
+    };
+
+    /**
+     * @param {Array.<String>} input parameters values
+     * @param {Array.<String>} names parameters names
+     * @param {Object.<String>} output parameters names: parameters values
+     * @private
+     */
+    RouterBase.prototype._extendParameters = function (input, names, output) {
+        for (var i = 0, l = names.length; i < l; i++) {
+            if (input[i] === undefined) {
+                break;
+            }
+            output[names[i]] = decodeURIComponent(input[i]);
+        }
+    };
+
+    /**
+     * @param {String} id
+     * @param {Object.<String>} [params]
+     * @returns {String}
+     * @throws Error if required parameter is not given
+     * @throws Error if parameter value is not suits requirements
+     * @throws Error if route is not defined
+     * @throws URIError
+     * @public
+     */
+    RouterBase.prototype.generate = function (id, params) {
+        var routes = this._routes,
+            route;
+        for (var i = 0, l = routes.length; i < l; i++) {
+            route = routes[i];
+            if (route.id === id) {
+                return this._generate(route, merge({}, params));
+            }
+        }
+        throw new Error('No such route: ' + id);
+    };
+
+    /**
+     * @param {RouteDefinitionParsed} route
+     * @param {Object.<String>} [params]
+     * @returns {String}
+     * @throws Error if required parameter is not given
+     * @throws Error if parameter value is not suits requirements
+     * @private
+     */
+    RouterBase.prototype._generate = function (route, params) {
+        var path = route.path,
+            generatedPath,
+            host = route.host,
+            generatedHost,
+            defaults = route.defaults,
+            requirements = route.requirements,
+            _this = this;
+        generatedPath = path.replace(this._paramsReplaceRegExp, function (match, delimiter, parameterName) {
+            delimiter = delimiter || '';
+            var optional = parameterName in defaults,
+                exists = params && parameterName in params;
+            if (exists) {
+                return _this._getParameterValue(parameterName, params, requirements, delimiter);
+            } else if (!optional) {
+                _this._throwParameterNeededError(parameterName, route.id);
+            }
+
+            var hasFilledParams = false;
+            for (var key in params) {
+                if (params.hasOwnProperty(key)) {
+                    if (route.parameters.indexOf(key) > -1) {
+                        hasFilledParams = true;
+                        break;
+                    }
+                }
+            }
+
+            return hasFilledParams ? delimiter + defaults[parameterName] : '';
+        });
+
+        if (host) {
+            generatedHost = host.replace(this._paramsReplaceRegExp, function (match, delimiter, parameterName) {
+                var optional = parameterName in defaults,
+                    exists = params && parameterName in params;
+                delimiter = delimiter || '';
+                if (exists) {
+                    return _this._getParameterValue(parameterName, params, requirements, delimiter);
+                } else if (optional) {
+                    return delimiter + defaults[parameterName];
+                } else {
+                    _this._throwParameterNeededError(parameterName, route.id);
+                }
+            });
+        }
+
+        var query = this._generateQuery(params);
+
+        if (query) {
+            generatedPath += '?' + query;
+        }
+
+        return generatedHost ? route.schemes[0] + '://' + generatedHost + generatedPath : generatedPath;
+    };
+
+    /**
+     * @param {Object.<String>} params
+     * @returns {String}
+     * @protected
+     */
+    RouterBase.prototype._generateQuery = function (params) {
+        var query = '';
+        for (var key in params) {
+            if (params.hasOwnProperty(key)) {
+                query += (query.length ? '&' : '') + encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
+            }
+        }
+        return query;
+    };
+
+    /**
+     * @param {String} parameterName
+     * @param {Object.<String>} params
+     * @param {Object.<RegExp>} requirements
+     * @param {String} delimiter
+     * @returns {String}
+     * @throws Error if parameter value is invalid
+     * @private
+     */
+    RouterBase.prototype._getParameterValue = function (parameterName, params, requirements, delimiter) {
+        var value = params[parameterName];
+        delete params[parameterName];
+        if (requirements[parameterName] && !requirements[parameterName].test(value)) {
+            throw new Error('Parameter "' + parameterName + '" has bad value "' + value + '", not suitable for path generation');
+        }
+        return delimiter + encodeURIComponent(value);
+    };
+
+    /**
+     * @param {String} parameterName
+     * @param {String} routeId
+     * @private
+     */
+    RouterBase.prototype._throwParameterNeededError = function (parameterName, routeId) {
+        throw new Error('Parameter "' + parameterName + '" is needed for route "' + routeId + '" generation');
+    };
+
+    /**
+     * @param {String} routeId
+     * @returns {?RouteDefinitionParsed}
+     * @public
+     * @throws if route is not defined
+     */
+    RouterBase.prototype.getRouteInfo = function (routeId) {
+        if (!this._routeIdToParsedDefinitionMap[routeId]) {
+            for (var i = 0, l = this._routes.length; i < l; i++) {
+                if (this._routes[i].id === routeId) {
+                    this._routeIdToParsedDefinitionMap[routeId] = this._routes[i];
+                    break;
+                }
+            }
+        }
+
+        if (!this._routeIdToParsedDefinitionMap[routeId]) {
+            throw new Error('No such route: ' + routeId);
+        }
+
+        return clone(this._routeIdToParsedDefinitionMap[routeId]);
+    };
+
+    return RouterBase;
 });;
 define('xaction/ActionProvider',[
     "xdojo/declare",
@@ -64901,13 +65479,13 @@ define('xide/Keyboard',[
 });;
 /** @module xaction/Action **/
 define('xaction/Action',[
-    'xdojo/declare',
+    'dcl/dcl',
     'xide/model/Base',
     'xide/types',
     'xide/utils/ObjectUtils',
     'xide/utils',
     'xide/mixins/EventedMixin'
-], function (declare, Base, types, ObjectUtils, utils,EventedMixin) {
+], function (dcl, Base, types, ObjectUtils, utils,EventedMixin) {
     /***
      * Extend the core types for action visibility(main menu,...) options/enums:
      * 1. 'Main menu',
@@ -65057,7 +65635,8 @@ define('xaction/Action',[
      * @class module:xaction/Action
      * @augments xide/model/Base
      */
-    var Module = declare("xaction/Action", [Base, EventedMixin], {
+    var Module = dcl([Base.dcl, EventedMixin.dcl], {
+        declaredClass:"xaction/Action",
         disabled: false,
         /**
          * Turn on/off this action
@@ -65352,22 +65931,23 @@ define('xaction/ActionStore',[
     return Module;
 });
 ;
+/** module:xaction/ActionModel **/
 define('xaction/ActionModel',[
-    "xdojo/declare",
+    "dcl/dcl",
     'xaction/Action',
     'xide/data/Model',
     "xide/data/Source",
     'xide/model/Path',
     'xide/utils'
-], function (declare, Action, Model, Source, Path, utils) {
+], function (dcl, Action, Model, Source, Path, utils) {
     var debug = false;
     /**
-     * @class module:xaction.ActionModel
+     * @class module:xaction/ActionModel
      * @extends module:xide/data/Source
      * @extends module:xaction/Action
      * @extends module:xide/mixins/EventedMixin
      */
-    return declare("xaction/ActionModel", [Action, Model, Source], {
+    return dcl([Action, Model, Source.dcl], {
         filterGroup: "item|view",
         keyboardMappings: null,
         bindWidgetProperties: [
@@ -65456,6 +66036,13 @@ define('xaction/ActionModel',[
                 return result;
             }
 
+            /*
+            return lodash.map(this.getItemsAtBranch(this._store.getAll(), this.command),function(paths){
+                return lodash.map(paths,function(path){
+                    this._store.getSync(path);
+                },this)
+            },this)
+            */
             return toActions(children);
         },
         /**
@@ -65476,12 +66063,6 @@ define('xaction/ActionModel',[
             } else {
                 debug && console.warn('widget is not a reference! ', evt);
             }
-        },
-        /**
-         * @TODO: remove back compat
-         * @private
-         */
-        _onCreated: function () {
         }
     });
 });;
@@ -66177,6 +66758,7 @@ define('xide/manager/NotificationManager',[
         }
     });
 });;
+/** @module xide/manager/WindowManager **/
 define('xide/manager/WindowManager',[
     'dcl/dcl',
     'xide/utils',
@@ -66184,109 +66766,93 @@ define('xide/manager/WindowManager',[
     'xide/manager/ManagerBase',
     'xide/editor/Registry',
     'xide/registry',
+    'xdojo/has',
     'dojo/has!xace?xace/views/Editor'
-],function (dcl,utils,types,ManagerBase,Registry,registry,Editor){
+], function (dcl, utils, types, ManagerBase, Registry, registry, has, Editor) {
 
-    function register(what,where,_active){
+    function register(what, where, _active) {
         where.addActionEmitter(what);
-        if(_active!==false){
+        if (_active !== false) {
             where.setActionEmitter(what);
         }
     }
 
-    function clear(what,where,_active){
+    function clear(what, where, _active) {
         where.setActionEmitter(what);
     }
-    var zIndexStart = 1;
-    var Module = dcl(ManagerBase,{
-        declaredClass:'xide.manager.WindowManager',
-        actionReceivers:null,
-        getActions:function(){
-            var result = [];
-            var thiz = this;
-            function findFrame(docker){
-                var result = null;
-                var panels = docker.getPanels();
-                if(docker._lastSelected) {
-                    for (var i = 0; i < panels.length; i++) {
-                        var panel = panels[i];
-                        if(panel == docker._lastSelected){
-                            var frame = panel.getFrame();
-                            if(frame){
-                                result = frame;
-                            }
 
-                            break;
-                        }
+    function findFrame(docker) {
+        var panels = docker.getPanels();
+        if (docker._lastSelected) {
+            for (var i = 0; i < panels.length; i++) {
+                var panel = panels[i];
+                if (panel == docker._lastSelected) {
+                    var frame = panel.getFrame();
+                    if (frame) {
+                        return frame;
                     }
                 }
-                return result;
             }
-            result.push(this.ctx.createAction('Next','View/Next','fa-cube',['alt num_add'],'Home','View',"global",
+        }
+    }
+
+    /**
+     * @class module:xide/manager/WindowManager
+     * @extends module:xide/manager/ManagerBase
+     */
+    var Module = dcl(ManagerBase, {
+        declaredClass: 'xide.manager.WindowManager',
+        actionReceivers: null,
+        /**
+         *
+         * @returns {Array}
+         */
+        getActions: function () {
+            var result = [];
+            var thiz = this;
+            result.push(this.ctx.createAction('Next', 'View/Next', 'fa-cube', ['alt num_add'], 'Home', 'View', "global",
                 //onCreate
-                function(action){
+                function (action) {
                 },
                 //handler
-                function(){
-
-
+                function () {
                     var docker = thiz.ctx.mainView.getDocker();
-                    var frames = docker._frameList;
-
                     var frame = findFrame(docker);
-                    if(!frame){
+                    if (!frame) {
                         return;
                     }
                     var pos = frame._curTab;
-
                     var panel = frame.panel(pos);
-
                     var next = frame.panel(pos + 1);
-                    if(panel || next) {
+                    if (panel || next) {
                         (next || panel ).select();
                         (next || panel ).resize();
                         docker.resize();
                     }
                 },
                 {
-                    addPermission:true,
-                    show:true
-                },null,null,
+                    addPermission: true,
+                    show: true
+                }, null, null,
                 //permissions:
-                [
-
-                ],window,this
+                [], window, this
             ));
-
-            /*
-            this.ctx.createAction({
-                label:'Prev',
-                command:'View/Prev',
-                icon:'fa-cube',
-                key_combo:['alt num_subtract']:
-                tab:'Home',
-                group:'File',
-                "global"
-            */
-
-            result.push(this.ctx.createAction('Prev','View/Prev','fa-cube',['alt num_subtract'],'Home','View',"global",
+            result.push(this.ctx.createAction('Prev', 'View/Prev', 'fa-cube', ['alt num_subtract'], 'Home', 'View', "global",
                 //onCreate
-                function(action){
+                function (action) {
                 },
                 //handler
-                function(){
-
-
+                function () {
                     var docker = thiz.ctx.mainView.getDocker();
                     var frame = findFrame(docker);
-                    if(!frame){
+                    if (!frame) {
                         return;
                     }
                     var pos = frame._curTab;
 
                     var panel = frame.panel(pos);
-                    var next = frame.panel(pos -1);
-                    if(panel || next) {
+                    var next = frame.panel(pos - 1);
+                    if (panel || next) {
 
                         (next || panel ).select();
                         (next || panel ).resize();
@@ -66294,67 +66860,65 @@ define('xide/manager/WindowManager',[
                     }
                 },
                 {
-                    addPermission:true,
-                    show:true
-                },null,null,
+                    addPermission: true,
+                    show: true
+                }, null, null,
                 //permissions:
-                [
-
-                ],window,this
+                [], window, this
             ));
 
 
             return result;
         },
-        init:function(){
+        init: function () {
             this.ctx.addActions(this.getActions());
             this.actionReceivers = [];
         },
-        addActionReceiver:function(receiver){
-            if(this.actionReceivers.indexOf(receiver) == -1){
+        addActionReceiver: function (receiver) {
+            if (this.actionReceivers.indexOf(receiver) == -1) {
                 this.actionReceivers.push(receiver);
-                receiver._on('destroy',function(){
+                receiver._on('destroy', function () {
                     this.actionReceivers.remove(receiver);
-                },this);
+                }, this);
             }
         },
-        registerView:function(view,active){
+        registerView: function (view, active) {
             var toolbar = this.getToolbar(),
                 menu = this.getMainMenu();
-            this.publish(types.EVENTS.ON_OPEN_VIEW,{
-                view:view,
-                menu:menu,
-                toolbar:toolbar,
-                src:this
+
+            this.publish(types.EVENTS.ON_OPEN_VIEW, {
+                view: view,
+                menu: menu,
+                toolbar: toolbar,
+                src: this
             });
-            toolbar && register(view,toolbar,active);
-            menu && register(view,menu,active);
+            toolbar && register(view, toolbar, active);
+            menu && register(view, menu, active);
             var receivers = this.actionReceivers;
-            _.each(receivers,function(widget){
-                widget && register(view,widget,active);
+            _.each(receivers, function (widget) {
+                widget && register(view, widget, active);
             });
             return true;
         },
-        clearView:function(view,active){
+        clearView: function (view, active) {
             var toolbar = this.getToolbar(),
                 menu = this.getMainMenu(),
                 breadcrumb = this.getBreadcrumb();
-            toolbar && clear(view,toolbar,active);
-            menu && clear(view,menu,active);
+            toolbar && clear(view, toolbar, active);
+            menu && clear(view, menu, active);
             return true;
         },
-        getBreadcrumb:function(){
+        getBreadcrumb: function () {
             var ctx = this.ctx,
                 mainView = ctx.mainView;
             return mainView && mainView.getBreadcrumb ? mainView.getBreadcrumb() : null;
         },
-        getToolbar:function(){
+        getToolbar: function () {
             var ctx = this.ctx,
                 mainView = ctx.mainView;
-
             return mainView.getToolbar();
         },
-        getMainMenu:function(){
+        getMainMenu: function () {
             var ctx = this.ctx,
                 mainView = ctx.mainView;
             return mainView.mainMenu;
@@ -66364,77 +66928,66 @@ define('xide/manager/WindowManager',[
          * @param title
          * @param icon
          * @param where
-         * @returns {*}
+         * @returns {module:xdocker/Panel2}
          */
-        createTab:function(title,icon,where){
-            var docker = this.ctx.mainView.getDocker();
-            return docker.addTab(null,{
-                title:title,
-                target:where ? where._parent : docker.getDefaultPanel(),
+        createTab: function (title, icon, where) {
+            var docker = this.getContext().getMainView().getDocker();
+            return docker.addTab(null, {
+                title: title,
+                target: where ? where._parent : docker.getDefaultPanel(),
                 icon: icon || 'fa-code'
             });
         },
-        getDefaultPanel:function(){
-            this.ctx.mainView.getDocker().getDefaultPanel();
+        /**
+         *
+         * @returns {module:xdocker/Panel2}
+         */
+        getDefaultPanel: function () {
+            return this.getContext().getMainView().getDocker().getDefaultPanel();
         },
-        createDefaultTab:function(title,icon){
-            var docker = this.ctx.mainView.getDocker();
-            return docker.addTab(null, {
+        /**
+         * @param title
+         * @param icon
+         * @returns {module:xdocker/Panel2}
+         */
+        createDefaultTab: function (title, icon) {
+            return this.getContext().getMainView().getDocker().addTab(null, {
                 title: title,
                 icon: icon
             });
         },
         /**
          *
-         * @param item
-         * @param where
-         * @param mixin
-         * @param select
-         * @returns {*}
+         * @param item {module:xfile/model/File}
+         * @param where {module:xide/widgets/_Widget|null}
+         * @param mixin {object} constructor argument mixin for the new view created
+         * @param select {boolean} select the view (will update actions in global action receivers)
+         * @returns {module:xide/editor/Base}
          */
-        openItem:function(item,where,mixin,select){
-            /**
-             *
-             * @param item
-             * @param where
-             * @param mixin
-             * @returns {widgetProto|*}
-             */
-
-            if(!item || !item.getPath){
+        openItem: function (item, where, mixin, select) {
+            if (!item || !item.getPath) {
                 console.error('invalid item!');
                 return null;
             }
 
-
-            if(item && !item.getPath().match(/^(.*\.(?!(zip|tar|gz|bzip2)$))?[^.]*$/i)) {
+            if (item && !item.getPath().match(/^(.*\.(?!(zip|tar|gz|bzip2)$))?[^.]*$/i)) {
                 return;
             }
+            var thiz = this,
+                ctx = this.ctx;
 
-            var editors = Registry.getEditors(item);
-
-            var thiz=this,
-                ctx = this.ctx,
-                mainView = ctx.mainView;
-
-
-            var root = where || dijit.byId(this.appendTo);
-
-            var docker = ctx.mainView.getDocker();
-
+            var root = where || registry.byId(this.appendTo);
+            var docker = ctx.getMainView().getDocker();
             //create tab
             var title = utils.toString(item.name);
-
-            //where = where || this.getDefaultPanel();
-
             if (_.isFunction(where)) {
                 root = where({
-                    title:title,
-                    icon:'fa-code',
-                    location:null,
-                    tabOrientation:null
+                    title: title,
+                    icon: 'fa-code',
+                    location: null,
+                    tabOrientation: null
                 });
-            }else {
+            } else {
                 root = docker.addTab(null, {
                     title: title,
                     target: where ? where._parent : null,
@@ -66442,70 +66995,58 @@ define('xide/manager/WindowManager',[
                 });
             }
 
-
-
-            if(!root){
-                console.error('have no attachment parent!');
-                return;
+            if (has('debug')) {
+                if (!root) {
+                    console.error('have no attachment parent!');
+                    return;
+                }
             }
 
-
             var args = {
-                dataItem:item,
-                item:item,
-                filePath:item.path,
-                config:this.config,
-                delegate:this,
-                parentContainer:root,
-                store:this.store,
-                style:'padding:0px;height:inherit;height:width;',
-                iconClass:'fa-code',
-                autoSelect:true,
-                ctx:ctx,
+                dataItem: item,
+                item: item,
+                filePath: item.path,
+                config: this.config,
+                delegate: this,
+                parentContainer: root,
+                store: this.store,
+                style: 'padding:0px;height:inherit;height:width;',
+                iconClass: 'fa-code',
+                autoSelect: true,
+                ctx: ctx,
                 /***
                  * Provide a text editor store delegate
                  */
-                storeDelegate:{
-                    getContent:function(onSuccess){
-                        thiz.ctx.getFileManager().getContent(item.mount,item.path,onSuccess);
+                storeDelegate: {
+                    getContent: function (onSuccess) {
+                        thiz.ctx.getFileManager().getContent(item.mount, item.path, onSuccess);
                     },
-                    saveContent:function(value,onSuccess,onError){
-                        thiz.ctx.getFileManager().setContent(item.mount,item.path,value,onSuccess);
+                    saveContent: function (value, onSuccess, onError) {
+                        thiz.ctx.getFileManager().setContent(item.mount, item.path, value, onSuccess);
                     }
 
                 },
-                title:title,
-                closable:true,
-                fileName:item.path
+                title: title,
+                closable: true,
+                fileName: item.path
             };
 
-            if(mixin){
-                utils.mixin(args,mixin);
-            }
-
-            var editor = utils.addWidget(Editor,args,this,root,true,null,null,select);
+            utils.mixin(args, mixin);
+            var editor = utils.addWidget(Editor, args, this, root, true, null, null, select);
             root.resize();
             editor.resize();
 
-            if(select!==false && root.selectChild){
+            if (select !== false && root.selectChild) {
                 root.selectChild(editor);
             }
 
-
             docker.resize();
-
-            if(mixin && mixin.global){
-                this.registerView(editor,select);
+            if (mixin && mixin.register) {
+                this.registerView(editor, select);
             }
             return editor;
         }
     });
-
-    Module.nextZ = function(){
-        zIndexStart++;
-        return zIndexStart;
-    };
-
     return Module;
 });;
 define('xide/min',[
@@ -73347,7 +73888,7 @@ define('dojo/dom-class',["./_base/lang", "./_base/array", "./dom"], function(lan
 	return cls;
 });
 ;
-/** module:xide/manager/Context **/
+/** module:xide/manager/ContextBase **/
 define('xide/manager/ContextBase',[
     'dcl/dcl',
     'xide/factory',
@@ -73360,14 +73901,20 @@ define('xide/manager/ContextBase',[
     var _debug = false;
     /**
      * @class module:xide/manager/ContextBase
+     * @extends module:xide/mixins/EventedMixin
      */
     var Module = dcl(EventedMixin.dcl,{
         declaredClass:"xide.manager.ContextBase",
         language: "en",
         managers: [],
         mixins: null,
-        getModule:function(_module){
-            return lang.getObject(utils.replaceAll('/', '.', _module)) || lang.getObject(_module) || (dcl.getObject ? dcl.getObject(_module) || dcl.getObject(utils.replaceAll('/', '.', _module)) : null);
+        /**
+         *
+         * @param module {string}
+         * @returns {*|Object|null}
+         */
+        getModule:function(module){
+            return lang.getObject(utils.replaceAll('/', '.', module)) || lang.getObject(module) || (dcl.getObject ? dcl.getObject(module) || dcl.getObject(utils.replaceAll('/', '.', module)) : null);
         },
         /***
          * createManager creates and instances and tracks it in a local array.
@@ -73808,6 +74355,21 @@ define('xide/utils/ObjectUtils',[
 ], function (utils, require, Deferred,lodash) {
     var _debug = false;
     "use strict";
+
+    utils.delegate=(function(){
+        // boodman/crockford delegation w/ cornford optimization
+        function TMP(){}
+        return function(obj, props){
+            TMP.prototype = obj;
+            var tmp = new TMP();
+            TMP.prototype = null;
+            if(props){
+                lang._mixin(tmp, props);
+            }
+            return tmp; // Object
+        };
+    })();
+
     /////////////////////////////////////////////////////////////////////////////////////////////
     //
     //  Loader utils
@@ -75013,27 +75575,38 @@ define('xide/utils/WidgetUtils',[
 define('xide/utils/StoreUtils',[
     'xide/utils',
     'xide/data/Memory',
-    'dojo/_base/kernel'
-], function (utils, Memory,dojo) {
+    'dojo/_base/kernel',
+    'xide/lodash'
+], function (utils, Memory,dojo,lodash) {
     "use strict";
     /**
      *
-     * @param store
-     * @param item
-     * @param recursive
-     * @param idAttribute
-     * @param parentAttr
+     * @param store {module:xide/data/_Base|null}
+     * @param mixed {object|string|null}
+     * @param recursive {boolean|null}
+     * @param idAttribute {string|null}
+     * @param parentAttr {string|null}
+     * @param destroy {boolean|null}
      */
-    utils.removeFromStore = function (store, item, recursive, idAttribute, parentAttr) {
+    utils.removeFromStore = function (store, mixed, recursive, idAttribute, parentAttr,silent,destroy) {
+        if(mixed==null || !store){
+            return;
+        }
+        mixed = lodash.isString(mixed) ? store.getSync(mixed) || mixed : mixed;
+        idAttribute = idAttribute || store.idProperty;
+        parentAttr = parentAttr || store.parentProperty;
         //remove the item itself
-        store.removeSync(item[idAttribute]);
+        mixed && store.removeSync(mixed[idAttribute],silent);
         //remove children recursively
         var query = {};
-        query[parentAttr] = item[idAttribute];
-        var items = store.query(query);
-        if (items && items.length) {
-            for (var i = 0; i < items.length; i++) {
-                utils.removeFromStore(store, items[i], recursive, idAttribute, parentAttr);
+        query[parentAttr] = mixed[idAttribute] ? mixed[idAttribute] : mixed;
+        destroy ===true && lodash.isObject(mixed) && utils.destroy(mixed,true);
+        if(recursive===true) {
+            var items = store.query(query);
+            if (items && items.length) {
+                for (var i = 0; i < items.length; i++) {
+                    utils.removeFromStore(store, items[i], recursive, idAttribute, parentAttr,silent,destroy);
+                }
             }
         }
     };
@@ -75078,10 +75651,7 @@ define('xide/utils/StoreUtils',[
         if (data!=null) {
             var _dataStr = data.length > 1 ? data : data[0] ? data[0] : data;
             if (_dataStr != null) {
-                try {
-                    resInt = parseInt(_dataStr, 10);
-                } catch (e) {
-                }
+                resInt = parseInt(_dataStr, 10);
             }
         }
         return resInt;
@@ -75114,8 +75684,6 @@ define('xide/utils/StoreUtils',[
     utils.getElementsByType = function (store, type) {
         return utils.queryStoreEx(store, {type: type});
     };
-
-
     /***
      * @param store {module:xide/data/_Base} Store to query
      * @param query {object} Literal to match
@@ -75151,7 +75719,6 @@ define('xide/utils/StoreUtils',[
         }
         return res;
     };
-
     /**
      *
      * @param store
@@ -75200,13 +75767,15 @@ define('xide/utils/StoreUtils',[
 define('xide/utils/HTMLUtils',[
     'xide/utils',
     'xide/types',
-    'dojo/_base/declare',
+    'dcl/dcl',
+    'xdojo/declare',
     "dojo/dom-construct",
     'dojo/has',
     'dojo/dom-class',
     "dojo/_base/window",
-    'xide/lodash'
-], function (utils, types, declare, domConstruct, has, domClass, win, _) {
+    'xide/lodash',
+    'xide/$'
+], function (utils, types, dcl,declare, domConstruct, has, domClass, win, _,$) {
     /**
      * @TODO: remove
      * #Maqetta back compat tool
@@ -75216,54 +75785,23 @@ define('xide/utils/HTMLUtils',[
         return win.doc;
     };
     /**
-     *
-     * @param tag
-     * @param options
-     * @param where
-     * @memberOf module:xide/utils
-     * @returns {*}
+     * @TODO: remove
+     * Save empty a node or a widget
+     * @param mixed {HTMLElement|xide/_base/_Widget || dijit/_WidgetBase}
+     * @returns void
      */
-    utils.create = function (tag, options, where) {
-        var doc = win.doc;
-        if (where) {
-            doc = where.ownerDocument;
-        }
-
-        if (typeof tag == "string") {
-            tag = doc.createElement(tag);
-        }
-        options && $(tag).attr(options);
-        where && $(where).append(tag);
-        return tag;
-    };
-
-    /**
-     * Returns true when a node is child of another node
-     * @param parent {HTMLElement}
-     * @param child {HTMLElement}
-     * @returns {boolean}
-     */
-    utils.isDescendant = function (parent, child) {
-        var node = child.parentNode;
-        while (node !== null) {
-            if (node == parent) {
-                return true;
-            }
-            node = node.parentNode;
-        }
-        return false;
-    };
-    /**
-     * Finds and returns a widgets instance in a stack-container by name
-     * @param name
-     * @param container
-     * @returns {module:xide/layout/_Container}
-     */
-    utils.hasChild = function (name, container) {
-        if (!!name || !container && container.getChildren) {
-            return _.find(container.getChildren(), {
-                title: name
+    utils.empty = function (mixed) {
+        //seems widget
+        if (mixed.getChildren && mixed.removeChild) {
+            var children = mixed.getChildren();
+            _.each(children, function (widget) {
+                mixed.removeChild(widget);
             });
+        }
+        //now remove anything non-widget
+        var _el = mixed.containerNode || mixed.domNode || _.isElement(mixed) ? mixed : null;
+        if (_el) {
+            domConstruct.empty(_el);
         }
     };
     /**
@@ -75291,40 +75829,97 @@ define('xide/utils/HTMLUtils',[
     };
     /**
      *
+     * @param tag {string}
+     * @param options {object}
+     * @param where {HTMLElement}
+     * @memberOf module:xide/utils
+     * @returns {HTMLElement}
+     */
+    utils.create = function (tag, options, where) {
+        var doc = win.doc;
+        if (where) {
+            doc = where.ownerDocument;
+        }
+
+        if (typeof tag == "string") {
+            tag = doc.createElement(tag);
+        }
+        options && $(tag).attr(options);
+        where && $(where).append(tag);
+        return tag;
+    };
+
+    /**
+     * Returns true when a node is child of another node
+     * @param parent {HTMLElement}
+     * @param child {HTMLElement}
+     * @memberOf module:xide/utils
+     * @returns {boolean}
+     */
+    utils.isDescendant = function (parent, child) {
+        var node = child.parentNode;
+        while (node !== null) {
+            if (node == parent) {
+                return true;
+            }
+            node = node.parentNode;
+        }
+        return false;
+    };
+    /**
+     * Finds and returns a widgets instance in a stack-container by name
+     * @param name
+     * @param container
+     * @memberOf module:xide/utils
+     * @returns {module:xide/layout/_Container}
+     */
+    utils.hasChild = function (name, container) {
+        if (!!name || !container && container.getChildren) {
+            return _.find(container.getChildren(), {
+                title: name
+            });
+        }
+    };
+    /**
+     *
      * @param proto {Module} a module
      * @param args {Object} the constructor arguments
      * @param node {HTMLElement|null}
      * @param extraBaseClasses {Module[]} additional base classes
      * @param classExtension
+     * @memberOf module:xide/utils
      * @returns {Object}
      */
     utils.createInstanceSync = function (proto, args, node, extraBaseClasses, classExtension) {
         //extra bases and/or class extension, create a dynamic class and fill extra-bases
         if (extraBaseClasses || classExtension) {
             extraBaseClasses = extraBaseClasses || [];
+
             if (classExtension) {
                 extraBaseClasses.push(declare(proto, classExtension));
             }
         }
         if (extraBaseClasses) {
+            extraBaseClasses = _.isArray(extraBaseClasses) ? extraBaseClasses : [extraBaseClasses];
             extraBaseClasses.push(proto);
             extraBaseClasses.reverse();
-            proto = declare(extraBaseClasses, {});
+            proto = proto.extend ? declare(extraBaseClasses, {}) : dcl(extraBaseClasses,{});
         }
         return new proto(args || {}, node || win.doc.createElement('div'));
 
     };
     /***
      * addWidget
-     * @param widgetProto
-     * @param ctrArgsIn
-     * @param delegate
-     * @param parent
-     * @param startup
-     * @param cssClass
-     * @param baseClasses
-     * @param select
-     * @param classExtension
+     * @param widgetProto {module:xide/_base/_Widget|module:xide/widgets/_Widget}
+     * @param ctrArgsIn {object|null}
+     * @param delegate {*|null}
+     * @param parent {HTMLElement|module:xide/_base/_Widget|module:xide/widgets/_Widget}
+     * @param startup {boolean}
+     * @param cssClass {string} CSS class to be added
+     * @param baseClasses {null|object[]}
+     * @param select {boolean} call select (ie: a tab in a container)
+     * @param classExtension {object} one more mixin
+     * @memberOf module:xide/utils
      * @returns {module:xide/_base/_Widget|module:xide/widgets/_Widget|null}
      */
     utils.addWidget = function (widgetProto, ctrArgsIn, delegate, parent, startup, cssClass, baseClasses, select, classExtension) {
@@ -75347,6 +75942,7 @@ define('xide/utils/HTMLUtils',[
         ctrArgs._parent = parent;
 
         var _target = utils.getNode(parent);
+
         //@TODO: remove
         if (parent && parent.finishLoading) {
             parent.finishLoading();
@@ -75399,6 +75995,7 @@ define('xide/utils/HTMLUtils',[
      * @param child {HTMLElement|module:xide/widgets/_Widget}
      * @param startup {boolean} call startup() on the child
      * @param select {boolean} select the widget if parent has such method
+     * @memberOf module:xide/utils
      */
     utils.addChild = function (parent, child, startup, select) {
         if (!parent || !child) {
@@ -75501,6 +76098,7 @@ define('xide/utils/HTMLUtils',[
      * XIDE specific
      * @param prop
      * @param owner
+     * @memberOf module:xide/utils
      * @private
      */
     utils._clearProperty = function (prop, owner) {
@@ -75517,6 +76115,7 @@ define('xide/utils/HTMLUtils',[
      * @param view
      * @param callDestroy
      * @param owner
+     * @memberOf module:xide/utils
      * @private
      */
     utils._destroyWidget = function (view, callDestroy, owner) {
@@ -75565,6 +76164,7 @@ define('xide/utils/HTMLUtils',[
      * is specified, 'widget' will be nulled in owner
      * @param widget {Widget|HTMLElement|object}
      * @param callDestroy instruct to call 'destroy'
+     * @memberOf module:xide/utils
      * @param owner {Object=}
      */
     utils.destroy = function (widget, callDestroy, owner) {
@@ -75588,8 +76188,9 @@ define('xide/utils/HTMLUtils',[
     };
 
     /**
-     *
+     * Get a widet's default append target, dojo specfic
      * @param target
+     * @memberOf module:xide/utils
      * @returns {*}
      */
     utils.getNode = function (target) {
@@ -75600,8 +76201,9 @@ define('xide/utils/HTMLUtils',[
     };
 
     /**
-     *
-     * @param widgets
+     * Return the total height for widgets
+     * @param widgets {module:xide/widgets/_Widget|module:xide/widgets/_Widget[]}
+     * @memberOf module:xide/utils
      * @returns {number}
      */
     utils.getHeight = function (widgets) {
@@ -75623,6 +76225,7 @@ define('xide/utils/HTMLUtils',[
      * @param width
      * @param force
      * @param offset
+     * @memberOf module:xide/utils
      */
     utils.resizeTo = function (source, target, height, width, force, offset) {
         target = utils.getNode(target);
@@ -75640,28 +76243,17 @@ define('xide/utils/HTMLUtils',[
         }
     };
 
-    /**
-     * @TODO: remove
-     * Save empty a node or a widget
-     * @param mixed {HTMLElement|xide/_base/_Widget || dijit/_WidgetBase}
-     * @returns void
-     */
-    utils.empty = function (mixed) {
-        //seems widget
-        if (mixed.getChildren && mixed.removeChild) {
-            var children = mixed.getChildren();
-            _.each(children, function (widget) {
-                mixed.removeChild(widget);
-            });
-        }
-        //now remove anything non-widget
-        var _el = mixed.containerNode || mixed.domNode || _.isElement(mixed) ? mixed : null;
-        if (_el) {
-            domConstruct.empty(_el);
-        }
-
-    };
     return utils;
+});
+;
+/** @module xide/$ **/
+define('xide/$',[],function(){
+    /**
+     * temp. wanna be shim for jQuery
+     */
+    if(typeof $ !=="undefined"){
+        return $;
+    }
 });
 ;
 /** @module xide/utils/HexUtils
@@ -79459,7 +80051,8 @@ define('xide/types/Types',[
         XFILE: 'xfile',
         XACE: 'xace',
         XEXPRESSION: 'xexpression',
-        XCONSOLE: 'xconsole'
+        XCONSOLE: 'xconsole',
+        XTRACK: 'xtrack'
     };
 
     /**
@@ -79626,7 +80219,8 @@ define('xide/types/Types',[
         ON_CONTAINER_REMOVED: 'onContainerRemoved',
         ON_REMOVE_CONTAINER: 'onRemoveContainer',
         ON_CONTAINER_REPLACED: 'onContainerReplaced',
-        ON_CONTAINER_SPLIT: 'onContainerSplit'
+        ON_CONTAINER_SPLIT: 'onContainerSplit',
+        ON_RENDER_WELCOME_GRID_GROUP:'onRenderWelcomeGridGroup'
     };
     /**
      * To be moved
@@ -79712,15 +80306,45 @@ define('xide/types',[
 define('dstore/Filter',['dojo/_base/declare'], function (declare) {
 	// a Filter builder
 	function filterCreator(type) {
-		// constructs a new filter based on type, used to create each method
+		// constructs a new filter based on type, used to create each comparison method
 		return function newFilter() {
 			var Filter = this.constructor;
 			var filter = new Filter();
 			filter.type = type;
-			filter.args = arguments;
+			// ensure args is array so we can concat, slice, unshift
+			filter.args = Array.prototype.slice.call(arguments);
 			if (this.type) {
 				// we are chaining, so combine with an and operator
 				return filterCreator('and').call(Filter.prototype, this, filter);
+			}
+			return filter;
+		};
+	}
+	function logicalOperatorCreator(type) {
+		// constructs a new logical operator 'filter', used to create each logical operation method
+		return function newLogicalOperator() {
+			var Filter = this.constructor;
+			var argsArray = [];
+			for (var i = 0; i < arguments.length; i++) {
+				var arg = arguments[i];
+				argsArray.push(arg instanceof Filter ? arg : new Filter(arg));
+			}
+			var filter = new Filter();
+			filter.type = type;
+			filter.args = argsArray;
+			if (this.type === type) {
+				// chaining, same type
+				// combine arguments
+				filter.args = this.args.concat(argsArray);
+			} else if (this.type) {
+				// chaining, different type
+				// add this filter to start of arguments
+				argsArray.unshift(this);
+			} else if (argsArray.length === 1) {
+				// not chaining and only one argument
+				// returned filter is the same as the single argument
+				filter.type = argsArray[0].type;
+				filter.args = argsArray[0].args.slice();
 			}
 			return filter;
 		};
@@ -79754,8 +80378,8 @@ define('dstore/Filter',['dojo/_base/declare'], function (declare) {
 			}
 		},
 		// define our operators
-		and: filterCreator('and'),
-		or: filterCreator('or'),
+		and: logicalOperatorCreator('and'),
+		or: logicalOperatorCreator('or'),
 		eq: filterCreator('eq'),
 		ne: filterCreator('ne'),
 		lt: filterCreator('lt'),
@@ -79767,6 +80391,7 @@ define('dstore/Filter',['dojo/_base/declare'], function (declare) {
 		match: filterCreator('match')
 	});
 	Filter.filterCreator = filterCreator;
+	Filter.logicalOperatorCreator = logicalOperatorCreator;
 	return Filter;
 });;
 define('dstore/mainr',[
@@ -80271,7 +80896,9 @@ define('dojo/node',[
 			nodeRequire = _window.nodeRequire;
 			module = nodeRequire("module");
 		} else {
-			console.warn("Cannot get Electron/Node.js require, will noob to empty module dojo/noob");
+		    if(has('debug')) {
+                console.warn("Cannot get Electron/Node.js require, will noob to empty module dojo/noob");
+            }
 		}
 	}
 	return {
@@ -80531,6 +81158,7 @@ define('dojo/has',["require", "module"], function(require, module){
 	return has;
 });
 ;
+/** module:dojo/Deferred **/
 define('dojo/Deferred',[
 	"./has",
 	"./_base/lang",
@@ -80620,7 +81248,11 @@ define('dojo/Deferred',[
 			}
 		}
 	};
-
+    /**
+     * @class module:dojo/Deferred
+     * @param canceler {function}
+     * @constructor
+     */
 	var Deferred = function(canceler){
 		// summary:
 		//		Creates a new deferred. This API is preferred over
