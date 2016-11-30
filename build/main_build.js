@@ -35587,7 +35587,7 @@ define('xide/data/TreeMemory',[
                 }
 
                 //the group query
-                if (this._state.filter['group']) {
+                if (this._state && this._state.filter && this._state.filter['group']) {
                     var _items = this.getSync(this._state.filter.parent);
                     if (_item) {
                         this.reset();
@@ -40623,31 +40623,34 @@ define('xcf/manager/DriverManager',[
             }
         },
         removeDriverInstance:function(instance,device){
-            var info = this.getContext().getDeviceManager().toDeviceControlInfo(device),
-                driver = this.getDriverById(instance.device.info.driverId),
-                driverStore = driver._store,
-                parentId = driver.path,
-                deviceId = device.path,
-                instanceId = parentId + '_instances_instance_'+deviceId,
-                instanceReferenceItem = driverStore.getSync(instanceId);
+            try {
+                var info = this.getContext().getDeviceManager().toDeviceControlInfo(device),
+                    driver = this.getDriverById(instance.device.info.driverId),
+                    driverStore = driver._store,
+                    parentId = driver.path,
+                    deviceId = device.path,
+                    instanceId = parentId + '_instances_instance_' + deviceId,
+                    instanceReferenceItem = driverStore.getSync(instanceId);
 
-            instanceReferenceItem && driverStore.removeSync(instanceId);
+                instanceReferenceItem && driverStore.removeSync(instanceId);
 
-            //"Audio-Player/VLC.meta.json_instances_instance_Audio-Player/VLC.meta.json"
-            var instanceReference = _.find(driver.instances,{
-                path:instanceId
-            });
+                //"Audio-Player/VLC.meta.json_instances_instance_Audio-Player/VLC.meta.json"
+                var instanceReference = _.find(driver.instances, {
+                    path: instanceId
+                });
 
-            if(instanceReference){
-                //instanceReference.destroy();
-                driver.instances.remove(instanceReference);
-            }
-            device.removeReference(instanceReferenceItem);
-            if(instanceReferenceItem) {
-                instanceReferenceItem.refresh();
-                driverStore.getSync(parentId + '_instances').refresh();
-            }else{
-                debug && console.error('bad!! cant find reference for instance',arguments);
+                if (instanceReference) {
+                    driver.instances.remove(instanceReference);
+                }
+                device.removeReference(instanceReferenceItem);
+                if (instanceReferenceItem) {
+                    instanceReferenceItem.refresh();
+                    driverStore.getSync(parentId + '_instances').refresh();
+                } else {
+                    debug && console.error('bad!! cant find reference for instance', arguments);
+                }
+            }catch(e){
+                logError(e,'error removing driver instance');
             }
         },
         /**
@@ -40667,7 +40670,7 @@ define('xcf/manager/DriverManager',[
                 }
             }, blocks, function (error) {
                 if (error) {
-                    console.error(error + ' : in ' + driver.name + ' Resave Driver!');
+                    console.error(error + ' : in ' + driver.name + ' , re-save driver!');
                 }
             });
             return scope;
@@ -40992,15 +40995,12 @@ define('xcf/manager/DriverManager',[
             var result = null;
 
             function search(store) {
-
                 var items = utils.queryStore(store, {
                     isDir: false
                 });
-
                 if (!_.isArray(items)) {
                     items = [items];
                 }
-
                 for (var i = 0; i < items.length; i++) {
                     var driver = items[i];
                     if (driver.path == path) {
@@ -41329,10 +41329,11 @@ define('xide/mixins/ReloadMixin',[
 /** @module xide/data/Reference **/
 define('xide/data/Reference',[
     "dojo/_base/declare",
+    "dcl/dcl",
     "xide/utils",
     "xide/lodash",
     "xide/mixins/EventedMixin"
-], function (declare,utils,lodash,EventedMixin) {
+], function (declare,dcl,utils,lodash,EventedMixin) {
     var debug = false;
     /**
      * @class module:xide/data/Reference
@@ -41408,11 +41409,9 @@ define('xide/data/Reference',[
             utils.mixin(this, properties);
         }
     };
-
-    //package via declare
-    var _class = declare('xgrid.data.Reference', [EventedMixin], Implementation);
-    _class.Implementation = Implementation;
-    return _class;
+    var Module = dcl([EventedMixin.dcl], Implementation);
+    Module.Implementation = Implementation;
+    return Module;
 });;
 define('dstore/Trackable',[
 	'dojo/_base/lang',
@@ -41958,13 +41957,11 @@ define('xide/data/ObservableStore',[
             var res = this.inherited(arguments);
             var self = this;
             publish!==false && this.emit('added', res);
-
             res && !res._store && Object.defineProperty(res, '_store', {
                 get: function () {
                     return self;
                 }
             });
-
             this.silent(false);
             return res;
         },
@@ -49385,7 +49382,7 @@ define('xcf/manager/BeanManager',[
     'xide/manager/BeanManager',
     "dojo/Deferred",
     "xide/noob",
-    "xdojo/has!xcf-ui?xide/interface/Track",
+    "xdojo/has!xtrack?xide/interface/Track",
     'xdojo/has!xcf-ui?xide/views/ActionDialog',
     'xdojo/has!xcf-ui?xide/views/CIActionDialog',
     'xdojo/has!xcf-ui?xide/views/CIGroupedSettingsView'
@@ -49422,9 +49419,6 @@ define('xcf/manager/BeanManager',[
         }
     });
 
-
-
-
     if(has('xcf-ui')) {
         /**
          * @class module:xcf/manager/BeanManager
@@ -49437,9 +49431,9 @@ define('xcf/manager/BeanManager',[
              */
             getViewClass: function (trackImpl) {
                 trackImpl = trackImpl || {};
-                utils.mixin(trackImpl,{
-                    startup:function(){
-                        if(Track) {
+                utils.mixin(trackImpl, {
+                    startup: function () {
+                        if (Track) {
                             this.getContext().getTrackingManager().track(
                                 this.getTrackingCategory(),
                                 this.getTrackingLabel(),
@@ -49448,12 +49442,12 @@ define('xcf/manager/BeanManager',[
                                 this.getContext().getUserDirectory()
                             );
                         }
-                        if(this.inherited) {
+                        if (this.inherited) {
                             return this.inherited(arguments);
                         }
                     }
                 })
-                return dcl([CIGroupedSettingsView, Track ? Track.dcl : noob],trackImpl);
+                return dcl([CIGroupedSettingsView, Track ? Track.dcl : noob.dcl], trackImpl);
             },
             /**
              *
@@ -49485,8 +49479,7 @@ define('xcf/manager/BeanManager',[
              */
             toUrl: function (device, driver, block, prefix) {
                 var pattern = (prefix || '') + "deviceScope={deviceScope}&device={deviceId}&driver={driverId}&driverScope={driverScope}&block={block}";
-                return lang.replace(
-                    pattern,
+                return lang.replace(pattern,
                     {
                         deviceId: device.id,
                         deviceScope: device.scope,
@@ -49549,7 +49542,6 @@ define('xcf/manager/BeanManager',[
                 actionDialog.show();
             },
             onDeleteItem: function (item) {
-
                 var isDir = utils.toBoolean(item.isDir) === true;
                 var removeFn = isDir ? 'removeGroup' : 'removeItem';
                 var thiz = this;
@@ -49580,17 +49572,7 @@ define('xcf/manager/BeanManager',[
             },
             /////////////////////////////////////////////////////////////////////////////////////
             //
-            //  Bean protocol
-            //
-            /////////////////////////////////////////////////////////////////////////////////////
-            /////////////////////////////////////////////////////////////////////////////////////
-            //
-            //  UI-Callbacks
-            //
-            /////////////////////////////////////////////////////////////////////////////////////
-            /////////////////////////////////////////////////////////////////////////////////////
-            //
-            //  Bean utils
+            //  Bean server protocol
             //
             /////////////////////////////////////////////////////////////////////////////////////
             createNewGroupItem: function (title, scope, parent) {
@@ -49599,11 +49581,6 @@ define('xcf/manager/BeanManager',[
             createNewItem: function (title, scope, parent) {
                 return this.createItemStruct(title, scope, parent, parent + "/" + title, false, this.itemType);
             },
-            /////////////////////////////////////////////////////////////////////////////////////
-            //
-            //  Server methods (PHP)
-            //
-            /////////////////////////////////////////////////////////////////////////////////////
             createItem: function (scope, path, title, meta, code) {
                 return this.runDeferred(null, 'createItem', [scope, path, title, meta, code]);
             },
@@ -49634,6 +49611,25 @@ define('xcf/manager/BeanManager',[
     }
 });
 ;
+/** module:xide/interface/Track **/
+define('xide/interface/Track',['dcl/dcl','xdojo/declare'], function (dcl,declare) {
+    /**
+     * Rough interface to be implemented by sub class in order to collect a view
+     * in a history.
+     * @interface module:xide/interface/Track
+     */
+    var Interface = {
+        declaredClass:'xide.interface.Track',
+        getTrackingGroup:function(){},
+        getTrackingPath:function(){},
+        track:function(){return false;},
+        registerUrls:function(){
+        }
+    }
+    var Module = declare('xide.interface.Track',null,Interface);
+    Module.dcl = dcl(null,Interface);
+    return Module;
+});;
 define('xide/noob',['xdojo/declare','dcl/dcl'], function (declare,dcl) {
 
     var Module = declare("noob",null,{});
