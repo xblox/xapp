@@ -42887,7 +42887,9 @@ define('xide/data/Model',[
         getStore:function(){
             return this._store;
         },
-
+        getParent:function(){
+            return this._store.getSync(this[this._store['parentProperty']]);
+        },
         init: function (values) {
             // if we are being constructed, we default to the insert scenario
             this._scenario = 'insert';
