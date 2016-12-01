@@ -49044,7 +49044,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             });
         },
         /**
-         *
+         * Kick server
          * @param path {string} Absolute path to devices
          */
         loadDevices: function (path) {
@@ -49075,21 +49075,22 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 }
             };
             var self = this;
-
-            var timer = setTimeout(function () {
-                self.unsubscribe(task);
-                dfd.reject('timeout');
-                console.error('protocol method timeout');
-            }, 8000);
-
-
             var handler = function (e) {
                 self.unsubscribe(task);
                 clearTimeout(timer);
                 dfd.resolve(e);
             };
             this.subscribe(task, handler);
-            this.sendManagerCommand(event, data);
+            try {
+                this.sendManagerCommand(event, data);
+                var timer = setTimeout(function () {
+                    self.unsubscribe(task);
+                    dfd.reject('timeout');
+                    console.error('protocol method timeout');
+                }, 8000);
+            }catch(e){
+                dfd.reject(e);
+            }
             return dfd;
 
         },
@@ -74584,9 +74585,7 @@ define('xide/utils/CIUtils',[
         var removedCIs = [];
         for (var i = 0; i < cis.length; i++) {
             var ci = cis[i];
-
             var ciType = utils.toInt(ci.type);
-
             if(ciType > types.ECIType.END){//type is higher than core types, try to resolve it
                 var resolved = types.resolveType(ciType);
                 if(resolved){
