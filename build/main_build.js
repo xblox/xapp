@@ -5650,7 +5650,7 @@ define('xide/mixins/EventedMixin',[
     "xdojo/has",
     'xide/types',
     'xide/factory'
-], function (array,dcl,declare, has, types, factory) {
+], function (array, dcl, declare, has, types, factory) {
 
     var toString = Object.prototype.toString;
     /**
@@ -5663,9 +5663,9 @@ define('xide/mixins/EventedMixin',[
      */
     var Impl = {
 
-        _didRegisterSubscribers:false,
+        _didRegisterSubscribers: false,
 
-        subscribers:null,
+        subscribers: null,
         /**
          * Subscription filter map
          * @type {Object.<string,boolean}
@@ -5687,11 +5687,11 @@ define('xide/mixins/EventedMixin',[
          * @param type
          * @param data
          */
-        addPublishFilter:function(type,data){
-            if(type){
-                if(data!=null){
-                    this.emits[type]=data;
-                }else if(type in this.emits){
+        addPublishFilter: function (type, data) {
+            if (type) {
+                if (data != null) {
+                    this.emits[type] = data;
+                } else if (type in this.emits) {
                     delete this.emits[type];
                 }
             }
@@ -5773,10 +5773,10 @@ define('xide/mixins/EventedMixin',[
                 container = self.__events;
 
             //replay on local tracking map
-            for(var i=0, l=events.length; i<l ; i++){
+            for (var i = 0, l = events.length; i < l; i++) {
                 var _type = events[i].type;
-                if(!container[_type]){
-                    container[_type]=[];
+                if (!container[_type]) {
+                    container[_type] = [];
                 }
                 container[_type].push(events[i]);
             }
@@ -5810,7 +5810,8 @@ define('xide/mixins/EventedMixin',[
          * @param key
          * @private
          */
-        _destroyHandle: function (key) {},
+        _destroyHandle: function (key) {
+        },
         /**
          * Turns the lights off, kills all event handles.
          * @private
@@ -5818,9 +5819,9 @@ define('xide/mixins/EventedMixin',[
          */
         _destroyHandles: function () {
             if (this.__events) {
-                for(var type in this.__events){
-                    array.forEach(this.__events[type], function(item){
-                        if(item && item.remove){
+                for (var type in this.__events) {
+                    array.forEach(this.__events[type], function (item) {
+                        if (item && item.remove) {
                             item.remove();
                         }
                     });
@@ -5852,35 +5853,37 @@ define('xide/mixins/EventedMixin',[
          * });
          * ```
          */
-        once : function(type, listener) {
+        once: function (type, listener) {
             var self = this;
+
             function wrapped() {
                 self.unsubscribe(type, listener);
                 return listener.apply(self, arguments);
             }
+
             wrapped.listener = listener;
             self._on(type, wrapped);
             return this;
         },
         /*
-        __emit:function(target,type,event){
-            event = event || {};
-            if (typeof target.emit === 'function' && !target.nodeType) {
-                return target.emit(type, event);
-            }
-            if (target.dispatchEvent && target.ownerDocument && target.ownerDocument.createEvent) {
-                var nativeEvent = target.ownerDocument.createEvent('HTMLEvents');
-                nativeEvent.initEvent(type, Boolean(event.bubbles), Boolean(event.cancelable));
-                for (var key in event) {
-                    if (!(key in nativeEvent)) {
-                        nativeEvent[key] = event[key];
-                    }
-                }
-                return target.dispatchEvent(nativeEvent);
-            }
-            throw new Error('Target must be an event emitter');
-        },
-        */
+         __emit:function(target,type,event){
+         event = event || {};
+         if (typeof target.emit === 'function' && !target.nodeType) {
+         return target.emit(type, event);
+         }
+         if (target.dispatchEvent && target.ownerDocument && target.ownerDocument.createEvent) {
+         var nativeEvent = target.ownerDocument.createEvent('HTMLEvents');
+         nativeEvent.initEvent(type, Boolean(event.bubbles), Boolean(event.cancelable));
+         for (var key in event) {
+         if (!(key in nativeEvent)) {
+         nativeEvent[key] = event[key];
+         }
+         }
+         return target.dispatchEvent(nativeEvent);
+         }
+         throw new Error('Target must be an event emitter');
+         },
+         */
         /**
          * Execute each of the listeners in order with the supplied arguments.
          *
@@ -5888,14 +5891,14 @@ define('xide/mixins/EventedMixin',[
          * @param {String} event - The event name/id to fire
          * @api public
          */
-        _emit:function(type) {
+        _emit: function (type) {
             if (!this.__events)
                 return;
 
-            if(!this._didRegisterSubscribers && this.subscribers){
-                for(var i=0;i<this.subscribers.length ; i++){
+            if (!this._didRegisterSubscribers && this.subscribers) {
+                for (var i = 0; i < this.subscribers.length; i++) {
                     var subscriber = this.subscribers[i];
-                    this._on(subscriber.event,subscriber.handler,subscriber.owner);
+                    this._on(subscriber.event, subscriber.handler, subscriber.owner);
                 }
                 this._didRegisterSubscribers = true;
             }
@@ -5904,7 +5907,7 @@ define('xide/mixins/EventedMixin',[
                 throw new Error("Please use emit.sticky() instead of passing sticky=true for event: " + type);
 
             var handler = this.__events[type],
-                eventArgs = arguments.length>1 ? arguments[2] : null;
+                eventArgs = arguments.length > 1 ? arguments[2] : null;
 
             if (!handler)
                 return;
@@ -5936,7 +5939,7 @@ define('xide/mixins/EventedMixin',[
                 for (var i = 0, l = listeners.length; i < l; i++) {
 
                     _listener = listeners[i];
-                    who = _listener.owner|| this;
+                    who = _listener.owner || this;
 
                     args && args[0] && (args[0].owner = args[0] ? args[0].owner || who : null);
 
@@ -5952,7 +5955,7 @@ define('xide/mixins/EventedMixin',[
             }
 
             //forward to global
-            eventArgs && eventArgs['public']===true && this.publish(type,args);
+            eventArgs && eventArgs['public'] === true && this.publish(type, args);
 
             return returnValue;
         },
@@ -5974,7 +5977,7 @@ define('xide/mixins/EventedMixin',[
          * devents.removeListener('init', callback);
          * ```
          */
-        unsubscribe:function(type,listener){
+        unsubscribe: function (type, listener) {
 
             // does not use listeners(), so no side effect of creating __events[type]
             if (!this.__events || !this.__events[type]) return this;
@@ -5988,20 +5991,20 @@ define('xide/mixins/EventedMixin',[
             }
             var list = this.__events[type];
             if (_.isArray(list)) {
-                var _remove =[];
-                _.each(list,function(handle,a,b){
-                    var which= handle.handler == listener ? handle.handler : handle.handler.listener == listener ? handle.handler.listener : null;
-                    if(which) {
+                var _remove = [];
+                _.each(list, function (handle, a, b) {
+                    var which = handle.handler == listener ? handle.handler : handle.handler.listener == listener ? handle.handler.listener : null;
+                    if (which) {
                         _remove.push(handle);
                     }
                 });
-                _.each(_remove,function(handler){
+                _.each(_remove, function (handler) {
                     handler.remove();
                 });
                 if (list.length === 0) {
                     delete this.__events[type];
                 }
-            }else if ((this.__events[type].listener || this.__events[type]) === listener) {
+            } else if ((this.__events[type].listener || this.__events[type]) === listener) {
                 delete this.__events[type];
             }
             return this;
@@ -6021,7 +6024,7 @@ define('xide/mixins/EventedMixin',[
          * console.log(util.inspect(session.listeners('change'))); // [ [Function] ]
          * ```
          */
-        listeners:function(type) {
+        listeners: function (type) {
             if (!this.__events) this.__events = {};
             if (!this.__events[type]) this.__events[type] = [];
             if (!isArray(this.__events[type])) {
@@ -6035,12 +6038,12 @@ define('xide/mixins/EventedMixin',[
          * @param handle
          * @returns {*}
          */
-        addHandle:function(type,handle){
-            if(!this.__events){
+        addHandle: function (type, handle) {
+            if (!this.__events) {
                 this.__events = {}
             }
-            if(!this.__events[type]){
-                this.__events[type]=[];
+            if (!this.__events[type]) {
+                this.__events[type] = [];
             }
             handle.type = type;
             this.__events[type].push(handle);
@@ -6054,18 +6057,18 @@ define('xide/mixins/EventedMixin',[
          * @param handler
          * @returns {{handler: *, owner: (exports|module.exports|module:xide/mixins/EventedMixin), type: *, element: (*|jQuery|HTMLElement), selector: *, remove: _handle.remove}}
          */
-        __on:function(element,type,selector,handler){
+        __on: function (element, type, selector, handler) {
 
             var _handler = handler;
 
-            if(typeof selector =='function' && !handler){
+            if (typeof selector == 'function' && !handler) {
                 //no selector given
                 handler = selector;
                 selector = null;
             }
 
             element = element.jquery ? element : $(element);
-            element.on(type,selector,handler);
+            element.on(type, selector, handler);
 
             if (!this.__events) this.__events = {};
             if (!this.__events[type]) {
@@ -6076,11 +6079,11 @@ define('xide/mixins/EventedMixin',[
                 handler: _handler,
                 owner: this,
                 type: type,
-                element:element,
-                selector:selector,
+                element: element,
+                selector: selector,
                 remove: function () {
                     eventList.remove(this);
-                    this.element.off(this.type,this.selector,this.handler);
+                    this.element.off(this.type, this.selector, this.handler);
                 }
             };
             eventList.push(_handle);
@@ -6095,7 +6098,7 @@ define('xide/mixins/EventedMixin',[
          * @returns {*}
          * @private
          */
-        _on: function(type, listener,owner) {
+        _on: function (type, listener, owner) {
             try {
                 if (!this.__events) this.__events = {};
 
@@ -6113,7 +6116,7 @@ define('xide/mixins/EventedMixin',[
                 else if (_.isArray(eventList)) {
 
                     if (eventList.indexOf(listener) != -1)
-                       return console.warn("adding same listener twice", type);
+                        return console.warn("adding same listener twice", type);
 
                     // If we've already got an array, just append.
                     var _handle = {
@@ -6131,7 +6134,7 @@ define('xide/mixins/EventedMixin',[
                     eventList.push(_handle);
                     return _handle;
                 }
-            }catch(e){
+            } catch (e) {
                 logError(e);
             }
             return this;
@@ -6142,8 +6145,8 @@ define('xide/mixins/EventedMixin',[
     var Module = declare(null, Impl);
     //static access to Impl.
     Module.Impl = Impl;
-    Module.dcl = dcl(null,Impl);
-    dcl.chainAfter(Module.dcl,'destroy');
+    Module.dcl = dcl(null, Impl);
+    dcl.chainAfter(Module.dcl, 'destroy');
     return Module;
 });
 
@@ -40683,7 +40686,6 @@ define('xcf/manager/DriverManager',[
          */
         addDeviceInstance:function(device,driver){
             return;
-
             driver.directory = true;
             var store = driver._store,
                 parentId = driver.path,
@@ -41107,7 +41109,7 @@ define('xcf/manager/DriverManager',[
             function data(data) {
                 try {
                     var store = this.createStore(data, scope,track);
-                    track!==false && this.setStore(scope,store);
+                    //track!==false && this.setStore(scope,store);
                     this.onStoreReady(store);
                     track!==false && this.publish(types.EVENTS.ON_STORE_CREATED, {
                         data: data,
@@ -41361,14 +41363,15 @@ define('xide/data/Reference',[
                 this.item && this.item.removeReference(this);
             }
             this.inherited && this.inherited(arguments);
-
-            for (var i = 0; i < this._sources.length; i++) {
-                var link = this._sources[i];
-                if(link.item) {
-                    link.item.removeReference && link.item.removeReference(this);
+            if(this._sources) {
+                for (var i = 0; i < this._sources.length; i++) {
+                    var link = this._sources[i];
+                    if (link.item) {
+                        link.item.removeReference && link.item.removeReference(this);
+                    }
                 }
+                this._sources = null;
             }
-            this._sources = null;
         },
         hasSource:function(source){
             return lodash.find(this._sources,{item:source});
@@ -45835,6 +45838,12 @@ define('xcf/manager/DeviceManager',[
         getFile: function (device) {
             var dfd = new Deferred();
             var ctx = this.ctx;
+            if(_.isString(device)){
+                device = this.getItemByPath(device+'.meta.json') || this.getItemByPath(device) || device;
+            }
+            if(!device||!device.path){
+                debugger;
+            }
             var fileManager = ctx.getFileManager();
             var fileStore = fileManager.getStore(device.scope);
             fileStore.initRoot().then(function () {
@@ -46772,9 +46781,14 @@ define('xcf/manager/DeviceManager',[
             var store = this.getStore(scope);
 
             if (!store) {
-
                 return;
             }
+
+            var byPath = deviceInfo.devicePath ? this.getItemByPath(deviceInfo.devicePath) : null;
+            if(byPath){
+                return byPath;
+            }
+
             var items = utils.queryStore(store, {
                 isDir: false
             });
@@ -46993,13 +47007,17 @@ define('xcf/manager/DeviceManager',[
                         }
                         //no instance yet
                         var info = self.toDeviceControlInfo(device);
-                        var driver = self.getContext().getDriverManager().getDriverById(info.driverId);
-                        if (driver) {
-                            if (!driver.blockScope) {
-                                this.ctx.getDriverManager().createDriverBlockScope(driver);
-                                self.completeDevice(device, driver);
+                        if(info) {
+                            var driver = self.getContext().getDriverManager().getDriverById(info.driverId);
+                            if (driver) {
+                                if (!driver.blockScope) {
+                                    this.ctx.getDriverManager().createDriverBlockScope(driver);
+                                    self.completeDevice(device, driver);
+                                }
+                                return true;
                             }
-                            return true;
+                        }else{
+                            console.error('cant get device info for ',device);
                         }
 
                     }
@@ -47171,25 +47189,6 @@ define('xcf/manager/DeviceManager',[
                 }
             }
             _debug && console.error('Device Manager::getItemById : cant find device with id: ' + itemId);
-        },
-        /**
-         * Return device model item by device id
-         * @param itemId
-         * @returns {module:xcf/model/Device} The device
-         */
-        getItemByPath: function (path) {
-            function search(store) {
-                return store.getSync(path);
-            }
-
-            for (var scope in this.stores) {
-                var store = this.stores[scope];
-                var result = search(store);
-                if (result) {
-                    return result;
-                }
-            }
-            _debug && console.error('Device Manager::getItemByPath : cant find device with path: ' + path);
         },
         /**
          *
@@ -47375,16 +47374,16 @@ define('xcf/manager/DeviceManager',[
         },
         /***
          * ls is enumerating all drivers in a given scope
-         * @param scope{string}
-         * @param track{boolean=true}
+         * @param scope {string}
+         * @param track {boolean=true}
          * @returns {Deferred}
          */
         ls: function (scope, track) {
             var dfd = new Deferred();
             function data(data) {
                 try {
-                    var store = this.createStore(data, scope, track !== true);
-                    track !== false && this.setStore(scope, store);
+                    var store = this.createStore(data, scope, track);
+                    //track !== false && this.setStore(scope, store);
                     this.onStoreReady(store);
                     track !== false && this.publish(types.EVENTS.ON_STORE_CREATED, {
                         data: data,
@@ -49321,9 +49320,27 @@ define('xcf/manager/BeanManager',[
      * @augments {module:xide/manager/ManagerBase}
      */
     var Base = dcl(BeanManager,{
+        /**
+         * Return device model item by device id
+         * @param path
+         * @returns {module:xcf/model/Device} The device
+         */
+        getItemByPath: function (path) {
+            function search(store) {
+                return store.getSync(path);
+            }
+            for (var scope in this.stores) {
+                var store = this.stores[scope];
+                var result = search(store);
+                if (result) {
+                    return result;
+                }
+            }
+        },
         setStore: function (scope, store) {
             var current = this.stores[scope];
             if (current) {
+                console.error('setting existing store '+scope);
                 current.destroy();
                 delete this.stores[scope];
             }
@@ -49379,10 +49396,11 @@ define('xcf/manager/BeanManager',[
             /**
              *
              * @param bean
-             * @returns {module:xfile/model/File}
+             * @returns {module:xfile/model/File|string}
              */
             getFile: function (bean) {
                 var dfd = new Deferred();
+
                 var ctx = this.getContext();
                 var fileManager = ctx.getFileManager();
                 var fileStore = fileManager.getStore(bean.scope);
@@ -49511,10 +49529,11 @@ define('xcf/manager/BeanManager',[
             },
             /***
              * ls is enumerating all drivers in a given scope
-             * @param scope{string}
+             * @param scope {string}
+             * @param track {boolean}
              * @returns {Deferred}
              */
-            ls: function (scope) {
+            ls: function (scope, track) {
                 return this.runDeferred(null, 'ls', [scope]).then(function (data) {
                     try {
                         this.rawData = data;
@@ -52194,6 +52213,7 @@ define('xblox/model/mqtt/Publish',[
                         payload: this.args
                     }
                 }
+
                 var topic = scope.expressionModel.replaceVariables(scope, this.topic, false, false);
 
                 instance.callMethod('publishTopic', utils.mixin({
@@ -57505,9 +57525,8 @@ define('xcf/model/Device',[
             }
             var oldValue = this.getMetaValue(what);
             utils.setCIValueByField(ci, 'value', value);
-
             this[what] = value;
-            if(publish!==false){
+            if(publish!==false && oldValue!=value){
                 var eventArgs = {
                     owner: this.owner,
                     ci: ci,
@@ -67016,7 +67035,6 @@ define('xide/factory/Events',[
      * @memberOf xide/factory
      */
     factory.publish = function (keys, data, callee,filter) {
-
         var msgStruct   = data ? _.isString(data) ? {message: data} : data : {},
             eventKeys   = keys,
             _publish    = connect.publish,
@@ -67065,7 +67083,6 @@ define('xide/factory/Events',[
      * @returns {Object[]|null} Returns an array of regular Dojo-subscribe/on handles
      */
     factory.subscribe = function (keys, cb, owner,filter) {
-
         if(has('debug')){
             if(!keys){
                 _debug && console.error('subscribe failed, event key is empty!');
@@ -67078,9 +67095,6 @@ define('xide/factory/Events',[
             _subscribe = connect.subscribe,     //cache
             events = [];                        //resulting subscribe handles
             //_isDom = _isElement(owner),       //dom element?
-
-        //-- not good for use-strict
-        //owner = owner || arguments.callee;
 
         //normalize to array
         if (!_.isArray(keys)) {
@@ -74797,6 +74811,11 @@ define('xide/utils/CIUtils',[
         }
         return null;
     };
+    /**
+     *
+     * @param data
+     * @param value
+     */
     utils.setIntegerValue = function (data,value){
         if (data != null) {
 
@@ -74808,7 +74827,12 @@ define('xide/utils/CIUtils',[
             }
         }
     };
-
+    /**
+     *
+     * @param data
+     * @param field
+     * @returns {*}
+     */
     utils.getCIValueByField = function (data, field) {
         if (data[field] != null) {
             if(_.isArray(data[field])){
@@ -74819,6 +74843,13 @@ define('xide/utils/CIUtils',[
         }
         return null;
     };
+    /**
+     *
+     * @param data
+     * @param field
+     * @param value
+     * @returns {*}
+     */
     utils.setCIValueByField = function (data, field, value) {
         if(!data){
             return data;
@@ -74837,6 +74868,13 @@ define('xide/utils/CIUtils',[
         }
         return ci;
     };
+    /**
+     *
+     * @param data
+     * @param name
+     * @param field
+     * @returns {*}
+     */
     utils.getCIInputValueByNameAndField = function (data, name, field) {
         var ci = utils.getCIByChainAndName(data, 0, name);
         if (ci) {
@@ -74844,7 +74882,13 @@ define('xide/utils/CIUtils',[
         }
         return null;
     };
-
+    /**
+     *
+     * @param data
+     * @param name
+     * @param field
+     * @returns {null}
+     */
     utils.getCIInputValueByNameAndFieldStr = function (data, name, field) {
         var rawValue = utils.getCIInputValueByNameAndField(data,name,field);
         if(rawValue){
@@ -74852,6 +74896,13 @@ define('xide/utils/CIUtils',[
         }
         return null;
     };
+    /**
+     *
+     * @param data
+     * @param name
+     * @param field
+     * @returns {null}
+     */
     utils.getCIInputValueByNameAndFieldBool = function (data, name, field) {
         var rawValue = utils.getCIInputValueByNameAndField(data,name,field);
         if(rawValue){
@@ -74859,6 +74910,12 @@ define('xide/utils/CIUtils',[
         }
         return null;
     };
+    /**
+     *
+     * @param cis
+     * @param name
+     * @returns {*}
+     */
     utils.getCIWidgetByName=function(cis,name){
 
         for (var i = 0; i < cis.length; i++) {
