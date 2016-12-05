@@ -6584,7 +6584,7 @@ define('xdeliteful/MediaPlayer',[
             var thiz  = this;
             var btn = this.btnOpenFolder;
             var _r = require;
-            _r(['xfile/build/xfiler'], function () {
+            _r([has('debug') ? 'xfile/mainr' : 'xfile/build/xfiler' ], function () {
                 _r([
                     "xdeliteful/Widgets/Popup",
                     'xfile/views/FileGridLight',
@@ -33324,13 +33324,15 @@ define('xide/data/_Base',[
         },
         _queryCache:null,
         query: function (query, options,allowCache) {
-
+            if(!this.getSync){
+                console.error('have no sync');
+                return [];
+            }
             //no query, return all
-
-
             if(lodash.isEmpty(query)){
+                var self = this;
                 return _.map(this.data,function(item){
-                    return this.getSync(item[this.idProperty]);
+                    return self.getSync(item[self.idProperty]);
                 },this);
             }else if(!_.some(query,function (value) { return value == null})){
                 //no empty props in query, return lodash.filter
@@ -40940,21 +40942,25 @@ define('xcf/manager/DriverManager',[
         /////////////////////////////////////////////////////////////////////////////////////
         _driverQueryCache:null,
         _getDriverById: function (id,store) {
-            var items = utils.queryStore(store, {
-                isDir: false
-            });
+            if(!store || !store.getSync){
+                return;
+            }
+            var items = store.query();
             if (!_.isArray(items)) {
                 items = [items];
             }
             for (var i = 0; i < items.length; i++) {
-                var driver = items[i];
-                var meta = driver['user'];
+                var item = items[i];
+                if(item.isDir){
+                    continue;
+                }
+                var meta = item['user'];
                 var _id = utils.getInputCIByName(meta, types.DRIVER_PROPERTY.CF_DRIVER_ID);
                 if (!_id) {
                     continue;
                 }
                 if (_id.value == id) {
-                    return store.getSync(driver.path);
+                    return store.getSync(item.path);
                 }
             }
             return null;
@@ -46774,12 +46780,11 @@ define('xcf/manager/DeviceManager',[
             }
 
             //already device
-            if (deviceInfo && deviceInfo._store) {
+            //if (deviceInfo && deviceInfo._store) {
                 //return deviceInfo;
-            }
+            //}
             var scope = deviceInfo.deviceScope;
             var store = this.getStore(scope);
-
             if (!store) {
                 return;
             }
@@ -46789,9 +46794,13 @@ define('xcf/manager/DeviceManager',[
                 return byPath;
             }
 
-            var items = utils.queryStore(store, {
-                isDir: false
+            var items = _.filter(store.query(),function(item){
+                return item.isDir!==true;
             });
+            /*
+            utils.queryStore(store, {
+                isDir: false
+            });*/
 
             if (!items) {
                 _debug && !isServer && console.error('store returned nothing ' + deviceInfo.deviceScope);
@@ -47581,6 +47590,10 @@ define('xcf/manager/DeviceManager',[
                         value: "mqtt"
                     }
                 ];
+            }
+
+            if(!item.id){
+                item.id = utils.getCIInputValueByName(meta, types.DEVICE_PROPERTY.CF_DEVICE_ID);
             }
 
             var optionsCI = utils.getCIByChainAndName(meta, 0, types.DEVICE_PROPERTY.CF_DEVICE_OPTIONS);
@@ -49380,8 +49393,8 @@ define('xcf/manager/BeanManager',[
                         if (Track) {
                             this.getContext().getTrackingManager().track(
                                 this.getTrackingCategory(),
-                                this.getTrackingLabel(),
-                                this.getTrackingUrl(),
+                                this.getTrackingLabel(this.item),
+                                this.getTrackingUrl(this.item),
                                 types.ACTION.OPEN,
                                 this.getContext().getUserDirectory()
                             );
@@ -57905,7 +57918,7 @@ define('xcf/model/Command',[
             }
             var value = send || this._get('send') || this.send;
             var parse = !(this.flags & types.CIFLAG.DONT_PARSE);
-            var wait = (this.flags & types.CIFLAG.WAIT);
+            var wait = (this.flags & types.CIFLAG.WAIT) ? true : false;
             var id = utils.createUUID();
 
             if (this.flags & types.CIFLAG.TO_HEX) {
@@ -63240,7 +63253,6 @@ define('xaction/ActionProvider',[
          * @returns {*}
          */
         createAction2: function (options) {
-
             var thiz = this,
                 action = null,
                 mixin = options.mixin || {},
@@ -66592,7 +66604,23 @@ define('xide/min',[
     'xide/factory/Events',
     'xide/lodash'
 ], function () {
-});;
+    if(!Array.prototype.remove) {
+        Array.prototype.remove = function () {
+            var what, a = arguments, L = a.length, ax;
+            while (L && this.length) {
+                what = a[--L];
+                if (this.indexOf == null) {
+                    break;
+                }
+                while ((ax = this.indexOf(what)) != -1) {
+                    this.splice(ax, 1);
+                }
+            }
+            return this;
+        };
+    }
+});
+;
 define('xide/debug',[
     'xdojo/declare',
     'dojo/has',
@@ -73450,7 +73478,8 @@ define('xfile/types',[
             'File/Compress',
             'File/New',
             ACTION.CONTEXT_MENU,
-            ACTION.SOURCE
+            ACTION.SOURCE,
+            'File/OpenInOS'
         ];
 
         types.DEFAULT_FILE_GRID_PERMISSIONS = DEFAULT_PERMISSIONS;
@@ -73755,18 +73784,20 @@ define('xide/utils/ObjectUtils',[
     'require',
     "dojo/Deferred",
     'xide/lodash'
-], function (utils, require, Deferred,lodash) {
+], function (utils, require, Deferred, lodash) {
     var _debug = false;
     "use strict";
 
-    utils.delegate=(function(){
+    utils.delegate = (function () {
         // boodman/crockford delegation w/ cornford optimization
-        function TMP(){}
-        return function(obj, props){
+        function TMP() {
+        }
+
+        return function (obj, props) {
             TMP.prototype = obj;
             var tmp = new TMP();
             TMP.prototype = null;
-            if(props){
+            if (props) {
                 lang._mixin(tmp, props);
             }
             return tmp; // Object
@@ -73778,23 +73809,23 @@ define('xide/utils/ObjectUtils',[
     //  Loader utils
     //
     //////////////////////////////////////////////////////////////////////////////////////////////
-    utils.debounce = function(who,methodName,_function,delay,options,now,args){
-        var _place = who[methodName+'_debounced'];
-        if(!_place){
-            _place = who[methodName+'_debounced'] =  lodash.debounce(_function, delay,options);
+    utils.debounce = function (who, methodName, _function, delay, options, now, args) {
+        var _place = who[methodName + '_debounced'];
+        if (!_place) {
+            _place = who[methodName + '_debounced'] = lodash.debounce(_function, delay, options);
         }
-        if(now===true){
-            if(!who[methodName+'_debouncedFirst']){
-                who[methodName+'_debouncedFirst']=true;
-                _function.apply(who,args);
+        if (now === true) {
+            if (!who[methodName + '_debouncedFirst']) {
+                who[methodName + '_debouncedFirst'] = true;
+                _function.apply(who, args);
             }
         }
         return _place();
     };
 
 
-    utils.pluck=function(items,prop){
-        return lodash.map(items,prop);
+    utils.pluck = function (items, prop) {
+        return lodash.map(items, prop);
     };
 
     /**
@@ -73802,9 +73833,9 @@ define('xide/utils/ObjectUtils',[
      * @param filename
      * @param text
      */
-    utils.download  = function(filename, text){
+    utils.download = function (filename, text) {
         var element = document.createElement('a');
-        text = lodash.isString(text) ? text : JSON.stringify(text,null,2);
+        text = lodash.isString(text) ? text : JSON.stringify(text, null, 2);
         element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
         element.setAttribute('download', filename);
         element.style.display = 'none';
@@ -73832,7 +73863,7 @@ define('xide/utils/ObjectUtils',[
      * Safe require.toUrl
      * @param mid {string}
      */
-    utils.toUrl = function(mid){
+    utils.toUrl = function (mid) {
         var _require = require;
         //make sure cache bust is off otherwise it appends ?time
         _require({
@@ -73868,8 +73899,8 @@ define('xide/utils/ObjectUtils',[
                     });
                     return deferred.promise;
                 }
-            }catch(e){
-                _debug &&  console.error('error in requiring '+mixed,e);
+            } catch (e) {
+                _debug && console.error('error in requiring ' + mixed, e);
             }
             return result;
 
@@ -73952,7 +73983,7 @@ define('xide/utils/ObjectUtils',[
      * Internals
      */
 
-    //cache
+        //cache
     var toStr = Object.prototype.toString,
         _hasOwnProperty = Object.prototype.hasOwnProperty;
 
@@ -73971,7 +74002,7 @@ define('xide/utils/ObjectUtils',[
      * @returns {*}
      */
     function getKey(key) {
-        var intKey = parseInt(key,10);
+        var intKey = parseInt(key, 10);
         if (intKey.toString() === key) {
             return intKey;
         }
@@ -74337,34 +74368,34 @@ define('xide/utils/ObjectUtils',[
     //
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    utils.clone=function(/*anything*/ src){
+    utils.clone = function (/*anything*/ src) {
         // summary:
         // Clones objects (including DOM nodes) and all children.
         // Warning: do not clone cyclic structures.
         // src:
         // The object to clone
-        if(!src || typeof src != "object" || utils.isFunction(src)){
+        if (!src || typeof src != "object" || utils.isFunction(src)) {
             // null, undefined, any non-object, or function
             return src; // anything
         }
-        if(src.nodeType && "cloneNode" in src){
+        if (src.nodeType && "cloneNode" in src) {
             // DOM Node
             return src.cloneNode(true); // Node
         }
-        if(src instanceof Date){
+        if (src instanceof Date) {
             // Date
             return new Date(src.getTime()); // Date
         }
-        if(src instanceof RegExp){
+        if (src instanceof RegExp) {
             // RegExp
             return new RegExp(src); // RegExp
         }
         var r, i, l;
-        if(utils.isArray(src)){
+        if (utils.isArray(src)) {
             // array
             r = [];
-            for(i = 0, l = src.length; i < l; ++i){
-                if(i in src){
+            for (i = 0, l = src.length; i < l; ++i) {
+                if (i in src) {
                     r.push(utils.clone(src[i]));
                 }
             }
@@ -74372,7 +74403,7 @@ define('xide/utils/ObjectUtils',[
             // }else if(d.isFunction(src)){
             // // function
             // r = function(){ return src.apply(this, arguments); };
-        }else{
+        } else {
             // generic objects
             r = src.constructor ? new src.constructor() : {};
         }
@@ -74391,7 +74422,7 @@ define('xide/utils/ObjectUtils',[
      * @returns {object} dest, as modified
      * @private
      */
-    utils._mixin=function (dest, source, copyFunc) {
+    utils._mixin = function (dest, source, copyFunc) {
         var name, s, i, empty = {};
         for (name in source) {
             // the (!(name in empty) || empty[name] !== s) condition avoids copying properties in "source"
@@ -74440,13 +74471,14 @@ define('xide/utils/ObjectUtils',[
      *
      */
     utils.mixin = function (dest, sources) {
-        if(sources) {
+        if (sources) {
 
             if (!dest) {
-                dest = {};            }
+                dest = {};
+            }
 
             var l = arguments.length;
-            for (var i = 1 ; i < l; i++) {
+            for (var i = 1; i < l; i++) {
                 utils._mixin(dest, arguments[i]);
             }
             return dest; // Object
@@ -74477,7 +74509,7 @@ define('xide/utils/ObjectUtils',[
      * @param what
      * @returns {*}
      */
-    utils.isArray=function(what){
+    utils.isArray = function (what) {
         return lodash.isArray(what);
     };
     /**
@@ -74485,7 +74517,7 @@ define('xide/utils/ObjectUtils',[
      * @param what
      * @returns {*}
      */
-    utils.isObject=function(what){
+    utils.isObject = function (what) {
         return lodash.isObject(what);
     };
     /**
@@ -74493,7 +74525,7 @@ define('xide/utils/ObjectUtils',[
      * @param what
      * @returns {*}
      */
-    utils.isString=function(what){
+    utils.isString = function (what) {
         return lodash.isString(what);
     };
     /**
@@ -74501,7 +74533,7 @@ define('xide/utils/ObjectUtils',[
      * @param what
      * @returns {*}
      */
-    utils.isNumber=function(what){
+    utils.isNumber = function (what) {
         return lodash.isNumber(what);
     };
     /**
@@ -74509,13 +74541,100 @@ define('xide/utils/ObjectUtils',[
      * @param it
      * @returns {*}
      */
-    utils.isFunction=function(it){
+    utils.isFunction = function (it) {
         // summary:
         // Return true if it is a Function
         // it: anything
         // Item to test.
         return lodash.isFunction(it);
     };
+
+
+    function CircularBuffer(capacity) {
+        if (!(this instanceof CircularBuffer))return new CircularBuffer(capacity);
+        if (typeof capacity == "object" &&
+            Array.isArray(capacity["_buffer"]) &&
+            typeof capacity._capacity == "number" &&
+            typeof capacity._first == "number" &&
+            typeof capacity._size == "number") {
+            for (var prop in capacity) {
+                if (capacity.hasOwnProperty(prop))this[prop] = capacity[prop];
+            }
+        } else {
+            if (typeof capacity != "number" || capacity % 1 != 0 || capacity < 1)
+                throw new TypeError("Invalid capacity");
+            this._buffer = new Array(capacity);
+            this._capacity = capacity;
+            this._first = 0;
+            this._size = 0;
+        }
+    }
+
+    CircularBuffer.prototype = {
+        size: function () {
+            return this._size;
+        },
+        capacity: function () {
+            return this._capacity;
+        },
+        enq: function (value) {
+            if (this._first > 0)this._first--; else this._first = this._capacity - 1;
+            this._buffer[this._first] = value;
+            if (this._size < this._capacity)this._size++;
+        },
+        push: function (value) {
+            if (this._size == this._capacity) {
+                this._buffer[this._first] = value;
+                this._first = (this._first + 1) % this._capacity;
+            } else {
+                this._buffer[(this._first + this._size) % this._capacity] = value;
+                this._size++;
+            }
+        },
+        deq: function () {
+            if (this._size == 0)throw new RangeError("dequeue on empty buffer");
+            var value = this._buffer[(this._first + this._size - 1) % this._capacity];
+            this._size--;
+            return value;
+        },
+        pop: function () {
+            return this.deq();
+        },
+        shift: function () {
+            if (this._size == 0)throw new RangeError("shift on empty buffer");
+            var value = this._buffer[this._first];
+            if (this._first == this._capacity - 1)this._first = 0; else this._first++;
+            this._size--;
+            return value;
+        },
+        get: function (start, end) {
+            if (this._size == 0 && start == 0 && (end == undefined || end == 0))return [];
+            if (typeof start != "number" || start % 1 != 0 || start < 0)throw new TypeError("Invalid start");
+            if (start >= this._size)throw new RangeError("Index past end of buffer: " + start);
+
+            if (end == undefined)return this._buffer[(this._first + start) % this._capacity];
+
+            if (typeof end != "number" || end % 1 != 0 || end < 0)throw new TypeError("Invalid end");
+            if (end >= this._size)throw new RangeError("Index past end of buffer: " + end);
+
+            if (this._first + start >= this._capacity) {
+                //make sure first+start and first+end are in a normal range
+                start -= this._capacity; //becomes a negative number
+                end -= this._capacity;
+            }
+            if (this._first + end < this._capacity)
+                return this._buffer.slice(this._first + start, this._first + end + 1);
+            else
+                return this._buffer.slice(this._first + start, this._capacity).concat(this._buffer.slice(0, this._first + end + 1 - this._capacity));
+        },
+        toarray: function () {
+            if (this._size == 0)return [];
+            return this.get(0, this._size - 1);
+        }
+    };
+
+    //module.exports = CircularBuffer;
+
     return utils;
 });;
 define('xide/utils/CIUtils',[
