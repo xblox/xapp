@@ -32384,7 +32384,6 @@ define('xide/client/ClientBase',[
         onClosed: function () {
         },
         destroy: function () {
-
             if (this._socket && this._socket.close) {
                 this._socket.close();
                 this.onClosed();
@@ -34988,41 +34987,53 @@ define('dstore/Store',[
 	};
 ====*/
 ;
-define('dojo/Evented',["./aspect", "./on"], function(aspect, on){
-	// module:
-	//		dojo/Evented
+/**
+ * @module dojo/Evented
+ **/
+define('dojo/Evented',[
+    "./aspect",
+    "./on"
+], function (aspect, on) {
+    "use strict";
+    var after = aspect.after;
+    /**
+     * A class that can be used as a mixin or base class,
+     * to add on() and emit() methods to a class
+     * for listening for events and emitting events:
+     *
+     * @class module:dojo/Evented
+     * @example
+     *
+     * define(["dojo/Evented", "dojo/_base/declare", "dojo/Stateful"], function(Evented, declare, Stateful){
+		var EventedStateful = declare([Evented, Stateful], {...});
+		var instance = new EventedStateful();
+		instance.on("open", function(event){
+		//		... do something with event
+		});
+		instance.emit("open", {name:"some event", ...});
+     */
+    function Evented() {
+        // summary:
+        //		A class that can be used as a mixin or base class,
+        //		to add on() and emit() methods to a class
+        //		for listening for events and emitting events:
+        // example:
+        //		|
+    }
 
- 	"use strict";
- 	var after = aspect.after;
-	function Evented(){
-		// summary:
-		//		A class that can be used as a mixin or base class,
-		//		to add on() and emit() methods to a class
-		//		for listening for events and emitting events:
-		// example:
-		//		|	define(["dojo/Evented", "dojo/_base/declare", "dojo/Stateful"
-		//		|	], function(Evented, declare, Stateful){
-		//		|		var EventedStateful = declare([Evented, Stateful], {...});
-		//		|		var instance = new EventedStateful();
-		//		|		instance.on("open", function(event){
-		//		|		... do something with event
-		//		|	 });
-		//		|
-		//		|	instance.emit("open", {name:"some event", ...});
-	}
-	Evented.prototype = {
-		on: function(type, listener){
-			return on.parse(this, type, listener, function(target, type){
-				return after(target, 'on' + type, listener, true);
-			});
-		},
-		emit: function(type, event){
-			var args = [this];
-			args.push.apply(args, arguments);
-			return on.emit.apply(on, args);
-		}
-	};
-	return Evented;
+    Evented.prototype = {
+        on: function (type, listener) {
+            return on.parse(this, type, listener, function (target, type) {
+                return after(target, 'on' + type, listener, true);
+            });
+        },
+        emit: function (type, event) {
+            var args = [this];
+            args.push.apply(args, arguments);
+            return on.emit.apply(on, args);
+        }
+    };
+    return Evented;
 });
 ;
 define('dstore/QueryMethod',[], function () {
@@ -65027,8 +65038,11 @@ define('xaction/Action',[
     'xide/types',
     'xide/utils/ObjectUtils',
     'xide/utils',
-    'xide/mixins/EventedMixin'
-], function (dcl, Base, types, ObjectUtils, utils,EventedMixin) {
+    'xide/mixins/EventedMixin',
+    'xide/cache/Circular'
+], function (dcl, Base, types, ObjectUtils, utils, EventedMixin, Circular) {
+
+    var Cache = null;//new Circular(100);
     /***
      * Extend the core types for action visibility(main menu,...) options/enums:
      * 1. 'Main menu',
@@ -65179,8 +65193,31 @@ define('xaction/Action',[
      * @augments xide/model/Base
      */
     var Module = dcl([Base.dcl, EventedMixin.dcl], {
-        declaredClass:"xaction/Action",
+        declaredClass: "xaction/Action",
         disabled: false,
+        destroy: function () {
+            if (Cache && Cache.size() < 100) {
+                delete this._properties;
+                delete this._visibility;
+                delete this.keyboardMappings;
+                delete this.group;
+                delete this.tab;
+                delete this.owner;
+                delete this.item;
+                delete this.icon;
+                delete this.actionType;
+                delete this.label;
+                delete this.title;
+                delete this.type;
+                delete this.onCreate;
+                delete this.onChange;
+                delete this.addPermission;
+                delete this._store;
+                delete this.parameters;
+                delete this.handler;
+                Cache.push(this);
+            }
+        },
         /**
          * Turn on/off this action
          * @type {boolean}
@@ -65376,7 +65413,9 @@ define('xaction/Action',[
      * @returns {module:xaction/Action}
      */
     Module.create = function (label, icon, command, permanent, operation, btypes, group, visibility, register, handler, mixin) {
-        var _action = new Module({
+        var _action = null;
+
+        var _args = {
             permanent: permanent,
             command: command,
             icon: icon,
@@ -65387,7 +65426,15 @@ define('xaction/Action',[
             group: group,
             handler: handler,
             title: label
-        });
+        };
+        if (Cache && Cache.size()) {
+            _action = Cache.deq(0);
+            //console.log('re-use');
+            utils.mixin(_action, _args);
+        } else {
+            //console.log('-create!');
+            _action = new Module(_args);
+        }
         /*
          var VISIBILITY = types.ACTION_VISIBILITY,
          VISIBILITIES = [
@@ -65416,6 +65463,92 @@ define('xaction/Action',[
     return Module;
 });
 ;
+define('xide/cache/Circular',[], function () {
+
+    function CircularBuffer(capacity){
+        if(!(this instanceof CircularBuffer))return new CircularBuffer(capacity);
+        if(typeof capacity=="object"&&
+            Array.isArray(capacity["_buffer"])&&
+            typeof capacity._capacity=="number"&&
+            typeof capacity._first=="number"&&
+            typeof capacity._size=="number"){
+            for(var prop in capacity){
+                if(capacity.hasOwnProperty(prop))this[prop]=capacity[prop];
+            }
+        } else {
+            if(typeof capacity!="number"||capacity%1!=0||capacity<1)
+                throw new TypeError("Invalid capacity");
+            this._buffer=new Array(capacity);
+            this._capacity=capacity;
+            this._first=0;
+            this._size=0;
+        }
+    }
+    CircularBuffer.prototype = {
+        size: function () {
+            return this._size;
+        },
+        capacity: function () {
+            return this._capacity;
+        },
+        enq: function (value) {
+            if (this._first > 0)this._first--; else this._first = this._capacity - 1;
+            this._buffer[this._first] = value;
+            if (this._size < this._capacity)this._size++;
+        },
+        push: function (value) {
+            if (this._size == this._capacity) {
+                this._buffer[this._first] = value;
+                this._first = (this._first + 1) % this._capacity;
+            } else {
+                this._buffer[(this._first + this._size) % this._capacity] = value;
+                this._size++;
+            }
+        },
+        deq: function () {
+            if (this._size == 0)throw new RangeError("dequeue on empty buffer");
+            var value = this._buffer[(this._first + this._size - 1) % this._capacity];
+            this._size--;
+            return value;
+        },
+        pop: function () {
+            return this.deq();
+        },
+        shift: function () {
+            if (this._size == 0)throw new RangeError("shift on empty buffer");
+            var value = this._buffer[this._first];
+            if (this._first == this._capacity - 1)this._first = 0; else this._first++;
+            this._size--;
+            return value;
+        },
+        get: function (start, end) {
+            if (this._size == 0 && start == 0 && (end == undefined || end == 0))return [];
+            if (typeof start != "number" || start % 1 != 0 || start < 0)throw new TypeError("Invalid start");
+            if (start >= this._size)throw new RangeError("Index past end of buffer: " + start);
+
+            if (end == undefined)return this._buffer[(this._first + start) % this._capacity];
+
+            if (typeof end != "number" || end % 1 != 0 || end < 0)throw new TypeError("Invalid end");
+            if (end >= this._size)throw new RangeError("Index past end of buffer: " + end);
+
+            if (this._first + start >= this._capacity) {
+                //make sure first+start and first+end are in a normal range
+                start -= this._capacity; //becomes a negative number
+                end -= this._capacity;
+            }
+            if (this._first + end < this._capacity)
+                return this._buffer.slice(this._first + start, this._first + end + 1);
+            else
+                return this._buffer.slice(this._first + start, this._capacity).concat(this._buffer.slice(0, this._first + end + 1 - this._capacity));
+        },
+        toarray: function () {
+            if (this._size == 0)return [];
+            return this.get(0, this._size - 1);
+        }
+    };
+
+    return CircularBuffer;
+});;
 /** @module xaction/ActionStore **/
 define('xaction/ActionStore',[
     "xdojo/declare",
@@ -65484,6 +65617,7 @@ define('xaction/ActionModel',[
     'xide/utils'
 ], function (dcl, Action, Model, Source, Path, utils) {
     var debug = false;
+    var count = 0;
     /**
      * @class module:xaction/ActionModel
      * @extends module:xide/data/Source
@@ -74846,6 +74980,26 @@ define('xide/utils/CIUtils',[
             for (var i = 0; i < dstChain.length; i++) {
                 var ci = dstChain[i];
                 var _n = utils.getStringValue(ci.name);
+                if (_n!=null && _n.toLowerCase() === name.toLowerCase()){
+                    return ci;
+                }
+            }
+        }
+        return null;
+    };
+    utils.getInputCIById = function (data,name){
+        if(!data){
+            return null;
+        }
+        var chain = 0;
+        var dstChain = chain == 0 ? data.inputs : chain == 1 ? data.outputs : null;
+        if(!dstChain){//has no chains, be nice
+            dstChain=data;
+        }
+        if (dstChain != null) {
+            for (var i = 0; i < dstChain.length; i++) {
+                var ci = dstChain[i];
+                var _n = utils.getStringValue(ci.id);
                 if (_n!=null && _n.toLowerCase() === name.toLowerCase()){
                     return ci;
                 }
