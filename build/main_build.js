@@ -42552,6 +42552,18 @@ define('xblox/data/Store',[
             this._state.filter = data;
             return _res;
         },
+        getRootItem:function(){
+            return {
+                canAdd:function(){
+                    return true
+                },
+                id:this.id +'_root',
+                group:null,
+                name:'root',
+                isRoot:true,
+                parentId:null
+            }
+        },
         getChildren: function (object) {
             return this.root.filter({parentId: this.getIdentity(object)});
         },
@@ -43859,7 +43871,7 @@ define('xblox/model/Scope',[
                 var obj = result[i]
                 if (obj.value === selected) {
                     obj.selected = true
-                    break
+                    break;
                 }
             }
             return result
@@ -43923,7 +43935,7 @@ define('xblox/model/Scope',[
                 return []
             }
             query = query || {id: /\S+/}// all blocks
-            var result = _.isEmpty(query) ? this.blockStore.data : this.blockStore.query(query,null,true);
+            var result = _.isEmpty(query) ? this.blockStore.data : this.blockStore.query(query, null, true);
             if (!isIDE && allowCache !== false) {
                 var hash = MD5(JSON.stringify(query), 1)
                 this._cached[hash] = result
@@ -44054,7 +44066,7 @@ define('xblox/model/Scope',[
             for (var i = 0; i < all.length; i++) {
                 var obj = all[i]
                 if (obj.parentId) {
-                    continue
+                    continue;
                 }
                 if (obj.group) {
                     if (!_has(obj.group)) {
@@ -44078,10 +44090,10 @@ define('xblox/model/Scope',[
             for (var e in data) {
                 var variable = data[e]
                 if (variable.serializeMe === false) {
-                    continue
+                    continue;
                 }
                 if (variable.keys == null) {
-                    continue
+                    continue;
                 }
                 var varOut = {}
                 for (var prop in variable) {
@@ -44118,20 +44130,20 @@ define('xblox/model/Scope',[
             for (var i = 0; i < data.length; i++) {
                 var _var = data[i]
                 if (_var == skipVariable) {
-                    continue
+                    continue;
                 }
                 var _varVal = '' + _var.value
 
                 // optimization
                 if (skipVariable && skipVariable.value && skipVariable.value.indexOf(_var.title) == -1) {
-                    continue
+                    continue;
                 }
                 if (expression && expression.indexOf(_var.title) == -1) {
-                    continue
+                    continue;
                 }
 
                 if (_varVal.length == 0) {
-                    continue
+                    continue;
                 }
                 if (!this.isScript(_varVal) && _varVal.indexOf("'") == -1) {
                     _varVal = "'" + _varVal + "'"
@@ -44144,7 +44156,6 @@ define('xblox/model/Scope',[
                 }
                 result.push(_varVal)
             }
-
             return result
         },
         variablesToJavascript: function (skipVariable, expression) {
@@ -44153,20 +44164,20 @@ define('xblox/model/Scope',[
             for (var i = 0; i < data.length; i++) {
                 var _var = data[i]
                 if (_var == skipVariable) {
-                    continue
+                    continue;
                 }
                 var _varVal = '' + _var.value
 
                 // optimization
                 if (skipVariable && skipVariable.value && skipVariable.value.indexOf(_var.title) == -1) {
-                    continue
+                    continue;
                 }
                 if (expression && expression.indexOf(_var.title) == -1) {
-                    continue
+                    continue;
                 }
 
                 if (_varVal.length == 0) {
-                    continue
+                    continue;
                 }
                 if (!this.isScript(_varVal) && _varVal.indexOf("'") == -1) {
                     _varVal = "'" + _varVal + "'"
@@ -44197,13 +44208,13 @@ define('xblox/model/Scope',[
                 variable['scope'] = this
                 if (!variable.declaredClass) {
                     console.log('   variable has no class ')
-                    continue
+                    continue;
                 }
                 var _class = utils.replaceAll('.', '/', variable.declaredClass)
                 var variableClassProto = require(_class)
                 if (!variableClassProto) {
                     console.log('couldnt resolve ' + _class)
-                    continue
+                    continue;
                 }
                 result.push(new variableClassProto(variable))// looks like a leak but the instance is tracked and destroyed in this scope
             }
@@ -44291,11 +44302,11 @@ define('xblox/model/Scope',[
             }
             for (var prop in block) {
                 if (prop == 'ctrArgs') {
-                    continue
+                    continue;
                 }
 
                 if (typeof block[prop] !== 'function' && !block.serializeField(prop)) {
-                    continue
+                    continue;
                 }
 
                 // copy all strings over
@@ -44341,10 +44352,10 @@ define('xblox/model/Scope',[
                 for (var b in data) {
                     var block = data[b]
                     if (block.keys == null) {
-                        continue
+                        continue;
                     }
                     if (block.serializeMe === false) {
-                        continue
+                        continue;
                     }
                     var blockOut = {
                         // this property is used to recreate the child blocks in the JSON -> blocks process
@@ -44353,11 +44364,11 @@ define('xblox/model/Scope',[
 
                     for (var prop in block) {
                         if (prop == 'ctrArgs') {
-                            continue
+                            continue;
                         }
 
                         if (typeof block[prop] !== 'function' && !block.serializeField(prop)) {
-                            continue
+                            continue;
                         }
 
                         // copy all strings over
@@ -44488,7 +44499,7 @@ define('xblox/model/Scope',[
                 // Create the block
                 if (!block.declaredClass) {
                     console.log('   not a class ')
-                    continue
+                    continue;
                 }
                 var blockClassProto = null
                 var _class = null
@@ -44503,7 +44514,7 @@ define('xblox/model/Scope',[
                 }
                 if (!blockClassProto) {
                     console.log('couldnt resolve ' + _class)
-                    continue
+                    continue;
                 }
 
                 var blockOut = null
@@ -44512,7 +44523,7 @@ define('xblox/model/Scope',[
                 } catch (e) {
                     console.error('error in block creation ', e + ' ' + block.declaredClass)
                     logError(e)
-                    continue
+                    continue;
                 }
 
                 // assign the children references into block._children
@@ -44538,7 +44549,7 @@ define('xblox/model/Scope',[
                                     errorCB('   couldnt resolve child: ' + block._children[propName] + '@' + block.name + ':' + block.declaredClass)
                                 }
                                 console.log('   couldnt resolve child: ' + block._children[propName] + '@' + block.name + ':' + block.declaredClass)
-                                continue
+                                continue;
                             }
                             block[propName] = child
                             child.parent = block
@@ -44556,7 +44567,7 @@ define('xblox/model/Scope',[
                                         errorCB('   couldnt resolve child: ' + block._children[propName] + '@' + block.name + ':' + block.declaredClass)
                                     }
                                     console.log('   couldnt resolve child: ' + block._children[propName][j] + '@' + block.name + ':' + block.declaredClass)
-                                    continue
+                                    continue;
                                 }
                                 block[propName].push(child)
                                 var _parent = this.getBlockById(child.parentId)
@@ -44616,8 +44627,8 @@ define('xblox/model/Scope',[
             }
             if (_device) {
                 var info = deviceManager.toDeviceControlInfo(_device);
-                if(!info){
-                    console.warn('cant get device info for ' + _device.title,device);
+                if (!info) {
+                    console.warn('cant get device info for ' + _device.title, device);
                     return;
                 }
 
@@ -44679,12 +44690,12 @@ define('xblox/model/Scope',[
             for (var b in blocks) {
                 var block = blocks[b]
                 if (block.keys == null) {
-                    continue
+                    continue;
                 }
                 result.push(block)
                 for (var prop in block) {
                     if (prop == 'ctrArgs') {
-                        continue
+                        continue;
                     }
                     // flatten children to ids. Skip "parent" field
                     if (prop !== 'parent') {
@@ -44712,7 +44723,7 @@ define('xblox/model/Scope',[
                 var block = blocks[b]
 
                 if (block.keys == null) {
-                    continue
+                    continue;
                 }
                 var found = _.find(result, {
                     id: block.id
@@ -44726,7 +44737,7 @@ define('xblox/model/Scope',[
 
                 for (var prop in block) {
                     if (prop == 'ctrArgs') {
-                        continue
+                        continue;
                     }
                     // flatten children to ids. Skip "parent" field
                     if (prop !== 'parent') {
@@ -44906,7 +44917,7 @@ define('xblox/model/Scope',[
             for (var i = 0; i < allblocks.length; i++) {
                 var obj = allblocks[i]
                 if (!obj) {
-                    continue
+                    continue;
                 }
                 try {
                     if (obj && obj.stop) {
@@ -44949,8 +44960,9 @@ define('xblox/model/Scope',[
          * @returns {boolean}
          */
         moveTo: function (source, target, before, add) {
+            console.log('move to : ', arguments);
             /**
-             * treat first the special case of adding an item
+             * treat first the special cases of adding an item
              */
             if (add) {
                 // remove it from the source parent and re-parent the source
@@ -44959,8 +44971,7 @@ define('xblox/model/Scope',[
                     if (sourceParent) {
                         sourceParent.removeBlock(source, false)
                     }
-                    target.add(source, null, null)
-                    return
+                    return target.add(source, null, null);
                 } else {
                     console.error('cant reparent')
                     return false
@@ -44968,7 +44979,7 @@ define('xblox/model/Scope',[
             }
 
             // for root level move
-            if (!target.parentId && add == false) {
+            if (!target.parentId && add === false) {
                 // if source is part of something, we remove it
                 var sourceParent = this.getBlockById(source.parentId)
                 if (sourceParent && sourceParent.removeBlock) {
@@ -45044,18 +45055,15 @@ define('xblox/model/Scope',[
                 if (!parent) {
                     return false
                 }
-
-                var maxSteps = 20
                 var items = parent[parent._getContainer(source)]
                 var cIndexSource = source.indexOf(items, source)
                 var cIndexTarget = source.indexOf(items, target)
                 var direction = cIndexSource > cIndexTarget ? -1 : 1
                 var distance = Math.abs(cIndexSource - (cIndexTarget + (before == true ? -1 : 1)))
                 for (var i = 0; i < distance - 1; i++) {
-                    parent.move(source, direction)
+                    source.move(direction);
                 }
-                return true
-
+                return true;
                 // we move within the different parents
             } else if (source.parentId && target.parentId && add == false && source.parentId !== target.parentId) {
                 console.log('same parent!')
@@ -45489,8 +45497,6 @@ define('xblox/model/ModelBase',[
          * @param {array} arguments
          */
         constructor: function(args){
-
-
             //simple mixin of constructor arguments
             for (var prop in args) {
                 if (args.hasOwnProperty(prop)) {
@@ -45501,12 +45507,9 @@ define('xblox/model/ModelBase',[
             if(!this.id){
                 this.id = this.createUUID();
             }
-
             //short cuts
             this.utils=utils;
             this.types=types;
-
-
         },
         ////////////////////////////////////////////////////////////
         //
@@ -49814,6 +49817,9 @@ define('xblox/model/Block',[
             }
         }));
     }
+    if(Block_UI){
+        bases.push(Block_UI);
+    }
 
     /***
      * First things first, extend the core types for block flags:
@@ -50275,9 +50281,12 @@ define('xblox/model/Block',[
             };
             return _next(this, items, dir);
         },
-        getParent: function () {
+        getParent: function (createRoot) {
             if (this.parentId) {
                 return this.scope.getBlockById(this.parentId);
+            }
+            if(createRoot===true){
+                //return this._store.getRootItem();
             }
             return null;
         },
@@ -50310,7 +50319,6 @@ define('xblox/model/Block',[
             }
             return _res;
         },
-
         // adds array2 at the end of array1 => useful for returned "solve" commands
         addToEnd: function (array1, array2) {
             if (array2 && array1.length != null && array2.length != null) {
@@ -50335,7 +50343,7 @@ define('xblox/model/Block',[
                     delete what.items;
                 }
                 what.parent = null;
-
+                what.parentId = null;
                 if (this.items) {
                     this.items.remove(what);
                 }
@@ -50663,6 +50671,7 @@ define('xblox/model/Block',[
                         this[container].push(_block);
                     }
                 }
+                _block.group=null;
                 return _block;
             } catch (e) {
                 logError(e, '_add');
@@ -50841,9 +50850,6 @@ define('xblox/model/Block',[
 
     //that's really weird: using dynamic base classes nor Block.extend doesnt work.
     //however, move dojo complete out of blox
-    if (has('xblox-ui')) {
-        lang.mixin(Block.prototype, Block_UI.prototype);
-    }
 
     if (!Block.prototype.onSuccess) {
         Block.prototype.onSuccess = function () {
@@ -54704,7 +54710,15 @@ define('xblox/model/logic/SwitchBlock',[
         toText: function () {
             return this.getBlockIcon('H') + this.name + ' ';
         },
-        canAdd: function () {
+        /**
+         *
+         * @param what {module:xblox/model/Block}
+         * @returns {*}
+         */
+        canAdd: function (what) {
+            if(what && what.isInstanceOf){
+                return what.isInstanceOf(CaseBlock) || what.isInstanceOf(DefaultBlock);
+            }
             return [];
         },
         getFields: function () {
@@ -56604,7 +56618,7 @@ define('xblox/model/code/RunScript',[
             return result;
         },
         canAdd:function(){
-            return [];
+            return true;
         },
         getFields:function(){
             if(this.description === 'No Description'){
@@ -79963,7 +79977,13 @@ define('xide/types/Types',[
         ON_REMOVE_CONTAINER: 'onRemoveContainer',
         ON_CONTAINER_REPLACED: 'onContainerReplaced',
         ON_CONTAINER_SPLIT: 'onContainerSplit',
-        ON_RENDER_WELCOME_GRID_GROUP:'onRenderWelcomeGridGroup'
+        ON_RENDER_WELCOME_GRID_GROUP:'onRenderWelcomeGridGroup',
+
+        ON_DND_SOURCE_OVER:'/dnd/source/over',
+        ON_DND_START:'/dnd/start',
+        ON_DND_DROP_BEFORE:'/dnd/drop/before',
+        ON_DND_DROP:'/dnd/drop',
+        ON_DND_CANCEL:'/dnd/cancel'
     };
     /**
      * To be moved
