@@ -36010,7 +36010,6 @@ define('xide/manager/ServerActionBase',[
         runDeferred: function (serviceClassIn, method, args, options) {
             var self = this;
             if(this.serviceObject.__init){
-
                 if(this.serviceObject.__init.isResolved()){
                     return self._runDeferred(serviceClassIn,method,args,options);
                 }
@@ -36157,9 +36156,6 @@ define('xide/manager/ServerActionBase',[
                     this.options.singleton = this.singleton;
                 }
                 if (!this.serviceObject) {
-
-
-
                     if (!this.serviceUrl) {
                         console.error('have no service url : ' + this.declaredClass);
                         return;
@@ -36178,6 +36174,7 @@ define('xide/manager/ServerActionBase',[
                     if(this.config){
                         obj.serviceObject.config = this.config;
                     }
+                    !this.ctx.serviceObject && (this.ctx.serviceObject = this.serviceObject);
                 }
             } catch (e) {
                 console.error('error in rpc service creation : ' + e);
@@ -62171,6 +62168,15 @@ define('xide/manager/Context_UI',[
         settingsManager: null,
         trackingManager: null,
         mainView: null,
+        registerRoute:function(config){
+            if(!this.routes){
+                this.routes = [];
+            }
+            this.routes.push(config);
+        },
+        ready:function(){
+            this.getRouter();
+        },
         routes:null,
         /**
          * @type {module:xide/manager/Router}
@@ -62181,9 +62187,11 @@ define('xide/manager/Context_UI',[
          * @returns {module:xide/manager/Router}
          */
         getRouter:function(){
+            if(!this.router || !this.router.match){
+                this.router = new Router({routes:this.routes});
+            }
             return this.router;
         },
-
         /**
          *
          * @returns {null|module:xide/manager/WindowManager}
@@ -62238,7 +62246,6 @@ define('xide/manager/Context_UI',[
          * @returns {module:dojo/Deferred}
          */
         createEditor: function (ctrArgs, item, editorOverrides, where, owner) {
-
             var dfd = new Deferred(),
                 registerInWindowManager = owner && owner.registerEditors === true ? true : true;
 
@@ -62421,15 +62428,6 @@ define('xide/manager/Context_UI',[
                 isDefault: false
             });
 
-        },
-        registerRoute:function(config){
-            if(!this.routes){
-                this.routes = [];
-            }
-            this.routes.push(config);
-        },
-        ready:function(){
-            this.router = new Router({routes:this.routes});
         },
         constructManagers: function () {
             this.pluginManager = this.createManager(PluginManager);
@@ -66458,8 +66456,9 @@ define('xide/manager/WindowManager',[
     'xide/editor/Registry',
     'xide/registry',
     'xdojo/has',
+    'xide/lodash',
     'dojo/has!xace?xace/views/Editor'
-], function (dcl, utils, types, ManagerBase, Registry, registry, has, Editor) {
+], function (dcl, utils, types, ManagerBase, Registry, registry, has,_,Editor) {
 
     function register(what, where, _active) {
         where.addActionEmitter(what);
@@ -73549,6 +73548,7 @@ define('xide/manager/ContextBase',[
                     ctx: this,
                     config: config || this.config
                 });
+
                 return mgr;
             } catch (e) {
                 console.error('error creating manager ' + e, arguments);
