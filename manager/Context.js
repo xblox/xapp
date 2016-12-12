@@ -499,9 +499,14 @@ define([
                         "blocks": [],
                         "variables": []
                     };
-                    this.getFileManager().mkfile(mount, path, JSON.stringify(content, null, 2)).then(function () {
+                    var fileManager = this.getFileManager();
+                    if(fileManager.serviceObject) {
+                        this.getFileManager().mkfile(mount, path, JSON.stringify(content, null, 2)).then(function () {
+                            loadXBLOXFiles();
+                        });
+                    }else{
                         loadXBLOXFiles();
-                    });
+                    }
                 }
             }
         },

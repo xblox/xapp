@@ -32107,11 +32107,15 @@ define('xnode/manager/NodeServiceManager',[
         init: function () {
             var dfd = new Deferred();
             var self = this;
-            this.serviceObject.__init.then(function(){
-                self.ls().then(function(){
-                    dfd.resolve();
+            if(this.serviceObject && this.serviceObject.__init) {
+                this.serviceObject.__init.then(function () {
+                    self.ls().then(function () {
+                        dfd.resolve();
+                    });
                 });
-            });
+            }else if(this.services){//exported apps have the services already
+                return this.ls();
+            }
             return dfd;
 
         },
@@ -43622,13 +43626,14 @@ define('xblox/model/Scope',[
                 group: types.COMMAND_TYPES.INIT_COMMAND
             })
 
+            var self = this;
             try {
                 _.each(initBlocks, function (block) {
                     if (block.enabled !== false && block.__started !== true) {
-                        block.solve(this)
+                        block.solve(self);
                         block.__started = true
                     }
-                }, this)
+                }, this);
             } catch (e) {
                 console.error('starting init blocks failed', e)
                 logError(e, this)
@@ -45642,8 +45647,8 @@ define('xcf/manager/DeviceManager',[
     "xide/data/Reference",
     'xide/utils/StringUtils',
     'xcf/mixins/LogMixin',
-    'xdojo/has!xcf-ui?./DeviceManager_UI',/*NMD:Ignore*/
-    'xdojo/has!xexpression?xexpression/Expression',/*NMD:Ignore*/
+    'xdojo/has!xcf-ui?./DeviceManager_UI', /*NMD:Ignore*/
+    'xdojo/has!xexpression?xexpression/Expression', /*NMD:Ignore*/
     'dojo/promise/all',
     "xide/console",
     "xide/lodash"
@@ -45654,7 +45659,7 @@ define('xcf/manager/DeviceManager',[
              DeviceManager_Server, DeviceManager_DeviceServer, Memory, TreeMemory, has,
              ObservableStore, Trackable, Device, Deferred, ServerActionBase, Reference, StringUtils,
              LogMixin,
-             DeviceManager_UI, Expression, all, console,_,_console, xUtils) {
+             DeviceManager_UI, Expression, all, console, _, _console, xUtils) {
     /*
      var console = typeof window !== 'undefined' ? window.console : console;
      if(_console && _console.error && _console.warn){
@@ -45855,10 +45860,10 @@ define('xcf/manager/DeviceManager',[
         getFile: function (device) {
             var dfd = new Deferred();
             var ctx = this.ctx;
-            if(_.isString(device)){
-                device = this.getItemByPath(device+'.meta.json') || this.getItemByPath(device) || device;
+            if (_.isString(device)) {
+                device = this.getItemByPath(device + '.meta.json') || this.getItemByPath(device) || device;
             }
-            if(!device||!device.path){
+            if (!device || !device.path) {
                 debugger;
             }
             var fileManager = ctx.getFileManager();
@@ -46226,6 +46231,7 @@ define('xcf/manager/DeviceManager',[
                 this.checkDeviceServerConnection();
                 return;
             }
+
             var stores = this.getStores(),
                 thiz = this;
 
@@ -46249,8 +46255,6 @@ define('xcf/manager/DeviceManager',[
                     return;
                 }
                 store.connected = true;
-
-
                 var items = utils.queryStore(store, {
                     isDir: false
                 });
@@ -46268,22 +46272,28 @@ define('xcf/manager/DeviceManager',[
                         start(device);
                     }
                 }
-                /*
-                 if(store.scope==='user_devices' && !isServer){
-                 var storePath = this.getStorePath(store.scope);
-                 if(storePath){
-                 this.sendManagerCommand(types.SOCKET_SERVER_COMMANDS.INIT_DEVICES,{
-                 path: storePath,
-                 scope:store.scope
-                 });
-                 }
-                 }
-                 */
-
             }
 
-            _.each(stores, connect, this);
+            if (this.deviceServerClient.dfd) {
+                this.deviceServerClient.dfd.then(function () {
+                    _.each(stores, connect, this);
+                }.bind(this));
+            } else {
+                _.each(stores, connect, this);
+            }
             return all;
+        },
+        /**
+         *
+         * @param clientOptions
+         * @param localDevice {module:xcf/model/Device}
+         */
+        updateDevice: function (clientOptions, localDevice) {
+            if (localDevice) {
+                localDevice.setMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_DRIVER_OPTIONS, clientOptions.driverOptions);
+                localDevice.setMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_OPTIONS, clientOptions.options);
+                localDevice.setMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_ENABLED, clientOptions.enabled);
+            }
         },
         debug: function () {
             console.info('Debug info stores : ');
@@ -46457,7 +46467,6 @@ define('xcf/manager/DeviceManager',[
          * @private
          */
         onMQTTMessage: function (msg) {
-
             var message = utils.getJson(msg.message);
             var isUs = false;
             var thiz = this;
@@ -46552,7 +46561,8 @@ define('xcf/manager/DeviceManager',[
          */
         onNodeServiceStoreReady: function (evt) {
             if (this.deviceServerClient) {
-                this.deviceServerClient.destroy();
+                //this.deviceServerClient.destroy();
+                return this.deviceServerClient;
             }
             var store = evt.store, thiz = this;
             var client = this.createDeviceServerClient(store);
@@ -46610,12 +46620,7 @@ define('xcf/manager/DeviceManager',[
             delete this.deviceInstances[hash];
             this.ctx.getBlockManager().removeScope(instance.options.id);
             this.ctx.getDriverManager().removeDriverInstance(instance, device);
-
             device.reset();
-            if (this.completeDevice) {
-                //this.completeDevice(null,device,instance.driver);
-            }
-
         },
         /**
          *
@@ -46683,7 +46688,6 @@ define('xcf/manager/DeviceManager',[
          * @returns {module:xcf/model/Device|null}
          */
         getDeviceById: function (id, store) {
-
             var self = this;
 
             function search(_store) {
@@ -46792,7 +46796,7 @@ define('xcf/manager/DeviceManager',[
 
             //already device
             //if (deviceInfo && deviceInfo._store) {
-                //return deviceInfo;
+            //return deviceInfo;
             //}
             var scope = deviceInfo.deviceScope;
             var store = this.getStore(scope);
@@ -46801,17 +46805,17 @@ define('xcf/manager/DeviceManager',[
             }
 
             var byPath = deviceInfo.devicePath ? this.getItemByPath(deviceInfo.devicePath) : null;
-            if(byPath){
+            if (byPath) {
                 return byPath;
             }
 
-            var items = _.filter(store.query(),function(item){
-                return item.isDir!==true;
+            var items = _.filter(store.query(), function (item) {
+                return item.isDir !== true;
             });
             /*
-            utils.queryStore(store, {
-                isDir: false
-            });*/
+             utils.queryStore(store, {
+             isDir: false
+             });*/
 
             if (!items) {
                 _debug && !isServer && console.error('store returned nothing ' + deviceInfo.deviceScope);
@@ -47027,7 +47031,7 @@ define('xcf/manager/DeviceManager',[
                         }
                         //no instance yet
                         var info = self.toDeviceControlInfo(device);
-                        if(info) {
+                        if (info) {
                             var driver = self.getContext().getDriverManager().getDriverById(info.driverId);
                             if (driver) {
                                 if (!driver.blockScope) {
@@ -47036,8 +47040,8 @@ define('xcf/manager/DeviceManager',[
                                 }
                                 return true;
                             }
-                        }else{
-                            console.error('cant get device info for ',device);
+                        } else {
+                            console.error('cant get device info for ', device);
                         }
 
                     }
@@ -47106,6 +47110,7 @@ define('xcf/manager/DeviceManager',[
             var meta = item['user'],
                 host = utils.getCIInputValueByName(meta, DEVICE_PROPERTY.CF_DEVICE_HOST),
                 port = utils.getCIInputValueByName(meta, DEVICE_PROPERTY.CF_DEVICE_PORT),
+                enabled = utils.getCIInputValueByName(meta, DEVICE_PROPERTY.CF_DEVICE_ENABLED),
                 title = utils.getCIInputValueByName(meta, DEVICE_PROPERTY.CF_DEVICE_TITLE),
                 protocol = utils.getCIInputValueByName(meta, DEVICE_PROPERTY.CF_DEVICE_PROTOCOL),
                 driverId = utils.getCIInputValueByName(meta, DEVICE_PROPERTY.CF_DEVICE_DRIVER),
@@ -47140,6 +47145,7 @@ define('xcf/manager/DeviceManager',[
                     deviceScope: item.getScope(),
                     title: title,
                     options: options,
+                    enabled: enabled,
                     driverOptions: driverOptions,
                     serverSide: serverSide,
                     isServer: isServer,
@@ -47346,6 +47352,7 @@ define('xcf/manager/DeviceManager',[
             this._deviceInfoCache = {};
             this.subscribe(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, this.onVariableChanged);
             this.subscribe(types.EVENTS.ON_DEVICE_SERVER_CONNECTED, function () {
+                console.log('got device server connection');
                 var connect = has('drivers') && has('devices');
                 if (thiz.autoConnectDevices && connect) {
                     all(thiz.connectToAllDevices()).then(function () {
@@ -47400,6 +47407,7 @@ define('xcf/manager/DeviceManager',[
          */
         ls: function (scope, track) {
             var dfd = new Deferred();
+
             function data(data) {
                 try {
                     var store = this.createStore(data, scope, track);
@@ -47603,7 +47611,7 @@ define('xcf/manager/DeviceManager',[
                 ];
             }
 
-            if(!item.id){
+            if (!item.id) {
                 item.id = utils.getCIInputValueByName(meta, types.DEVICE_PROPERTY.CF_DEVICE_ID);
             }
 
@@ -48162,6 +48170,15 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             var requirePath = decodeURIComponent(packageUrl) + deviceInfo.driver;
             requirePath = requirePath.replace('', '').trim();
 
+            function updateDevice(device,deviceInfo){
+
+            }
+
+            if(isServer){
+                updateDevice(device,deviceInfo);
+
+            }
+
             var thiz = this,
                 ctx = thiz.ctx,
                 meta = device['user'],
@@ -48187,6 +48204,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
 
             if (isServer && (!device.isServerSide() && !device.isServer() && !deviceInfo.isServer && !deviceInfo.serverSide)) {
+                var e = new Error();
                 dfd.reject('DeviceManager_DeviceServer: wont create driver instance! I am server and device isnt server side : ' + deviceInfo.title);
                 return dfd;
             }
@@ -49243,9 +49261,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                             debug && !msg && console.error('invalid incoming message', data);
                             msg = msg || {};
 
-                            if (!thiz.handle(msg)) {
-                                return;
-                            }
                             if (msg && msg.data && msg.data.deviceMessage && msg.data.deviceMessage.event === types.EVENTS.ON_COMMAND_FINISH) {
                                 thiz.onCommandFinish(msg.data.device, msg.data.deviceMessage);
                                 return;
@@ -49297,6 +49312,10 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                             }
                             if (msg.event === types.EVENTS.ON_FILE_CHANGED) {
                                 return thiz.ctx.onXIDEMessage(utils.fromJson(data.data));
+                            }
+
+                            if (!thiz.handle(msg)) {
+                                return;
                             }
                         }
                         thiz.onDeviceServerMessage(data);
@@ -56536,6 +56555,12 @@ define('xblox/model/code/RunScript',[
             settings = settings || {};
             var _script = send || (this._get('method') ? this._get('method') : this.method);
 
+            if(!scope.expressionModel){
+                //console.error('mar',scope);
+                throw new Error('na');
+                return;
+            }
+
             var thiz=this,
                 ctx = this.getContext(),
                 items = this[this._getContainer()],
@@ -56543,7 +56568,10 @@ define('xblox/model/code/RunScript',[
                 //outer
                 dfd = new Deferred,
                 listener = settings.listener,
-                isDfd = thiz.deferred;
+                isDfd = thiz.deferred,
+                expressionModel = scope.getExpressionModel();
+
+
 
             this.onRunThis(settings);
 
@@ -56563,10 +56591,14 @@ define('xblox/model/code/RunScript',[
 
                 return ret;
             }
-            var expression = scope.expressionModel.replaceVariables(scope,_script,null,null);
-            var _function = scope.expressionModel.expressionCache[expression];
+            if(!expressionModel){
+                console.error('scope has no expression model');
+                return false;
+            }
+            var expression = expressionModel.replaceVariables(scope,_script,null,null);
+            var _function = expressionModel.expressionCache[expression];
             if(!_function){
-                _function = scope.expressionModel.expressionCache[expression] = new Function("{" + expression + "}");
+                _function = expressionModel.expressionCache[expression] = new Function("{" + expression + "}");
             }
             var _args = thiz.getArgs(settings) || [];
             try {
@@ -72131,9 +72163,14 @@ define('xapp/manager/Context',[
                         "blocks": [],
                         "variables": []
                     };
-                    this.getFileManager().mkfile(mount, path, JSON.stringify(content, null, 2)).then(function () {
+                    var fileManager = this.getFileManager();
+                    if(fileManager.serviceObject) {
+                        this.getFileManager().mkfile(mount, path, JSON.stringify(content, null, 2)).then(function () {
+                            loadXBLOXFiles();
+                        });
+                    }else{
                         loadXBLOXFiles();
-                    });
+                    }
                 }
             }
         },
@@ -74516,12 +74553,13 @@ define('xide/utils/ObjectUtils',[
     //
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    utils.clone = function (/*anything*/ src) {
-        // summary:
-        // Clones objects (including DOM nodes) and all children.
-        // Warning: do not clone cyclic structures.
-        // src:
-        // The object to clone
+    /**
+     * Clones objects (including DOM nodes) and all children.
+     * Warning: do not clone cyclic structures.
+     * @param src {*} The object to clone.
+     * @returns {*}
+     */
+    utils.clone = function (src) {
         if (!src || typeof src != "object" || utils.isFunction(src)) {
             // null, undefined, any non-object, or function
             return src; // anything
@@ -74620,11 +74658,9 @@ define('xide/utils/ObjectUtils',[
      */
     utils.mixin = function (dest, sources) {
         if (sources) {
-
             if (!dest) {
                 dest = {};
             }
-
             var l = arguments.length;
             for (var i = 1; i < l; i++) {
                 utils._mixin(dest, arguments[i]);
@@ -74685,104 +74721,13 @@ define('xide/utils/ObjectUtils',[
         return lodash.isNumber(what);
     };
     /**
-     *
+     * Return true if it is a Function
      * @param it
      * @returns {*}
      */
     utils.isFunction = function (it) {
-        // summary:
-        // Return true if it is a Function
-        // it: anything
-        // Item to test.
         return lodash.isFunction(it);
     };
-
-
-    function CircularBuffer(capacity) {
-        if (!(this instanceof CircularBuffer))return new CircularBuffer(capacity);
-        if (typeof capacity == "object" &&
-            Array.isArray(capacity["_buffer"]) &&
-            typeof capacity._capacity == "number" &&
-            typeof capacity._first == "number" &&
-            typeof capacity._size == "number") {
-            for (var prop in capacity) {
-                if (capacity.hasOwnProperty(prop))this[prop] = capacity[prop];
-            }
-        } else {
-            if (typeof capacity != "number" || capacity % 1 != 0 || capacity < 1)
-                throw new TypeError("Invalid capacity");
-            this._buffer = new Array(capacity);
-            this._capacity = capacity;
-            this._first = 0;
-            this._size = 0;
-        }
-    }
-
-    CircularBuffer.prototype = {
-        size: function () {
-            return this._size;
-        },
-        capacity: function () {
-            return this._capacity;
-        },
-        enq: function (value) {
-            if (this._first > 0)this._first--; else this._first = this._capacity - 1;
-            this._buffer[this._first] = value;
-            if (this._size < this._capacity)this._size++;
-        },
-        push: function (value) {
-            if (this._size == this._capacity) {
-                this._buffer[this._first] = value;
-                this._first = (this._first + 1) % this._capacity;
-            } else {
-                this._buffer[(this._first + this._size) % this._capacity] = value;
-                this._size++;
-            }
-        },
-        deq: function () {
-            if (this._size == 0)throw new RangeError("dequeue on empty buffer");
-            var value = this._buffer[(this._first + this._size - 1) % this._capacity];
-            this._size--;
-            return value;
-        },
-        pop: function () {
-            return this.deq();
-        },
-        shift: function () {
-            if (this._size == 0)throw new RangeError("shift on empty buffer");
-            var value = this._buffer[this._first];
-            if (this._first == this._capacity - 1)this._first = 0; else this._first++;
-            this._size--;
-            return value;
-        },
-        get: function (start, end) {
-            if (this._size == 0 && start == 0 && (end == undefined || end == 0))return [];
-            if (typeof start != "number" || start % 1 != 0 || start < 0)throw new TypeError("Invalid start");
-            if (start >= this._size)throw new RangeError("Index past end of buffer: " + start);
-
-            if (end == undefined)return this._buffer[(this._first + start) % this._capacity];
-
-            if (typeof end != "number" || end % 1 != 0 || end < 0)throw new TypeError("Invalid end");
-            if (end >= this._size)throw new RangeError("Index past end of buffer: " + end);
-
-            if (this._first + start >= this._capacity) {
-                //make sure first+start and first+end are in a normal range
-                start -= this._capacity; //becomes a negative number
-                end -= this._capacity;
-            }
-            if (this._first + end < this._capacity)
-                return this._buffer.slice(this._first + start, this._first + end + 1);
-            else
-                return this._buffer.slice(this._first + start, this._capacity).concat(this._buffer.slice(0, this._first + end + 1 - this._capacity));
-        },
-        toarray: function () {
-            if (this._size == 0)return [];
-            return this.get(0, this._size - 1);
-        }
-    };
-
-    //module.exports = CircularBuffer;
-
     return utils;
 });;
 define('xide/utils/CIUtils',[
