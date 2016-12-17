@@ -6584,7 +6584,7 @@ define('xdeliteful/MediaPlayer',[
             var thiz  = this;
             var btn = this.btnOpenFolder;
             var _r = require;
-            _r([has('debug') ? 'xfile/mainr' : 'xfile/build/xfiler' ], function () {
+            _r(['xfile/build/xfiler'], function () {
                 _r([
                     "xdeliteful/Widgets/Popup",
                     'xfile/views/FileGridLight',
@@ -33212,12 +33212,25 @@ define('xide/utils/_LogMixin',[
         }
     });
 });;
+/** @module xide/data/Memory **/
 define('xide/data/Memory',[
     "dojo/_base/declare",
-	'dstore/Memory',
+    'dstore/Memory',
     'xide/data/_Base'
 ], function (declare, Memory,_Base) {
+    /**
+     * Base memory class
+     * @class module:xide/data/Memory
+     * @extends module:xide/data/_Base
+     * @extends module:dstore/Memory
+     */
     return declare('xide.data.Memory',[Memory, _Base], {
+        /**
+         * XIDE specific override to ensure the _store property. This is because the store may not use dmodel in some
+         * cases like running server-side but the _store property is expected to be there.
+         * @param item {object}
+         * @returns {*}
+         */
         putSync:function(item){
             var self = this;
             item = this.inherited(arguments);
@@ -33233,8 +33246,6 @@ define('xide/data/Memory',[
 ;
 define('xide/data/_Base',[
     "dojo/_base/declare",
-    'dstore/Memory',
-    'dstore/Tree',
     'dstore/QueryResults',
     'xide/mixins/EventedMixin',
     'xide/encoding/MD5',
@@ -33242,7 +33253,13 @@ define('xide/data/_Base',[
     'xide/lodash',
     'dojo/when',
     'dojo/Deferred'
-], function (declare, Memory, Tree, QueryResults,EventedMixin,MD5,has,lodash,when,Deferred) {
+], function (declare, QueryResults, EventedMixin, MD5, has, lodash, when, Deferred) {
+    /**
+     * Mixin in XIDE basics to dstore classes.
+     * @class module:xide/data/_Base
+     * @extends module:xide/mixins/EventedMixin
+     * @lends module:dstore/Memory
+     */
     return declare("xide/data/_Base",EventedMixin, {
         __all:null,
         allowCache:true,
@@ -33254,6 +33271,9 @@ define('xide/data/_Base',[
                 return [result];
             }
             return [];
+        },
+        notify:function(){
+
         },
         _query:function(query){
             var dfd = new Deferred();
@@ -33312,12 +33332,20 @@ define('xide/data/_Base',[
                         ('id' in event ? event.id : store.getIdentity(target)) : undefined);
             });
         },
+        /**
+         * Override destroy to also call destroy an item's individual destroy function. Needed for temporary stores.
+         * Then, delete query cache.
+         * @returns {*}
+         */
         destroy:function(){
             this._emit('destroy',this);
+            _.each(this.query(), function (item) {
+                if (item.destroyOnRemove === true) {
+                    item.destroy && item.destroy();
+                }
+            });
             delete this._queryCache;
             this._queryCache=null;
-        },
-        notify: function () {
         },
         refreshItem:function(item,property){
             this.emit('update',{
@@ -33325,12 +33353,7 @@ define('xide/data/_Base',[
                 property:property
             });
         },
-        _queryCache:null,
         query: function (query, options,allowCache) {
-            if(!this.getSync){
-                console.error('have no sync');
-                return [];
-            }
             //no query, return all
             if(lodash.isEmpty(query)){
                 var self = this;
@@ -33969,49 +33992,6 @@ define('dstore/QueryResults',['dojo/_base/lang', 'dojo/when'], function (lang, w
 	};
 });
 ;
-define('dstore/Tree',[
-	'dojo/_base/declare'
-	/*=====, 'dstore/Store'=====*/
-], function (declare /*=====, Store=====*/) {
-	return declare(null, {
-		constructor: function () {
-			this.root = this;
-		},
-
-		mayHaveChildren: function (object) {
-			// summary:
-			//		Check if an object may have children
-			// description:
-			//		This method is useful for eliminating the possibility that an object may have children,
-			//		allowing collection consumers to determine things like whether to render UI for child-expansion
-			//		and whether a query is necessary to retrieve an object's children.
-			// object:
-			//		The potential parent
-			// returns: boolean
-
-			return 'hasChildren' in object ? object.hasChildren : true;
-		},
-
-		getRootCollection: function () {
-			// summary:
-			//		Get the collection of objects with no parents
-			// returns: dstore/Store.Collection
-
-			return this.root.filter({ parent: null });
-		},
-
-		getChildren: function (object) {
-			// summary:
-			//		Get a collection of the children of the provided parent object
-			// object:
-			//		The parent object
-			// returns: dstore/Store.Collection
-
-			return this.root.filter({ parent: this.getIdentity(object) });
-		}
-	});
-});
-;
 /** @module dstore/Memory **/
 define('dstore/Memory',[
 	'dojo/_base/declare',
@@ -34489,19 +34469,18 @@ define('dstore/Promised',[
 	});
 });
 ;
+/** @module dstore/Store **/
 define('dstore/Store',[
 	'dojo/_base/lang',
 	'dojo/_base/array',
 	'dojo/aspect',
 	'dojo/has',
 	'dojo/when',
-	'dojo/Deferred',
-	'dojo/_base/declare',
+    'dojo/_base/declare',
 	'dstore/QueryMethod',
 	'dstore/Filter',
-	'dojo/Evented',
-    'dcl/dcl'
-], function (lang, arrayUtil, aspect, has, when, Deferred, declare, QueryMethod, Filter, Evented,dcl) {
+	'dojo/Evented'
+], function (lang, arrayUtil, aspect, has, when, declare, QueryMethod, Filter, Evented) {
 
 	// module:
 	//		dstore/Store
@@ -34528,12 +34507,12 @@ define('dstore/Store',[
 		};
 	}
 
-	var base = Evented;
-	/*=====
-	base = [ Evented, Collection ];
-	=====*/
-
-	return /*==== Store= ====*/declare(base, {
+	/**
+     * Base store class
+     * @class module:dstore/Store
+     * @extends module:dojo/Evented
+     */
+	return declare(Evented, {
 		constructor: function (options) {
 			// perform the mixin
 			options && declare.safeMixin(this, options);
@@ -35557,11 +35536,17 @@ define('xide/data/TreeMemory',[
     'dojo/Deferred',
     'dstore/QueryResults'
 ], function (declare, Memory, Tree, Deferred, QueryResults) {
+
+    /**
+     * @class module:xide/data/TreeMemory
+     * @deprecated
+     * @extends module:xide/data/_Base
+     * @extends module:dstore/Tree
+     */
     return declare('xide.data.TreeMemory', [Memory, Tree], {
         _state: {
             filter: null
         },
-        parentField: 'parentId',
         parentProperty: 'parentId',
         reset: function () {
             this._state.filter = null;
@@ -35590,22 +35575,22 @@ define('xide/data/TreeMemory',[
         _fetchRange: function (kwArgs) {
             var deferred = new Deferred();
             var _res = this.fetchRangeSync(kwArgs);
-            var thiz = this;
             if (this._state.filter) {
                 //the parent query
                 if (this._state.filter['parent']) {
-                    var _item = this.getSync(this._state.filter.parent);
+                    var _item = this.getSync(this._state.filter[this.parentProperty]);
                     if (_item) {
                         this.reset();
                         var _query = {};
                         if (this.getChildrenSync) {
                             _res = this.getChildrenSync(_item);
                         } else {
-                            _query[this.parentField] = _item[this.idProperty];
+                            _query[this.parentProperty] = _item[this.idProperty];
                             _res = this.root.query(_query);
                         }
                     }
                 }
+
 
                 //the group query
                 if (this._state && this._state.filter && this._state.filter['group']) {
@@ -35619,12 +35604,16 @@ define('xide/data/TreeMemory',[
             deferred.resolve(_res);
             return deferred;
         },
-        children: function (parent) {
+        getChildren: function (object) {
             var filter = {};
+            filter[this.parentProperty] = this.getIdentity(object);
+            return this.root.filter(filter);
+        },
+        children: function (parent) {
             var all = this.root.data, out = [];
             for (var i = 0; i < all.length; i++) {
                 var obj = all[i];
-                if (obj[this.parentField] == parent[this.idProperty]) {
+                if (obj[this.parentProperty] == parent[this.idProperty]) {
                     out.push(obj);
                 }
             }
@@ -35637,6 +35626,49 @@ define('xide/data/TreeMemory',[
             return true;
         }
     });
+});
+;
+define('dstore/Tree',[
+	'dojo/_base/declare'
+	/*=====, 'dstore/Store'=====*/
+], function (declare /*=====, Store=====*/) {
+	return declare(null, {
+		constructor: function () {
+			this.root = this;
+		},
+
+		mayHaveChildren: function (object) {
+			// summary:
+			//		Check if an object may have children
+			// description:
+			//		This method is useful for eliminating the possibility that an object may have children,
+			//		allowing collection consumers to determine things like whether to render UI for child-expansion
+			//		and whether a query is necessary to retrieve an object's children.
+			// object:
+			//		The potential parent
+			// returns: boolean
+
+			return 'hasChildren' in object ? object.hasChildren : true;
+		},
+
+		getRootCollection: function () {
+			// summary:
+			//		Get the collection of objects with no parents
+			// returns: dstore/Store.Collection
+
+			return this.root.filter({ parent: null });
+		},
+
+		getChildren: function (object) {
+			// summary:
+			//		Get a collection of the children of the provided parent object
+			// object:
+			//		The parent object
+			// returns: dstore/Store.Collection
+
+			return this.root.filter({ parent: this.getIdentity(object) });
+		}
+	});
 });
 ;
 /** module:xide/registry **/
@@ -41349,19 +41381,32 @@ define('xide/mixins/ReloadMixin',[
 });;
 /** @module xide/data/Reference **/
 define('xide/data/Reference',[
-    "dojo/_base/declare",
     "dcl/dcl",
     "xide/utils",
     "xide/lodash",
     "xide/mixins/EventedMixin"
-], function (declare,dcl,utils,lodash,EventedMixin) {
+], function (dcl, utils, lodash, EventedMixin) {
     var debug = false;
     /**
      * @class module:xide/data/Reference
      */
     var Implementation = {
+        /**
+         * @type {Array<module:xide/data/Source>}
+         */
         _sources: [],
-        destroyOnRemove:true,
+        /**
+         * Activate destruction by default upon store destroy.
+         */
+        destroyOnRemove: true,
+        /**
+         * @type {module:xide/data/_Base|null} The store.
+         */
+        _store: null,
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //
+        //  deprecated API
+        //
         removeSource: function (source) {
         },
         updateSource: function (sources) {
@@ -41372,6 +41417,11 @@ define('xide/data/Reference',[
         },
         onSourceDelete: function (source) {
         },
+        //  deprecated API - end
+        /**
+         * Placeholder
+         * @param args
+         */
         onItemChanged: function (args) {
         },
         destroy: function () {
@@ -41381,7 +41431,7 @@ define('xide/data/Reference',[
                 this.item && this.item.removeReference(this);
             }
             this.inherited && this.inherited(arguments);
-            if(this._sources) {
+            if (this._sources) {
                 for (var i = 0; i < this._sources.length; i++) {
                     var link = this._sources[i];
                     if (link.item) {
@@ -41391,23 +41441,22 @@ define('xide/data/Reference',[
                 this._sources = null;
             }
         },
-        hasSource:function(source){
-            return lodash.find(this._sources,{item:source});
+        hasSource: function (source) {
+            return lodash.find(this._sources, {item: source});
         },
         addSource: function (source, settings) {
-            if(this.hasSource(source)){
-                console.warn('already have source');
+            if (this.hasSource(source)) {
+                debug && console.warn('already have source');
                 return;
             }
             this._sources.push({
                 item: source,
                 settings: settings
             });
-            var thiz = this;
             if (settings && settings.onDelete) {
-                this.addHandle('delete',source._store.on('delete', function (evt) {
+                this.addHandle('delete', source._store.on('delete', function (evt) {
                     if (evt.target == source) {
-                        this._store.removeSync(this[this._store['idProperty']]);
+                        this._store.removeSync(this[this._store.idProperty]);
                     }
                 }.bind(this)));
             }
@@ -41417,11 +41466,10 @@ define('xide/data/Reference',[
                 var link = this._sources[i];
                 var item = link.item;
                 var settings = link.settings;
-                if (args.property && settings.properties &&
-                    settings.properties[args.property]) {
-                    item._store._ignoreChangeEvents = true;
+                if (args.property && settings.properties && settings.properties[args.property]) {
+                    item._store.silent(true);
                     item.set(args.property, args.value);
-                    item._store._ignoreChangeEvents = false;
+                    item._store.silent(false);
                     item._store.emit('update', {target: item});
                 }
             }
@@ -41945,70 +41993,70 @@ define('dojo/promise/all',[
 /** @module xide/data/ObservableStore **/
 define('xide/data/ObservableStore',[
     "dojo/_base/declare",
-    "xide/types",
-    "xide/mixins/EventedMixin"
-], function (declare, types,EventedMixin) {
-    var _debug = false;
-    var _debugChange = false;
+    "xide/mixins/EventedMixin",
+    "xide/lodash"
+], function (declare, EventedMixin, _) {
     /**
+     * Mixin to deal with dmodel
      * @class module:xide/data/ObservableStore
+     * @lends module:xide/data/_Base
+     * @lends module:dstore/Store
+     * @lends module:xide/data/Memory
      */
     return declare('xide/data/Observable', EventedMixin, {
-        _ignoreChangeEvents: true,
-        observedProperties: [],
-        mute:false,
-        destroy:function(){
-            _.each(this.query(),function(item){
-                if(item.destroyOnRemove===true){
-                    item.destroy && item.destroy();
-                }
-            });
-            return this.inherited(arguments);
-        },
         /**
-         *
+         * @type {boolean} Toggle to mute notifications during batch operations.
+         */
+        _ignoreChangeEvents: true,
+        /**
+         * @type {Array<String>} List of default properties to be observed by dmodel.property.observe.
+         */
+        observedProperties: [],
+        /**
+         * Get/Set toggle to prevent notifications for mass store operations. Without there will be performance drops.
          * @param silent {boolean|null}
          */
-        silent:function(silent){
-            if(silent===true || silent===false && silent!==this._ignoreChangeEvents){
+        silent: function (silent) {
+            if (silent === undefined) {
+                return this._ignoreChangeEvents;
+            }
+            if (silent === true || silent === false && silent !== this._ignoreChangeEvents) {
                 this._ignoreChangeEvents = silent;
             }
         },
-        putSync: function (item,publish) {
+        /**
+         * XIDE Override and extend putSync for adding the _store property and observe a new item's properties.
+         * @param item
+         * @param publish
+         * @returns {*}
+         */
+        putSync: function (item, publish) {
             this.silent(!publish);
             var res = this.inherited(arguments);
             var self = this;
-            publish!==false && this.emit('added', res);
+            publish !== false && this.emit('added', res);
             res && !res._store && Object.defineProperty(res, '_store', {
                 get: function () {
                     return self;
                 }
             });
+            this._observe(res);
             this.silent(false);
             return res;
         },
-        removeSync: function (id,silent) {
+        /**
+         * Extend and override removeSync to silence notifications during batch operations.
+         * @param id {string}
+         * @param silent {boolean|null}
+         * @returns {*}
+         */
+        removeSync: function (id, silent) {
             this.silent(silent);
             var _item = this.getSync(id);
             _item && _item.onRemove && _item.onRemove();
             var res = this.inherited(arguments);
             this.silent(false);
             return res;
-        },
-        postscript: function () {
-            var thiz = this;
-            thiz.inherited(arguments);
-            if (!thiz.on) {
-                return;
-            }
-            thiz.on('add', function (evt) {
-                var _item = evt.target;
-                thiz._observe(_item);
-                if (!_item._store) {
-                    _item._store = thiz;
-                }
-                _item.onAdd && _item.onAdd(_item);
-            });
         },
         /**
          *
@@ -42031,29 +42079,31 @@ define('xide/data/ObservableStore',[
             this.emit('update', args);
             item.onItemChanged && item.onItemChanged(args);
         },
+        /**
+         * Observe an item's properties specified in this.observedProperties and item.observed, called upon putSync.
+         * @param item {module:xide/data/Model}
+         * @private
+         */
         _observe: function (item) {
-            var thiz = this,
-                props = thiz.observedProperties;
-
-            if (item && item.observed) {
-                props = props.concat(item.observed);
-            }
-            props && props.forEach(function (property) {
-                if(item.property) {
-                    item.property(property).observe(function (value) {
-                        thiz._onItemChanged(item, property, value, thiz);
-                    });
-                }else{
-                    console.error('item.prop !');
-                }
-
-            });
+            var props = this.observedProperties;
+            item.observed && (props = props.concat(item.observed));
+            _.each(props, function (property) {
+                item.property && item.property(property).observe(function (value) {
+                    this._onItemChanged(item, property, value, this);
+                }.bind(this));
+            }.bind(this));
         },
+        /**
+         * Override setData to bring in dmodel's observe for new items.
+         * @param data {object[]}
+         * @returns {*}
+         */
         setData: function (data) {
-            this.inherited(arguments);
+            var res = this.inherited(arguments);
             this.silent(true);
-            data && _.each(data,this._observe, this);
+            data && _.each(data, this._observe, this);
             this.silent(false);
+            return res;
         }
     });
 });;
@@ -42654,15 +42704,26 @@ define('xide/data/Source',[
     "dojo/_base/declare",
     'xide/utils',
     'xide/lodash'
-], function (dcl, declare, utils,lodash) {
+], function (dcl, declare, utils, lodash) {
 
     var _debug = true;
     /**
      * @class module:xide/data/Source
+     * @augments module:xide/data/Model
      */
     var Implementation = {
+        /**
+         * @type {Array<module:xide/data/Reference>|null}
+         */
         _references: null,
+        /**
+         * @type {module:xide/data/Reference|null}
+         */
         _originReference: null,
+        /**
+         * @type {module:xide/data/_Base|null} The store.
+         */
+        _store: null,
         onReferenceUpdate: function () {
         },
         onReferenceRemoved: function () {
@@ -42671,34 +42732,33 @@ define('xide/data/Source',[
         },
         updateReference: function () {
         },
-        destroy:function(){
-            this._references=null;
+        destroy: function () {
+            this._references = null;
         },
         getReferences: function () {
             return this._references ? utils.pluck(this._references, 'item') : [];
         },
-        hasReference:function(source){
-            return lodash.find(this._sources,{item:source});
+        hasReference: function (source) {
+            return lodash.find(this._references, {item: source});
         },
         addReference: function (reference, settings, addSource) {
             !this._references && (this._references = []);
-            if(this.hasReference(reference)){
-                console.warn('already have reference');
+            if (this.hasReference(reference)) {
+                _debug && console.warn('already have reference');
                 return;
             }
             this._references.push({
                 item: reference,
                 settings: settings
             });
-            var thiz = this;
             if (settings && settings.onDelete) {
                 if (reference._store) {
                     reference._store.on('delete', function (evt) {
                         if (evt.target == reference) {
-                            thiz._store.removeSync(thiz[thiz._store['idProperty']]);
-                            thiz._references.remove(evt.target);
+                            this._store.removeSync(this[this._store.idProperty]);
+                            this._references.remove(evt.target);
                         }
-                    })
+                    }.bind(this));
                 }
             }
             if (addSource) {
@@ -42708,7 +42768,7 @@ define('xide/data/Source',[
             }
         },
         removeReference: function (Reference) {
-            this._references && _.each(this._references, function (ref) {
+            this._references && lodash.each(this._references, function (ref) {
                 if (ref && ref.item == Reference) {
                     this._references && this._references.remove(ref);
                     return true;
@@ -42733,11 +42793,11 @@ define('xide/data/Source',[
                 }
                 if (args.property && settings.properties && settings.properties[args.property]) {
                     if (store) {
-                        store._ignoreChangeEvents = true;
+                        store.silent(true);
                     }
                     try {
                         if (item.onSourceChanged) {
-                            item.onSourceChanged(property, value,args.type);
+                            item.onSourceChanged(property, value, args.type);
                         } else {
                             item.set(property, value);
                         }
@@ -42746,7 +42806,7 @@ define('xide/data/Source',[
                         _debug && console.error('error updating reference! ' + e, e);
                     }
                     if (store) {
-                        store._ignoreChangeEvents = false;
+                        store.silent(false);
                         store.emit('update', {target: item});
                     }
                 }
@@ -47713,6 +47773,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     var isServer = has('host-node'),
         isIDE = has('xcf-ui'),
         runDrivers = true;
+
+
     /*
      var console = typeof window !== 'undefined' ? window.console : console;
      if(_console && _console.error && _console.warn){
@@ -47726,7 +47788,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     var debug = false;
     // debug device server connectivity
     var debugDevice = false;
-    var debugStrangers = true;
+    var debugStrangers = false;
     var debugConnect = false;
     var debugServerCommands = false;
     var debugCreateInstance = false;
@@ -48543,8 +48605,9 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
 
         },
-        onCommandFinish: function (deviceData, message) {
-            var driverInstance = this.getDriverInstance(deviceData, true);
+        onCommandFinish: function (deviceInfo, message) {
+
+            var driverInstance = this.getDriverInstance(deviceInfo, true);
             if (!driverInstance) {
                 return;
             }
@@ -48554,7 +48617,61 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 var scope = driverInstance.blockScope;
                 var block = scope.getBlockById(params.src);
                 if (block && block.onCommandFinish) {
-                    block.onCommandFinish(message);
+
+                    var result = JSON.stringify(block.onCommandFinish(message),null,2);
+
+                    console.error('finish : ',result);
+
+                    if (has('xcf-ui')) {
+
+                        //console replay
+                        var device = driverInstance.device,
+                            hash = deviceInfo.hash,
+                            viewId = hash + '-Console',
+                            messages = [result],
+                            consoleViews = this.consoles[viewId];
+
+                        if (consoleViews) {
+                            for (var h = 0; h < consoleViews.length; h++) {
+                                var consoleView = consoleViews[h];
+                                if (consoleView) {
+                                    var split = true;
+                                    var hex = false;
+
+                                    if (consoleView.console) {
+                                        var _consoleEditor = consoleView.console.getTextEditor();
+                                        split = _consoleEditor.getAction("Console/Settings/Split").value;
+                                        hex = _consoleEditor.getAction("Console/Settings/HEX").value;
+                                    }
+
+                                    if (!split && hex) {
+                                        var hexStr = utils.bufferToHexString(deviceMessageData.data.bytes);
+                                        consoleView.log(hexStr, split, false, types.LOG_OUTPUT.RESPONSE);
+                                        continue;
+                                    }
+                                    for (var j = 0; j < messages.length; j++) {
+                                        var _message = messages[j];
+                                        if (_.isString(_message.string) && _message.string.length === 0) {
+                                            continue;
+                                        }
+                                        if (hex) {
+                                            _message = utils.stringToHex(_message);
+                                        }
+                                        consoleView.log(_message, split, true, types.LOG_OUTPUT.RESPONSE);
+                                    }
+                                }
+                            }
+                        }
+                        if (messages && messages.length) {
+                            this.publish(types.EVENTS.ON_DEVICE_MESSAGE_EXT, {
+                                device: device,
+                                deviceInfo: deviceInfo,
+                                raw: result,
+                                messages: messages,
+                                bytes: []
+                            });
+                        }
+                    }
                 }
             }
         },
@@ -49006,9 +49123,10 @@ define('xcf/manager/DeviceManager_DeviceServer',[
          * @param wait
          * @param stop
          * @param pause
-         * @param command
+         * @param command {module:xcf/model/Command}
+         * @param args {object}
          */
-        sendDeviceCommand: function (driverInstance, data, src, id, print, wait, stop, pause, command) {
+        sendDeviceCommand: function (driverInstance, data, src, id, print, wait, stop, pause, command,args) {
             this.checkDeviceServerConnection();
             var options = driverInstance.getDeviceInfo();
             utils.mixin({
@@ -49027,7 +49145,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     id: id,
                     wait: wait,
                     stop: stop,
-                    pause: pause
+                    pause: pause,
+                    args:args
                 }
             });
 
@@ -49923,7 +50042,7 @@ define('xblox/model/Block',[
      *
      * @class module:xblox/model/Block
      * @extends module:xblox/model/ModelBase
-     * @extends module:xblox/model/Block_UI
+     * @lends module:xblox/model/Block_UI
      */
     var Block = dcl(bases, {
         declaredClass: "xblox.model.Block",
@@ -50634,12 +50753,10 @@ define('xblox/model/Block',[
          * @private
          */
         _add: function (proto, ctrArgs, where, publish) {
-
             var _block = null;
             try {
                 //create or set
                 if (ctrArgs) {
-
                     //use case : normal object construction
                     this.prepareBlockContructorArgs(ctrArgs);
                     _block = factory.createBlock(proto, ctrArgs, null, publish);
@@ -50665,11 +50782,15 @@ define('xblox/model/Block',[
                     console.error('adding new block to our self');
                     debugger;
                 }
-
+                if(_block==this){
+                    debugger;
+                }
                 //pass parent
                 _block.parent = this;
                 //pass parent id
                 _block.parentId = this.id;
+
+                _block.scope = this.scope;
 
                 var container = where || this._getContainer();
                 if (container) {
@@ -50677,7 +50798,7 @@ define('xblox/model/Block',[
                         this[container] = [];
                     }
                     var index = this.indexOf(this[container], _block);
-                    if (index != -1) {
+                    if (index !== -1) {
                         console.error(' have already ' + _block.id + ' in ' + container);
                     } else {
                         if (this.id == _block.id) {
@@ -52402,7 +52523,7 @@ define('xblox/model/mqtt/Subscribe',[
             if(instance){
                 instance.callMethod('unSubscribeTopic',utils.mixin({
                     topic:this.topic
-                },utils.getJson(this.args)),this.id,this.id);
+                },utils.getJson(this.args || {})),this.id,this.id);
             }
         },
         onData:function(message){
@@ -57745,6 +57866,7 @@ define('xcf/model/Command',[
             if (dfd) {
                 dfd.resolve(this._lastResult);
             }
+            return this._lastResult;
         },
         /**
          * onCommandPaused
@@ -57883,7 +58005,7 @@ define('xcf/model/Command',[
                         }
                     });
                 }
-                this.scope.instance.sendMessage(msg, null, this.id, id, wait, stop, pause);
+                this.scope.instance.sendMessage(msg, null, this.id, id, wait, stop, pause,this.getSendOptions());
             }
             return id;
         },
@@ -57911,6 +58033,14 @@ define('xcf/model/Command',[
                 this._solving = {};
             }
             return this._solving[id];
+        },
+        getSendOptions:function(){
+            var result = {};
+            var DriverModule = this.getDriverModule();
+            if (DriverModule && DriverModule.getCommandArgs) {
+                result = DriverModule.getCommandArgs(this) || result;
+            }
+            return result;
         },
         _resolve: function (string, settings,useDriverModule) {
             if(_.isNumber(string) || _.isBoolean(string)){
@@ -59991,6 +60121,7 @@ define('xfile/data/Store',[
              * @public
              */
             idProperty: "path",
+            parentProperty: "path",
             parentField: 'parent',
             /**
              * @member mount {string} sets the 'mount' prefix for a VFS. This is needed to simplify the work
@@ -60730,6 +60861,14 @@ define('xfile/data/Store',[
                         parent: path
                     }).sort(_sort);
                 }
+            },
+            getChildren: function (object) {
+                // summary:
+                //		Get a collection of the children of the provided parent object
+                // object:
+                //		The parent object
+                // returns: dstore/Store.Collection
+                return this.root.filter({ parent: this.getIdentity(object) });
             }
         };
     }
@@ -71418,6 +71557,7 @@ define('xblox/component',[
     "xdojo/has",
     "xide/model/Component"
 ], function (dcl,has,Component) {
+
     /**
      * @class xblox.component
      * @inheritDoc
@@ -71438,15 +71578,14 @@ define('xblox/component',[
             return ['xblox'];
         },
         getDependencies:function(){
-
             if(has('xblox-ui')) {
-
                 return [
                     'xide/xide',
                     'xblox/types/Types',
                     'xblox/manager/BlockManager',
                     'xblox/manager/BlockManagerUI',
                     'xblox/embedded_ui',
+                    'xblox/views/BlockGridPalette',
                     'xide/widgets/ExpressionJavaScript',
                     'xide/widgets/Expression',
                     'xide/widgets/RichTextWidget',
@@ -79271,6 +79410,7 @@ define('xide/types/Types',[
         ACTIONS: 'ACTIONS',
         CONTEXT_MENU: 'CONTEXT_MENU'
     };
+    
     types.VIEW_FEATURE = {
         KEYBOARD_NAVIGATION: 'KEYBOARD_NAVIGATION',
         KEYBOARD_SELECT: 'KEYBOARD_SELECT',
@@ -79278,6 +79418,7 @@ define('xide/types/Types',[
         ACTIONS: 'ACTIONS',
         CONTEXT_MENU: 'CONTEXT_MENU'
     };
+    
     types.KEYBOARD_PROFILE = {
         DEFAULT: {
             prevent_default: true,
