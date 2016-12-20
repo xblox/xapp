@@ -42669,12 +42669,6 @@ define('xblox/model/BlockModel',[
     return declare('xblox.model.BlockModel',[Model,Source],{
         declaredClass:'xblox.model.BlockModel',
         icon:'fa-play',
-        postCreate:function(){
-            console.error('post create');
-        },
-        constructor:function(){
-            console.error('sd');
-        },
         /**
          * Store function override
          * @param parent
@@ -42683,7 +42677,6 @@ define('xblox/model/BlockModel',[
         mayHaveChildren: function (parent) {
             return this.items != null && this.items.length > 0;
         },
-
         /**
          * Store function override
          * @param parent
@@ -42695,7 +42688,6 @@ define('xblox/model/BlockModel',[
         getBlockIcon:function(){
             return '<span class="' +this.icon + '"></span>';
         }
-
     });
 });;
 /** @module xide/data/Source **/
@@ -43734,7 +43726,6 @@ define('xblox/model/Scope',[
             var blockScope = this,
                 ctx = this.ctx,
                 driver = this.driver,
-                device = this.device,
                 deviceManager = ctx.getDeviceManager(),
                 driverManager = ctx.getDriverManager()
 
@@ -43778,7 +43769,6 @@ define('xblox/model/Scope',[
             }
             var blocks = this.blocksToJson()
             try {
-                // test integrity
                 utils.fromJson(JSON.stringify(blocks))
             } catch (e) {
                 debug && console.error('scope::toString : invalid data in scope')
@@ -44275,7 +44265,6 @@ define('xblox/model/Scope',[
                 var _class = utils.replaceAll('.', '/', variable.declaredClass)
                 var variableClassProto = require(_class)
                 if (!variableClassProto) {
-                    console.log('couldnt resolve ' + _class)
                     continue;
                 }
                 result.push(new variableClassProto(variable))// looks like a leak but the instance is tracked and destroyed in this scope
@@ -44309,27 +44298,25 @@ define('xblox/model/Scope',[
          * @returns {module:xblox/model/Block[]}
          */
         cloneBlocks2: function (blocks, forceGroup) {
-            var blocksJSON = this.blocksToJson(blocks)
-            var tmpScope = this.owner.getScope(utils.createUUID(), null, false)
-            var newBlocks = tmpScope.blocksFromJson(blocksJSON, false)
-            var store = this.blockStore
-            newBlocks = tmpScope.allBlocks()
-
-            tmpScope.regenerateIDs(newBlocks)
-            blocksJSON = tmpScope.blocksToJson(newBlocks)
-
+            var blocksJSON = this.blocksToJson(blocks);
+            var tmpScope = this.owner.getScope(utils.createUUID(), null, false);
+            var newBlocks = tmpScope.blocksFromJson(blocksJSON, false);
+            var store = this.blockStore;
+            newBlocks = tmpScope.allBlocks();
+            tmpScope.regenerateIDs(newBlocks);
+            blocksJSON = tmpScope.blocksToJson(newBlocks);
             if (forceGroup) {
                 for (var i = 0; i < blocksJSON.length; i++) {
-                    var block = blocksJSON[i]
+                    var block = blocksJSON[i];
                     if (block.parentId == null) { // groups are only needed for top level blocks
-                        block.group = forceGroup
+                        block.group = forceGroup;
                     }
                 }
             }
-            var result = []
-            newBlocks = this.blocksFromJson(blocksJSON)// add it to our scope
+            var result = [];
+            newBlocks = this.blocksFromJson(blocksJSON);// add it to our scope
             _.each(newBlocks, function (block) {
-                result.push(store.getSync(block.id))
+                result.push(store.getSync(block.id));
             })
             return result
         },
@@ -44348,7 +44335,7 @@ define('xblox/model/Scope',[
                 block.parentId = null
             }
 
-            blocksJSON = this.blocksToJson(newBlocks)
+            this.blocksToJson(newBlocks)
             this.blocksFromJson(newBlocks)// add it us
             return newBlocks
         },
@@ -45043,34 +45030,34 @@ define('xblox/model/Scope',[
             // for root level move
             if (!target.parentId && add === false) {
                 // if source is part of something, we remove it
-                var sourceParent = this.getBlockById(source.parentId)
+                var sourceParent = this.getBlockById(source.parentId);
                 if (sourceParent && sourceParent.removeBlock) {
-                    sourceParent.removeBlock(source, false)
-                    source.parentId = null
+                    sourceParent.removeBlock(source, false);
+                    source.parentId = null;
                     source.group = target.group
                 }
 
-                var itemsToBeMoved = []
+                var itemsToBeMoved = [];
                 var groupItems = this.getBlocks({
                     group: target.group
-                })
+                });
 
-                var rootLevelIndex = []
-                var store = this.getBlockStore()
+                var rootLevelIndex = [];
+                var store = this.getBlockStore();
 
-                var sourceIndex = store.storage.index[source.id]
-                var targetIndex = store.storage.index[target.id]
+                var sourceIndex = store.storage.index[source.id];
+                var targetIndex = store.storage.index[target.id];
                 for (var i = 0; i < groupItems.length; i++) {
-                    var item = groupItems[i]
+                    var item = groupItems[i];
                     // keep all root-level items
 
                     if (groupItems[i].parentId == null && // must be root
                         groupItems[i] != source// cant be source
                     ) {
-                        var itemIndex = store.storage.index[item.id]
-                        var add = before ? itemIndex >= targetIndex : itemIndex <= targetIndex
+                        var itemIndex = store.storage.index[item.id];
+                        var add = before ? itemIndex >= targetIndex : itemIndex <= targetIndex;
                         if (add) {
-                            itemsToBeMoved.push(groupItems[i])
+                            itemsToBeMoved.push(groupItems[i]);
                             rootLevelIndex.push(store.storage.index[groupItems[i].id])
                         }
                     }
@@ -45082,7 +45069,7 @@ define('xblox/model/Scope',[
                 }
 
                 // remove source
-                this.getBlockStore().remove(source.id)
+                this.getBlockStore().remove(source.id);
 
                 // if before, put source first
                 if (before) {
@@ -45098,29 +45085,29 @@ define('xblox/model/Scope',[
                 if (!before) {
                     this.getBlockStore().putSync(source)
                 }
-                return true
+                return true;
                 // we move from root to lower item
             } else if (!source.parentId && target.parentId && add == false) {
-                source.group = target.group
+                source.group = target.group;
 
                 // we move from root to into root item
             } else if (!source.parentId && !target.parentId && add) {
                 if (target.canAdd && target.canAdd()) {
-                    source.group = null
+                    source.group = null;
                     target.add(source, null, null)
                 }
-                return true
+                return true;
 
                 // we move within the same parent
             } else if (source.parentId && target.parentId && add == false && source.parentId === target.parentId) {
-                var parent = this.getBlockById(source.parentId)
+                var parent = this.getBlockById(source.parentId);
                 if (!parent) {
                     return false
                 }
-                var items = parent[parent._getContainer(source)]
-                var cIndexSource = source.indexOf(items, source)
-                var cIndexTarget = source.indexOf(items, target)
-                var direction = cIndexSource > cIndexTarget ? -1 : 1
+                var items = parent[parent._getContainer(source)];
+                var cIndexSource = source.indexOf(items, source);
+                var cIndexTarget = source.indexOf(items, target);
+                var direction = cIndexSource > cIndexTarget ? -1 : 1;
                 var distance = Math.abs(cIndexSource - (cIndexTarget + (before == true ? -1 : 1)))
                 for (var i = 0; i < distance - 1; i++) {
                     source.move(direction);
@@ -45128,38 +45115,36 @@ define('xblox/model/Scope',[
                 return true;
                 // we move within the different parents
             } else if (source.parentId && target.parentId && add == false && source.parentId !== target.parentId) {
-                console.log('same parent!')
-
-                var sourceParent = this.getBlockById(source.parentId)
+                var sourceParent = this.getBlockById(source.parentId);
                 if (!sourceParent) {
                     return false
                 }
 
-                var targetParent = this.getBlockById(target.parentId)
+                var targetParent = this.getBlockById(target.parentId);
                 if (!targetParent) {
                     return false
                 }
 
                 // remove it from the source parent and re-parent the source
                 if (sourceParent && sourceParent.removeBlock && targetParent.canAdd && targetParent.canAdd()) {
-                    sourceParent.removeBlock(source, false)
+                    sourceParent.removeBlock(source, false);
                     targetParent.add(source, null, null)
                 } else {
                     return false
                 }
 
                 // now proceed as in the case above : same parents
-                var items = targetParent[targetParent._getContainer(source)]
+                var items = targetParent[targetParent._getContainer(source)];
                 if (items == null) {
                     console.error('weird : target parent has no item container')
                 }
-                var cIndexSource = targetParent.indexOf(items, source)
-                var cIndexTarget = targetParent.indexOf(items, target)
+                var cIndexSource = targetParent.indexOf(items, source);
+                var cIndexTarget = targetParent.indexOf(items, target);
                 if (!cIndexSource || !cIndexTarget) {
                     console.error(' weird : invalid drop processing state, have no valid item indicies')
                     return
                 }
-                var direction = cIndexSource > cIndexTarget ? -1 : 1
+                var direction = cIndexSource > cIndexTarget ? -1 : 1;
                 var distance = Math.abs(cIndexSource - (cIndexTarget + (before == true ? -1 : 1)))
                 for (var i = 0; i < distance - 1; i++) {
                     targetParent.move(source, direction)
@@ -45182,12 +45167,11 @@ define('xblox/model/Expression',[
     "xide/utils",
     "xide/types",
     "xblox/model/ModelBase"
-], function(declare,has,utils,types,ModelBase,tracer,_console){
-
+], function (declare, has, utils, types, ModelBase, tracer, _console) {
     'use strict';
     var isServer = has('host-node');
     var console = typeof window !== 'undefined' ? window.console : global.console;
-    if(isServer && tracer && console && console.error){
+    if (isServer && tracer && console && console.error) {
         console = _console;
     }
     var _debug = false;
@@ -45196,26 +45180,26 @@ define('xblox/model/Expression',[
      * @class module:xblox.model.Expression
      * @extends module:xblox/model/ModelBase
      */
-    return declare("xblox.model.Expression",[ModelBase], {
-        id:null,
-        context:null,
+    return declare("xblox.model.Expression", [ModelBase], {
+        id: null,
+        context: null,
         // Constants
-        variableDelimiters : {
-            begin : "[",
-            end : "]"
+        variableDelimiters: {
+            begin: "[",
+            end: "]"
         },
         blockCallDelimiters: {
-            begin : "{",
-            end : "}"
+            begin: "{",
+            end: "}"
         },
-        expressionCache:null,
-        variableFuncCache:null,
-        constructor:function(){
+        expressionCache: null,
+        variableFuncCache: null,
+        constructor: function () {
             this.reset();
         },
-        reset:function(){
-            this.expressionCache={};
-            this.variableFuncCache={};
+        reset: function () {
+            this.expressionCache = {};
+            this.variableFuncCache = {};
         },
         /**
          * Replace variable calls width variable values
@@ -45226,85 +45210,69 @@ define('xblox/model/Expression',[
          * @param variableOverrides
          * @returns {*}
          */
-        replaceVariables:function(scope,expression,_evaluate,_escape,variableOverrides,useVariableGetter,variableDelimiters,flags) {
+        replaceVariables: function (scope, expression, _evaluate, _escape, variableOverrides, useVariableGetter, variableDelimiters, flags) {
+            var FLAG = types.CIFLAG;
             variableDelimiters = variableDelimiters || this.variableDelimiters;
-            flags = flags || types.CIFLAG.NONE;
-            if(flags & types.CIFLAG.DONT_ESCAPE){
+            flags = flags || FLAG.NONE;
+            if (flags & FLAG.DONT_ESCAPE) {
                 _escape = false;
             }
-            if(flags & types.CIFLAG.DONT_PARSE){
+            if (flags & FLAG.DONT_PARSE) {
                 _evaluate = false;
             }
-
-            var ocurr = this._findOcurrences( expression , variableDelimiters );
-            if (ocurr) {
-                for(var n = 0; n < ocurr.length; n++ )
-                {
+            var occurrence = this.findOccurrences(expression, variableDelimiters);
+            if (occurrence) {
+                for (var n = 0; n < occurrence.length; n++) {
                     // Replace each variable call width the variable value
-                    var oc = ocurr[n];
-                    oc = oc.replace(variableDelimiters.begin,'');
-                    oc = oc.replace(variableDelimiters.end,'');
-                    var _var = this._getVar(scope,oc);
-
-                    if(_var && _var.flags & types.CIFLAG.DONT_PARSE){
+                    var oc = occurrence[n];
+                    oc = oc.replace(variableDelimiters.begin, '');
+                    oc = oc.replace(variableDelimiters.end, '');
+                    var _var = this._getVar(scope, oc);
+                    if (_var && _var.flags & FLAG.DONT_PARSE) {
                         _evaluate = false;
                     }
-
                     var value = null;
-                    if(_var){
-
-                        if(useVariableGetter){
-
-                            expression = expression.replace(ocurr[n],'this.getVariable(\'' +_var.name + '\')');
+                    if (_var) {
+                        if (useVariableGetter) {
+                            expression = expression.replace(occurrence[n], 'this.getVariable(\'' + _var.name + '\')');
                             continue;
                         }
-
                         value = this.getValue(_var.value);
-
-                        if(variableOverrides && _var.name in variableOverrides){
+                        if (variableOverrides && _var.name in variableOverrides) {
                             value = variableOverrides[_var.name];
                         }
-
-                        if(this.isScript(value) && _evaluate!==false){
-
-                            try{
-
+                        if (this.isScript(value) && _evaluate !== false) {
+                            try {
                                 //put other variables on the stack: should be avoided
-                                var _otherVariables = scope.variablesToJavascript(_var,true);
-                                if(_otherVariables){
+                                var _otherVariables = scope.variablesToJavascript(_var, true);
+                                if (_otherVariables) {
                                     value = _otherVariables + value;
                                 }
-
-                                var _parsed = (new Function("{\n" + value+ "\n}")).call(scope.context||{});
-
-
+                                var _parsed = (new Function("{\n" + value + "\n}")).call(scope.context || {});
                                 //wasnt a script
-                                if(_parsed==='undefined' || typeof _parsed ==='undefined'){
-                                    //console.log(' parsed variable to undefined : ' + _var.title + ' with value : ' + value);
+                                if (_parsed === 'undefined' || typeof _parsed === 'undefined') {
                                     value = '' + _var.value;
-                                }else{
+                                } else {
                                     value = _parsed;
-                                    !(flags & types.CIFLAG.DONT_ESCAPE) && (value = "'" + value + "'");
+                                    !(flags & FLAG.DONT_ESCAPE) && (value = "'" + value + "'");
                                 }
-                            }catch(e){
-                                console.log(' parsed variable expression failed \n' + value,e);
+                            } catch (e) {
+                                console.log(' parsed variable expression failed \n' + value, e);
                             }
-                        }else{
-                            if(!this.isNumber(value)){
-                                if(_escape!==false) {
+                        } else {
+                            if (!this.isNumber(value)) {
+                                if (_escape !== false) {
                                     value = "'" + value + "'";
                                 }
                             }
                         }
-                    }else{
-                        _debug && console.log('   expression failed, no such variable :' + ocurr[n] + ' ! setting to default ' + '');
-                        value = ocurr[n];
+                    } else {
+                        _debug && console.log('   expression failed, no such variable :' + occurrence[n] + ' ! setting to default ' + '');
+                        value = occurrence[n];
                     }
-
-                    expression = expression.replace(ocurr[n],value);
+                    expression = expression.replace(occurrence[n], value);
                 }
             }
-
             return expression;
         },
         /**
@@ -45317,153 +45285,114 @@ define('xblox/model/Expression',[
          * @param context
          * @param variableOverrides
          * @param args {[*]}
-         * @param args {CIFLAGS}
+         * @param flags {CIFLAGS}
          * @returns {*}
          */
-        parse:function(scope,expression,addVariables,runCallback,errorCallback,context,variableOverrides,args,flags) {
-            expression = this.replaceAll("''","'",expression);//weird!
-            //expression = this.replaceBlockCalls(scope,expression);
-            var expressionContext = context || scope.context || scope.getContext() ||{};
-            var useVariableGetter  = expressionContext['getVariable'] !=null;
-            //expression = utils.replaceHex(expression);
-            expression = this.replaceVariables(scope,expression,null,null,variableOverrides,useVariableGetter,null,flags);
+        parse: function (scope, expression, addVariables, runCallback, errorCallback, context, variableOverrides, args, flags) {
+            expression = this.replaceAll("''", "'", expression);
+            var expressionContext = context || scope.context || scope.getContext() || {};
+            var useVariableGetter = expressionContext['getVariable'] != null;
+            expression = this.replaceVariables(scope, expression, null, null, variableOverrides, useVariableGetter, null, flags);
             var isExpression = this.isScript(expression);
-            if(!isExpression && (this.isString(expression) || this.isNumber(expression))){
-
-                if(runCallback){
+            if (!isExpression && (this.isString(expression) || this.isNumber(expression))) {
+                if (runCallback) {
                     runCallback('Expression ' + expression + ' evaluates to ' + expression);
                 }
                 return expression;
             }
-            if(expression.indexOf('return')==-1 && isExpression){
+            if (expression.indexOf('return') == -1 && isExpression) {
                 expression = 'return ' + expression;
             }
-            addVariables=false;
-            if(addVariables===true){
-                var _otherVariables = scope.variablesToJavascript(null,expression);
-                if(_otherVariables){
+            addVariables = false;
+            if (addVariables === true) {
+                var _otherVariables = scope.variablesToJavascript(null, expression);
+                if (_otherVariables) {
                     expression = _otherVariables + expression;
-                    expression = this.replaceAll("''","'",expression);//weird!
+                    expression = this.replaceAll("''", "'", expression);//weird!
                 }
             }
             var parsed = this;
-            try{
-                expression = this.replaceAll("''","'",expression);
+            try {
+                expression = this.replaceAll("''", "'", expression);
                 var _function = this.expressionCache[expression];
-                if(!_function){
+                if (!_function) {
                     _debug && console.log('create function ' + expression);
-                    _function = new Function("{" +expression+"; }");
+                    _function = new Function("{" + expression + "; }");
                     this.expressionCache[expression] = _function;
-                }else{
+                } else {
 
                 }
-                //parsed = (new Function("{" +expression+"; }")).call(this.context||{});
-                parsed = _function.apply(expressionContext,args);
-            }catch(e){
-                console.error('     invalid expression : \n' + expression, e);
-                if(errorCallback){
-                    errorCallback('invalid expression : \n' + expression + ': ' + e,e);
+                parsed = _function.apply(expressionContext, args);
+            } catch (e) {
+                console.error('invalid expression : \n' + expression, e);
+                if (errorCallback) {
+                    errorCallback('invalid expression : \n' + expression + ': ' + e, e);
                 }
-                parsed='' + expression;
+                parsed = '' + expression;
                 return parsed;
             }
-
-            if(parsed===true){
-                _debug &&  console.log('        expression return true! : ' + expression);
+            if (parsed === true) {
+                _debug && console.log('expression return true! : ' + expression);
             }
 
-            if(runCallback){
+            if (runCallback) {
                 runCallback('Expression ' + expression + ' evaluates to ' + parsed);
             }
-            //console.log(parsed);
             return parsed;
         },
-        parseVariableO:function(scope,_var){
-
-            var value = ''+ _var.value;
-            if(_var.title==='None'){
-                return '';
-            }
-            try{
-                //put other variables on the stack;
-                var _otherVariables = scope.variablesToJavascript(_var,false);
-                if(_otherVariables){
-                    value = _otherVariables + value;
-                }
-                var _function = new Function("{" + value+ "}");
-
-                var _parsed = _function.call(this.context||{});
-                if(_parsed==='undefined' || typeof _parsed ==='undefined'){
-                    value = '' + _var.value;
-                }else{
-                    if(!this.isNumber(_parsed)){
-                        value = ''+_parsed;
-                        value = "'" + value + "'";
-                    }else{
-                        value = _parsed;
-                    }
-
-                }
-            }catch(e){
-                console.error('parse variable failed : ' + _var.title + "\n" + value);
-            }
-            return value;
-        },
-        parseVariable:function(scope,_var,_prefix,escape,allowCache,context,args){
-            var value = ''+ _var.value;
+        parseVariable: function (scope, _var, _prefix, escape, allowCache, context, args) {
+            var value = '' + _var.value;
             _prefix = _prefix || '';
-
-                if(allowCache!==false) {
-                    var _function = this.variableFuncCache[scope.id + '|' + _var.title];
-                    if(!_function){
-                        _function = new Function("{" + _prefix + value + "}");
-                        this.variableFuncCache[scope.id + '|' + _var.title] = _function;
-                    }
-                }else{
+            if (allowCache !== false) {
+                var _function = this.variableFuncCache[scope.id + '|' + _var.title];
+                if (!_function) {
                     _function = new Function("{" + _prefix + value + "}");
+                    this.variableFuncCache[scope.id + '|' + _var.title] = _function;
                 }
-                var _parsed = _function.apply(context || scope.context||{}, args || []);
-                if(_parsed==='undefined' || typeof _parsed ==='undefined'){
-                    value = '' + _var.value;
-                }else{
-                    if(!this.isNumber(_parsed) && escape!==false){
-                        value = ''+_parsed;
-                        value = "'" + value + "'";
-                    }else{
-                        value = _parsed;
-                    }
-
+            } else {
+                _function = new Function("{" + _prefix + value + "}");
+            }
+            var _parsed = _function.apply(context || scope.context || {}, args || []);
+            if (_parsed === 'undefined' || typeof _parsed === 'undefined') {
+                value = '' + _var.value;
+            } else {
+                if (!this.isNumber(_parsed) && escape !== false) {
+                    value = '' + _parsed;
+                    value = "'" + value + "'";
+                } else {
+                    value = _parsed;
                 }
+            }
             return value;
         },
         // Replace block call with block result
-        replaceBlockCalls:function(scope,expression) {
-            var ocurr = this._findOcurrences( expression, this.blockCallDelimiters );
-            if (ocurr) {
-                for(var n = 0; n < ocurr.length; n++ ){
+        replaceBlockCalls: function (scope, expression) {
+            var occurrences = this.findOccurrences(expression, this.blockCallDelimiters);
+            if (occurrences) {
+                for (var n = 0; n < occurrences.length; n++) {
                     // Replace each block call with block result
-                    var blockName = this._removeDelimiters( ocurr[n],this.blockCallDelimiters );
+                    var blockName = this._removeDelimiters(occurrences[n], this.blockCallDelimiters);
                     var blockResult = scope.solveBlock(blockName).join("\n");
-                    expression = expression.replace(ocurr[n],blockResult);
+                    expression = expression.replace(occurrences[n], blockResult);
                 }
             }
             return expression;
         },
         // gets a variable from the scope using text [variableName]
-        _getVar:function(scope,vartext) {
-            return scope.getVariable(this._getVarName(vartext));
+        _getVar: function (scope, string) {
+            return scope.getVariable(this._getVarName(string));
         },
-        _getVarName:function(vartext) {
-            return this._removeDelimiters(vartext,this.variableDelimiters);
+        _getVarName: function (string) {
+            return this._removeDelimiters(string, this.variableDelimiters);
         },
-        _removeDelimiters:function(text,delimiters) {
-            return text.replace(delimiters.begin,'').replace(delimiters.end,'');
+        _removeDelimiters: function (text, delimiters) {
+            return text.replace(delimiters.begin, '').replace(delimiters.end, '');
         },
         // escape regular expressions special chars
-        _escapeRegExp:function(string) {
-            var special = [ "[" ,"]" , "(" , ")" , "{", "}" , "*" , "+" , "." ];
-            for (var n = 0; n < special.length ; n++ ){
-                string = string.replace(special[n],"\\"+special[n]);
+        _escapeRegExp: function (string) {
+            var special = ["[", "]", "(", ")", "{", "}", "*", "+", "."];
+            for (var n = 0; n < special.length; n++) {
+                string = string.replace(special[n], "\\" + special[n]);
             }
             return string;
         },
@@ -45471,22 +45400,14 @@ define('xblox/model/Expression',[
          * Finds a term in an expression by start and end delimiters
          * @param expression
          * @param delimiters
-         * @returns {*|Boolean|Array|Route|Collection|SchemaType}
          * @private
          */
-        _findOcurrences:function(expression,delimiters) {
-            // prepare delimiters for the regular expression
+        findOccurrences: function (expression, delimiters) {
             var d = {
                 begin: this._escapeRegExp(delimiters.begin),
-                end:   this._escapeRegExp(delimiters.end)
+                end: this._escapeRegExp(delimiters.end)
             };
-            // regular expression for [<content>]
-            var allExceptEnd = "[^" + d.end + "]*";
-
-            // final regular expression = find all [variables]
-            var patt = d.begin + "(" + allExceptEnd + ")" + d.end;
-
-            return expression.match( new RegExp(patt,'g') );
+            return expression.match(new RegExp(d.begin + "(" + "[^" + d.end + "]*" + ")" + d.end, 'g'));
         }
     });
 });;
@@ -45499,7 +45420,6 @@ define('xblox/model/ModelBase',[
     "xide/types",
     "xide/mixins/EventedMixin"
 ], function(dcl,utils,types,EventedMixin){
-
     /**
      * The model mixin for a block
      * @class module:xblox.model.ModelBase
@@ -45529,18 +45449,15 @@ define('xblox/model/ModelBase',[
            return [];
         },
         /**
-         *
-         * Implmented by the subclass. Each block must provide an input signature.
+         * Implemented by the subclass. Each block must provide an input signature.
          * The format is currently the same as Dojo SMD
-         *
          * @returns {Array}
          */
         takes:function(){
             return [];
         },
         /**
-         *
-         * Implmented by the subclass. Each block must provide an needed input signature.
+         * Implemented by the subclass. Each block must provide an needed input signature.
          * The format is currently the same as Dojo SMD. This is a filtered version of
          * 'takes'
          *
@@ -45555,8 +45472,8 @@ define('xblox/model/ModelBase',[
         //
         ////////////////////////////////////////////////////////////
         /***
-         * Standard constructor for all subclassing blocks
-         * @param {array} arguments
+         * Standard constructor for all sub classing blocks
+         * @param {array} args
          */
         constructor: function(args){
             //simple mixin of constructor arguments
@@ -45565,7 +45482,6 @@ define('xblox/model/ModelBase',[
                     this[prop] = args[prop];
                 }
             }
-
             if(!this.id){
                 this.id = this.createUUID();
             }
@@ -45633,9 +45549,7 @@ define('xblox/model/ModelBase',[
             return false;
         },
         getValue:function(val){
-
             var _float = parseFloat(val);
-
             if(!isNaN(_float)){
                return _float;
             }
@@ -45646,7 +45560,6 @@ define('xblox/model/ModelBase',[
                 return false;
             }
             return val;
-
         },
         isScript:function(val){
             return this.isString(val) &&(
@@ -45669,7 +45582,7 @@ define('xblox/model/ModelBase',[
         },
         replaceAll:function(find, replace, str) {
             if(this.isString(str)){
-                return str.split(find).join(replace);//faster!
+                return str.split(find).join(replace);
             }
             return str;
         },
@@ -45678,7 +45591,6 @@ define('xblox/model/ModelBase',[
         },
         destroy:function(){}
     });
-
     dcl.chainAfter(Module,'destroy');
     return Module;
 });;
@@ -49952,7 +49864,7 @@ define('xblox/model/Block',[
             }
         }));
     }
-    if(Block_UI){
+    if (Block_UI) {
         bases.push(Block_UI);
     }
 
@@ -49964,7 +49876,7 @@ define('xblox/model/Block',[
          * Flags to describe flags of the inner state of a block which might change upon the optimization. It also
          * contains some other settings which might be static, default or changed by the UI(debugger, etc...)
          *
-         * @enum module:xide/types/BLOCK_FLAGS
+         * @enum {integer} module:xide/types/BLOCK_FLAGS
          * @memberOf module:xide/types
          */
         BLOCK_FLAGS: {
@@ -50073,7 +49985,7 @@ define('xblox/model/Block',[
          * 'Run Script' will result in result 'Run Script + this.script'
          *
          * @todo: move that in user space, combine that with a template system, so any block ui parts gets off from here!
-         * @type {string}
+         * @type {string|null}
          * @default null
          * @required false
          */
@@ -50164,27 +50076,21 @@ define('xblox/model/Block',[
         _parseString: function (string, settings, block, flags) {
             try {
                 settings = settings || this._lastSettings || {};
-                block = block || this;
                 flags = flags || settings.flags || types.CIFLAG.EXPRESSION;
                 var scope = this.scope;
                 var value = string;
                 var parse = !(flags & types.CIFLAG.DONT_PARSE);
                 var isExpression = (flags & types.CIFLAG.EXPRESSION);
-                var wait = (flags & types.CIFLAG.WAIT) ? true : false;
-
                 if (flags & types.CIFLAG.TO_HEX) {
                     value = utils.to_hex(value);
                 }
-
                 if (parse !== false) {
                     value = utils.convertAllEscapes(value, "none");
                 }
-
                 var override = settings.override || this.override || {};
                 var _overrides = (override && override.variables) ? override.variables : null;
                 var res = "";
                 if (isExpression && parse !== false) {
-
                     res = scope.parseExpression(value, null, _overrides, null, null, null, override.args, flags);
                 } else {
                     res = '' + value;
@@ -50317,9 +50223,6 @@ define('xblox/model/Block',[
                 items[cIndex] = upperItem;
                 return true;
             } else {
-                if (store && item.group) {
-                    items = store.storage.fullData;
-                }
                 item._place(null, dir);
                 return true;
             }
@@ -50327,7 +50230,6 @@ define('xblox/model/Block',[
         _place: function (ref, direction, items) {
             var store = this._store,
                 dst = this;
-
             ref = ref || dst.next(null, direction);
             if (!ref) {
                 console.error('have no next', this);
@@ -50338,11 +50240,9 @@ define('xblox/model/Block',[
             items = items || store.storage.fullData;
             direction = direction == -1 ? 0 : 1;
             items.remove(dst);
-
             if (direction == -1) {
                 direction = 0;
             }
-
             items.splice(Math.max(index(ref, items) + direction, 0), 0, dst);
             store._reindex();
         },
@@ -50354,18 +50254,14 @@ define('xblox/model/Block',[
                 store = this._store;
 
             if (parent) {
-
                 items = parent[parent._getContainer(item)] || [];
-
                 items = items.filter(function (item) {
                     return item.group === group;
                 });
-
                 if (!items || items.length < 2 || !this.containsItem(items, item)) {
                     return false;
                 }
                 return this.indexOf(items, item);
-
             } else {
                 items = store.storage.fullData;
                 items = items.filter(function (item) {
@@ -50394,35 +50290,31 @@ define('xblox/model/Block',[
             return last;
         },
         next: function (items, dir) {
-            var _dstIndex = 0;
-            var step = 1;
             items = items || this._store.storage.fullData;
-            function _next(item, items, dir) {
-                var cIndex = item.indexOf(items, item);
-                var _nIndex = cIndex + (dir * step);
-
-                var upperItem = items[cIndex + (dir * step)];
-
+            function _next(item, items, dir, step, _dstIndex) {
+                var start = item.indexOf(items, item);
+                var upperItem = items[start + (dir * step)];
                 if (upperItem) {
                     if (!upperItem.parentId && upperItem.group && upperItem.group === item.group) {
-                        _dstIndex = cIndex + (dir * step);
+                        _dstIndex = start + (dir * step);
                         return upperItem;
                     } else {
                         step++;
-                        return _next(item, items, dir);
+                        return _next(item, items, dir, step, _dstIndex);
                     }
                 }
                 return null;
-            };
-            return _next(this, items, dir);
+            }
+
+            return _next(this, items, dir, 1, 0);
         },
         getParent: function (createRoot) {
             if (this.parentId) {
                 return this.scope.getBlockById(this.parentId);
             }
-            if(createRoot===true){
-                //return this._store.getRootItem();
-            }
+            //if(createRoot===true){
+            //return this._store.getRootItem();
+            //}
             return null;
         },
         getScope: function () {
@@ -50458,8 +50350,6 @@ define('xblox/model/Block',[
         addToEnd: function (array1, array2) {
             if (array2 && array1.length != null && array2.length != null) {
                 array1.push.apply(array1, array2);
-            } else {
-                //console.error('add to end failed : invalid args in' + this.name);
             }
             return array1;
         },
@@ -50473,7 +50363,6 @@ define('xblox/model/Block',[
                 if (del !== false && what.empty) {
                     what.empty();
                 }
-
                 if (del !== false) {
                     delete what.items;
                 }
@@ -50506,7 +50395,7 @@ define('xblox/model/Block',[
             }
         },
         /*
-         * Empty : removes all child blocks, recursivly
+         * Empty : removes all child blocks, recursively
          * @param proto : prototype|instance
          * @param ctrArgs
          * @returns {*}
@@ -50558,30 +50447,26 @@ define('xblox/model/Block',[
             return -1;
         },
         _getBlock: function (dir) {
-            try {
-                var item = this;
-                if (!item || !item.parentId) {
-                    return false;
-                }
-                //get parent
-                var parent = this.scope.getBlockById(item.parentId);
-                if (!parent) {
-                    return null;
-                }
-                var items = parent[parent._getContainer(item)];
-                if (!items || items.length < 2 || !this.containsItem(items, item)) {
-                    return null;
-                }
-                var cIndex = this.indexOf(items, item);
-                if (cIndex + (dir) < 0) {
-                    return false;
-                }
-                var upperItem = items[cIndex + (dir)];
-                if (upperItem) {
-                    return upperItem;
-                }
-            } catch (e) {
-                debugger;
+            var item = this;
+            if (!item || !item.parentId) {
+                return false;
+            }
+            //get parent
+            var parent = this.scope.getBlockById(item.parentId);
+            if (!parent) {
+                return null;
+            }
+            var items = parent[parent._getContainer(item)];
+            if (!items || items.length < 2 || !this.containsItem(items, item)) {
+                return null;
+            }
+            var cIndex = this.indexOf(items, item);
+            if (cIndex + (dir) < 0) {
+                return false;
+            }
+            var upperItem = items[cIndex + (dir)];
+            if (upperItem) {
+                return upperItem;
             }
             return null;
         },
@@ -50592,10 +50477,8 @@ define('xblox/model/Block',[
             return this._getBlock(1);
         },
         _getPreviousResult: function () {
-
             var parent = this.getPreviousBlock() || this.getParent();
             if (parent && parent._lastResult != null) {
-
                 if (this.isArray(parent._lastResult)) {
                     return parent._lastResult;
                 } else {
@@ -50630,14 +50513,12 @@ define('xblox/model/Block',[
             return null;
         },
         _getArg: function (val, escape) {
-            //try auto convert to number
             var _float = parseFloat(val);
             if (!isNaN(_float)) {
                 return _float;
             } else {
-
                 if (val === 'true' || val === 'false') {
-                    return val === 'true' ? true : false;
+                    return val === 'true';
                 } else if (val && escape && _.isString(val)) {
                     return '\'' + val + '\'';
                 }
@@ -50649,38 +50530,30 @@ define('xblox/model/Block',[
          * @returns {Array}
          */
         getArgs: function (settings) {
-
             var result = [];
-
             settings = settings || {};
-
             var _inArgs = settings.args || this._get('args');
-
             if (settings.override && settings.override.args) {
                 _inArgs = settings.override.args;
             }
-
             if (_inArgs) {//direct json
                 result = utils.getJson(_inArgs, null, false);
             }
-
             //try comma separated list
             if (result && result.length == 0 && _inArgs && _inArgs.length && _.isString(_inArgs)) {
 
                 if (_inArgs.indexOf(',') !== -1) {
-                    var _splitted = _inArgs.split(',');
-                    for (var i = 0; i < _splitted.length; i++) {
-
+                    var splitted = _inArgs.split(',');
+                    for (var i = 0; i < splitted.length; i++) {
                         //try auto convert to number
-                        var _float = parseFloat(_splitted[i]);
+                        var _float = parseFloat(splitted[i]);
                         if (!isNaN(_float)) {
                             result.push(_float);
                         } else {
-
-                            if (_splitted[i] === 'true' || _splitted[i] === 'false') {
-                                result.push(utils.toBoolean(_splitted[i]));
+                            if (splitted[i] === 'true' || splitted[i] === 'false') {
+                                result.push(utils.toBoolean(splitted[i]));
                             } else {
-                                result.push(_splitted[i]);//whatever
+                                result.push(splitted[i]);//whatever
                             }
                         }
                     }
@@ -50731,7 +50604,7 @@ define('xblox/model/Block',[
             }
 
         },
-        prepareBlockContructorArgs: function (ctorArgs) {
+        prepareArgs: function (ctorArgs) {
             if (!ctorArgs) {
                 ctorArgs = {};
             }
@@ -50753,17 +50626,17 @@ define('xblox/model/Block',[
          * @private
          */
         _add: function (proto, ctrArgs, where, publish) {
-            var _block = null;
+            var block = null;
             try {
                 //create or set
                 if (ctrArgs) {
                     //use case : normal object construction
-                    this.prepareBlockContructorArgs(ctrArgs);
-                    _block = factory.createBlock(proto, ctrArgs, null, publish);
+                    this.prepareArgs(ctrArgs);
+                    block = factory.createBlock(proto, ctrArgs, null, publish);
                 } else {
                     //use case : object has been created so we only do the leg work
                     if (ctrArgs == null) {
-                        _block = proto;
+                        block = proto;
                     }
                     //@TODO : allow use case to use ctrArgs as mixin for overriding
                 }
@@ -50771,45 +50644,39 @@ define('xblox/model/Block',[
                 //  post work
 
                 //inherit scope
-                _block.scope = this.scope;
-
+                block.scope = this.scope;
                 //add to scope
                 if (this.scope) {
-                    _block = this.scope.registerBlock(_block, publish);
+                    block = this.scope.registerBlock(block, publish);
                 }
-                if (_block.id === this.id) {
-                    var sameInstance = _block == this;
-                    console.error('adding new block to our self');
-                    debugger;
+                if(has('debug')) {
+                    if (block.id === this.id) {
+                        console.error('adding new block to our self');
+                        debugger;
+                    }
                 }
-                if(_block==this){
-                    debugger;
-                }
-                //pass parent
-                _block.parent = this;
-                //pass parent id
-                _block.parentId = this.id;
-
-                _block.scope = this.scope;
+                block.parent = this;
+                block.parentId = this.id;
+                block.scope = this.scope;
 
                 var container = where || this._getContainer();
                 if (container) {
                     if (!this[container]) {
                         this[container] = [];
                     }
-                    var index = this.indexOf(this[container], _block);
+                    var index = this.indexOf(this[container], block);
                     if (index !== -1) {
-                        console.error(' have already ' + _block.id + ' in ' + container);
+                        console.error(' have already ' + block.id + ' in ' + container);
                     } else {
-                        if (this.id == _block.id) {
+                        if (this.id == block.id) {
                             console.error('tried to add our self to ' + container);
                             return;
                         }
-                        this[container].push(_block);
+                        this[container].push(block);
                     }
                 }
-                _block.group=null;
-                return _block;
+                block.group = null;
+                return block;
             } catch (e) {
                 logError(e, '_add');
             }
@@ -50888,10 +50755,10 @@ define('xblox/model/Block',[
                 this._lastRunSettings = settings;
             }
             settings = this._lastRunSettings || settings;
-
             this._currentIndex = 0;
             this._return = [];
             var ret = [], items = this[this._getContainer()];
+
             if (items.length) {
                 var res = this.runFrom(items, 0, settings);
                 this.onSuccess(this, settings);
@@ -50902,13 +50769,10 @@ define('xblox/model/Block',[
             return ret;
         },
         runFrom: function (blocks, index, settings) {
-
             var thiz = this;
-
             blocks = blocks || this.items;
             var onFinishBlock = function (block, results) {
                 block._lastResult = block._lastResult || results;
-
                 thiz._currentIndex++;
                 thiz.runFrom(blocks, thiz._currentIndex, settings);
             };
@@ -50931,7 +50795,6 @@ define('xblox/model/Block',[
                         this.addToEnd(this._return, block.solve(this.scope, settings));
                     }
                 }
-
             } else {
                 this.onSuccess(this, settings);
             }
@@ -50980,21 +50843,17 @@ define('xblox/model/Block',[
         }
 
     });
-
-    //global short-cuts
     Block.FLAGS = types.BLOCK_FLAGS;
     Block.EMITS = types.BLOCK_CALLBACKMASK;
-
     //that's really weird: using dynamic base classes nor Block.extend doesnt work.
     //however, move dojo complete out of blox
-
     if (!Block.prototype.onSuccess) {
         Block.prototype.onSuccess = function () {
         };
         Block.prototype.onRun = function () {
-        }
+        };
         Block.prototype.onFailed = function () {
-        }
+        };
     }
     dcl.chainAfter(Block, 'stop');
     dcl.chainAfter(Block, 'destroy');
@@ -51330,7 +51189,7 @@ define('xblox/factory/Blocks',[
 ], function (factory,
              utils,
              types,
-             ReloadMixin,EventedMixin,
+             ReloadMixin, EventedMixin,
              CaseBlock,
              Block,
              CallBlock,
@@ -51354,23 +51213,9 @@ define('xblox/factory/Blocks',[
              OnKey,
              Subscribe,
              Publish,
-             ReadJSON){
+             ReadJSON) {
 
     var cachedAll = null;
-
-    factory.prepareBlockContructorArgs=function(ctorArgs){
-        if(!ctorArgs){
-            ctorArgs={};
-        }
-
-        //prepare items
-        if(!ctorArgs['id']){
-            ctorArgs['id']=utils.createUUID();
-        }
-        if(!ctorArgs['items']){
-            ctorArgs['items']=[];
-        }
-    };
     /***
      *
      * @param mixed String|Prototype
@@ -51378,401 +51223,391 @@ define('xblox/factory/Blocks',[
      * @param baseClasses
      * @param publish
      */
-    factory.createBlock=function(mixed,ctorArgs,baseClasses,publish){
+    factory.createBlock = function (mixed, ctorArgs, baseClasses, publish) {
         //complete missing arguments:
-        factory.prepareBlockContructorArgs(ctorArgs);
-        var block= factory.createInstance(mixed,ctorArgs,baseClasses);
-        block.ctrArgs=null;
+        Block.prototype.prepareArgs(ctorArgs);
+        var block = factory.createInstance(mixed, ctorArgs, baseClasses);
+        block.ctrArgs = null;
         var newBlock;
-        try{
-            if(block && block.init){
+        try {
+            if (block && block.init) {
                 block.init();
             }
             //add to scope
             if (block.scope) {
-                newBlock = block.scope.registerBlock(block,publish);
+                newBlock = block.scope.registerBlock(block, publish);
             }
-
-            if(block.initReload){
+            if (block.initReload) {
                 block.initReload();
             }
-        }catch(e){
-            logError(e,'create block');
+        } catch (e) {
+            logError(e, 'create block');
         }
         return newBlock || block;
     };
-    factory.clearVariables=function(){};
-    factory.getAllBlocks=function(scope,owner,target,group,allowCache){
-        if(allowCache!==false && cachedAll !=null){
-            /**
-             * remove dynamic blocks like 'Set Variable'
-             */
-            for (var i = 0; i < cachedAll.length; i++) {
-                var obj = cachedAll[i];
-                if(obj.name==='Set Variable'){
-                    cachedAll.remove(obj);
-                    break;
-                }
-            }
+    factory.clearVariables = function () {
+    };
+    factory.getAllBlocks = function (scope, owner, target, group, allowCache) {
+        if (allowCache !== false && cachedAll != null) {
             return cachedAll;
-        }else if(allowCache==false){
-            cachedAll=null;
+        } else if (allowCache == false) {
+            cachedAll = null;
         }
-        var items = factory._getFlowBlocks(scope,owner,target,group);
-        items = items.concat(factory._getLoopBlocks(scope,owner,target,group));
-        items = items.concat(factory._getCommandBlocks(scope,owner,target,group));
-        items = items.concat(factory._getCodeBlocks(scope,owner,target,group));
-        items = items.concat(factory._getEventBlocks(scope,owner,target,group));
-        items = items.concat(factory._getLoggingBlocks(scope,owner,target,group));
-        items = items.concat(factory._getServerBlocks(scope,owner,target,group));
-        items = items.concat(factory._getMQTTBlocks(scope,owner,target,group));
-        items = items.concat(factory._getFileBlocks(scope,owner,target,group));
+        var items = factory._getFlowBlocks(scope, owner, target, group);
+        items = items.concat(factory._getLoopBlocks(scope, owner, target, group));
+        items = items.concat(factory._getCommandBlocks(scope, owner, target, group));
+        items = items.concat(factory._getCodeBlocks(scope, owner, target, group));
+        items = items.concat(factory._getEventBlocks(scope, owner, target, group));
+        items = items.concat(factory._getLoggingBlocks(scope, owner, target, group));
+        items = items.concat(factory._getServerBlocks(scope, owner, target, group));
+        items = items.concat(factory._getMQTTBlocks(scope, owner, target, group));
+        items = items.concat(factory._getFileBlocks(scope, owner, target, group));
         cachedAll = items;
         return items;
     };
-    factory._getMQTTBlocks=function(scope,owner,target,group){
+    factory._getMQTTBlocks = function (scope, owner, target, group) {
         var items = [];
         items.push({
-            name:'MQTT',
+            name: 'MQTT',
             iconClass: 'fa-cloud',
-            items:[
+            items: [
                 {
-                    name:'Subscribe',
-                    owner:owner,
-                    iconClass:'fa-bell',
-                    proto:Subscribe,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
+                    name: 'Subscribe',
+                    owner: owner,
+                    iconClass: 'fa-bell',
+                    proto: Subscribe,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
                     }
                 },
                 {
-                    name:'Publish',
-                    owner:owner,
-                    iconClass:'fa-send',
-                    proto:Publish,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
+                    name: 'Publish',
+                    owner: owner,
+                    iconClass: 'fa-send',
+                    proto: Publish,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
                     }
                 }
             ]
         });
         //tell everyone
-        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST,{
-            items:items,
-            group:'MQTT'
+        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST, {
+            items: items,
+            group: 'MQTT'
         });
         return items;
 
     };
 
-    factory._getFileBlocks=function(scope,owner,target,group){
+    factory._getFileBlocks = function (scope, owner, target, group) {
         var items = [];
         items.push({
-            name:'File',
+            name: 'File',
             iconClass: 'fa-file',
-            items:[
+            items: [
                 {
-                    name:'%%Read JSON',
-                    owner:owner,
-                    iconClass:'fa-file',
-                    proto:ReadJSON,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
+                    name: '%%Read JSON',
+                    owner: owner,
+                    iconClass: 'fa-file',
+                    proto: ReadJSON,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
                     }
                 }
             ]
         });
 
         //tell everyone
-        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST,{
-            items:items,
-            group:'File'
+        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST, {
+            items: items,
+            group: 'File'
         });
         return items;
 
     };
-    
-    factory._getServerBlocks=function(scope,owner,target,group){
+
+    factory._getServerBlocks = function (scope, owner, target, group) {
         var items = [];
         items.push({
-            name:'Server',
+            name: 'Server',
             iconClass: 'el-icon-repeat',
-            items:[
+            items: [
                 {
-                    name:'Run Server Method',
-                    owner:owner,
-                    iconClass:'fa-plug',
-                    proto:RunServerMethod,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
+                    name: 'Run Server Method',
+                    owner: owner,
+                    iconClass: 'fa-plug',
+                    proto: RunServerMethod,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
                     }
                 },
                 {
-                    name:'Shell',
-                    owner:owner,
-                    iconClass:'fa-code',
-                    proto:Shell,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
+                    name: 'Shell',
+                    owner: owner,
+                    iconClass: 'fa-code',
+                    proto: Shell,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
                     }
                 }
             ]
         });
 
         //tell everyone
-        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST,{
-            items:items,
-            group:'Server'
+        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST, {
+            items: items,
+            group: 'Server'
         });
         return items;
     };
-    factory._getVariableBlocks=function(scope,owner,target,group){
+    factory._getVariableBlocks = function (scope, owner, target, group) {
         var items = [];
         items.push({
-            name:'Flow',
-            iconClass:'el-icon-random',
-            items:[
+            name: 'Flow',
+            iconClass: 'el-icon-random',
+            items: [
                 {
-                    name:'If...Else',
-                    owner:owner,
-                    iconClass:'el-icon-fork',
-                    proto:IfBlock,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group,
-                        condition:"[value]=='PW'"
+                    name: 'If...Else',
+                    owner: owner,
+                    iconClass: 'el-icon-fork',
+                    proto: IfBlock,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group,
+                        condition: "[value]=='PW'"
                     }
                 }/*,
-                {
-                    name:'Switch',
-                    owner:owner,
-                    iconClass:'el-icon-fork',
-                    proto:SwitchBlock,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
-                    }
-                }
-                */
+                 {
+                 name:'Switch',
+                 owner:owner,
+                 iconClass:'el-icon-fork',
+                 proto:SwitchBlock,
+                 target:target,
+                 ctrArgs:{
+                 scope:scope,
+                 group:group
+                 }
+                 }
+                 */
             ]
         });
 
         return items;
     };
-    factory._getEventBlocks=function(scope,owner,target,group){
+    factory._getEventBlocks = function (scope, owner, target, group) {
         var items = [];
         items.push({
-            name:'Events',
-            iconClass:'fa-bell',
-            items:[
+            name: 'Events',
+            iconClass: 'fa-bell',
+            items: [
                 {
-                    name:'On Event',
-                    owner:owner,
-                    iconClass:'fa-bell',
-                    proto:OnEvent,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
+                    name: 'On Event',
+                    owner: owner,
+                    iconClass: 'fa-bell',
+                    proto: OnEvent,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
                     }
                 },
                 {
-                    name:'On Key',
-                    owner:owner,
-                    iconClass:'fa-keyboard-o',
-                    proto:OnKey,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
-                    }
-                }
-            ]
-        });
-        //tell everyone
-        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST,{
-            items:items,
-            group:'Events'
-        });
-
-        return items;
-    };
-    factory._getLoggingBlocks=function(scope,owner,target,group){
-        var items = [];
-        items.push({
-            name:'Logging',
-            iconClass:'fa-bug',
-            items:[
-                {
-                    name:'Log',
-                    owner:owner,
-                    iconClass:'fa-bug',
-                    proto:Log,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
-                    }
-                }
-            ]
-        });
-
-        //tell everyone
-        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST,{
-            items:items,
-            group:'Logging'
-        });
-
-        return items;
-    };
-    factory._getCodeBlocks=function(scope,owner,target,group){
-        var items = [];
-        items.push({
-            name:'Code',
-            iconClass:'fa-code',
-            items:[
-                {
-                    name:'Call Method',
-                    owner:owner,
-                    iconClass:'el-icon-video',
-                    proto:CallMethod,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
-                    }
-                },
-                {
-                    name:'Run Script',
-                    owner:owner,
-                    iconClass:'fa-code',
-                    proto:RunScript,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
-                    }
-                },
-                {
-                    name:'Run Block',
-                    owner:owner,
-                    iconClass:'fa-code',
-                    proto:RunBlock,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
-                    }
-                },
-                {
-                    name:'Set Properties',
-                    owner:owner,
-                    iconClass:'fa-code',
-                    proto:SetProperties,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
+                    name: 'On Key',
+                    owner: owner,
+                    iconClass: 'fa-keyboard-o',
+                    proto: OnKey,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
                     }
                 }
             ]
         });
         //tell everyone
-        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST,{
-            items:items,
-            group:'Code'
+        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST, {
+            items: items,
+            group: 'Events'
         });
+
         return items;
     };
-    factory._getFlowBlocks=function(scope,owner,target,group){
+    factory._getLoggingBlocks = function (scope, owner, target, group) {
         var items = [];
         items.push({
-            name:'Flow',
-            iconClass:'el-icon-random',
-            items:[
+            name: 'Logging',
+            iconClass: 'fa-bug',
+            items: [
                 {
-                    name:'If...Else',
-                    owner:owner,
-                    iconClass:'el-icon-fork',
-                    proto:IfBlock,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group,
-                        condition:"[value]=='PW'"
-                    }
-                },
-                {
-                    name:'Switch',
-                    owner:owner,
-                    iconClass:'el-icon-fork',
-                    proto:SwitchBlock,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
-                    }
-                },
-                {
-                    name:'Variable Switch',
-                    owner:owner,
-                    iconClass:'el-icon-fork',
-                    proto:VariableSwitch,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
+                    name: 'Log',
+                    owner: owner,
+                    iconClass: 'fa-bug',
+                    proto: Log,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
                     }
                 }
             ]
         });
 
         //tell everyone
-        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST,{
-            items:items,
-            group:'Flow'
+        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST, {
+            items: items,
+            group: 'Logging'
+        });
+
+        return items;
+    };
+    factory._getCodeBlocks = function (scope, owner, target, group) {
+        var items = [];
+        items.push({
+            name: 'Code',
+            iconClass: 'fa-code',
+            items: [
+                {
+                    name: 'Call Method',
+                    owner: owner,
+                    iconClass: 'el-icon-video',
+                    proto: CallMethod,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
+                    }
+                },
+                {
+                    name: 'Run Script',
+                    owner: owner,
+                    iconClass: 'fa-code',
+                    proto: RunScript,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
+                    }
+                },
+                {
+                    name: 'Run Block',
+                    owner: owner,
+                    iconClass: 'fa-code',
+                    proto: RunBlock,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
+                    }
+                },
+                {
+                    name: 'Set Properties',
+                    owner: owner,
+                    iconClass: 'fa-code',
+                    proto: SetProperties,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
+                    }
+                }
+            ]
+        });
+        //tell everyone
+        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST, {
+            items: items,
+            group: 'Code'
         });
         return items;
     };
-    factory._getLoopBlocks=function(scope,owner,target,group){
+    factory._getFlowBlocks = function (scope, owner, target, group) {
         var items = [];
         items.push({
-            name:'Loops',
+            name: 'Flow',
+            iconClass: 'el-icon-random',
+            items: [
+                {
+                    name: 'If...Else',
+                    owner: owner,
+                    iconClass: 'el-icon-fork',
+                    proto: IfBlock,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group,
+                        condition: "[value]=='PW'"
+                    }
+                },
+                {
+                    name: 'Switch',
+                    owner: owner,
+                    iconClass: 'el-icon-fork',
+                    proto: SwitchBlock,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
+                    }
+                },
+                {
+                    name: 'Variable Switch',
+                    owner: owner,
+                    iconClass: 'el-icon-fork',
+                    proto: VariableSwitch,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
+                    }
+                }
+            ]
+        });
+
+        //tell everyone
+        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST, {
+            items: items,
+            group: 'Flow'
+        });
+        return items;
+    };
+    factory._getLoopBlocks = function (scope, owner, target, group) {
+        var items = [];
+        items.push({
+            name: 'Loops',
             iconClass: 'el-icon-repeat',
-            items:[
+            items: [
                 {
-                    name:'While',
-                    owner:owner,
-                    iconClass:'el-icon-repeat',
-                    proto:WhileBlock,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group,
-                        condition:"[Volume]<=100"
+                    name: 'While',
+                    owner: owner,
+                    iconClass: 'el-icon-repeat',
+                    proto: WhileBlock,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group,
+                        condition: "[Volume]<=100"
                     }
                 },
                 {
-                    name:'For',
-                    owner:owner,
-                    iconClass:'el-icon-repeat',
-                    proto:ForBlock,
-                    target:target,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group,
+                    name: 'For',
+                    owner: owner,
+                    iconClass: 'el-icon-repeat',
+                    proto: ForBlock,
+                    target: target,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group,
                         initial: '1',
                         comparator: "<=",
                         "final": '5',
@@ -51784,52 +51619,52 @@ define('xblox/factory/Blocks',[
         });
 
         //tell everyone
-        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST,{
-            items:items,
-            group:'Loops'
+        factory.publish(types.EVENTS.ON_BUILD_BLOCK_INFO_LIST, {
+            items: items,
+            group: 'Loops'
         });
         return items;
     };
-    factory._getMathBlocks=function(scope,owner,dstItem,group){
+    factory._getMathBlocks = function (scope, owner, dstItem, group) {
         var items = [];
         items.push({
-            name:'Math',
-            owner:this,
-            iconClass:'el-icon-qrcode',
-            dstItem:dstItem,
-            items:[
+            name: 'Math',
+            owner: this,
+            iconClass: 'el-icon-qrcode',
+            dstItem: dstItem,
+            items: [
                 {
-                    name:'If...Else',
-                    owner:dstItem,
-                    iconClass:'el-icon-compass',
-                    proto:IfBlock,
-                    item:dstItem,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
+                    name: 'If...Else',
+                    owner: dstItem,
+                    iconClass: 'el-icon-compass',
+                    proto: IfBlock,
+                    item: dstItem,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
                     }
                 }
             ]
         });
         return items;
     };
-    factory._getTimeBlocks=function(scope,owner,dstItem,group){
+    factory._getTimeBlocks = function (scope, owner, dstItem, group) {
         var items = [];
         items.push({
-            name:'Time',
-            owner:this,
-            iconClass:'el-icon-qrcode',
-            dstItem:dstItem,
-            items:[
+            name: 'Time',
+            owner: this,
+            iconClass: 'el-icon-qrcode',
+            dstItem: dstItem,
+            items: [
                 {
-                    name:'If...Else',
-                    owner:dstItem,
-                    iconClass:'el-icon-time',
-                    proto:IfBlock,
-                    item:dstItem,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
+                    name: 'If...Else',
+                    owner: dstItem,
+                    iconClass: 'el-icon-time',
+                    proto: IfBlock,
+                    item: dstItem,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
                     }
                 }
 
@@ -51837,23 +51672,23 @@ define('xblox/factory/Blocks',[
         });
         return items;
     };
-    factory._getTransformBlocks=function(scope,owner,dstItem,group){
+    factory._getTransformBlocks = function (scope, owner, dstItem, group) {
         var items = [];
         items.push({
-            name:'Time',
-            owner:this,
-            iconClass:'el-icon-magic',
-            dstItem:dstItem,
-            items:[
+            name: 'Time',
+            owner: this,
+            iconClass: 'el-icon-magic',
+            dstItem: dstItem,
+            items: [
                 {
-                    name:'If...Else',
-                    owner:dstItem,
-                    iconClass:'el-icon-time',
-                    proto:IfBlock,
-                    item:dstItem,
-                    ctrArgs:{
-                        scope:scope,
-                        group:group
+                    name: 'If...Else',
+                    owner: dstItem,
+                    iconClass: 'el-icon-time',
+                    proto: IfBlock,
+                    item: dstItem,
+                    ctrArgs: {
+                        scope: scope,
+                        group: group
                     }
                 }
             ]
@@ -52046,10 +51881,8 @@ define('xblox/model/Contains',[
 ], function(dcl,all,types){
     /**
      * Contains provides implements functions to deal with sub blocks.
-     *
      */
     return dcl(null,{
-
         declaredClass:'xblox.model.Contains',
         runByType:function(outletType,settings){
             var items = this.getItemsByType(outletType);
@@ -52094,8 +51927,9 @@ define('xblox/model/Contains',[
         canAdd:function(){
             return [];
         },
+        /*
         runFrom: function (_blocks, index, settings) {
-
+            debugger;
             var thiz = this,
                 blocks = _blocks || this.items,
                 allDfds = [];
@@ -52108,28 +51942,21 @@ define('xblox/model/Contains',[
 
             var wireBlock = function (block) {
                 block._deferredObject.then(function (results) {
-                    console.log('----def block finish');
                     onFinishBlock(block, results);
                 });
             };
-
             if (blocks.length) {
-
                 for (var n = index; n < blocks.length; n++) {
                     var block = blocks[n];
                     if (block.deferred === true && block.enabled) {
                         block._deferredObject = new Deferred();
                         this._currentIndex = n;
                         wireBlock(block);
-                        //this.addToEnd(this._return, block.solve(this.scope, settings));
-                        var blockDfd = block.solve(this.scope, settings);
-                        allDfds.push(blockDfd);
+                        allDfds.push(block.solve(this.scope, settings));
                         break;
                     } else {
-                        //this.addToEnd(this._return, block.solve(this.scope, settings));
                         if(block.enabled) {
-                            var blockDfd = block.solve(this.scope, settings);
-                            allDfds.push(blockDfd);
+                            allDfds.push(block.solve(this.scope, settings));
                             block.onDidRun();
                         }
                     }
@@ -52139,13 +51966,10 @@ define('xblox/model/Contains',[
             } else {
                 this.onSuccess(this, settings);
             }
-
-            //console.log('last settings ',this._lastSettings);
-
             this._lastSettings && delete this._lastSettings.override;
-
             return allDfds;
         },
+        */
         /***
          * Generic: run sub blocks
          * @param scope
@@ -52155,17 +51979,12 @@ define('xblox/model/Contains',[
          * @returns {Array}
          */
         _solve:function(scope,settings,run,error) {
-
             if(!this._lastRunSettings && settings){
                 this._lastRunSettings= settings;
             }
-
             settings = this._lastRunSettings || settings;
-
-
             this._currentIndex=0;
             this._return=[];
-
             var ret=[], items = this[this._getContainer()];
             if(items.length) {
                 var res = this.runFrom(items,0,settings);
@@ -52176,49 +51995,24 @@ define('xblox/model/Contains',[
             }
             return ret;
         },
-        onDidRunItem:function(dfd,result,settings){
-
-            settings = settings || {};
-
-            var listener = settings.listener,
-                thiz = this;
-            this._emit(types.EVENTS.ON_RUN_BLOCK_SUCCESS, thiz);
+        onDidRunItem:function(dfd,result){
+            this._emit(types.EVENTS.ON_RUN_BLOCK_SUCCESS, this);
             dfd.resolve(result);
         },
-        onDidRunItemError:function(dfd,result,settings){
-
-            settings = settings || {};
-
-            var listener = settings.listener,
-                thiz = this;
-
+        onDidRunItemError:function(dfd,result){
             dfd.reject(result);
         },
-        onRunThis:function(settings){
-
-            settings = settings || {};
-
-            var listener = settings.listener,
-                thiz = this;
-
-            if(listener) {
-                //listener._emit(types.EVENTS.ON_RUN_BLOCK, thiz);
-            }
-            this._emit(types.EVENTS.ON_RUN_BLOCK, thiz);
+        onRunThis:function(){
+            this._emit(types.EVENTS.ON_RUN_BLOCK, this);
         },
         onDidRunThis:function(dfd,result,items,settings){
-
             var thiz = this;
-
             //more blocks?
             if(items && items.length) {
-
                 var subDfds = thiz.runFrom(items,0,settings);
-
-                all(subDfds).then(function(what){
+                all(subDfds).then(function(){
                     thiz.onDidRunItem(dfd,result,settings);
                 },function(err){
-                    console.error('error in chain',err);
                     thiz.onDidRunItem(dfd,err,settings);
                 });
 
@@ -52227,34 +52021,6 @@ define('xblox/model/Contains',[
             }
         },
         ___solve:function(scope,settings,run,error) {
-
-
-            /*
-            if(!this._lastRunSettings && settings){
-                this._lastRunSettings= settings;
-            }
-
-            settings = this._lastRunSettings || settings;
-
-
-            this._currentIndex=0;
-            this._return=[];
-
-            var ret=[], items = this[this._getContainer()];
-            if(items.length) {
-
-                var res = this.runFrom(items,0,settings);
-
-                this.onSuccess(this, settings);
-
-                return res;
-
-            }else{
-
-                this.onSuccess(this, settings);
-            }
-            return ret;
-            */
         }
     });
 });;
@@ -61833,10 +61599,6 @@ define('xide/manager/Context',[
         debugFileChanges = false,
         debugModuleReload = true;
 
-
-
-
-
     /**
      * @class module:xide/manager/Context
      * @extends module:xide/manager/ContextBase
@@ -61995,11 +61757,9 @@ define('xide/manager/Context',[
                 pluginPromises = [],
                 newModules = [],
                 thiz = this;
-
             _require({
                 cacheBust: 'time=' + new Date().getTime()
             });
-
             _.each(modules, function (module) {
                 var oldModule = null,
                     dfd = new Deferred();
@@ -62092,7 +61852,6 @@ define('xide/manager/Context',[
                     });
                     try {
                         _require([_module], function (moduleLoaded) {
-
                             _require({
                                 cacheBust: null
                             });
@@ -62123,6 +61882,7 @@ define('xide/manager/Context',[
                                     moduleProto: moduleLoaded.prototype
                                 });
                             }
+                            thiz.setModule(_module,moduleLoaded);
                             dfd.resolve(moduleLoaded);
                         });
                     } catch (e) {
@@ -73651,24 +73411,45 @@ define('xide/manager/ContextBase',[
     'xide/mixins/EventedMixin',
     'dojo/_base/kernel',
     'dojo/_base/lang'
-], function (dcl,factory, types,utils,EventedMixin,dojo,lang) {
+], function (dcl, factory, types, utils, EventedMixin, dojo, lang) {
     var _debug = false;
     /**
      * @class module:xide/manager/ContextBase
      * @extends module:xide/mixins/EventedMixin
      */
-    var Module = dcl(EventedMixin.dcl,{
-        declaredClass:"xide.manager.ContextBase",
+    var Module = dcl(EventedMixin.dcl, {
+        declaredClass: "xide.manager.ContextBase",
         language: "en",
         managers: [],
         mixins: null,
+        _getModuleDojo: function (mid) {
+            return lang.getObject(utils.replaceAll('/', '.', mid)) || lang.getObject(mid);
+        },
+        _getModuleDcl: function (mid) {
+            return (dcl.getObject ? dcl.getObject(mid) || dcl.getObject(utils.replaceAll('/', '.', mid)) : null);
+        },
         /**
          *
          * @param module {string}
          * @returns {*|Object|null}
          */
-        getModule:function(module){
-            return lang.getObject(utils.replaceAll('/', '.', module)) || lang.getObject(module) || (dcl.getObject ? dcl.getObject(module) || dcl.getObject(utils.replaceAll('/', '.', module)) : null);
+        getModule: function (module) {
+            return this._getModuleDojo(module) || this._getModuleDcl(module);
+        },
+        /**
+         * @param mid {string}
+         * @param object {module}
+         * @returns {*|Object|null}
+         */
+        setModule: function (mid, module) {
+            var moduleDojo = this._getModuleDojo(mid);
+            if (moduleDojo) {
+                return lang.setObject(utils.replaceAll('/', '.', mid), module);
+            }
+            var moduleDCL = this._getModuleDcl(mid);
+            if (moduleDCL) {
+                return dcl.setObject(utils.replaceAll('/', '.', mid), module);
+            }
         },
         /***
          * createManager creates and instances and tracks it in a local array.
@@ -73704,7 +73485,7 @@ define('xide/manager/ContextBase',[
                     }
                     _debug && console.log('creating manager instance : ' + clz);
                 } else if (_.isObject(clz)) {
-                    _debug &&  console.log('creating manager instance : ' + (clz.declaredClass || clz.prototype.declaredClass));
+                    _debug && console.log('creating manager instance : ' + (clz.declaredClass || clz.prototype.declaredClass));
                 }
 
                 //2. create instance
@@ -73730,8 +73511,10 @@ define('xide/manager/ContextBase',[
                 console.error('error creating manager ' + e, arguments);
             }
         },
-        constructManagers: function () {},
-        initManagers: function () {},
+        constructManagers: function () {
+        },
+        initManagers: function () {
+        },
         /***
          * Monkey patch prototypes
          * @param mixins
@@ -73740,7 +73523,7 @@ define('xide/manager/ContextBase',[
             this.mixins = mixins || this.mixins;
             for (var i = 0; i < mixins.length; i++) {
                 var mixin = mixins[i];
-                var obj = dojo.getObject(mixin.declaredClass) || dcl.getObject(mixin.declaredClass);
+                var obj = this.getModule(mixin.declaredClass);
                 if (mixin.declaredClass === this.declaredClass) {
                     obj = this;
                 }
@@ -73752,8 +73535,8 @@ define('xide/manager/ContextBase',[
             }
         }
     });
-    dcl.chainAfter(Module,'constructManagers');
-    dcl.chainAfter(Module,'initManagers');
+    dcl.chainAfter(Module, 'constructManagers');
+    dcl.chainAfter(Module, 'initManagers');
     return Module;
 });;
 define('xfile/types',[
@@ -79505,8 +79288,8 @@ define('xide/types/Types',[
     };
     /**
      * A 'Configurable Information's ("CI") type flags for post and pre-processing a value.
-     * @enum {string} module:xide/types/CIFlag
-     * @global CIFLAGS
+     * @enum {string} CIFLAGS
+     * @global
      * @memberOf module:xide/types
      */
     types.CIFLAG = {
@@ -80492,11 +80275,12 @@ define('dstore/mainr',[
 			proto[name] = dcl._stub(weaver[name], bases, name, chains);
 		}
 	}
-
 	dcl.getObject=function(classString){
 		return registry[classString];
 	};
-
+    dcl.setObject=function(classString,object){
+        return registry[classString] = object;
+    };
 	return dcl;
 });
 ;
