@@ -45418,8 +45418,9 @@ define('xblox/model/ModelBase',[
     'dcl/dcl',
     "xide/utils",
     "xide/types",
-    "xide/mixins/EventedMixin"
-], function(dcl,utils,types,EventedMixin){
+    "xide/mixins/EventedMixin",
+    "xide/lodash"
+], function(dcl,utils,types,EventedMixin,_){
     /**
      * The model mixin for a block
      * @class module:xblox.model.ModelBase
@@ -45514,16 +45515,7 @@ define('xblox/model/ModelBase',[
         size: function () {
             return this.toArray().length;
         },
-        createUUID:function(){
-            // summary:
-            //		Create a basic UUID
-            // description:
-            //		The UUID is created with Math.Random
-            var S4 = function() {
-                return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-            };
-            return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4()); //String
-        },
+        createUUID:utils.createUUID,
         canEdit:function(){
             return true;
         },
@@ -45539,15 +45531,8 @@ define('xblox/model/ModelBase',[
         isBoolean: function (a) {
             return typeof a == "boolean"
         },
-        isObject:function(a){
-            return typeof a === 'object';
-        },
-        isArray:function(a){
-            if (Array.isArray){
-                return Array.isArray(a);
-            }
-            return false;
-        },
+        isObject:_.isObject,
+        isArray:_.isArray,
         getValue:function(val){
             var _float = parseFloat(val);
             if(!isNaN(_float)){
@@ -46780,15 +46765,9 @@ define('xcf/manager/DeviceManager',[
             if (byPath) {
                 return byPath;
             }
-
-            var items = _.filter(store.query(), function (item) {
+            var items = _.filter(store.data, function (item) {
                 return item.isDir !== true;
             });
-            /*
-             utils.queryStore(store, {
-             isDir: false
-             });*/
-
             if (!items) {
                 _debug && !isServer && console.error('store returned nothing ' + deviceInfo.deviceScope);
                 return null;
@@ -49641,8 +49620,7 @@ define('xide/interface/Track',['dcl/dcl','xdojo/declare'], function (dcl,declare
         getTrackingGroup:function(){},
         getTrackingPath:function(){},
         track:function(){return false;},
-        registerUrls:function(){
-        }
+        registerUrls:function(){}
     }
     var Module = declare('xide.interface.Track',null,Interface);
     Module.dcl = dcl(null,Interface);
@@ -49880,7 +49858,6 @@ define('xblox/model/Block',[
          * @memberOf module:xide/types
          */
         BLOCK_FLAGS: {
-
             NONE: 0x00000000,	// Reserved for future use
             ACTIVE: 0x00000001,	// This behavior is active
             SCRIPT: 0x00000002,	// This behavior is a script
@@ -50150,7 +50127,7 @@ define('xblox/model/Block',[
         mergeNewModule: function (source) {
             for (var i in source) {
                 var o = source[i];
-                if (o && _.isFunction(o) /*&& lang.isFunction(target[i])*/) {
+                if (o && _.isFunction(o)) {
                     this[i] = o;//swap
                 }
             }
@@ -50305,17 +50282,17 @@ define('xblox/model/Block',[
                 }
                 return null;
             }
-
             return _next(this, items, dir, 1, 0);
         },
+        /**
+         *
+         * @param createRoot
+         * @returns {module:xblox/model/Block|null}
+         */
         getParent: function (createRoot) {
             if (this.parentId) {
                 return this.scope.getBlockById(this.parentId);
             }
-            //if(createRoot===true){
-            //return this._store.getRootItem();
-            //}
-            return null;
         },
         getScope: function () {
             var scope = this.scope;
@@ -50331,7 +50308,10 @@ define('xblox/model/Block',[
             }
             return scope;
         },
-        //  standard call from interface
+        /**
+         *
+         * @returns {null}
+         */
         canAdd: function () {
             return null;
         },
@@ -50401,7 +50381,6 @@ define('xblox/model/Block',[
          * @returns {*}
          */
         _empty: function (what) {
-
             var data = what || this.items;
             if (data) {
                 for (var i = 0; i < data.length; i++) {
@@ -50688,7 +50667,7 @@ define('xblox/model/Block',[
         },
         /**
          * Public add block function
-         * @param proto
+         * @param proto {}
          * @param ctrArgs
          * @param where
          * @returns {*}
@@ -50827,14 +50806,11 @@ define('xblox/model/Block',[
         },
         reset: function () {
             this._lastSettings = {};
-            if (this._loop) {
-                clearTimeout(this._loop);
-                this._loop = null;
-            }
+            clearTimeout(this._loop);
+            this._loop = null;
             delete this.override;
             this.override = null;
             delete this._lastResult;
-            this.override = null;
             this.override = {};
         },
         stop: function () {
@@ -51878,32 +51854,32 @@ define('xblox/model/Contains',[
     'dcl/dcl',
     "dojo/promise/all",
     "xide/types"
-], function(dcl,all,types){
+], function (dcl, all, types) {
     /**
      * Contains provides implements functions to deal with sub blocks.
      */
-    return dcl(null,{
-        declaredClass:'xblox.model.Contains',
-        runByType:function(outletType,settings){
+    return dcl(null, {
+        declaredClass: 'xblox.model.Contains',
+        runByType: function (outletType, settings) {
             var items = this.getItemsByType(outletType);
-            if(items.length) {
-                this.runFrom(items,0,settings);
+            if (items.length) {
+                this.runFrom(items, 0, settings);
             }
         },
-        getItemsByType:function(outletType){
+        getItemsByType: function (outletType) {
             var items = this.items;
-            if(!outletType){
+            if (!outletType) {
                 return items;
             }
             var result = [];
-            _.each(items,function(item){
-                if(item.outlet & outletType){
+            _.each(items, function (item) {
+                if (item.outlet & outletType) {
                     result.push(item);
                 }
             });
             return result;
         },
-        getContainer:function(){
+        getContainer: function () {
             return this[this._getContainer()];
         },
         /**
@@ -51911,65 +51887,22 @@ define('xblox/model/Contains',[
          * @param parent
          * @returns {boolean}
          */
-        mayHaveChildren:function(parent){
+        mayHaveChildren: function (parent) {
             var items = this[this._getContainer()];
-            return items!=null && items.length>0;
+            return items != null && items.length > 0;
         },
         /**
          * Store function
          * @param parent
          * @returns {Array}
          */
-        getChildren:function(parent){
+        getChildren: function (parent) {
             return this[this._getContainer()];
         },
         //  standard call from interface
-        canAdd:function(){
+        canAdd: function () {
             return [];
         },
-        /*
-        runFrom: function (_blocks, index, settings) {
-            debugger;
-            var thiz = this,
-                blocks = _blocks || this.items,
-                allDfds = [];
-
-            var onFinishBlock = function (block, results) {
-                block._lastResult = block._lastResult || results;
-                thiz._currentIndex++;
-                thiz.runFrom(blocks, thiz._currentIndex, settings);
-            };
-
-            var wireBlock = function (block) {
-                block._deferredObject.then(function (results) {
-                    onFinishBlock(block, results);
-                });
-            };
-            if (blocks.length) {
-                for (var n = index; n < blocks.length; n++) {
-                    var block = blocks[n];
-                    if (block.deferred === true && block.enabled) {
-                        block._deferredObject = new Deferred();
-                        this._currentIndex = n;
-                        wireBlock(block);
-                        allDfds.push(block.solve(this.scope, settings));
-                        break;
-                    } else {
-                        if(block.enabled) {
-                            allDfds.push(block.solve(this.scope, settings));
-                            block.onDidRun();
-                        }
-                    }
-
-                }
-
-            } else {
-                this.onSuccess(this, settings);
-            }
-            this._lastSettings && delete this._lastSettings.override;
-            return allDfds;
-        },
-        */
         /***
          * Generic: run sub blocks
          * @param scope
@@ -51978,49 +51911,49 @@ define('xblox/model/Contains',[
          * @param error
          * @returns {Array}
          */
-        _solve:function(scope,settings,run,error) {
-            if(!this._lastRunSettings && settings){
-                this._lastRunSettings= settings;
+        _solve: function (scope, settings, run, error) {
+            if (!this._lastRunSettings && settings) {
+                this._lastRunSettings = settings;
             }
             settings = this._lastRunSettings || settings;
-            this._currentIndex=0;
-            this._return=[];
-            var ret=[], items = this[this._getContainer()];
-            if(items.length) {
-                var res = this.runFrom(items,0,settings);
+            this._currentIndex = 0;
+            this._return = [];
+            var ret = [], items = this[this._getContainer()];
+            if (items.length) {
+                var res = this.runFrom(items, 0, settings);
                 this.onSuccess(this, settings);
                 return res;
-            }else{
+            } else {
                 this.onSuccess(this, settings);
             }
             return ret;
         },
-        onDidRunItem:function(dfd,result){
+        onDidRunItem: function (dfd, result) {
             this._emit(types.EVENTS.ON_RUN_BLOCK_SUCCESS, this);
             dfd.resolve(result);
         },
-        onDidRunItemError:function(dfd,result){
+        onDidRunItemError: function (dfd, result) {
             dfd.reject(result);
         },
-        onRunThis:function(){
+        onRunThis: function () {
             this._emit(types.EVENTS.ON_RUN_BLOCK, this);
         },
-        onDidRunThis:function(dfd,result,items,settings){
+        onDidRunThis: function (dfd, result, items, settings) {
             var thiz = this;
             //more blocks?
-            if(items && items.length) {
-                var subDfds = thiz.runFrom(items,0,settings);
-                all(subDfds).then(function(){
-                    thiz.onDidRunItem(dfd,result,settings);
-                },function(err){
-                    thiz.onDidRunItem(dfd,err,settings);
+            if (items && items.length) {
+                var subDfds = thiz.runFrom(items, 0, settings);
+                all(subDfds).then(function () {
+                    thiz.onDidRunItem(dfd, result, settings);
+                }, function (err) {
+                    thiz.onDidRunItem(dfd, err, settings);
                 });
 
-            }else{
-                thiz.onDidRunItem(dfd,result,settings);
+            } else {
+                thiz.onDidRunItem(dfd, result, settings);
             }
         },
-        ___solve:function(scope,settings,run,error) {
+        ___solve: function (scope, settings, run, error) {
         }
     });
 });;
@@ -58161,14 +58094,163 @@ define('xcf/model/Command',[
         }
     });
 });;
+/** @module xblox/types **/
 define('xblox/types/Types',[
     'xide/types/Types',
     'xide/utils'
 ], function (types, utils) {
+
+    /**
+     * The block's capabilities. This will be evaluated in the interface but also
+     * by the run-time (speed ups).
+     *
+     * @enum {integer} module:xide/types/BLOCK_CAPABILITIES
+     * @memberOf module:xide/types
+     */
+    var BLOCK_CAPABILITIES = {
+        /**
+         * No other block includes this one.
+         * @constant
+         * @type int
+         */
+        TOPMOST: 0x00004000,
+        /**
+         * The block's execution context can be changed to another object.
+         * @constant
+         * @type int
+         */
+        TARGET: 0x00040000,
+        /**
+         * The block may create additional input terminals ('reset', 'pause', ...).
+         * @constant
+         * @type int
+         */
+        VARIABLE_INPUTS: 0x00000080,
+        /**
+         * The block may create additional output terminals ('onFinish', 'onError').
+         * @constant
+         * @type int
+         */
+        VARIABLE_OUTPUTS: 0x00000100,
+        /**
+         * The block may create additional ouput parameters ('result', 'error',...).
+         * @constant
+         * @type int
+         */
+        VARIABLE_OUTPUT_PARAMETERS: 0x00000200,
+        /**
+         * The block may create additional input parameters.
+         * @constant
+         * @type int
+         */
+        VARIABLE_INPUT_PARAMETERS: 0x00000400,
+        /**
+         * The block can contain child blocks.
+         * @constant
+         * @type int
+         */
+        CHILDREN: 0x00000020,
+        /**
+         * Block provides standard signals ('paused', 'error').
+         * @constant
+         * @type int
+         */
+        SIGNALS: 0x00000080
+    }
+    /**
+     * Flags to describe a block's execution behavior.
+     *
+     * @enum {integer} module:xide/types/RUN_FLAGS
+     * @memberOf module:xide/types
+     */
+    var RUN_FLAGS = {
+        /**
+         * The block can execute child blocks.
+         * @constant
+         * @type int
+         */
+        CHILDREN: 0x00000020,
+        /**
+         * Block is waiting for a message => EXECUTION_STATE::RUNNING
+         * @constant
+         * @type int
+         */
+        WAIT: 0x000008000
+    };
+
+    /**
+     * Flags to describe a block's execution state.
+     *
+     * @enum {integer} module:xide/types/EXECUTION_STATE
+     * @memberOf module:xide/types
+     */
+    var EXECUTION_STATE = {
+        /**
+         * The block is doing nothing and also has done nothing. The is the default state
+         * @constant
+         * @type int
+         */
+        NONE:0x00000000,
+        /**
+         * The block is running.
+         * @constant
+         * @type int
+         */
+        RUNNING: 0x00000001,
+        /**
+         * The block is an error state.
+         * @constant
+         * @type int
+         */
+        ERROR: 0x00000002,
+        /**
+         * The block is in an paused state.
+         * @constant
+         * @type int
+         */
+        PAUSED: 0x00000004,
+        /**
+         * The block is an finished state, ready to be cleared to "NONE" at the next frame.
+         * @constant
+         * @type int
+         */
+        FINISH: 0x00000008,
+        /**
+         * The block is an stopped state, ready to be cleared to "NONE" at the next frame.
+         * @constant
+         * @type int
+         */
+        STOPPED: 0x00000010,
+        /**
+         * The block has been launched once...
+         * @constant
+         * @type int
+         */
+        ONCE: 0x80000000,
+        /**
+         * Block will be reseted next frame
+         * @constant
+         * @type int
+         */
+        RESET_NEXT_FRAME: 0x00800000,
+        /**
+         * Block is locked and so no further inputs can be activated.
+         * @constant
+         * @type int
+         */
+        LOCKED: 0x20000000,	// Block is locked for utilisation in xblox
+    }
+
     types.BLOCK_MODE = {
         NORMAL: 0,
         UPDATE_WIDGET_PROPERTY: 1
     };
+
+    /**
+     * Flags to describe a block's belonging to a standard signal.
+     * @enum {integer} module:xblox/types/BLOCK_OUTLET
+     * @memberOf module:xblox/types
+     */
     types.BLOCK_OUTLET = {
         NONE: 0x00000000,
         PROGRESS: 0x00000001,
@@ -58177,6 +58259,7 @@ define('xblox/types/Types',[
         FINISH: 0x00000008,
         STOPPED: 0x00000010
     };
+
     utils.mixin(types.EVENTS, {
         ON_RUN_BLOCK: 'onRunBlock',
         ON_RUN_BLOCK_FAILED: 'onRunBlockFailed',
@@ -58191,6 +58274,8 @@ define('xblox/types/Types',[
         ON_VARIABLE_CHANGED: 'onVariableChanged',
         ON_CREATE_VARIABLE_CI: 'onCreateVariableCI'
     });
+
+
     types.BlockType = {
         AssignmentExpression: 'AssignmentExpression',
         ArrayExpression: 'ArrayExpression',
@@ -58233,6 +58318,11 @@ define('xblox/types/Types',[
         WhileStatement: 'WhileStatement',
         WithStatement: 'WithStatement'
     };
+    types.BLOCK_CAPABILITIES = BLOCK_CAPABILITIES;
+    types.EXECUTION_STATE = EXECUTION_STATE;
+    types.RUN_FLAGS = RUN_FLAGS;
+
+
     return types;
 });;
 define('xcf/types/Types',[
@@ -74849,7 +74939,7 @@ define('xide/utils/CIUtils',[
     };
 
     utils.getInputCIByName = function (data,name){
-        if(!data){
+        if(!data ||!name){
             return null;
         }
         var chain = 0;
