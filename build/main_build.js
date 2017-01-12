@@ -32130,11 +32130,9 @@ define('xnode/manager/NodeServiceManager',[
         checkServer: function (settings, readyCB) {
             return this.callMethodEx(null, 'checkServer', [settings], readyCB, true);
         },
-
         runServer: function (settings, readyCB) {
             return this.callMethodEx(null, 'runDebugServer', [settings], readyCB, true);
         },
-
         runDebug: function (settings, readyCB) {
             return this.callMethodEx(null, 'run', [settings], readyCB, true);
         },
@@ -32276,8 +32274,9 @@ define('xide/client/WebSocket',[
     "dcl/dcl",
     'xide/utils',
     'xide/utils/_LogMixin',
-    'xide/client/ClientBase'
-], function (dcl, utils, _logMixin, ClientBase) {
+    'xide/client/ClientBase',
+    'xdojo/has'
+], function (dcl, utils, _logMixin, ClientBase,has) {
     var debug = false;
     return dcl([ClientBase, _logMixin], {
         declaredClass:"xide.client.WebSocket",
@@ -32296,7 +32295,7 @@ define('xide/client/WebSocket',[
         onConnected:function(){
             debug && console.log('on connected');
         },
-        connect: function (_options) {
+        connect_sock_js: function (_options) {
             this.options = utils.mixin(this.options, _options);
             var host = this.options.host;
             //host = host.replace('http://','wss://');
@@ -32359,6 +32358,151 @@ define('xide/client/WebSocket',[
                 }
             };
             this._socket = sock;
+        },
+        connect_socket_io: function (_options) {
+            this.options = utils.mixin(this.options, _options);
+            var host = this.options.host;
+            //host = host.replace('http://','wss://');
+            var port = this.options.port;
+            if (this.options.debug) {
+                this.initLogger(this.options.debug);
+            }
+            if (!host) {
+                console.error('something wrong with data!',_options);
+                return;
+            }
+            debug && console.log("Connecting to " + host + ':' + port, "socket_client");
+            var protocol = [
+                'websocket',
+                'xdr-streaming',
+                'xhr-streaming',
+                'iframe-eventsource',
+                'iframe-htmlfile',
+                'xdr-polling',
+                'xhr-polling',
+                'iframe-xhr-polling',
+                'jsonp-polling'
+            ];
+
+            var options = {
+                debug: debug,
+                devel: true,
+                noCredentials:true,
+                nullOrigin:true
+            };
+            options.transports = protocol;
+            var sock = new SockJS(host + ":" + port, null, options);
+            var thiz = this;
+
+            sock.onopen = function () {
+                thiz.onConnected();
+                if (thiz.delegate.onConnected) {
+                    thiz.delegate.onConnected();
+                }
+            };
+
+            sock.onmessage = function (e) {
+                if (thiz.delegate.onServerResponse) {
+                    thiz.delegate.onServerResponse(e);
+                }
+            };
+
+            sock.onerror=function(){
+                console.error('error');
+            }
+            sock.onclose = function (e) {
+                if (thiz.autoReconnect) {
+                    debug &&  console.log('closed ' + host + ' try re-connect');
+                    if (thiz.delegate.onLostConnection) {
+                        thiz.delegate.onLostConnection(e);
+                    }
+                    thiz.reconnect();
+                }else{
+                    debug && console.log('closed ' + host);
+                }
+            };
+            this._socket = sock;
+        },
+        connect: function (_options) {
+            return this.connect_sock_js(_options);
+            /*
+            this.options = utils.mixin(this.options, _options);
+            //debugger;
+            var host = this.options.host;
+            //host = host.replace('http://','wss://');
+            var port = this.options.port;
+            if (this.options.debug) {
+                this.initLogger(this.options.debug);
+            }
+            if (!host) {
+                console.error('something wrong with data!',_options);
+                return;
+            }
+            debug && console.log("Connecting to " + host + ':' + port, "socket_client");
+            var protocol = [
+                'websocket',
+                'xdr-streaming',
+                'xhr-streaming',
+                'iframe-eventsource',
+                'iframe-htmlfile',
+                'xdr-polling',
+                'xhr-polling',
+                'iframe-xhr-polling',
+                'jsonp-polling'
+            ];
+
+
+            var sock = io(host + ":" + port);
+
+            sock.on('connect', function(){
+                thiz.onConnected();
+                if (thiz.delegate.onConnected) {
+                    thiz.delegate.onConnected();
+                }
+            });
+            sock.on('event', function(data){
+
+            });
+            sock.on('disconnect', function(){});
+
+
+            var options = {
+                debug: debug,
+                devel: true,
+                noCredentials:true,
+                nullOrigin:true
+            };
+            options.transports = protocol;
+
+            //var sock = new SockJS(host + ":" + port, null, options);
+            var thiz = this;
+
+            sock.onopen = function () {
+
+            };
+
+            sock.onmessage = function (e) {
+                if (thiz.delegate.onServerResponse) {
+                    thiz.delegate.onServerResponse(e);
+                }
+            };
+
+            sock.onerror=function(){
+                console.error('error');
+            }
+            sock.onclose = function (e) {
+                if (thiz.autoReconnect) {
+                    debug &&  console.log('closed ' + host + ' try re-connect');
+                    if (thiz.delegate.onLostConnection) {
+                        thiz.delegate.onLostConnection(e);
+                    }
+                    thiz.reconnect();
+                }else{
+                    debug && console.log('closed ' + host);
+                }
+            };
+            this._socket = sock;
+            */
         },
         emit: function (signal, dataIn, tag) {
             dataIn.tag = tag || 'notag';
@@ -33666,11 +33810,14 @@ define('dojo/promise/Promise',[
 ;
 /** @module xide/lodash **/
 define('xide/lodash',[],function(){
+
     /**
      * temp. wanna be shim for lodash til dojo-2/loader lands here
      */
     if(typeof _ !=="undefined"){
         return _;
+    }else{
+        console.error('error loading lodash',global['_']);
     }
 });
 ;
@@ -35975,7 +36122,7 @@ define('xide/manager/ServerActionBase',[
     'xide/manager/ManagerBase',
     'xide/types',
     'xide/utils'
-], function (dcl,declare, has, Deferred, RPCService, ManagerBase, types, utils) {
+], function (dcl, declare, has, Deferred, RPCService, ManagerBase, types, utils) {
     var Singleton = null;
     /**
      * Class dealing with JSON-RPC-2, used by most xide managers
@@ -35983,7 +36130,7 @@ define('xide/manager/ServerActionBase',[
      * @augments {module:xide/manager/ManagerBase}
      */
     var Implementation = {
-        declaredClass:"xide.manager.ServerActionBase",
+        declaredClass: "xide.manager.ServerActionBase",
         serviceObject: null,
         serviceUrl: null,
         singleton: true,
@@ -36045,19 +36192,19 @@ define('xide/manager/ServerActionBase',[
         },
         runDeferred: function (serviceClassIn, method, args, options) {
             var self = this;
-            if(this.serviceObject.__init){
-                if(this.serviceObject.__init.isResolved()){
-                    return self._runDeferred(serviceClassIn,method,args,options);
+            if (this.serviceObject.__init) {
+                if (this.serviceObject.__init.isResolved()) {
+                    return self._runDeferred(serviceClassIn, method, args, options);
                 }
                 var dfd = new Deferred();
-                this.serviceObject.__init.then(function(){
-                    self._runDeferred(serviceClassIn,method,args,options).then(function(){
-                       dfd.resolve(arguments);
+                this.serviceObject.__init.then(function () {
+                    self._runDeferred(serviceClassIn, method, args, options).then(function () {
+                        dfd.resolve(arguments);
                     });
                 });
                 return dfd;
             }
-            return self._runDeferred(serviceClassIn,method,args,options);
+            return self._runDeferred(serviceClassIn, method, args, options);
         },
         /**
          * Public main entry, all others below are deprecated
@@ -36087,14 +36234,14 @@ define('xide/manager/ServerActionBase',[
                 serviceClass = this.getServiceClass(serviceClassIn),
                 thiz = this;
 
-            var resolve = function (data,error) {
+            var resolve = function (data, error) {
                 var dfd = deferred;
-                if(options.returnProm){
+                if (options.returnProm) {
                     dfd = promise;
                 }
                 dfd._data = data;
-                if(error) {
-                    if(options.onError){
+                if (error) {
+                    if (options.onError) {
                         return options.onError(error);
                     }
                 }
@@ -36114,16 +36261,16 @@ define('xide/manager/ServerActionBase',[
                 //check for error messages (non-fatal) and abort
                 if (options.checkErrors) {
                     if (error.code == 1) {
-                        options.displayError && thiz.onError(error,serviceClass + '::' + method);
+                        options.displayError && thiz.onError(error, serviceClass + '::' + method);
                         deferred.reject(error);
                         return;
                     }
-                }else{
+                } else {
                     if (error.code == 1 && options.displayError) {
-                        thiz.onError(error,serviceClass + '::' + method);
+                        thiz.onError(error, serviceClass + '::' + method);
                     }
-                    if (error && error.code !== 0) {
-                        resolve(res,error);
+                    if (error && error.code && error.code !== 0) {
+                        resolve(res, error);
                         return;
                     }
                 }
@@ -36139,7 +36286,7 @@ define('xide/manager/ServerActionBase',[
                 thiz.onError(err);
             });
 
-            if(options.returnProm){
+            if (options.returnProm) {
                 return promise;
             }
             return deferred;
@@ -36150,7 +36297,7 @@ define('xide/manager/ServerActionBase',[
         getServiceClass: function (serviceClassIn) {
             return serviceClassIn || this.serviceClass;
         },
-        hasMethod: function (method,serviceClass) {
+        hasMethod: function (method, serviceClass) {
             var _service = this.getService(),
                 _serviceClass = serviceClass || this.getServiceClass();
 
@@ -36176,7 +36323,7 @@ define('xide/manager/ServerActionBase',[
         },
         _initService: function () {
             var thiz = this;
-            if(!has('host-browser')){
+            if (!has('host-browser')) {
                 return false;
             }
             try {
@@ -36186,7 +36333,7 @@ define('xide/manager/ServerActionBase',[
                         this.serviceObject = obj.serviceObject;
                         return;
                     }
-                    if(!this.options){
+                    if (!this.options) {
                         this.options = {};
                     }
                     this.options.singleton = this.singleton;
@@ -36197,17 +36344,19 @@ define('xide/manager/ServerActionBase',[
                         return;
                     }
                     var url = decodeURIComponent(this.serviceUrl);
-                    this.serviceObject = new RPCService(decodeURIComponent(this.serviceUrl),this.options);
-                    this.serviceObject.runDeferred = function(){
-                        return thiz.runDeferred.apply(thiz,arguments);
+                    this.serviceObject = new RPCService(decodeURIComponent(this.serviceUrl), this.options);
+
+                    this.serviceObject.runDeferred = function () {
+                        return thiz.runDeferred.apply(thiz, arguments);
                     };
+
 
                     this.serviceObject.sync = this.sync;
 
                     if (this.singleton) {
                         obj.serviceObject = this.serviceObject;
                     }
-                    if(this.config){
+                    if (this.config) {
                         obj.serviceObject.config = this.config;
                     }
                     !this.ctx.serviceObject && (this.ctx.serviceObject = this.serviceObject);
@@ -36222,7 +36371,7 @@ define('xide/manager/ServerActionBase',[
                 this._initService();
             }
         },
-        onError: function (err,suffix) {
+        onError: function (err, suffix) {
             if (err) {
                 if (err.code === 1) {
                     if (err.message && _.isArray(err.message)) {
@@ -36233,11 +36382,11 @@ define('xide/manager/ServerActionBase',[
                     this.publish(types.EVENTS.STATUS, 'Ok');
                 }
             }
-            if(suffix){
-                err.message = suffix +  ' -> ' + err.message;
+            if (suffix) {
+                err.message = suffix + ' -> ' + err.message;
             }
             this.publish(types.EVENTS.ERROR, {
-                error:err
+                error: err
             }, this);
         },
         checkCall: function (serviceClass, method, omit) {
@@ -36245,7 +36394,7 @@ define('xide/manager/ServerActionBase',[
             if (!this.getService()) {
                 return false;
             }
-            if (!this.hasMethod(method,serviceClass) && omit === true) {
+            if (!this.hasMethod(method, serviceClass) && omit === true) {
                 this.onError({
                     code: 1,
                     message: ['Sorry, server doesnt know ' + method]
@@ -36270,7 +36419,7 @@ define('xide/manager/ServerActionBase',[
         callMethodEx: function (serviceClassIn, method, args, readyCB, omitError) {
             serviceClassIn = serviceClassIn || this.serviceClass;
             if (!serviceClassIn) {
-                console.error('have no service class! ' + this.declaredClass,this);
+                console.error('have no service class! ' + this.declaredClass, this);
             }
             //init smd
             this.check();
@@ -36289,7 +36438,7 @@ define('xide/manager/ServerActionBase',[
                     }
                 } catch (e) {
                     console.error('bad news : callback for method ' + method + ' caused a crash in service class ' + serviceClassIn);
-                    logError(e,'server method failed '+e);
+                    logError(e, 'server method failed ' + e);
 
                 }
                 //rpc batch results
@@ -36352,7 +36501,7 @@ define('xide/manager/ServerActionBase',[
                             readyCB(res);
                         }
                     } catch (e) {
-                        logError(e,"Error calling RPC method");
+                        logError(e, "Error calling RPC method");
                     }
                     //rpc batch call
                     if (res && res.error && res.error.code == 3) {
@@ -36373,13 +36522,13 @@ define('xide/manager/ServerActionBase',[
                 }.bind(this));
             } catch (e) {
                 thiz.onError(e);
-                logError(e,"Error calling RPC method");
+                logError(e, "Error calling RPC method");
             }
         }
     };
 
     var Module = dcl(ManagerBase, Implementation);
-    Module.declare = declare(null,Implementation);
+    Module.declare = declare(null, Implementation);
     Singleton = Module;
     return Module;
 });;
@@ -40000,6 +40149,7 @@ define('xide/rpc/Service',[
 
     var service = declare("xide.rpc.Service", null, {
         constructor: function(smd, options){
+
             // summary:
             //		Take a string as a url to retrieve an smd or an object that is an smd or partial smd to use
             //		as a definition for the service
@@ -45846,12 +45996,16 @@ define('xcf/manager/DeviceManager',[
             if (!this.ctx.getNodeServiceManager) {
                 return true;
             }
-            if (!this.deviceServerClient && this.ctx.getNodeServiceManager) {
-                var store = this.ctx.getNodeServiceManager().getStore();
+            var ctx = this.getContext();
+            var nodeServiceManager = has('xnode') && ctx.getNodeServiceManager ? this.ctx.getNodeServiceManager() : null;
+            if (!this.deviceServerClient && nodeServiceManager) {
+                var store = nodeServiceManager.getStore();
                 if (!store) {
                     return false;
                 }
                 this.createDeviceServerClient(store);
+            }else{
+                return false;
             }
             return true;
         },
@@ -46985,7 +47139,7 @@ define('xcf/manager/DeviceManager',[
                         if (info) {
                             var driver = self.getContext().getDriverManager().getDriverById(info.driverId);
                             if (driver) {
-                                if (!driver.blockScope) {
+                                if (!driver.blockScope && has('xblox')) {
                                     this.ctx.getDriverManager().createDriverBlockScope(driver);
                                     self.completeDevice(device, driver);
                                 }
@@ -58238,7 +58392,7 @@ define('xblox/types/Types',[
          * @constant
          * @type int
          */
-        LOCKED: 0x20000000,	// Block is locked for utilisation in xblox
+        LOCKED: 0x20000000	// Block is locked for utilisation in xblox
     }
 
     types.BLOCK_MODE = {
@@ -59207,6 +59361,12 @@ define('xfile/manager/FileManager',[
         download: function (src) {
             var selection = [];
             selection.push(src.path);
+
+            if(has('nserver')){
+                window.open('../files/'+src.mount+'/'+src.path);
+                return;
+            }
+
             var thiz = this;
             var downloadUrl = decodeURIComponent(this.serviceUrl);
             downloadUrl = downloadUrl.replace('view=rpc', 'view=smdCall');
@@ -59239,7 +59399,7 @@ define('xfile/manager/FileManager',[
             delete  aParams['width'];
             delete  aParams['attachment'];
             delete  aParams['send'];
-            var pStr = dojo.toJson(JSON.string(aParams));
+            var pStr = dojo.toJson(JSON.stringify(aParams));
             var signature = SHA1._hmac(pStr, this.config.RPC_PARAMS.rpcSignatureToken, 1);
             downloadUrl += '&' + this.config.RPC_PARAMS.rpcUserField + '=' + this.config.RPC_PARAMS.rpcUserValue;
             downloadUrl += '&' + this.config.RPC_PARAMS.rpcSignatureField + '=' + signature;
@@ -59251,6 +59411,11 @@ define('xfile/manager/FileManager',[
         //
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         getImageUrl: function (src, preventCache, extraParams) {
+
+            if(has('nserver')){
+                return ('../files/'+src.mount+'/'+src.path);
+            }
+
             preventCache = location.href.indexOf('noImageCache') != -1 || preventCache === true || src.dirty === true;
             var downloadUrl = decodeURIComponent(this.serviceUrl);
             downloadUrl = downloadUrl.replace('view=rpc', 'view=smdCall');
@@ -59328,7 +59493,11 @@ define('xfile/manager/FileManager',[
             }, 500);
         },
         getUploadUrl: function () {
+            if(has('nserver')){
+                return this.serviceUrl.replace('/smd','/upload?');
+            }
             var url = '' + decodeURIComponent(this.serviceUrl);
+
             url = url.replace('view=rpc', 'view=upload');
             url = url.replace('../../../../', './');
             url += '&service=';
@@ -60222,6 +60391,7 @@ define('xfile/data/Store',[
             /////////////////////////////////////////////////////////////////////////////
             _getItem: function (path, allowNonLoaded) {
                 //try instant and return when loaded
+                //this.getSync(path.replace('./',''))
                 var item = this.getSync(path) || this.getSync('./' + path);
                 if (item && (this.isItemLoaded(item) || allowNonLoaded == true)) {
                     return item;
@@ -60539,6 +60709,10 @@ define('xfile/data/Store',[
                         this.removeSync(item.path);
                     }
                 }, this);
+            },
+            getSync: function (id) {
+                var data =this.storage.fullData;
+                return data[this.storage.index[id]] || data[this.storage.index[id.replace('./','')]];
             },
             addItems: function (items) {
                 var result = [];
@@ -67129,9 +67303,9 @@ define('xide/factory/Events',[
     'dojo/_base/connect',
     'dojo/_base/lang',
     "dojo/on",
-    'dojo/has'
+    'dojo/has',
+    'xide/lodash'
 ], function (factory, connect, lang, on,has) {
-
     var _debug = false,         //print publish messages in console
         _tryEvents = false,     //put publish in try/catch block
         _foo=null,              //noop
@@ -80021,9 +80195,11 @@ define('xide/types/Types',[
 define('xide/types',[
     "dcl/dcl"
 ],function(dcl){
-    return new dcl(null,{
+    var mod = new dcl(null,{
         declaredClass:"xide/types"
     });
+    mod.test = 2;
+    return mod;
 });;
 define('dstore/Filter',['dojo/_base/declare'], function (declare) {
 	// a Filter builder
