@@ -60414,6 +60414,9 @@ define('xfile/data/Store',[
              * @returns {Object|Deferred|null}
              */
             getItem: function (path, load,options) {
+                
+                path = path.replace('./','');
+
                 if (load == false) {
                     return this._getItem(path);
 
@@ -60424,12 +60427,10 @@ define('xfile/data/Store',[
                         partsToLoad = [],
                         item = thiz.getSync(path);
 
-                    if (!item) {
-                        item = thiz.getSync(path.replace('./', ''));
-                    }
                     if (item && this.isItemLoaded(item)) {
                         return item;
                     }
+
 
                     //new head promise for all underlying this.getItem calls
                     var deferred = new Deferred();
@@ -60437,7 +60438,7 @@ define('xfile/data/Store',[
                         //no additional lodash or array stuff please, keep it simple
                         var isFinish = !_.find(partsToLoad, {loaded: false});
                         if (isFinish) {
-                            deferred.resolve(thiz.getItem(path, false));
+                            deferred.resolve(thiz._getItem(path));
                         } else {
                             for (var i = 0; i < partsToLoad.length; i++) {
                                 if (!partsToLoad[i].loaded) {
@@ -80198,9 +80199,11 @@ define('xide/types',[
     var mod = new dcl(null,{
         declaredClass:"xide/types"
     });
-    mod.test = 2;
+    mod.test = 22;
     return mod;
-});;
+});
+
+;
 define('dstore/Filter',['dojo/_base/declare'], function (declare) {
 	// a Filter builder
 	function filterCreator(type) {
