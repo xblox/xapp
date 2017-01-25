@@ -47518,6 +47518,7 @@ define('xcf/manager/DeviceManager',[
                     var store = this.createStore(data, scope, track);
                     //track !== false && this.setStore(scope, store);
                     this.onStoreReady(store);
+                    console.log('got '+scope);
                     track !== false && this.publish(types.EVENTS.ON_STORE_CREATED, {
                         data: data,
                         owner: this,
@@ -50904,6 +50905,9 @@ define('xblox/model/Block',[
         runFrom: function (blocks, index, settings) {
             var thiz = this;
             blocks = blocks || this.items;
+            if(!this._return){
+                this._return = [];
+            }
             var onFinishBlock = function (block, results) {
                 block._lastResult = block._lastResult || results;
                 thiz._currentIndex++;
