@@ -5,57 +5,55 @@ define([
     'xide/utils',
     //'dojo/dom-construct',
     "xide/manager/ManagerBase"
-], function (dcl,Deferred,types, utils,ManagerBase) {
-
-    var debugBootstrap = false;
+], function (dcl, Deferred, types, utils, ManagerBase) {
+    var debugBootstrap = true;
     var debugBlocks = false;
-
     //Application
-    var Module = dcl([ManagerBase],{
-        declaredClass:"xapp/manager/Application",
-        delegate:null,
-        settings:null,
-        constructor:function(args){
-            utils.mixin(this,args);
+    var Module = dcl([ManagerBase], {
+        declaredClass: "xapp/manager/Application",
+        delegate: null,
+        settings: null,
+        constructor: function (args) {
+            utils.mixin(this, args);
             this.id = utils.createUUID();
         },
-        runBlox:function(path,id,context,settings){
+        runBlox: function (path, id, context, settings) {
             var parts = utils.parse_url(path);
-            debugBlocks && console.log('run blox: ' + id + ' with ',settings);
+            debugBlocks && console.log('run blox: ' + id + ' with ', settings);
             var bm = this.ctx.getBlockManager();
-            bm.load(parts.scheme,parts.host).then(function(scope){
+            bm.load(parts.scheme, parts.host).then(function (scope) {
                 var block = scope.getBlockById(id);
-                if(block){
+                if (block) {
                     block.context = context;
-                    if(settings) {
+                    if (settings) {
                         block.override = settings;
                     }
                     return block.solve(block.scope);
-                }else{
+                } else {
                     debugBlocks && console.error('have no block !');
                 }
-            },function(e){
-                debugBlocks && console.error('error loading block files ' +e,e);
+            }, function (e) {
+                debugBlocks && console.error('error loading block files ' + e, e);
             });
         },
-        onReloaded:function(){
-            console.log('on reloaded',arguments);
+        onReloaded: function () {
+            console.log('on reloaded', arguments);
         },
 
-        run:function(settings){
+        run: function (settings) {
             this.settings = settings;
         },
-        loadScript:function(url){
+        loadScript: function (url) {
             /*
             debugger;
             domConstruct.create('script', {
                 src:url
             }, query('head')[0]);*/
         },
-        publishVariables:function(){
+        publishVariables: function () {
 
             var deviceManager = this.ctx.getDeviceManager();
-            if(deviceManager){
+            if (deviceManager) {
                 var deviceInstances = deviceManager.deviceInstances;
                 for (var i in deviceInstances) {
 
@@ -65,7 +63,7 @@ define([
                         continue;
                     }
 
-                    if(instance.blockScope){
+                    if (instance.blockScope) {
 
                         var basicVariables = instance.blockScope.getVariables({
                             group: types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES
@@ -81,23 +79,23 @@ define([
                                 owner: this,
                                 save: false,                         //dont save it
                                 source: types.MESSAGE_SOURCE.DEVICE,  //for prioritizing
-                                publishMQTT:false
+                                publishMQTT: false
                             });
                         }
                     }
                 }
             }
         },
-        onReady:function(){
-            
+        onReady: function () {
+
             debugBootstrap && console.log('   Checkpoint 5.3 managers ready');
-            this.publish(types.EVENTS.ON_APP_READY,{
-                context:this.ctx,
-                application:this,
-                delegate:this.delegate
+            this.publish(types.EVENTS.ON_APP_READY, {
+                context: this.ctx,
+                application: this,
+                delegate: this.delegate
             });
         },
-        onXBloxReady:function() {
+        onXBloxReady: function () {
             var _re = require,
                 thiz = this;
             debugBootstrap && console.log('   Checkpoint 5.2 xblox component ready');
@@ -105,30 +103,30 @@ define([
             _re(['xblox/embedded', 'xblox/manager/BlockManager'], function (embedded, BlockManager) {
 
                 debugBootstrap && console.log('   Checkpoint 5.2 setup xblox');
-                
+
                 //IDE's block manager
-                if(thiz.delegate && thiz.delegate.ctx){
+                if (thiz.delegate && thiz.delegate.ctx) {
 
                     var ctx = thiz.delegate.ctx;
-                    
-                    if(ctx.nodeServiceManager) {
+
+                    if (ctx.nodeServiceManager) {
                         thiz.ctx.nodeServiceManager = ctx.nodeServiceManager;
                     }
-                    
-                    if(ctx.getBlockManager()) {
+
+                    if (ctx.getBlockManager()) {
                         thiz.ctx.blockManager = ctx.getBlockManager();
                     }
 
-                    if(ctx.getDriverManager()) {
+                    if (ctx.getDriverManager()) {
                         thiz.ctx.driverManager = ctx.getDriverManager();
                         thiz.ctx.deviceManager = ctx.getDeviceManager();
                     }
-                    
+
 
                     thiz.onReady();
 
 
-                }else{
+                } else {
 
                     var blockManagerInstance = new BlockManager();
                     blockManagerInstance.ctx = thiz.ctx;
@@ -143,34 +141,32 @@ define([
          * @param settings.delegate {xideve/manager/WidgetManager}
          * @returns {Deferred}
          */
-        start:function(settings){
+        start: function (settings) {
             this.initReload && this.initReload();
             debugBootstrap && console.log('xapp/Application::start ', settings);
             var def = new Deferred();
             var thiz = this;
             this.delegate = settings.delegate;
-            debugBootstrap &&  console.log('Checkpoint 5 xapp/manager/Application->start, load xblox');
+            debugBootstrap && console.log('Checkpoint 5 xapp/manager/Application->start, load xblox');
             try {
                 this.ctx.pluginManager.loadComponent('xblox').then(function () {
                     debugBootstrap && console.log('   Checkpoint 5.1 xblox component loaded');
                     def.resolve(thiz.ctx);
-                    thiz.onXBloxReady()
+                    thiz.onXBloxReady();
                 }, function (e) {
-                    debugBootstrap &&  console.error('error loading xblox - component ' + e, e);
+                    debugBootstrap && console.error('error loading xblox - component ' + e, e);
                 });
-            }catch(e){
-                console.error('error loading xblox '+e,e);
+            } catch (e) {
+                console.error('error loading xblox ' + e, e);
                 def.reject(e);
             }
-
             window['xapp'] = this;
-
             return def;
         }
     });
-    
 
-    Module.getApp = function(){
+
+    Module.getApp = function () {
         return window['xapp'];
     }
 

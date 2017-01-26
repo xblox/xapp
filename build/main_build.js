@@ -47518,7 +47518,6 @@ define('xcf/manager/DeviceManager',[
                     var store = this.createStore(data, scope, track);
                     //track !== false && this.setStore(scope, store);
                     this.onStoreReady(store);
-                    console.log('got '+scope);
                     track !== false && this.publish(types.EVENTS.ON_STORE_CREATED, {
                         data: data,
                         owner: this,
@@ -59415,11 +59414,9 @@ define('xfile/manager/FileManager',[
         //
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         getImageUrl: function (src, preventCache, extraParams) {
-
             if(has('nserver')){
                 return ('../files/'+src.mount+'/'+src.path);
             }
-
             preventCache = location.href.indexOf('noImageCache') != -1 || preventCache === true || src.dirty === true;
             var downloadUrl = decodeURIComponent(this.serviceUrl);
             downloadUrl = downloadUrl.replace('view=rpc', 'view=smdCall');
@@ -59757,6 +59754,7 @@ define('xfile/manager/FileManager',[
         onErrors: function (res) {},
         init:function(){
             this.stores = [];
+            this.filesToUpload = [];
         },
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         //
@@ -59884,9 +59882,6 @@ define('xfile/manager/FileManager',[
                 thiz.onError(e);
                 logError(e,'error ');
             }
-        },
-        init:function(){
-            this.filesToUpload = [];
         },
         __initService: function () {
             this.filesToUpload = [];
