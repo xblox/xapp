@@ -41025,6 +41025,10 @@ define('xcf/manager/DriverManager',[
                 requirePath+='time'+ new Date().getTime();
             }
 
+            if(isServer) {
+                requirePath = requirePath.replace('?', '');
+            }
+
             try {
                 require([requirePath], function (driverModule) {
                     dfd.resolve(driverModule);
@@ -48651,7 +48655,6 @@ define('xcf/manager/DeviceManager_DeviceServer',[
 
         },
         onCommandFinish: function (deviceInfo, message) {
-
             var driverInstance = this.getDriverInstance(deviceInfo, true);
             if (!driverInstance) {
                 return;
@@ -48662,13 +48665,19 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 var scope = driverInstance.blockScope;
                 var block = scope.getBlockById(params.src);
                 if (block && block.onCommandFinish) {
-
-                    var result = JSON.stringify(block.onCommandFinish(message),null,2);
-
-                    console.error('finish : ',result);
-
-                    if (has('xcf-ui')) {
-
+                    var result = null;
+                    var data = block.onCommandFinish(message);
+                    try {
+                        result = JSON.stringify(data, function(k,v){
+                            if (typeof v =='object') {
+                                return null;
+                            }
+                            return v;
+                        }, 2);
+                    }catch (e){
+                        logError(e,'error serializing on command finish');
+                    }
+                    if (has('xcf-ui') && result) {
                         //console replay
                         var device = driverInstance.device,
                             hash = deviceInfo.hash,
@@ -60391,6 +60400,9 @@ define('xfile/data/Store',[
             _getItem: function (path, allowNonLoaded) {
                 //try instant and return when loaded
                 //this.getSync(path.replace('./',''))
+                if(path==='/'){
+                    path = '.';
+                }
                 var item = this.getSync(path) || this.getSync('./' + path);
                 if (item && (this.isItemLoaded(item) || allowNonLoaded == true)) {
                     return item;
@@ -61353,6 +61365,7 @@ define('xide/manager/Reloadable',[
         xideServiceClient: null,
         fileUpdateTimes:{},
         onXIDELoaded: function (min, WebSocket) {
+            return;
             var thiz = this;
             var _ctorArgs = {
                 delegate: {
@@ -71652,57 +71665,55 @@ define('xapp/manager/Application',[
     'xide/utils',
     //'dojo/dom-construct',
     "xide/manager/ManagerBase"
-], function (dcl,Deferred,types, utils,ManagerBase) {
-
-    var debugBootstrap = false;
+], function (dcl, Deferred, types, utils, ManagerBase) {
+    var debugBootstrap = true;
     var debugBlocks = false;
-
     //Application
-    var Module = dcl([ManagerBase],{
-        declaredClass:"xapp/manager/Application",
-        delegate:null,
-        settings:null,
-        constructor:function(args){
-            utils.mixin(this,args);
+    var Module = dcl([ManagerBase], {
+        declaredClass: "xapp/manager/Application",
+        delegate: null,
+        settings: null,
+        constructor: function (args) {
+            utils.mixin(this, args);
             this.id = utils.createUUID();
         },
-        runBlox:function(path,id,context,settings){
+        runBlox: function (path, id, context, settings) {
             var parts = utils.parse_url(path);
-            debugBlocks && console.log('run blox: ' + id + ' with ',settings);
+            debugBlocks && console.log('run blox: ' + id + ' with ', settings);
             var bm = this.ctx.getBlockManager();
-            bm.load(parts.scheme,parts.host).then(function(scope){
+            bm.load(parts.scheme, parts.host).then(function (scope) {
                 var block = scope.getBlockById(id);
-                if(block){
+                if (block) {
                     block.context = context;
-                    if(settings) {
+                    if (settings) {
                         block.override = settings;
                     }
                     return block.solve(block.scope);
-                }else{
+                } else {
                     debugBlocks && console.error('have no block !');
                 }
-            },function(e){
-                debugBlocks && console.error('error loading block files ' +e,e);
+            }, function (e) {
+                debugBlocks && console.error('error loading block files ' + e, e);
             });
         },
-        onReloaded:function(){
-            console.log('on reloaded',arguments);
+        onReloaded: function () {
+            console.log('on reloaded', arguments);
         },
 
-        run:function(settings){
+        run: function (settings) {
             this.settings = settings;
         },
-        loadScript:function(url){
+        loadScript: function (url) {
             /*
             debugger;
             domConstruct.create('script', {
                 src:url
             }, query('head')[0]);*/
         },
-        publishVariables:function(){
+        publishVariables: function () {
 
             var deviceManager = this.ctx.getDeviceManager();
-            if(deviceManager){
+            if (deviceManager) {
                 var deviceInstances = deviceManager.deviceInstances;
                 for (var i in deviceInstances) {
 
@@ -71712,7 +71723,7 @@ define('xapp/manager/Application',[
                         continue;
                     }
 
-                    if(instance.blockScope){
+                    if (instance.blockScope) {
 
                         var basicVariables = instance.blockScope.getVariables({
                             group: types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES
@@ -71728,23 +71739,23 @@ define('xapp/manager/Application',[
                                 owner: this,
                                 save: false,                         //dont save it
                                 source: types.MESSAGE_SOURCE.DEVICE,  //for prioritizing
-                                publishMQTT:false
+                                publishMQTT: false
                             });
                         }
                     }
                 }
             }
         },
-        onReady:function(){
-            
+        onReady: function () {
+
             debugBootstrap && console.log('   Checkpoint 5.3 managers ready');
-            this.publish(types.EVENTS.ON_APP_READY,{
-                context:this.ctx,
-                application:this,
-                delegate:this.delegate
+            this.publish(types.EVENTS.ON_APP_READY, {
+                context: this.ctx,
+                application: this,
+                delegate: this.delegate
             });
         },
-        onXBloxReady:function() {
+        onXBloxReady: function () {
             var _re = require,
                 thiz = this;
             debugBootstrap && console.log('   Checkpoint 5.2 xblox component ready');
@@ -71752,30 +71763,30 @@ define('xapp/manager/Application',[
             _re(['xblox/embedded', 'xblox/manager/BlockManager'], function (embedded, BlockManager) {
 
                 debugBootstrap && console.log('   Checkpoint 5.2 setup xblox');
-                
+
                 //IDE's block manager
-                if(thiz.delegate && thiz.delegate.ctx){
+                if (thiz.delegate && thiz.delegate.ctx) {
 
                     var ctx = thiz.delegate.ctx;
-                    
-                    if(ctx.nodeServiceManager) {
+
+                    if (ctx.nodeServiceManager) {
                         thiz.ctx.nodeServiceManager = ctx.nodeServiceManager;
                     }
-                    
-                    if(ctx.getBlockManager()) {
+
+                    if (ctx.getBlockManager()) {
                         thiz.ctx.blockManager = ctx.getBlockManager();
                     }
 
-                    if(ctx.getDriverManager()) {
+                    if (ctx.getDriverManager()) {
                         thiz.ctx.driverManager = ctx.getDriverManager();
                         thiz.ctx.deviceManager = ctx.getDeviceManager();
                     }
-                    
+
 
                     thiz.onReady();
 
 
-                }else{
+                } else {
 
                     var blockManagerInstance = new BlockManager();
                     blockManagerInstance.ctx = thiz.ctx;
@@ -71790,34 +71801,32 @@ define('xapp/manager/Application',[
          * @param settings.delegate {xideve/manager/WidgetManager}
          * @returns {Deferred}
          */
-        start:function(settings){
+        start: function (settings) {
             this.initReload && this.initReload();
             debugBootstrap && console.log('xapp/Application::start ', settings);
             var def = new Deferred();
             var thiz = this;
             this.delegate = settings.delegate;
-            debugBootstrap &&  console.log('Checkpoint 5 xapp/manager/Application->start, load xblox');
+            debugBootstrap && console.log('Checkpoint 5 xapp/manager/Application->start, load xblox');
             try {
                 this.ctx.pluginManager.loadComponent('xblox').then(function () {
                     debugBootstrap && console.log('   Checkpoint 5.1 xblox component loaded');
                     def.resolve(thiz.ctx);
-                    thiz.onXBloxReady()
+                    thiz.onXBloxReady();
                 }, function (e) {
-                    debugBootstrap &&  console.error('error loading xblox - component ' + e, e);
+                    debugBootstrap && console.error('error loading xblox - component ' + e, e);
                 });
-            }catch(e){
-                console.error('error loading xblox '+e,e);
+            } catch (e) {
+                console.error('error loading xblox ' + e, e);
                 def.reject(e);
             }
-
             window['xapp'] = this;
-
             return def;
         }
     });
-    
 
-    Module.getApp = function(){
+
+    Module.getApp = function () {
         return window['xapp'];
     }
 
@@ -71840,13 +71849,13 @@ define('xapp/manager/Context',[
     'xcf/types/Types',
     'xdojo/has',
     'dojo/Deferred'
-], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, Reloadable,Types,has,Deferred) {
+], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, Reloadable, Types, has, Deferred) {
     var isIDE = has('xcf-ui');
     var debugWire = false;
-    var debugBoot = false;
-    var debugRun = false;
+    var debugBoot = true;
+    var debugRun = true;
     var Instance = null;
-    var NotifierClass = dcl([EventedMixin.dcl],{});
+    var NotifierClass = dcl([EventedMixin.dcl], {});
     var Notifier = new NotifierClass({});
     /**
      * Lightweight context for end-user apps
@@ -71855,22 +71864,22 @@ define('xapp/manager/Context',[
      * @extends module:xide/manager/ContextBase
      */
     var Module = dcl([ContextBase, Reloadable, _WidgetPickerMixin], {
-        declaredClass:"xapp/manager/Context",
+        declaredClass: "xapp/manager/Context",
         settings: null,
         application: null,
         blockManager: null,
-        getUserDirectory:function(){            
+        getUserDirectory: function () {
             var resourceManager = this.getResourceManager(),
-                userDir =  resourceManager ? resourceManager.getVariable('USER_DIRECTORY') || {} : null;
+                userDir = resourceManager ? resourceManager.getVariable('USER_DIRECTORY') || {} : null;
             return userDir;
         },
-        getResourceManager:function(){
+        getResourceManager: function () {
             return this.resourceManager;
         },
-        getMount:function(mount){
+        getMount: function (mount) {
             var resourceManager = this.getResourceManager();
-            var vfsConfig =  resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
-            if(vfsConfig && vfsConfig[mount]) {
+            var vfsConfig = resourceManager ? resourceManager.getVariable('VFS_CONFIG') || {} : null;
+            if (vfsConfig && vfsConfig[mount]) {
                 return vfsConfig[mount];
             }
             return null;
@@ -71905,14 +71914,14 @@ define('xapp/manager/Context',[
                 rejectFunction = null,
                 onBeforeRun = null;
 
-            if(!widget['__setup']){
-                widget['__setup']={};
+            if (!widget['__setup']) {
+                widget['__setup'] = {};
             }
 
-            if(widget['__setup'][block.id]){
-               return;
+            if (widget['__setup'][block.id]) {
+                return;
             }
-            widget['__setup'][block.id]=true;
+            widget['__setup'][block.id] = true;
             if (params) {
                 if (event === types.EVENTS.ON_DRIVER_VARIABLE_CHANGED) {
 
@@ -71925,7 +71934,7 @@ define('xapp/manager/Context',[
                     rejectFunction = function (evt) {
                         var variable = evt.item;
                         var _variableIn = thiz.getBlock(variableId);
-                        if(_variableIn && variable && _variableIn.id === variable.id){
+                        if (_variableIn && variable && _variableIn.id === variable.id) {
                             return false;
                         }
                         if (variable.id === variableId) {
@@ -71975,11 +71984,11 @@ define('xapp/manager/Context',[
              */
             var run = function (event, value, block, widget) {
 
-                if(event==='load' && widget.__didRunLoad){
+                if (event === 'load' && widget.__didRunLoad) {
                     return;
                 }
-                if(event==='load'){
-                    widget.__didRunLoad=true;
+                if (event === 'load') {
+                    widget.__didRunLoad = true;
                 }
 
                 if (thiz.delegate && thiz.delegate.isDesignMode && thiz.delegate.isDesignMode()) {
@@ -71994,7 +72003,7 @@ define('xapp/manager/Context',[
                         return;
                     }
                 }
-                debugRun && console.log('run ! ' + event + ' for block '+block.name + ':' +block.id );
+                debugRun && console.log('run ! ' + event + ' for block ' + block.name + ':' + block.id);
                 if (block._destroyed) {
                     console.error('run failed block invalid, block has been removed');
                     return;
@@ -72013,9 +72022,9 @@ define('xapp/manager/Context',[
                     }
                     result = block.solve(block.scope, {
                         highlight: true,
-                        args:[value]
+                        args: [value]
                     });
-                    debugWire && console.log('run ' + block.name + ' for even ' + event + ' for ' + this.id,result);
+                    debugWire && console.log('run ' + block.name + ' for even ' + event + ' for ' + this.id, result);
                 }
             };
 
@@ -72033,9 +72042,9 @@ define('xapp/manager/Context',[
 
 
             if (_isWidget &&
-                    //dijit
+                //dijit
                 (widget.baseClass && widget.baseClass.indexOf('dijitContentPane') != -1)
-                    //delite
+                //delite
                 || widget.render != null || widget.on != null) {
                 _isWidget = false;//use on
             }
@@ -72043,11 +72052,11 @@ define('xapp/manager/Context',[
             if (_target) {
                 //plain node
                 if (!_isDelite && (!_hasWidgetCallback || !_isWidget)) {
-                    if(utils.isSystemEvent(event)){
+                    if (utils.isSystemEvent(event)) {
                         _handle = widget.subscribe(event, function (evt) {
                             run(event, evt, block, widget);
                         }.bind(this), widget);
-                    }else {
+                    } else {
                         _handle = widget.__on(_target, event, function (evt) {
                             run(event, evt, block, widget);
                         });
@@ -72075,7 +72084,7 @@ define('xapp/manager/Context',[
                                 }
                                 _handle = _target.on(event, function (evt) {
                                     var value = evt.target.value;
-                                    if("checked" in evt.target){
+                                    if ("checked" in evt.target) {
                                         value = evt.target.checked;
                                     }
                                     run(event, value, block, widget);
@@ -72100,8 +72109,8 @@ define('xapp/manager/Context',[
                     }
                     block._widgetHandles.push(_handle);
 
-                }else{
-                    console.error('wire widget: have no handle',widget);
+                } else {
+                    console.error('wire widget: have no handle', widget);
                 }
             }
         },
@@ -72121,14 +72130,11 @@ define('xapp/manager/Context',[
             }
         },
         wireScope: function (scope) {
-            
-            debugWire && console.log('wire scope '+scope.id);
-
-            
+            debugWire && console.log('wire scope ' + scope.id);
             var allGroups = scope.allGroups(),
                 thiz = this,
                 delegate = thiz.delegate || {},
-                widgets =[];
+                widgets = [];
 
             var getParams = function (group) {
                 var event = null,
@@ -72140,7 +72146,7 @@ define('xapp/manager/Context',[
                 if (parts.length == 1) {
                     event = parts[0];
                     widgetId = 'body';
-                    if(isIDE) {
+                    if (isIDE) {
                         var _body = editorContext.rootWidget;
                         _body.domNode.runExpression = editorContext.global.runExpression;
                     }
@@ -72150,16 +72156,16 @@ define('xapp/manager/Context',[
                     var blockUrl;
                     //can be: event & block url: onDriverVariableChanged__variable://deviceScope=user_devices&device=bc09b5c4-cfe6-b621-c412-407dbb7bcef8&driver=9db866a4-bb3e-137b-ae23-793b729c44f8&driverScope=user_drivers&block=2219d68b-862f-92ab-de5d-b7a847930a7a
                     //can be: widget id & event: btnCurrentFileName__load
-                    if(parts[1].indexOf('://')!==-1){
+                    if (parts[1].indexOf('://') !== -1) {
                         event = parts[0];
                         widgetId = 'body';
                         blockUrl = parts[1];
-                    }else {
+                    } else {
                         event = parts[1];
                         widgetId = parts[0];
 
                     }
-                    if(blockUrl) {
+                    if (blockUrl) {
                         var url_parts = utils.parse_url(blockUrl);
                         var url_args = utils.urlArgs(url_parts.host);
                         params = [
@@ -72234,8 +72240,8 @@ define('xapp/manager/Context',[
                 var params = getParams(group);
                 if (params && params.widget) {
                     this.wireWidget(scope, params.widget, params.widget.domNode || params.widget, params.event, group, params);
-                }else{
-                    console.error('cant resolve group '+group);
+                } else {
+                    console.error('cant resolve group ' + group);
                 }
                 var blocks = scope.getBlocks({
                     group: group
@@ -72243,30 +72249,30 @@ define('xapp/manager/Context',[
                 if (!blocks || !blocks.length) {
                     debugWire && console.warn('have no blocks for group : ' + group);
                 }
-                if(isIDE) {
+                if (isIDE) {
                     for (var j = 0; j < blocks.length; j++) {
                         var block = blocks[j];
                         wireBlock(block);
                     }
                 }
-                params.widget && widgets.indexOf(params.widget) ==-1 && widgets.push(params.widget);
+                params.widget && widgets.indexOf(params.widget) == -1 && widgets.push(params.widget);
             }
 
             for (var i = 0; i < widgets.length; i++) {
                 var widget = widgets[i];
-                if(widget.__didEmitLoad){
+                if (widget.__didEmitLoad) {
                     return;
                 }
-                debugBoot && console.log('emit load',widget);
-                widget.__didEmitLoad=true;
-                if(widget.nodeName==='BODY'){
+                debugBoot && console.log('emit load', widget);
+                widget.__didEmitLoad = true;
+                if (widget.nodeName === 'BODY') {
                     $(widget.nodeName).trigger('load');
-                }else {
+                } else {
                     if (widget.emit) {
                         try {
                             widget.emit('load', widget);
-                        }catch(e){
-                            console.error('firing load',e);
+                        } catch (e) {
+                            console.error('firing load', e);
                         }
                     }
                 }
@@ -72277,7 +72283,7 @@ define('xapp/manager/Context',[
                 if (params && params.widget) {
                     debugWire && console.log('on item added', arguments);
                     var item = evt.item;
-                    var editorContext = delegate.getEditorContext ? delegate.getEditorContext() : null ;
+                    var editorContext = delegate.getEditorContext ? delegate.getEditorContext() : null;
                     var widget = params.widget.domNode || params.widget;
                     thiz.wireNode(widget, params.event, evt.item, editorContext, params);
                     wireBlock(evt.item);
@@ -72286,7 +72292,7 @@ define('xapp/manager/Context',[
 
         },
         onBlockFilesLoaded: function (scopes) {
-            if(this.isVE()){
+            if (this.isVE()) {
                 return;
             }
             debugBoot && console.log('xapp:onSceneBlocksLoaded, wire scope!', scopes);
@@ -72296,7 +72302,7 @@ define('xapp/manager/Context',[
 
                     this.wireScope(scope);
                 } catch (e) {
-                    logError(e,'onBlockFilesLoaded')
+                    logError(e, 'onBlockFilesLoaded')
                 }
             }
         },
@@ -72327,48 +72333,48 @@ define('xapp/manager/Context',[
                         "variables": []
                     };
                     var fileManager = this.getFileManager();
-                    if(fileManager.serviceObject) {
+                    if (fileManager.serviceObject) {
                         this.getFileManager().mkfile(mount, path, JSON.stringify(content, null, 2)).then(function () {
                             loadXBLOXFiles();
                         });
-                    }else{
+                    } else {
                         loadXBLOXFiles();
                     }
                 }
             }
         },
-        _appModule:null,
-        loadAppModule:function (item) {
-            if(this._appModule){
+        _appModule: null,
+        loadAppModule: function (item) {
+            if (this._appModule) {
                 //return _appModule;
             }
             var dfd = new Deferred();
-            if(!item){
+            if (!item) {
                 dfd.resolve();
                 return dfd;
             }
-            var itemUrl = item.path.replace('./','').replace('.dhtml','');
-            var mid = item.mount.replace('/','')  + '/' + itemUrl;
+            var itemUrl = item.path.replace('./', '').replace('.dhtml', '');
+            var mid = item.mount.replace('/', '') + '/' + itemUrl;
             var _require = require;
             mid = mid.split(' ').join('%20');
 
-            var url = _require.toUrl(item.mount.replace('/','')  + '/' + itemUrl);
+            var url = _require.toUrl(item.mount.replace('/', '') + '/' + itemUrl);
             debugBoot && console.log('load default app.js ' + mid);
-            try{
+            try {
                 _require.undef && _require.undef(mid);
-            }catch(e){
-                console.warn('error unloading app module ' + mid,e);
+            } catch (e) {
+                console.warn('error unloading app module ' + mid, e);
             }
-            try{
+            try {
                 //probe
-                _require([mid],function(appModule){
+                _require([mid], function (appModule) {
                     dfd.resolve(appModule);
                     _require.config({
-                        urlArgs:null
+                        urlArgs: null
                     });
                 });
-            }catch(e){
-                console.error('error loading module ',e);
+            } catch (e) {
+                console.error('error loading module ', e);
                 dfd.resolve();
             }
             this._appModule = dfd;
@@ -72383,38 +72389,34 @@ define('xapp/manager/Context',[
          *
          */
         onReady: function (settings) {
-
             debugBoot && console.log('Checkpoint 8. xapp/manager->onReady');
-
-            if(settings) {
+            if (settings) {
                 this.settings = settings;
-            }else{
+            } else {
                 settings = this.settings;
             }
 
             var xbloxFiles = this.settings.xbloxScripts || [];
-            if(xbloxFiles.length==0 && settings.item){
+            if (xbloxFiles.length === 0 && settings.item) {
                 xbloxFiles.push({
-                    path:settings.item.path.replace('.dhtml','.xblox').replace('.html','.xblox'),
-                    mount:settings.item.mount
-                })
+                    path: settings.item.path.replace('.dhtml', '.xblox').replace('.html', '.xblox'),
+                    mount: settings.item.mount
+                });
             }
 
             this.loadXBloxFiles(xbloxFiles);
-
             var thiz = this;
-            
-            debugBoot && console.info('-app ready',this);
-            if(!this.isVE()){
-                this.loadAppModule(settings.item).then(function(){
+            debugBoot && console.info('-app ready', this);
+            if (!this.isVE()) {
+                this.loadAppModule(settings.item).then(function () {
                     thiz.application.onReady();
                     console.log('app module loaded from ');
-                    setTimeout(function(){
-                        thiz.publish('onContextReady',thiz);
+                    setTimeout(function () {
+                        thiz.publish('onContextReady', thiz);
                         thiz.publish('DevicesConnected');
-                    },1500);
+                    }, 1500);
                 });
-            }else{
+            } else {
                 this.application.onReady();
                 this.application.publishVariables();
             }
@@ -72429,47 +72431,43 @@ define('xapp/manager/Context',[
             */
             //this.application.onReady();
         },
-        isVE:function(){
+        isVE: function () {
             return this.delegate;
         },
         init: function (settings) {
-
             this.settings = settings;
-
-            if(settings && settings.mixins){
+            if (settings && settings.mixins) {
                 this.doMixins(settings.mixins);
             }
-
-            debugBoot && console.log('Checkpoint 7. xapp/manager->init(settings)',settings);
-
+            debugBoot && console.log('Checkpoint 7. xapp/manager->init(settings)', settings);
             var thiz = this;
             this.subscribe(types.EVENTS.ON_DEVICE_DRIVER_INSTANCE_READY, function (evt) {
-                if(thiz._timer){
+                if (thiz._timer) {
                     clearTimeout(thiz._timer);
                     delete thiz._timer;
                 }
                 var instance = evt.instance;
-                if(!instance){
+                if (!instance) {
                     return;
                 }
-                if(thiz['__instance_variables_'+instance.id]){
+                if (thiz['__instance_variables_' + instance.id]) {
                     //return;
                 }
-                thiz['__instance_variables_'+instance.id] = true;
-                thiz.timer = setTimeout(function(){
+                thiz['__instance_variables_' + instance.id] = true;
+                thiz.timer = setTimeout(function () {
                     thiz.publish(types.EVENTS.ON_APP_READY, {
                         context: thiz
                     });
                     thiz.application.publishVariables();
-                },10);
+                }, 10);
 
             });
-            if(has('debug')) {
+            if (has('debug')) {
                 this.loadXIDE();
             }
 
 
-            function ready(){
+            function ready() {
                 require([
                     'xfile/manager/FileManager',
                     'xide/manager/ResourceManager',
@@ -72484,47 +72482,22 @@ define('xapp/manager/Context',[
                 ], function (FileManager, ResourceManager, NodeServiceManager, DriverManager, DeviceManager, BlockManager) {
 
                     debugBoot && console.log('Checkpoint 7.0 xapp/Context::init');
-
-
                     thiz.doMixins(thiz.mixins);
-
                     thiz.blockManager = thiz.createManager(BlockManager);
                     thiz.blockManager.init();
-
                     thiz.fileManager = thiz.createManager(FileManager, settings.xFileConfig, {
                         serviceUrl: settings.rpcUrl,
                         singleton: true
                     });
                     thiz.fileManager.init();
-
-
                     thiz.resourceManager = thiz.createManager(ResourceManager, settings.xFileConfig, {
                         serviceUrl: settings.rpcUrl,
                         singleton: true
                     });
-                    thiz.resourceManager.init();
-
-                    var nodeServices = settings.NODE_SERVICES;
-                    if(nodeServices){
-                        var url = location.href;
-                        var parts = utils.parse_url(url);
-                        nodeServices[0].host = parts.host;
-                        if(nodeServices[0].info){
-                            nodeServices[0].info.host='http://'+parts.host;
-                        }
-                    }
-
-                    thiz.nodeServiceManager = thiz.createManager(NodeServiceManager, null, {
-                        serviceUrl: settings.rpcUrl,
-                        singleton: true,
-                        services:settings.NODE_SERVICES
-                    });
-                    thiz.nodeServiceManager.init();
-
                     thiz.driverManager = thiz.createManager(DriverManager, null, {
-                            serviceUrl: settings.rpcUrl,
-                            singleton: true
-                        }
+                        serviceUrl: settings.rpcUrl,
+                        singleton: true
+                    }
                     );
                     thiz.driverManager.init();
 
@@ -72532,10 +72505,11 @@ define('xapp/manager/Context',[
                         thiz.driverManager.ls('system_drivers').then(function () {
                             thiz.driverManager.ls('user_drivers').then(function () {
                                 debugBoot && console.log('Checkpoint 7.1 drivers loaded');
+
                                 thiz.deviceManager = thiz.createManager(DeviceManager, null, {
-                                        serviceUrl: settings.rpcUrl,
-                                        singleton: true
-                                    }
+                                    serviceUrl: settings.rpcUrl,
+                                    singleton: true
+                                }
                                 );
                                 thiz.deviceManager.init();
                                 thiz.deviceManager.ls('system_devices').then(function () {
@@ -72545,20 +72519,39 @@ define('xapp/manager/Context',[
                                     });
 
                                 });
+
+
+                                thiz.resourceManager.init();
+                                var nodeServices = settings.NODE_SERVICES;
+                                if (nodeServices) {
+                                    var url = location.href;
+                                    var parts = utils.parse_url(url);
+                                    nodeServices[0].host = parts.host;
+                                    if (nodeServices[0].info) {
+                                        nodeServices[0].info.host = 'http://' + parts.host;
+                                    }
+                                }
+
+                                thiz.nodeServiceManager = thiz.createManager(NodeServiceManager, null, {
+                                    serviceUrl: settings.rpcUrl,
+                                    singleton: true,
+                                    services: settings.NODE_SERVICES
+                                });
+                                thiz.nodeServiceManager.init();
                             });
                         });
-                        Notifier.publish('onContextReady',thiz);
+                        Notifier.publish('onContextReady', thiz);
                     } catch (e) {
                         logError(e);
                     }
                 });
             }
 
-            if(!this.isVE()){
-                this.loadAppModule(settings.item).then(function(){
+            if (!this.isVE()) {
+                this.loadAppModule(settings.item).then(function () {
                     ready();
                 })
-            }else{
+            } else {
                 ready();
             }
 
@@ -72610,23 +72603,23 @@ define('xapp/manager/Context',[
             this.application = this.createManager(Application);
             Instance = this;
             var self = this;
-            if(settings){
+            if (settings) {
                 this.settings = settings;
-                if(settings.delegate){
+                if (settings.delegate) {
                     this.delegate = settings.delegate;
                 }
             }
-            if(this.isVE() && settings.item){
+            if (this.isVE() && settings.item) {
                 this.loadAppModule(settings.item);
             }
 
         },
-        initVe:function(){
+        initVe: function () {
             this.notifier = Notifier;
         }
     });
 
-    Module.getInstance  = function () {
+    Module.getInstance = function () {
         return Instance;
     }
     Module.notifier = Notifier;
@@ -77477,7 +77470,7 @@ define('xide/utils/HexUtils',[
         var buffer = utils.bufferFromDecString(string);
         var result = "";
         for (var i = 0; i < buffer.length; i++) {
-            result += String.fromCharCode(buffer[i], 16);
+            result += String.fromCharCode(buffer[i]);
         }
         return result;
     };
