@@ -56,7 +56,6 @@ define([
             if (deviceManager) {
                 var deviceInstances = deviceManager.deviceInstances;
                 for (var i in deviceInstances) {
-
                     var instance = deviceInstances[i];
                     var instanceOptions = instance.options;
                     if (!instanceOptions) {
@@ -64,11 +63,9 @@ define([
                     }
 
                     if (instance.blockScope) {
-
                         var basicVariables = instance.blockScope.getVariables({
                             group: types.BLOCK_GROUPS.CF_DRIVER_BASIC_VARIABLES
                         });
-
                         var out = [];
                         for (var i = 0; i < basicVariables.length; i++) {
                             var variable = basicVariables[i];
@@ -87,7 +84,6 @@ define([
             }
         },
         onReady: function () {
-
             debugBootstrap && console.log('   Checkpoint 5.3 managers ready');
             this.publish(types.EVENTS.ON_APP_READY, {
                 context: this.ctx,
@@ -99,11 +95,8 @@ define([
             var _re = require,
                 thiz = this;
             debugBootstrap && console.log('   Checkpoint 5.2 xblox component ready');
-
             _re(['xblox/embedded', 'xblox/manager/BlockManager'], function (embedded, BlockManager) {
-
                 debugBootstrap && console.log('   Checkpoint 5.2 setup xblox');
-
                 //IDE's block manager
                 if (thiz.delegate && thiz.delegate.ctx) {
 
@@ -127,7 +120,6 @@ define([
 
 
                 } else {
-
                     var blockManagerInstance = new BlockManager();
                     blockManagerInstance.ctx = thiz.ctx;
                     thiz.ctx.blockManager = blockManagerInstance;

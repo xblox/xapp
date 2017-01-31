@@ -626,6 +626,7 @@ define([
                 }, 10);
 
             });
+            
             if (has('debug')) {
                 this.loadXIDE();
             }
