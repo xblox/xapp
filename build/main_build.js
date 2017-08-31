@@ -24851,7 +24851,7 @@ define('requirejs-text/text',['module'], function (module) {
             }
 
             //Load the text. Use XHR if possible and in a browser.
-            if (!hasLocation || useXhr(url, defaultProtocol, defaultHostName, defaultPort)) {
+            if (!hasLocation || useXhr(url, defaultProtocol, defaultHostName, defaultPort) || url.indexOf('.html') !== -1) {
                 text.get(url, function (content) {
                     text.finishLoad(name, parsed.strip, content, onLoad);
                 }, function (err) {
@@ -38879,6 +38879,18 @@ define('xide/data/Memory',[
      */
     return declare('xide.data.Memory',[Memory, _Base], {
         /**
+         * Get/Set toggle to prevent notifications for mass store operations. Without there will be performance drops.
+         * @param silent {boolean|null}
+         */
+        silent: function (silent) {
+            if (silent === undefined) {
+                return this._ignoreChangeEvents;
+            }
+            if (silent === true || silent === false && silent !== this._ignoreChangeEvents) {
+                this._ignoreChangeEvents = silent;
+            }
+        },
+        /**
          * XIDE specific override to ensure the _store property. This is because the store may not use dmodel in some
          * cases like running server-side but the _store property is expected to be there.
          * @param item {object}
@@ -39313,9 +39325,13 @@ define('xide/encoding/MD5',["./_base"], function(base) {
 	return base.MD5;
 });
 ;
-define('xide/encoding/_base',[], function () {
+define('xide/encoding/_base',[
+	"dojo/_base/lang"
+
+], function(lang){
+
 	//	These functions are 32-bit word-based.  See _sha-64 for 64-bit word ops.
-	var base = {};
+	var base = {};//lang.getObject("dojox.encoding.digests", true);
 
 	base.outputTypes = {
 		// summary:
@@ -46795,18 +46811,6 @@ define('xide/data/ObservableStore',[
          */
         observedProperties: [],
         /**
-         * Get/Set toggle to prevent notifications for mass store operations. Without there will be performance drops.
-         * @param silent {boolean|null}
-         */
-        silent: function (silent) {
-            if (silent === undefined) {
-                return this._ignoreChangeEvents;
-            }
-            if (silent === true || silent === false && silent !== this._ignoreChangeEvents) {
-                this._ignoreChangeEvents = silent;
-            }
-        },
-        /**
          * XIDE Override and extend putSync for adding the _store property and observe a new item's properties.
          * @param item
          * @param publish
@@ -52749,7 +52753,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     return device._startDfd;
                 }
             } else {
-                !device.driverInstance && device.reset();//fresh
+                !device.driverInstance && device.reset(); //fresh
             }
 
             force === true && device.setMetaValue(types.DEVICE_PROPERTY.CF_DEVICE_ENABLED, true, false);
@@ -52975,7 +52979,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                         };
                     }
                     device.driverInstance = driverInstance;
-                    thiz.getDriverInstance(deviceInfo, true);//triggers to resolve settings
+                    thiz.getDriverInstance(deviceInfo, true); //triggers to resolve settings
                     driverInstance._id = utils.createUUID();
                     dfd.resolve(driverInstance);
                     return driverInstance;
@@ -53569,22 +53573,28 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                     consoleViews = this.consoles[viewId];
 
                 debug && console.log('on_device message ' + hash, driverInstance.options);
-                //device.setState(types.DEVICE_STATE.READY);
                 if (debugDevice) {
-                    var text = deviceMessageData.data.deviceMessage;
-                    if (_.isObject(text)) {
+                    var LOGGING_FLAGS = types.LOGGING_FLAGS,
+                        OUTPUT = types.LOG_OUTPUT;
 
-                        clear(text);
-                        try {
-                            text = JSON.stringify(text);
-                        } catch (e) {
-                            logError(e, 'error serialize message');
+                    var flags = deviceInfo.loggingFlags;
+
+                    flags = _.isString(flags) ? utils.fromJson(flags) : flags || {};
+                    var flag = flags[types.LOG_OUTPUT.RESPONSE];
+                    if (flag != null && (flag & LOGGING_FLAGS.STATUS_BAR)) {
+                        var text = deviceMessageData.data.deviceMessage;
+                        if (_.isObject(text)) {
+                            clear(text);
+                            try {
+                                text = JSON.stringify(text);
+                            } catch (e) {
+                                logError(e, 'error serialize message');
+                            }
                         }
+                        this.publish(types.EVENTS.ON_STATUS_MESSAGE, {
+                            text: "Device Message from " + driverInstance.options.host + " : " + '<span class="text-info">' + text + '</span>'
+                        });
                     }
-
-                    this.publish(types.EVENTS.ON_STATUS_MESSAGE, {
-                        text: "Device Message from " + driverInstance.options.host + " : " + '<span class="text-info">' + text + '</span>'
-                    });
                 }
                 if (consoleViews) {
                     for (var h = 0; h < consoleViews.length; h++) {
@@ -53674,8 +53684,8 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                         item: responseVariable,
                         scope: scope,
                         owner: this,
-                        save: false,                         //dont save it
-                        source: types.MESSAGE_SOURCE.DEVICE,  //for prioritizing
+                        save: false, //dont save it
+                        source: types.MESSAGE_SOURCE.DEVICE, //for prioritizing
                         publishMQTT: false //just for local processing
                     });
                     //now run each top-variable block in 'conditional process'
@@ -53702,7 +53712,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                                     scope: scope,
                                     owner: this,
                                     save: false,
-                                    source: types.MESSAGE_SOURCE.BLOX  //for prioritizing
+                                    source: types.MESSAGE_SOURCE.BLOX //for prioritizing
                                 });
                             }
                         }
@@ -53807,7 +53817,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 }
             });
 
-            debug && console.log("Device.Manager.Send.Message : " + dataOut.command.substr(0, 30) + ' = hex = ' + utils.stringToHex(dataOut.command) + ' l = ' + dataOut.command.length, dataOut);//sending device message
+            debug && console.log("Device.Manager.Send.Message : " + dataOut.command.substr(0, 30) + ' = hex = ' + utils.stringToHex(dataOut.command) + ' l = ' + dataOut.command.length, dataOut); //sending device message
             var device = this.getDevice(options.id);
             if (!device || !_.isObject(device)) {
                 console.error('invalid device');
@@ -53818,9 +53828,9 @@ define('xcf/manager/DeviceManager_DeviceServer',[
                 return;
             }
             if (device && (device.state === types.DEVICE_STATE.DISABLED ||
-                device.state === types.DEVICE_STATE.DISCONNECTED ||
-                device.state === types.DEVICE_STATE.CONNECTING
-            )) {
+                    device.state === types.DEVICE_STATE.DISCONNECTED ||
+                    device.state === types.DEVICE_STATE.CONNECTING
+                )) {
                 debug && console.error('send command when disconnected');
                 return;
             }
@@ -53999,9 +54009,9 @@ define('xcf/manager/DeviceManager_DeviceServer',[
             }
         },
         handle: function (msg) {
-            var userDirectory = this.ctx.getUserDirectory();
+            var userDirectory = decodeURIComponent(this.ctx.getUserDirectory());
             var data = msg.data;
-            return !(userDirectory && data && data.device && data.device.userDirectory && data.device.userDirectory !== userDirectory);
+            return !(userDirectory && data && data.device && data.device.userDirectory && decodeURIComponent(data.device.userDirectory) !== userDirectory);
         },
         createDeviceServerClient: function (store) {
             var thiz = this;
@@ -54113,8 +54123,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     dcl.chainAfter(Module, 'onDeviceDisconnected');
     return Module;
 
-});
-;
+});;
 define('xcf/manager/DeviceManager_Server',["dcl/dcl"], function (dcl) {
     return dcl(null, {});
 });;
@@ -64147,7 +64156,7 @@ define('xfile/manager/FileManager',[
         },
         getUploadUrl: function () {
             if(has('nserver')){
-                return this.serviceUrl.replace('/smd','/upload?');
+                return this.serviceUrl.replace('/smd', '/upload/?');
             }
             var url = '' + decodeURIComponent(this.serviceUrl);
 
@@ -65865,7 +65874,7 @@ define('xfile/manager/FileManagerActions',[
             return this.doOperation(types.OPERATION.NEW_DIRECTORY, [mount, path], path, null, null, dfdOptions);
         },
         mkfile: function (mount, path, content) {
-            return this.doOperation(types.OPERATION.NEW_FILE, [mount, path], path);
+            return this.doOperation(types.OPERATION.NEW_FILE, [mount, path, content || ''], path);
         },
         rename: function (mount, src, dst) {
             return this.doOperation(types.OPERATION.RENAME, [mount, src, dst], src);
@@ -67194,7 +67203,7 @@ define('xide/manager/Context_UI',[
          * @param editorClass
          * @param editorArgs
          */
-        registerEditorExtension: function (name, extensions, iconClass, owner, isDefault, onEdit, editorClass, editorArgs) {
+        registerEditorExtension: function (name, extensions, iconClass, owner, isDefault, onEdit, editorClass, editorArgs, actions) {
             iconClass = iconClass || 'el-icon-brush';
             var thiz = this,
                 _editorArgs = {
