@@ -1,4 +1,4 @@
-require.config({"config":{"delite/theme":{"layersMap":{"delite/themes/{{theme}}/common.css":"themes/layer_{{theme}}.css","deliteful/Accordion/themes/{{theme}}/Accordion.css":"themes/layer_{{theme}}.css","xdeliteful/Script.css":"themes/layer_{{theme}}.css","xdeliteful/Bar/themes/Bar.css":"themes/layer_{{theme}}.css","deliteful/list/List/themes/{{theme}}/List.css":"themes/layer_{{theme}}.css","delite/Scrollable/themes/{{theme}}/Scrollable.css":"themes/layer_{{theme}}.css","deliteful/ProgressBar/themes/{{theme}}/ProgressBar.css":"themes/layer_{{theme}}.css","deliteful/StarRating/themes/{{theme}}/StarRating.css":"themes/layer_{{theme}}.css","xdeliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css","deliteful/LinearLayout/themes/{{theme}}/LinearLayout.css":"themes/layer_{{theme}}.css","deliteful/SidePane/themes/{{theme}}/SidePane.css":"themes/layer_{{theme}}.css","deliteful/Panel/themes/{{theme}}/Panel.css":"themes/layer_{{theme}}.css","deliteful/ViewStack/themes/{{theme}}/ViewStack.css":"themes/layer_{{theme}}.css","deliteful/ProgressIndicator/themes/{{theme}}/ProgressIndicator.css":"themes/layer_{{theme}}.css","deliteful/Switch/themes/{{theme}}/Switch.css":"themes/layer_{{theme}}.css","deliteful/ToggleButton/themes/{{theme}}/ToggleButton.css":"themes/layer_{{theme}}.css","deliteful/RadioButton/themes/{{theme}}/RadioButton.css":"themes/layer_{{theme}}.css","deliteful/Checkbox/themes/{{theme}}/Checkbox.css":"themes/layer_{{theme}}.css","deliteful/Select/themes/{{theme}}/Select.css":"themes/layer_{{theme}}.css","deliteful/Combobox/themes/{{theme}}/Combobox.css":"themes/layer_{{theme}}.css","delite/DialogUnderlay/themes/{{theme}}/DialogUnderlay.css":"themes/layer_{{theme}}.css","deliteful/Slider/themes/{{theme}}/Slider.css":"themes/layer_{{theme}}.css","deliteful/Button/themes/{{theme}}/Button.css":"themes/layer_{{theme}}.css"}}}});require.config({"config":{"requirejs-dplugins/i18n":{"bundlesMap":{"nls/main_build":["deliteful/list/List/nls/List","deliteful/StarRating/nls/StarRating","deliteful/Combobox/nls/Combobox"]},"localesMap":{"nls/main_build":["root"]}}}});require.config({config:{'ecma402/impl/load':{"af":true,"af-NA":true,"am":true,"ar":true,"ar-AE":true,"ar-BH":true,"ar-DZ":true,"ar-EG":true,"ar-IQ":true,"ar-JO":true,"ar-KW":true,"ar-LB":true,"ar-LY":true,"ar-MA":true,"ar-OM":true,"ar-QA":true,"ar-SA":true,"ar-SD":true,"ar-SY":true,"ar-TN":true,"ar-YE":true,"as":true,"az":true,"be":true,"bg":true,"bn":true,"bn-IN":true,"ca":true,"cs":true,"cy":true,"da":true,"de":true,"de-AT":true,"de-LU":true,"de-CH":true,"el":true,"en":true,"en-AU":true,"en-BE":true,"en-CM":true,"en-CA":true,"en-GB":true,"en-GH":true,"en-HK":true,"en-IE":true,"en-IN":true,"en-KE":true,"en-MU":true,"en-NG":true,"en-NZ":true,"en-PH":true,"en-SG":true,"en-TT":true,"en-ZA":true,"en-ZM":true,"es":true,"es-AR":true,"es-BO":true,"es-CL":true,"es-CO":true,"es-CR":true,"es-DO":true,"es-EC":true,"es-GT":true,"es-HN":true,"es-MX":true,"es-NI":true,"es-PA":true,"es-PE":true,"es-PR":true,"es-PY":true,"es-SV":true,"es-US":true,"es-UY":true,"es-VE":true,"eu":true,"fil":true,"fi":true,"fr":true,"fr-BE":true,"fr-CA":true,"fr-CD":true,"fr-CH":true,"fr-CI":true,"fr-CM":true,"fr-DZ":true,"fr-LU":true,"fr-MR":true,"fr-MA":true,"fr-SN":true,"fr-TN":true,"gl":true,"gu":true,"ha":true,"he":true,"hi":true,"hr":true,"hu":true,"hy":true,"id":true,"ig":true,"is":true,"it":true,"it-CH":true,"ja":true,"ka":true,"kk":true,"km":true,"kn":true,"ko":true,"kok":true,"lg":true,"lt":true,"lv":true,"mk":true,"ml":true,"mn":true,"mr":true,"ms":true,"mt":true,"nb":true,"ne":true,"ne-IN":true,"nl":true,"nl-BE":true,"nn":true,"om":true,"or":true,"pa":true,"pl":true,"pt":true,"pt-AO":true,"pt-MZ":true,"pt-PT":true,"ro":true,"root":true,"ru":true,"rw":true,"si":true,"sk":true,"sl":true,"sr":true,"sr-Latn":true,"sq":true,"sv":true,"sw":true,"sw-KE":true,"ta":true,"te":true,"th":true,"tr":true,"uk":true,"ur":true,"ur-IN":true,"uz":true,"uz-Cyrl":true,"vi":true,"yo":true,"zh":true,"zh-Hans":true,"zh-Hans-SG":true,"zh-Hant":true,"zh-Hant-HK":true,"_layerMid":"cldr/main_build"}}});require.config({"config":{"requirejs-dplugins/css":{"layersMap":{"deliteful/ViewStack/transitions/slide.css":"main_build.css","deliteful/ViewStack/transitions/reveal.css":"main_build.css"}}}});define('xapp/mainr',[
+require.config({"config":{"requirejs-dplugins/i18n":{"bundlesMap":{"nls/main_build":["deliteful/list/List/nls/List","deliteful/StarRating/nls/StarRating","deliteful/Combobox/nls/Combobox"]},"localesMap":{"nls/main_build":["root"]}}}});require.config({config:{'ecma402/impl/load':{"af":true,"af-NA":true,"am":true,"ar":true,"ar-AE":true,"ar-BH":true,"ar-DZ":true,"ar-EG":true,"ar-IQ":true,"ar-JO":true,"ar-KW":true,"ar-LB":true,"ar-LY":true,"ar-MA":true,"ar-OM":true,"ar-QA":true,"ar-SA":true,"ar-SD":true,"ar-SY":true,"ar-TN":true,"ar-YE":true,"as":true,"az":true,"be":true,"bg":true,"bn":true,"bn-IN":true,"ca":true,"cs":true,"cy":true,"da":true,"de":true,"de-AT":true,"de-LU":true,"de-CH":true,"el":true,"en":true,"en-AU":true,"en-BE":true,"en-CM":true,"en-CA":true,"en-GB":true,"en-GH":true,"en-HK":true,"en-IE":true,"en-IN":true,"en-KE":true,"en-MU":true,"en-NG":true,"en-NZ":true,"en-PH":true,"en-SG":true,"en-TT":true,"en-ZA":true,"en-ZM":true,"es":true,"es-AR":true,"es-BO":true,"es-CL":true,"es-CO":true,"es-CR":true,"es-DO":true,"es-EC":true,"es-GT":true,"es-HN":true,"es-MX":true,"es-NI":true,"es-PA":true,"es-PE":true,"es-PR":true,"es-PY":true,"es-SV":true,"es-US":true,"es-UY":true,"es-VE":true,"eu":true,"fil":true,"fi":true,"fr":true,"fr-BE":true,"fr-CA":true,"fr-CD":true,"fr-CH":true,"fr-CI":true,"fr-CM":true,"fr-DZ":true,"fr-LU":true,"fr-MR":true,"fr-MA":true,"fr-SN":true,"fr-TN":true,"gl":true,"gu":true,"ha":true,"he":true,"hi":true,"hr":true,"hu":true,"hy":true,"id":true,"ig":true,"is":true,"it":true,"it-CH":true,"ja":true,"ka":true,"kk":true,"km":true,"kn":true,"ko":true,"kok":true,"lg":true,"lt":true,"lv":true,"mk":true,"ml":true,"mn":true,"mr":true,"ms":true,"mt":true,"nb":true,"ne":true,"ne-IN":true,"nl":true,"nl-BE":true,"nn":true,"om":true,"or":true,"pa":true,"pl":true,"pt":true,"pt-AO":true,"pt-MZ":true,"pt-PT":true,"ro":true,"root":true,"ru":true,"rw":true,"si":true,"sk":true,"sl":true,"sr":true,"sr-Latn":true,"sq":true,"sv":true,"sw":true,"sw-KE":true,"ta":true,"te":true,"th":true,"tr":true,"uk":true,"ur":true,"ur-IN":true,"uz":true,"uz-Cyrl":true,"vi":true,"yo":true,"zh":true,"zh-Hans":true,"zh-Hans-SG":true,"zh-Hant":true,"zh-Hant-HK":true,"_layerMid":"cldr/main_build"}}});define('xapp/mainr',[
     "deliteful/Button",
     "xblox/RunScript",
     "delite/Container",
@@ -48456,8 +48456,8 @@ define('xblox/model/Scope',[
     function mergeNewModule(block, source) {
         for (var i in source) {
             var o = source[i]
-            if (o && _.isFunction(o) /* && lang.isFunction(target[i]) */) {
-                block[i] = o// swap
+            if (o && _.isFunction(o) /* && lang.isFunction(target[i]) */ ) {
+                block[i] = o // swap
             }
         }
     }
@@ -48562,9 +48562,9 @@ define('xblox/model/Scope',[
                 }
                 return url
             }
-            var parts = utils.parse_url(url)// strip scheme
+            var parts = utils.parse_url(url) // strip scheme
 
-            parts = utils.urlArgs(parts.host)// go on with query string
+            parts = utils.urlArgs(parts.host) // go on with query string
             var _device = deviceManager.getItemById(parts.device.value)
             if (_device) {
                 var info = deviceManager.toDeviceControlInfo(_device)
@@ -48730,19 +48730,59 @@ define('xblox/model/Scope',[
                 }
                 result.push(item)
             }
-            result = result.concat([{label: 'onclick', value: 'onclick'},
-                {label: 'ondblclick', value: 'ondblclick'},
-                {label: 'onmousedown', value: 'onmousedown'},
-                {label: 'onmouseup', value: 'onmouseup'},
-                {label: 'onmouseover', value: 'onmouseover'},
-                {label: 'onmousemove', value: 'onmousemove'},
-                {label: 'onmouseout', value: 'onmouseout'},
-                {label: 'onkeypress', value: 'onkeypress'},
-                {label: 'onkeydown', value: 'onkeydown'},
-                {label: 'onkeyup', value: 'onkeyup'},
-                {label: 'onfocus', value: 'onfocus'},
-                {label: 'onblur', value: 'onblur'},
-                {label: 'onchange', value: 'onchange'}])
+            result = result.concat([{
+                    label: 'onclick',
+                    value: 'onclick'
+                },
+                {
+                    label: 'ondblclick',
+                    value: 'ondblclick'
+                },
+                {
+                    label: 'onmousedown',
+                    value: 'onmousedown'
+                },
+                {
+                    label: 'onmouseup',
+                    value: 'onmouseup'
+                },
+                {
+                    label: 'onmouseover',
+                    value: 'onmouseover'
+                },
+                {
+                    label: 'onmousemove',
+                    value: 'onmousemove'
+                },
+                {
+                    label: 'onmouseout',
+                    value: 'onmouseout'
+                },
+                {
+                    label: 'onkeypress',
+                    value: 'onkeypress'
+                },
+                {
+                    label: 'onkeydown',
+                    value: 'onkeydown'
+                },
+                {
+                    label: 'onkeyup',
+                    value: 'onkeyup'
+                },
+                {
+                    label: 'onfocus',
+                    value: 'onfocus'
+                },
+                {
+                    label: 'onblur',
+                    value: 'onblur'
+                },
+                {
+                    label: 'onchange',
+                    value: 'onchange'
+                }
+            ])
 
             // select the event we are listening to
             for (var i = 0; i < result.length; i++) {
@@ -48812,7 +48852,9 @@ define('xblox/model/Scope',[
             if (!this.blockStore) {
                 return []
             }
-            query = query || {id: /\S+/}// all blocks
+            query = query || {
+                id: /\S+/
+            } // all blocks
             var result = _.isEmpty(query) ? this.blockStore.data : this.blockStore.query(query, null, true);
             if (!isIDE && allowCache !== false) {
                 var hash = MD5(JSON.stringify(query), 1)
@@ -48991,12 +49033,12 @@ define('xblox/model/Scope',[
         },
         isScript: function (val) {
             return this.isString(val) && (
-                    val.indexOf('return') != -1 ||
-                    val.indexOf(';') != -1 ||
-                    val.indexOf('[') != -1 ||
-                    val.indexOf('{') != -1 ||
-                    val.indexOf('}') != -1
-                )
+                val.indexOf('return') != -1 ||
+                val.indexOf(';') != -1 ||
+                val.indexOf('[') != -1 ||
+                val.indexOf('{') != -1 ||
+                val.indexOf('}') != -1
+            )
         },
         /**
          * Serializes all variables
@@ -49025,8 +49067,7 @@ define('xblox/model/Scope',[
                 }
                 if (!this.isScript(_varVal) && _varVal.indexOf("'") == -1) {
                     _varVal = "'" + _varVal + "'"
-                }
-                else if (this.isScript(_varVal)) {
+                } else if (this.isScript(_varVal)) {
                     _varVal = this.expressionModel.parseVariable(this, _var)
                 }
                 if (_varVal === "''") {
@@ -49059,8 +49100,7 @@ define('xblox/model/Scope',[
                 }
                 if (!this.isScript(_varVal) && _varVal.indexOf("'") == -1) {
                     _varVal = "'" + _varVal + "'"
-                }
-                else if (this.isScript(_varVal)) {
+                } else if (this.isScript(_varVal)) {
                     // _varVal = "''";
                     _varVal = this.expressionModel.parseVariable(this, _var)
                 }
@@ -49093,7 +49133,7 @@ define('xblox/model/Scope',[
                 if (!variableClassProto) {
                     continue;
                 }
-                result.push(new variableClassProto(variable))// looks like a leak but the instance is tracked and destroyed in this scope
+                result.push(new variableClassProto(variable)) // looks like a leak but the instance is tracked and destroyed in this scope
             }
             return result
         },
@@ -49140,7 +49180,7 @@ define('xblox/model/Scope',[
                 }
             }
             var result = [];
-            newBlocks = this.blocksFromJson(blocksJSON);// add it to our scope
+            newBlocks = this.blocksFromJson(blocksJSON); // add it to our scope
             _.each(newBlocks, function (block) {
                 result.push(store.getSync(block.id));
             })
@@ -49162,7 +49202,7 @@ define('xblox/model/Scope',[
             }
 
             this.blocksToJson(newBlocks)
-            this.blocksFromJson(newBlocks)// add it us
+            this.blocksFromJson(newBlocks) // add it us
             return newBlocks
         },
         /**
@@ -49288,8 +49328,7 @@ define('xblox/model/Scope',[
             }
             return result
         },
-        _createBlockStore: function () {
-        },
+        _createBlockStore: function () {},
         blockFromJson: function (block) {
             block['scope'] = this
             if (block._containsChildrenIds == null) {
@@ -49431,8 +49470,7 @@ define('xblox/model/Scope',[
                             if (child.postCreate) {
                                 child.postCreate()
                             }
-                        }
-                        else if (typeof block._children[propName] == 'object') {
+                        } else if (typeof block._children[propName] == 'object') {
                             // multiple blocks
                             block[propName] = []
                             for (var j = 0; j < block._children[propName].length; j++) {
@@ -49474,6 +49512,39 @@ define('xblox/model/Scope',[
          * @param url {String}
          * @returns {module:xblox/model/Block[]}
          */
+        resolveDevice: function (url) {
+            var blockScope = this,
+                ctx = this.ctx,
+                driver = this.driver,
+                device = this.device,
+                deviceManager = ctx.getDeviceManager(),
+                driverManager = ctx.getDriverManager()
+
+            if (url.indexOf('://') == -1) {
+                var _block = this.getBlockById(url)
+                if (_block) {
+                    return _block
+                }
+                return url
+            }
+            var parts = utils.parse_url(url) // strip scheme
+
+            parts = utils.urlArgs(parts.host) // go on with query string
+            var _device = deviceManager.getItemById(parts.device.value)
+            // support device by name
+            if (!_device) {
+                var _instance = deviceManager.getInstanceByName(parts.device.value)
+                if (_instance) {
+                    _device = _instance.device
+                }
+            }
+            return device;
+        },
+        /**
+         *
+         * @param url {String}
+         * @returns {module:xblox/model/Block[]}
+         */
         resolveBlock: function (url) {
             var blockScope = this,
                 ctx = this.ctx,
@@ -49489,9 +49560,9 @@ define('xblox/model/Scope',[
                 }
                 return url
             }
-            var parts = utils.parse_url(url)// strip scheme
+            var parts = utils.parse_url(url) // strip scheme
 
-            parts = utils.urlArgs(parts.host)// go on with query string
+            parts = utils.urlArgs(parts.host) // go on with query string
             var _device = deviceManager.getItemById(parts.device.value)
             // support device by name
             if (!_device) {
@@ -49633,8 +49704,7 @@ define('xblox/model/Scope',[
                                 found = _.find(result, {
                                     id: sBlock.id
                                 })
-                                if (found) {
-                                } else {
+                                if (found) {} else {
                                     result.push(sBlock)
                                 }
                                 result = result.concat(this.flatten([sBlock]))
@@ -49653,8 +49723,8 @@ define('xblox/model/Scope',[
         },
         solveBlock: function (mixed, settings, force, isInterface) {
             settings = settings || {
-                    highlight: false
-                }
+                highlight: false
+            }
             var block = null
             if (this.isString(mixed)) {
                 block = this.getBlockByName(mixed)
@@ -49764,7 +49834,7 @@ define('xblox/model/Scope',[
         },
 
         init: function () {
-            this.getExpressionModel()// create
+            this.getExpressionModel() // create
             this.subscribe(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, this._onVariableChanged)
             var thiz = this
 
@@ -49878,7 +49948,7 @@ define('xblox/model/Scope',[
                     // keep all root-level items
 
                     if (groupItems[i].parentId == null && // must be root
-                        groupItems[i] != source// cant be source
+                        groupItems[i] != source // cant be source
                     ) {
                         var itemIndex = store.storage.index[item.id];
                         var add = before ? itemIndex >= targetIndex : itemIndex <= targetIndex;
@@ -49984,8 +50054,7 @@ define('xblox/model/Scope',[
     })
     dcl.chainAfter(Module, 'destroy')
     return Module
-})
-;
+});
 /** @module xblox/model/Expression */
 define('xblox/model/Expression',[
     "xdojo/declare",
@@ -52142,7 +52211,6 @@ define('xcf/manager/DeviceManager',[
                 this._deviceInfoCache = {};
                 this.subscribe(types.EVENTS.ON_DRIVER_VARIABLE_CHANGED, this.onVariableChanged);
                 this.subscribe(types.EVENTS.ON_DEVICE_SERVER_CONNECTED, function () {
-                    console.log('got device server connection');
                     var connect = has('drivers') && has('devices');
                     if (thiz.autoConnectDevices && connect) {
                         all(thiz.connectToAllDevices()).then(function () {
@@ -52435,8 +52503,7 @@ define('xcf/manager/DeviceManager',[
                 }
             }
         });
-    });
-;
+    });;
 define('xide/console',[], function () {
     return typeof window !=='undefined' ? window.console : typeof global !=='undefined' ? global.console : {
 
@@ -67936,9 +68003,21 @@ define('xaction/ActionProvider',[
     'xide/mixins/EventedMixin',
     'xaction/DefaultActions',
     'xide/lodash'
-], function (declare, dcl, types, utils, Path, ActionStore, Action, Keyboard, EventedMixin, DefaultActions,_) {
+], (
+    declare,
+    dcl,
+    types,
+    utils,
+    Path,
+    ActionStore,
+    Action,
+    Keyboard,
+    EventedMixin,
+    DefaultActions,
+    _
+) => {
 
-    var Implementation = {
+    const Implementation = {
         /**
          * @type module:xaction/ActionStore
          */
@@ -67946,10 +68025,10 @@ define('xaction/ActionProvider',[
         actions: null,
         allowActionOverride: true,
         sortGroups: function (groups, groupMap) {
-            groups = groups.sort(function (a, b) {
+            groups = groups.sort((a, b) => {
                 if (groupMap[a] != null && groupMap[b] != null) {
-                    var orderA = groupMap[a];
-                    var orderB = groupMap[b];
+                    const orderA = groupMap[a];
+                    const orderB = groupMap[b];
                     return orderB - orderA;
                 }
                 return 100;
@@ -67968,9 +68047,9 @@ define('xaction/ActionProvider',[
          * Update all actions referencing widgets
          */
         refreshActions: function () {
-            var allActions = this.getActions();
-            for (var i = 0; i < allActions.length; i++) {
-                var action = allActions[i];
+            const allActions = this.getActions();
+            for (let i = 0; i < allActions.length; i++) {
+                const action = allActions[i];
                 if (action.refresh) {
                     action.refresh();
                 }
@@ -67983,10 +68062,10 @@ define('xaction/ActionProvider',[
             return mixed;
         },
         clearActions: function () {
-            var store = this.getActionStore(),
-                actions = store ? store.query() : [];
+            const store = this.getActionStore();
+            const actions = store ? store.query() : [];
 
-            _.each(actions, function (action) {
+            _.each(actions, action => {
                 action && store.removeSync(action.command);
             });
             store && store.setData([]);
@@ -68012,17 +68091,17 @@ define('xaction/ActionProvider',[
          */
         __createAction: function (title, command, group, icon, handler, accelKey, keyCombo, keyProfile, keyTarget, keyScope, mixin) {
             icon = icon || types.ACTION_ICON[command];
-            var args = {accelKey: accelKey};
+            const args = {accelKey: accelKey};
             utils.mixin(args, mixin);
-            var action = Action.createDefault(title, icon, command, group, handler, args);
+            const action = Action.createDefault(title, icon, command, group, handler, args);
             if (keyCombo) {
-                var keyboardMappings;
+                let keyboardMappings;
                 if (this.keyboardMappings) {
                     keyboardMappings = this.keyboardMappings;
                 } else {
                     action.keyboardMappings = keyboardMappings = [];
                 }
-                var mapping = Keyboard.defaultMapping(keyCombo, handler, keyProfile || types.KEYBOARD_PROFILE.DEFAULT, keyTarget, keyScope, [action]);
+                let mapping = Keyboard.defaultMapping(keyCombo, handler, keyProfile || types.KEYBOARD_PROFILE.DEFAULT, keyTarget, keyScope, [action]);
                 mapping = this.registerKeyboardMapping(mapping);
                 keyboardMappings.push(mapping);
                 action.keyboardMappings = keyboardMappings;
@@ -68033,19 +68112,19 @@ define('xaction/ActionProvider',[
             action = action || this.getAction(action);
             if (action) {
                 action.set(what, value);
-                setTimeout(function () {
-                    action.getReferences().forEach(function (ref) {
+                setTimeout(() => {
+                    action.getReferences().forEach(ref => {
                         ref.set(what, value);
                     });
                 }, 100);
             }
         },
         _completeActions: function (actions) {
-            var result = [];
-            var keyTarget = this.getKeyTarget ? this.getKeyTarget() : null;
-            for (var i = 0; i < actions.length; i++) {
-                var config = actions[i],
-                    action;
+            const result = [];
+            const keyTarget = this.getKeyTarget ? this.getKeyTarget() : null;
+            for (let i = 0; i < actions.length; i++) {
+                const config = actions[i];
+                let action;
 
                 if (!config) {
                     continue;
@@ -68081,7 +68160,7 @@ define('xaction/ActionProvider',[
         },
         createActionStore: function () {
             if (!this.actionStore) {
-                var _actions = this._completeActions(this.actions || []);
+                const _actions = this._completeActions(this.actions || []);
                 this.actionStore = new ActionStore({
                     id: utils.createUUID(),
                     data: _actions,
@@ -68108,7 +68187,7 @@ define('xaction/ActionProvider',[
             if (!mixed && allowCache !== false && this.__actions) {
                 return this.__actions;
             }
-            var query = mixed;
+            let query = mixed;
             //no query or function given
             if (!mixed) {
                 query = {
@@ -68134,11 +68213,11 @@ define('xaction/ActionProvider',[
             this.createActionStore();
         },
         addActions: function (actions) {
-            var store = this.getActionStore();
+            const store = this.getActionStore();
             if (!store['subscribedToUpdates_' + this.id]) {
                 store['subscribedToUpdates_' + this.id] = true;
-                this.addHandle('update', store.on('update', function (evt) {
-                    var action = evt.target;
+                this.addHandle('update', store.on('update', evt => {
+                    const action = evt.target;
                     if (action._isCreating || !evt.property) {
                         return;
                     }
@@ -68148,7 +68227,7 @@ define('xaction/ActionProvider',[
 
                 }));
             }
-            var result = [];
+            const result = [];
             this._emit('onAddActions', {
                 actions: actions,
                 permissions: this.permissions,
@@ -68156,9 +68235,9 @@ define('xaction/ActionProvider',[
             });
 
             //remove existing
-            this.allowActionOverride && _.each(actions, function (action) {
+            this.allowActionOverride && _.each(actions, action => {
                 if (action) {
-                    var existing = store.getSync(action.command);
+                    const existing = store.getSync(action.command);
                     if (existing) {
                         store.removeSync(existing.command);
                     }
@@ -68166,17 +68245,17 @@ define('xaction/ActionProvider',[
             });
             actions = this._completeActions(actions);
 
-            _.each(actions, function (action) {
+            _.each(actions, action => {
                 if (this.allowActionOverride && store.getSync(action.command)) {
                     store.removeSync(action.command);
                 }
-                var _action = store.putSync(action);
+                const _action = store.putSync(action);
                 result.push(_action);
                 _action._isCreating = true;
                 _action.onCreate && _action.onCreate(_action);
                 this._emit('onAddAction', _action);
                 _action._isCreating = false;
-            }.bind(this));
+            });
             return result;
 
         },
@@ -68203,23 +68282,23 @@ define('xaction/ActionProvider',[
          * @returns {*}
          */
         createAction2: function (options) {
-            var thiz = this,
-                action = null,
-                mixin = options.mixin || {},
-                owner = options.owner || mixin.owner || thiz,
-                permissions = options.permissions || this.permissions || [],
-                command = options.command,
-                keycombo = options.keycombo,
-                label = options.label,
-                icon = options.icon,
-                tab = options.tab,
-                group = options.group,
-                filterGroup = options.filterGroup,
-                onCreate = options.onCreate,
-                handler = options.handler,
-                container = options.container || thiz.domNode,
-                shouldShow = options.shouldShow,
-                shouldDisable = options.shouldDisable;
+            const thiz = this;
+            let action = null;
+            const mixin = options.mixin || {};
+            const owner = options.owner || mixin.owner || thiz;
+            const permissions = options.permissions || this.permissions || [];
+            const command = options.command;
+            let keycombo = options.keycombo;
+            const label = options.label;
+            const icon = options.icon;
+            const tab = options.tab;
+            const group = options.group;
+            const filterGroup = options.filterGroup;
+            const onCreate = options.onCreate;
+            let handler = options.handler;
+            const container = options.container || thiz.domNode;
+            const shouldShow = options.shouldShow;
+            const shouldDisable = options.shouldDisable;
 
             utils.mixin(mixin, {
                 owner: owner,
@@ -68267,8 +68346,8 @@ define('xaction/ActionProvider',[
             if (arguments.length == 1) {
                 return this.createAction2(arguments[0]);
             }
-            var thiz = this,
-                action = null;
+            const thiz = this;
+            let action = null;
 
             mixin = mixin || {};
             utils.mixin(mixin, {owner: owner || thiz});
@@ -68290,8 +68369,8 @@ define('xaction/ActionProvider',[
             }
         },
         addAction: function (where, action) {
-            var actions = where || [];
-            var eventCallbackResult = this._emit('addAction', action);
+            const actions = where || [];
+            const eventCallbackResult = this._emit('addAction', action);
             if (eventCallbackResult === false) {
                 return false;
             } else if (_.isObject(eventCallbackResult)) {
@@ -68307,8 +68386,8 @@ define('xaction/ActionProvider',[
          * @returns {boolean}
          */
         _addAction: function (where, action) {
-            var actions = where || [],
-                eventCallbackResult = this._emit('addAction', action);
+            const actions = where || [];
+            const eventCallbackResult = this._emit('addAction', action);
 
             if (eventCallbackResult === false) {
                 return false;
@@ -68330,7 +68409,7 @@ define('xaction/ActionProvider',[
      * @class module:xide/mixins/ActionProvider
      * @extends module:xide/mixins/EventedMixin
      */
-    var Module = declare("xaction/ActionProvider", [EventedMixin, Keyboard], Implementation);
+    const Module = declare("xaction/ActionProvider", [EventedMixin, Keyboard], Implementation);
     Module.dcl = dcl([EventedMixin.dcl, Keyboard.dcl], Implementation);
     return Module;
 });
@@ -68343,11 +68422,11 @@ define('xaction/DefaultActions',[
     'xide/types',
     'xide/utils',
     'xlang/i18'
-], function (dcl,inherited,declare,types,utils,i18) {
+], (dcl, inherited, declare, types, utils, i18) => {
     /**
      * @mixin module:xide/action/DefaultActions
      */
-    var Module = declare("xaction/DefaultActions", null , {});
+    const Module = declare("xaction/DefaultActions", null , {});
     /**
      *
      * @param title
@@ -68363,21 +68442,31 @@ define('xaction/DefaultActions',[
      * @param mixin
      * @returns {{title: *, command: *, group: *, icon: *, handler: *, accelKey: *, keyCombo: *, keyProfile: *, keyTarget: *, keyScope: *}}
      */
-    Module.createActionParameters=function(title, command, group, icon, handler, accelKey, keyCombo, keyProfile, keyTarget, keyScope,mixin){
-        return {
-            title:title,
-            command: command,
-            group: group,
-            icon: icon,
-            handler: handler,
-            accelKey: accelKey,
-            keyCombo: keyCombo,
-            keyProfile: keyProfile,
-            keyTarget: keyTarget,
-            keyScope: keyScope,
-            mixin:mixin
-        };
-    };
+    Module.createActionParameters=(
+        title,
+        command,
+        group,
+        icon,
+        handler,
+        accelKey,
+        keyCombo,
+        keyProfile,
+        keyTarget,
+        keyScope,
+        mixin
+    ) => ({
+        title:title,
+        command: command,
+        group: group,
+        icon: icon,
+        handler: handler,
+        accelKey: accelKey,
+        keyCombo: keyCombo,
+        keyProfile: keyProfile,
+        keyTarget: keyTarget,
+        keyScope: keyScope,
+        mixin:mixin
+    });
     /**
      *
      * @param label
@@ -68395,7 +68484,21 @@ define('xaction/DefaultActions',[
      * @param container
      * @returns {*}
      */
-    var createAction = function(label,command,icon,keycombo,tab,group,filterGroup,onCreate,handler,mixin,shouldShow,shouldDisable,container){
+    const createAction = (
+        label,
+        command,
+        icon,
+        keycombo,
+        tab,
+        group,
+        filterGroup,
+        onCreate,
+        handler,
+        mixin,
+        shouldShow,
+        shouldDisable,
+        container
+    ) => {
         if(keycombo) {
             if (_.isString(keycombo)) {
                 keycombo = [keycombo];
@@ -68405,12 +68508,12 @@ define('xaction/DefaultActions',[
         mixin = utils.mixin({
             filterGroup:filterGroup || "item|view",
             tab:tab||'File',
-            onCreate: onCreate || function (action){},
-            shouldShow:shouldShow||function(){return true;},
-            shouldDisable:shouldDisable||function(){return false;}
+            onCreate: onCreate || (action => {}),
+            shouldShow:shouldShow||(() => true),
+            shouldDisable:shouldDisable||(() => false)
         },mixin);
 
-        var _action = Module.createActionParameters(
+        const _action = Module.createActionParameters(
             label,
             command,
             group || 'File',//Group
@@ -68441,9 +68544,9 @@ define('xaction/DefaultActions',[
      * @private
      */
     function _afterAction(dfdResult,event,action) {
-        var who = this;
+        const who = this;
         // call onAfterAction with this results
-        var onAfterActionDfd = null;
+        let onAfterActionDfd = null;
         who.onAfterAction && (onAfterActionDfd = who.onAfterAction(action, dfdResult, event));
 
         who._emit && who._emit('onAfterAction', {
@@ -68463,8 +68566,8 @@ define('xaction/DefaultActions',[
      * @param event
      */
     function defaultHandler(action,event){
-        var actionDfd,
-            who = this;
+        let actionDfd;
+        const who = this;
 
         who && who.onBeforeAction && who.onBeforeAction(action);
         if(who.runAction){
@@ -68473,7 +68576,7 @@ define('xaction/DefaultActions',[
             actionDfd = action.handler.apply(who,[action,null,event]);
         }
         if(actionDfd && actionDfd.then){
-            actionDfd.then(function(actionResult){
+            actionDfd.then(actionResult => {
                 _afterAction.apply(who,[actionResult,event,action]);
             });
 
@@ -68526,14 +68629,14 @@ define('xaction/DefaultActions',[
             return false;
         }
 
-        var root = 'File/',
-            thiz = this,
-            renderActions = [],
-            VISIBILITY = types.ACTION_VISIBILITY,
-            result = [],
-            ACTION = types.ACTION,
-            ACTION_ICON = types.ACTION_ICON,
-            creator = owner || grid;
+        const root = 'File/';
+        const thiz = this;
+        const renderActions = [];
+        const VISIBILITY = types.ACTION_VISIBILITY;
+        let result = [];
+        const ACTION = types.ACTION;
+        const ACTION_ICON = types.ACTION_ICON;
+        const creator = owner || grid;
 
         /**
          *
@@ -68551,7 +68654,7 @@ define('xaction/DefaultActions',[
          * @param shouldDisable
          */
         function addAction(label,command,icon,keycombo,tab,group,filterGroup,onCreate,handler,mixin,shouldShow,shouldDisable){
-            var action = null;
+            let action = null;
             mixin = mixin || {};
             utils.mixin(mixin,{owner:owner || grid});
 
@@ -68672,10 +68775,8 @@ define('xaction/DefaultActions',[
         //
         //  File
         //
-        addAction('Extract','File/Extract',ACTION_ICON.EXTRACT,['ctrl e'],'Home','File','item|view',null,null,null,null,function(){
-            return true;
-            //return shouldDisableDefaultFileOnly.apply(this,arguments);
-        });
+        addAction('Extract','File/Extract',ACTION_ICON.EXTRACT,['ctrl e'],'Home','File','item|view',null,null,null,null,() => //return shouldDisableDefaultFileOnly.apply(this,arguments);
+        true);
 
         result.push(creator.createAction({
             label: 'Download',
@@ -68694,21 +68795,7 @@ define('xaction/DefaultActions',[
         //  New
         //
         if(hasAction(permissions,ACTION.NEW_DIRECTORY)|| hasAction(permissions,ACTION.NEW_FILE)) {
-
             addAction('New','File/New','fa-magic',null,'Home','New','item|view',null,null,{},null,null);
-/*
-            result.push(creator.createAction({
-                label: 'New',
-                command: 'File/New',
-                icon: 'fa-magic',
-                tab: 'Home',
-                group: 'File',
-                keycombo: ['ctrl down'],
-                mixin:{
-                    quick:true
-                }
-            }));*/
-
         }
         addAction('New Folder',ACTION.NEW_DIRECTORY,'fa-folder',['f7'],'Home','New','item|view',null,null,{quick:true},null,null);
         addAction('New File',ACTION.NEW_FILE,'el-icon-file',['ctrl f4'],'Home','New','item|view',null,null,{quick:true},null,null);
@@ -68738,26 +68825,27 @@ define('xaction/DefaultActions',[
         //  Selection
         //
         if(hasAction(permissions,ACTION.SELECTION)) {
-            result.push(createAction('Select', 'File/Select', 'fa-hand-o-up', null, 'Home', 'Select', 'item|view', function(action){
+            result.push(createAction('Select', 'File/Select', 'fa-hand-o-up', null, 'Home', 'Select', 'item|view', action => {
                 action.setVisibility(VISIBILITY.RIBBON,{
                     expand:true
                 });
             }, null, null, null, null,grid.domNode));
 
-            var _mixin = {
-                    owner:owner || grid
-                },
-                container = grid.domNode;
+            const _mixin = {
+                          owner:owner || grid
+                      };
 
-            result.push(createAction('Select all', 'File/Select/All', 'fa-th', ['ctrl a'], 'Home', 'Select', 'item|view', null, function(){
+            const container = grid.domNode;
+
+            result.push(createAction('Select all', 'File/Select/All', 'fa-th', ['ctrl a'], 'Home', 'Select', 'item|view', null, () => {
                 grid.selectAll();
             }, _mixin, null, null,container));
 
-            result.push(createAction('Select none', 'File/Select/None', 'fa-square-o', 'ctrl d', 'Home', 'Select', 'item|view', null, function(){
+            result.push(createAction('Select none', 'File/Select/None', 'fa-square-o', 'ctrl d', 'Home', 'Select', 'item|view', null, () => {
                 grid.deselectAll();
             }, _mixin, null, null,container));
 
-            result.push(createAction('Invert selection', 'File/Select/Invert', 'fa-square', ['ctrl i'], 'Home', 'Select', 'item|view', null, function(){
+            result.push(createAction('Invert selection', 'File/Select/Invert', 'fa-square', ['ctrl i'], 'Home', 'Select', 'item|view', null, () => {
                 grid.invertSelection();
             }, _mixin, null, null,container));
         }
@@ -69164,8 +69252,8 @@ define('xlang/i18',['xdojo/declare','xide/utils/ObjectUtils','dcl/dcl'], functio
         'modified':'modify',
         'list':'viewlist',
         'thumb':'viewicons',
-        'type':'kind',
-        'move':'moveFiles'
+        'type':'kind'
+        // 'move':'moveFiles'
         /*'view':'cmdview'*/
     };
 
@@ -69191,10 +69279,10 @@ define('xlang/i18',['xdojo/declare','xide/utils/ObjectUtils','dcl/dcl'], functio
     };
 
     function localize(str){
-
-
-
         str = str || '';
+        if(str==='move'){
+            debugger;
+        }
 
         if(str ==='Invert selection '){
             //debugger;
@@ -69979,9 +70067,9 @@ define('xaction/Action',[
     'xide/utils',
     'xide/mixins/EventedMixin',
     'xide/cache/Circular'
-], function (dcl, Base, types, ObjectUtils, utils, EventedMixin, Circular) {
+], (dcl, Base, types, ObjectUtils, utils, EventedMixin, Circular) => {
 
-    var Cache = null;//new Circular(100);
+    const Cache = null;//new Circular(100);
     /***
      * Extend the core types for action visibility(main menu,...) options/enums:
      * 1. 'Main menu',
@@ -70078,22 +70166,20 @@ define('xaction/Action',[
              * @returns {module:xide/types/ACTION_VISIBILITY}
              */
             factory: function () {
-
-                var _in = arguments[1] || utils.clone(types.ACTION_VISIBILITY),
-                    _args = arguments;
+                const _in = arguments[1] || utils.clone(types.ACTION_VISIBILITY);
+                const _args = arguments;
 
                 //
                 // A mode when we have the arguments like (1,1,1,2).
                 //  This clones types.ACTION_VISIBILITY and blends in an integer mask
 
                 if (_args[0].length > 0 && _.isNumber(_args[0][0])) {
-
-                    var _FlagArgs = _args[0],
-                        _val = null,
-                        _index = 0;
+                    const _FlagArgs = _args[0];
+                    const _val = null;
+                    let _index = 0;
 
                     //integer case, sets this[propIndex] to something
-                    _.each(_in, function (index, prop) {
+                    _.each(_in, (index, prop) => {
                         if (typeof _in[prop] !== 'function') {
                             if (_index < _FlagArgs.length) {
                                 //set the value per key but preserve the actualy key by storing
@@ -70131,7 +70217,7 @@ define('xaction/Action',[
      * @class module:xaction/Action
      * @augments xide/model/Base
      */
-    var Module = dcl([Base.dcl, EventedMixin.dcl], {
+    const Module = dcl([Base.dcl, EventedMixin.dcl], {
         declaredClass: "xaction/Action",
         disabled: false,
         destroy: function () {
@@ -70277,18 +70363,17 @@ define('xaction/Action',[
          */
         setVisibility: function () {
             if (arguments.length == 2 && _.isString(arguments[0]) && arguments[0] == types.ACTION_VISIBILITY_ALL) {
-                var _obj = arguments[1],
-                    _vis = types.ACTION_VISIBILITY,
-                    thiz = this;
+                const _obj = arguments[1];
+                const _vis = types.ACTION_VISIBILITY;
+                const thiz = this;
 
                 //track vis key in all
-                [_vis.MAIN_MENU, _vis.ACTION_TOOLBAR, _vis.CONTEXT_MENU, _vis.RIBBON].forEach(function (vis) {
+                [_vis.MAIN_MENU, _vis.ACTION_TOOLBAR, _vis.CONTEXT_MENU, _vis.RIBBON].forEach(vis => {
                     thiz.setVisibility(vis, utils.cloneKeys(_obj, false));
                 });
                 return this;
-
             }
-            var _args = _.isArray(arguments[0]) ? arguments[0] : arguments;
+            const _args = _.isArray(arguments[0]) ? arguments[0] : arguments;
             this.visibility_ = types.ACTION_VISIBILITY.factory(_args, this.visibility_);
             return this;
         },
@@ -70319,8 +70404,8 @@ define('xaction/Action',[
          * @returns {boolean}
          */
         shouldDestroyWidget: function (_visibility, who, newItem) {
-            var visibility = this.getVisibility != null ? this.getVisibility(_visibility) : null;
-            var destroy = true;
+            const visibility = this.getVisibility != null ? this.getVisibility(_visibility) : null;
+            let destroy = true;
             if (visibility && visibility.permanent) {
                 destroy = !(_.isFunction(visibility.permanent) ? visibility.permanent(this, who, newItem) : visibility.permanent);
             }
@@ -70352,9 +70437,8 @@ define('xaction/Action',[
      * @returns {module:xaction/Action}
      */
     Module.create = function (label, icon, command, permanent, operation, btypes, group, visibility, register, handler, mixin) {
-        var _action = null;
-
-        var _args = {
+        let _action = null;
+        const _args = {
             permanent: permanent,
             command: command,
             icon: icon,
@@ -70374,15 +70458,6 @@ define('xaction/Action',[
             //console.log('-create!');
             _action = new Module(_args);
         }
-        /*
-         var VISIBILITY = types.ACTION_VISIBILITY,
-         VISIBILITIES = [
-         VISIBILITY.ACTION_TOOLBAR,
-         VISIBILITY.RIBBON,
-         VISIBILITY.MAIN_MENU,
-         VISIBILITY.CONTEXT_MENU
-         ];
-         */
         utils.mixin(_action, mixin);
         return _action;
     };
@@ -70396,9 +70471,7 @@ define('xaction/Action',[
      * @param mixin
      * @returns {module:xaction/Action}
      */
-    Module.createDefault = function (label, icon, command, group, handler, mixin) {
-        return Module.create(label, icon, command, false, null, null, group || 'nogroup', null, false, handler, mixin);
-    };
+    Module.createDefault = (label, icon, command, group, handler, mixin) => Module.create(label, icon, command, false, null, null, group || 'nogroup', null, false, handler, mixin);
     return Module;
 });
 ;
@@ -70496,12 +70569,12 @@ define('xaction/ActionStore',[
     'xide/data/ObservableStore',
     'dstore/Trackable',
     'xaction/ActionModel'
-], function (declare, TreeMemory, utils, ObservableStore, Trackable, ActionModel) {
+], (declare, TreeMemory, utils, ObservableStore, Trackable, ActionModel) => {
     /**
      * Default properties to be observed (in ObservableStore)
      * @type {string[]}
      */
-    var DEFAULT_ACTION_PROPERTIES = [
+    const DEFAULT_ACTION_PROPERTIES = [
         "value",
         "icon",
         "disabled",
@@ -70537,10 +70610,8 @@ define('xaction/ActionStore',[
         }, mixin));
     }
 
-    var Module = createClass(null, null, null, null, null);
-    Module.createDefault = function (args) {
-        return new Module(args);
-    };
+    const Module = createClass(null, null, null, null, null);
+    Module.createDefault = args => new Module(args);
     Module.createClass = createClass;
     Module.DEFAULT_ACTION_PROPERTIES = DEFAULT_ACTION_PROPERTIES;
     return Module;
@@ -70554,9 +70625,9 @@ define('xaction/ActionModel',[
     "xide/data/Source",
     'xide/model/Path',
     'xide/utils'
-], function (dcl, Action, Model, Source, Path, utils) {
-    var debug = false;
-    var count = 0;
+], (dcl, Action, Model, Source, Path, utils) => {
+    const debug = false;
+    const count = 0;
     /**
      * @class module:xaction/ActionModel
      * @extends module:xide/data/Source
@@ -70594,7 +70665,7 @@ define('xaction/ActionModel',[
             }
         },
         refreshReferences: function (property, value) {
-            _.each(this.getReferences(), function (ref) {
+            _.each(this.getReferences(), ref => {
                 ref.set(property, value);
             }, this);
         },
@@ -70614,13 +70685,13 @@ define('xaction/ActionModel',[
             this.items = this.getChildren();
         },
         getParent: function () {
-            var segments = this.command.split('/');
+            const segments = this.command.split('/');
             if (segments.length > 1) {
                 return this._store.getSync(segments.slice(0, segments.length - 1).join('/'));
             }
         },
         getParentCommand: function () {
-            var segments = this.command.split('/');
+            const segments = this.command.split('/');
             if (segments.length > 1) {
                 return segments.slice(0, segments.length - 1).join('/');
             }
@@ -70635,8 +70706,8 @@ define('xaction/ActionModel',[
             return new Path(path).getChildren(utils.pluck(items, 'command'), false);
         },
         getChildren: function () {
-            var children = this.getItemsAtBranch(this._store.getAll(), this.command),
-                self = this;
+            const children = this.getItemsAtBranch(this._store.getAll(), this.command);
+            const self = this;
 
             //return an action from both stores
             function getAction(command) {
@@ -70645,8 +70716,8 @@ define('xaction/ActionModel',[
 
             //command strings to actions
             function toActions(paths) {
-                var result = [];
-                _.each(paths, function (path) {
+                const result = [];
+                _.each(paths, path => {
                     result.push(getAction(path));
                 });
                 return result;
@@ -73956,7 +74027,7 @@ define('xapp/manager/Application',[
     //'dojo/dom-construct',
     "xide/manager/ManagerBase"
 ], function (dcl, Deferred, types, utils, ManagerBase) {
-    var debugBootstrap = true;
+    var debugBootstrap = false;
     var debugBlocks = false;
     //Application
     var Module = dcl([ManagerBase], {
@@ -74114,8 +74185,7 @@ define('xapp/manager/Application',[
 
     return Module;
 
-});
-;
+});;
 /** @module xapp/manager/Context */
 define('xapp/manager/Context',[
     "dcl/dcl",
@@ -74134,8 +74204,8 @@ define('xapp/manager/Context',[
 ], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, Reloadable, Types, has, Deferred) {
     var isIDE = has('xcf-ui');
     var debugWire = false;
-    var debugBoot = true;
-    var debugRun = true;
+    var debugBoot = false;
+    var debugRun = false;
     var Instance = null;
     var NotifierClass = dcl([EventedMixin.dcl], {});
     var Notifier = new NotifierClass({});
@@ -74908,8 +74978,7 @@ define('xapp/manager/Context',[
     Module.notifier = Notifier;
     return Module;
 
-});
-;
+});;
 define('xapp/manager/_WidgetPickerMixin',[
     "dcl/dcl",
     'dojo/_base/declare',
@@ -81508,7 +81577,7 @@ define('xide/utils/StringUtils',[
 define('xaction/types',[
     'xide/types',
     'dojo/_base/lang'
-],function(types,lang){
+],(types, lang) => {
 
     lang.mixin(types.EVENTS,{
         ON_ACTION_CHANGE_CONTEXT: 'onChangeActionContext',

@@ -16,8 +16,8 @@ define([
 ], function (dcl, ContextBase, PluginManager, Application, ResourceManager, EventedMixin, types, utils, _WidgetPickerMixin, Reloadable, Types, has, Deferred) {
     var isIDE = has('xcf-ui');
     var debugWire = false;
-    var debugBoot = true;
-    var debugRun = true;
+    var debugBoot = false;
+    var debugRun = false;
     var Instance = null;
     var NotifierClass = dcl([EventedMixin.dcl], {});
     var Notifier = new NotifierClass({});

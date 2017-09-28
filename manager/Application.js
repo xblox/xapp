@@ -6,7 +6,7 @@ define([
     //'dojo/dom-construct',
     "xide/manager/ManagerBase"
 ], function (dcl, Deferred, types, utils, ManagerBase) {
-    var debugBootstrap = true;
+    var debugBootstrap = false;
     var debugBlocks = false;
     //Application
     var Module = dcl([ManagerBase], {
