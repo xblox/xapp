@@ -45455,612 +45455,623 @@ define('xcf/manager/DriverManager',[
     TreeMemory, ObservableStore, Trackable, has, Driver, ServerActionBase, Reference, Deferred, ReloadMixin,
     EventedMixin, DriverManager_UI, _CIDialog) {
 
-        var bases = [
+    var bases = [
             ServerActionBase,
             BeanManager,
             DriverManager_Server
         ],
-            debug = false,
-            isServer = !has('host-browser'),
-            runDrivers = has('runDrivers'),
-            debugDeviceMessages = false;
-        has('xcf-ui') && bases.push(DriverManager_UI);
+        debug = false,
+        isServer = !has('host-browser'),
+        runDrivers = has('runDrivers'),
+        debugDeviceMessages = false;
+    has('xcf-ui') && bases.push(DriverManager_UI);
 
-        /**
-         * @class module:xcf/manager/DriverManager
-         * @extends module:xcf/manager/BeanManager
-         * @extends module:xcf/manager/DriverManager_UI
-         */
-        return dcl(bases, {
-            beanName: 'Driver',
-            beanUrlPattern: "{id}",
-            breanScheme: "driver://",
-            onStoreCreated: function (evt) {
-                var type = evt.type,
-                    store = evt.store,
-                    items = store.query({
-                        isDir: false
-                    });
-
-                if (type !== types.ITEM_TYPE.DRIVER) {
-                    return;
-                }
-                for (var i = 0; i < items.length; i++) {
-                    var item = items[i];
-                    if (item._completed != null || item.name === 'Default') {
-                        continue;
-                    }
-                    item._completed = true;
-                    if (has('xcf-ui')) {
-                        this.completeDriver(store, item, item);
-                    }
-                }
-            },
-            removeDriverInstance: function (instance, device) {
-                try {
-                    var info = this.getContext().getDeviceManager().toDeviceControlInfo(device),
-                        driver = this.getDriverById(instance.device.info.driverId),
-                        driverStore = driver._store,
-                        parentId = driver.path,
-                        deviceId = device.path,
-                        instanceId = parentId + '_instances_instance_' + deviceId,
-                        instanceReferenceItem = driverStore.getSync(instanceId);
-
-                    instanceReferenceItem && driverStore.removeSync(instanceId);
-
-                    //"Audio-Player/VLC.meta.json_instances_instance_Audio-Player/VLC.meta.json"
-                    var instanceReference = _.find(driver.instances, {
-                        path: instanceId
-                    });
-
-                    if (instanceReference) {
-                        driver.instances.remove(instanceReference);
-                    }
-                    device.removeReference(instanceReferenceItem);
-                    if (instanceReferenceItem) {
-                        instanceReferenceItem.refresh();
-                        driverStore.getSync(parentId + '_instances').refresh();
-                    } else {
-                        debug && console.error('bad!! cant find reference for instance', arguments);
-                    }
-                } catch (e) {
-                    logError(e, 'error removing driver instance');
-                }
-            },
-            /**
-             * @param driver {module:xcf/model/Driver}
-             * @returns {module:xblox/model/Scope}
-             */
-            createDriverBlockScope: function (driver) {
-                var blocks = utils.clone(driver.blox && driver.blox.blocks ? driver.blox.blocks : []);
-                var scope = driver.blockScope = this.ctx.getBlockManager().createScope({
-                    id: driver.id,
-                    device: null,
-                    driver: driver,
-                    instance: null,
-                    ctx: this.ctx,
-                    getContext: function () {
-                        return this.instance;
-                    }
-                }, blocks, function (error) {
-                    if (error) {
-                        console.error(error + ' : in ' + driver.name + ' , re-save driver!');
-                    }
+    /**
+     * @class module:xcf/manager/DriverManager
+     * @extends module:xcf/manager/BeanManager
+     * @extends module:xcf/manager/DriverManager_UI
+     */
+    return dcl(bases, {
+        beanName: 'Driver',
+        beanUrlPattern: "{id}",
+        breanScheme: "driver://",
+        onStoreCreated: function (evt) {
+            var type = evt.type,
+                store = evt.store,
+                items = store.query({
+                    isDir: false
                 });
-                return scope;
-            },
-            /**
-             *
-             * @param device
-             * @param driver
-             */
-            addDeviceInstance: function (device, driver) {
+
+            if (type !== types.ITEM_TYPE.DRIVER) {
                 return;
-                driver.directory = true;
-                var store = driver._store,
+            }
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                if (item._completed != null || item.name === 'Default') {
+                    continue;
+                }
+                item._completed = true;
+                if (has('xcf-ui')) {
+                    this.completeDriver(store, item, item);
+                }
+            }
+        },
+        removeDriverInstance: function (instance, device) {
+            try {
+                var info = this.getContext().getDeviceManager().toDeviceControlInfo(device),
+                    driver = this.getDriverById(instance.device.info.driverId),
+                    driverStore = driver._store,
                     parentId = driver.path,
-                    deviceManager = this.ctx.getDeviceManager(),
-                    instances = store.getSync(parentId + '_instances');
-
-                instances = instances || store.putSync({
-                    path: parentId + '_instances',
-                    name: 'Instances',
-                    isDir: true,
-                    type: 'leaf',
-                    parentId: parentId,
-                    virtual: true,
-                    isCommand: false,
-                    icon: 'fa-folder',
-                    children: []
-                });
-
-
-
-                var deviceName = deviceManager.getMetaValue(device, types.DEVICE_PROPERTY.CF_DEVICE_TITLE),
                     deviceId = device.path,
-                    instance = store.putSync(new Reference({
-                        name: deviceName,
-                        isCommand: false,
-                        path: instances.path + '_instance_' + deviceId,
-                        isDir: false,
-                        type: 'driver_instance',
-                        parentId: instances.path,
-                        device: device,
-                        driver: driver,
-                        _mayHaveChildren: false,
-                        icon: device.iconClass,
-                        state: device.state
-                    }));
+                    instanceId = parentId + '_instances_instance_' + deviceId,
+                    instanceReferenceItem = driverStore.getSync(instanceId);
 
-                instances.children.push(instance);
+                instanceReferenceItem && driverStore.removeSync(instanceId);
 
-                device.addReference(instance, {
-                    properties: {
-                        "name": true,
-                        "enabled": true,
-                        "state": true,
-                        "iconClass": true
-                    },
-                    onDelete: false
-                }, true);
-
-
-                !driver.instances && (driver.instances = []);
-
+                //"Audio-Player/VLC.meta.json_instances_instance_Audio-Player/VLC.meta.json"
                 var instanceReference = _.find(driver.instances, {
-                    path: instance.path
+                    path: instanceId
                 });
 
                 if (instanceReference) {
-                    console.log('instance already added ');
                     driver.instances.remove(instanceReference);
                 }
-
-                driver.instances.push(instance);
-            },
-            declaredClass: "xcf.manager.DriverManager",
-            /***
-             * The Bean-Manager needs a unique name of the bean:
-             */
-            beanNamespace: 'driver',
-            /***
-             * The Bean-Manager has some generic function like creating Dialogs for adding new items, please
-             * provide a title for the interface.
-             */
-            beanName: 'Driver',
-            /**
-             * the icon class for bean edit views
-             */
-            beanIconClass: 'fa-exchange',
-            /**
-             * Bean group type
-             */
-            groupType: types.ITEM_TYPE.DRIVER_GROUP,
-            /**
-             * Bean item type
-             */
-            itemType: types.ITEM_TYPE.DRIVER,
-            /**
-             * The name of the CI in the meta database for the title or name.
-             */
-            itemMetaTitleField: types.DRIVER_PROPERTY.CF_DRIVER_NAME,
-            /**
-             * the default scope for new items
-             */
-            defaultScope: 'system_drivers',
-            /***
-             * The RPC server class:
-             */
-            serviceClass: 'XCF_Driver_Service',
-            /***
-             * A copy of all divers raw da4ta from the server
-             */
-            rawData: null,
-            /***
-             * @type {module:xide/data/TreeMemory}
-             */
-            store: null,
-            /***
-             * @type {module:xcf/views/DriverTreeView}
-             */
-            treeView: null,
-            /**
-             * array of driver store scopes : TODO : tbr
-             */
-            driverScopes: null,
-            _isLoading: false,
-            /**
-             *
-             * @param driver
-             * @returns {dojo/Deferred}
-             */
-            getDriverModule: function (driver) {
-                var dfd = new Deferred();
-                var driverMeta = driver['user'],
-                    script = utils.getCIInputValueByName(driverMeta, types.DRIVER_PROPERTY.CF_DRIVER_CLASS);
-
-                var driverScope = driver['scope'];
-                script = script ? script.replace('./', '') : '';
-                var packageUrl = require.toUrl(driverScope);
-                packageUrl = utils.removeURLParameter(packageUrl, 'bust');
-                packageUrl = utils.removeURLParameter(packageUrl, 'time');
-                if (has('debug') && isServer) {
-                    packageUrl = packageUrl.replace('?', '');
+                device.removeReference(instanceReferenceItem);
+                if (instanceReferenceItem) {
+                    instanceReferenceItem.refresh();
+                    driverStore.getSync(parentId + '_instances').refresh();
+                } else {
+                    debug && console.error('bad!! cant find reference for instance', arguments);
                 }
-                packageUrl = packageUrl.replace('/main.js', '');
-                var isRequireJS = !require.cache;
+            } catch (e) {
+                logError(e, 'error removing driver instance');
+            }
+        },
+        /**
+         * @param driver {module:xcf/model/Driver}
+         * @returns {module:xblox/model/Scope}
+         */
+        createDriverBlockScope: function (driver) {
+            var blocks = utils.clone(driver.blox && driver.blox.blocks ? driver.blox.blocks : []);
+            var scope = driver.blockScope = this.ctx.getBlockManager().createScope({
+                id: driver.id,
+                device: null,
+                driver: driver,
+                instance: null,
+                ctx: this.ctx,
+                getContext: function () {
+                    return this.instance;
+                }
+            }, blocks, function (error) {
+                if (error) {
+                    console.error(error + ' : in ' + driver.name + ' , re-save driver!');
+                }
+            });
+            return scope;
+        },
+        /**
+         *
+         * @param device
+         * @param driver
+         */
+        addDeviceInstance: function (device, driver) {
+            return;
+            driver.directory = true;
+            var store = driver._store,
+                parentId = driver.path,
+                deviceManager = this.ctx.getDeviceManager(),
+                instances = store.getSync(parentId + '_instances');
+
+            instances = instances || store.putSync({
+                path: parentId + '_instances',
+                name: 'Instances',
+                isDir: true,
+                type: 'leaf',
+                parentId: parentId,
+                virtual: true,
+                isCommand: false,
+                icon: 'fa-folder',
+                children: []
+            });
+
+
+
+            var deviceName = deviceManager.getMetaValue(device, types.DEVICE_PROPERTY.CF_DEVICE_TITLE),
+                deviceId = device.path,
+                instance = store.putSync(new Reference({
+                    name: deviceName,
+                    isCommand: false,
+                    path: instances.path + '_instance_' + deviceId,
+                    isDir: false,
+                    type: 'driver_instance',
+                    parentId: instances.path,
+                    device: device,
+                    driver: driver,
+                    _mayHaveChildren: false,
+                    icon: device.iconClass,
+                    state: device.state
+                }));
+
+            instances.children.push(instance);
+
+            device.addReference(instance, {
+                properties: {
+                    "name": true,
+                    "enabled": true,
+                    "state": true,
+                    "iconClass": true
+                },
+                onDelete: false
+            }, true);
+
+
+            !driver.instances && (driver.instances = []);
+
+            var instanceReference = _.find(driver.instances, {
+                path: instance.path
+            });
+
+            if (instanceReference) {
+                console.log('instance already added ');
+                driver.instances.remove(instanceReference);
+            }
+
+            driver.instances.push(instance);
+        },
+        declaredClass: "xcf.manager.DriverManager",
+        /***
+         * The Bean-Manager needs a unique name of the bean:
+         */
+        beanNamespace: 'driver',
+        /***
+         * The Bean-Manager has some generic function like creating Dialogs for adding new items, please
+         * provide a title for the interface.
+         */
+        beanName: 'Driver',
+        /**
+         * the icon class for bean edit views
+         */
+        beanIconClass: 'fa-exchange',
+        /**
+         * Bean group type
+         */
+        groupType: types.ITEM_TYPE.DRIVER_GROUP,
+        /**
+         * Bean item type
+         */
+        itemType: types.ITEM_TYPE.DRIVER,
+        /**
+         * The name of the CI in the meta database for the title or name.
+         */
+        itemMetaTitleField: types.DRIVER_PROPERTY.CF_DRIVER_NAME,
+        /**
+         * the default scope for new items
+         */
+        defaultScope: 'system_drivers',
+        /***
+         * The RPC server class:
+         */
+        serviceClass: 'XCF_Driver_Service',
+        /***
+         * A copy of all divers raw da4ta from the server
+         */
+        rawData: null,
+        /***
+         * @type {module:xide/data/TreeMemory}
+         */
+        store: null,
+        /***
+         * @type {module:xcf/views/DriverTreeView}
+         */
+        treeView: null,
+        /**
+         * array of driver store scopes : TODO : tbr
+         */
+        driverScopes: null,
+        _isLoading: false,
+        /**
+         *
+         * @param driver
+         * @returns {dojo/Deferred}
+         */
+        getDriverModule: function (driver) {
+            var dfd = new Deferred();
+            var driverMeta = driver['user'],
+                script = utils.getCIInputValueByName(driverMeta, types.DRIVER_PROPERTY.CF_DRIVER_CLASS);
+
+            var driverScope = driver['scope'];
+            script = script ? script.replace('./', '') : '';
+            var packageUrl = require.toUrl(driverScope);
+            packageUrl = utils.removeURLParameter(packageUrl, 'bust');
+            packageUrl = utils.removeURLParameter(packageUrl, 'time');
+            if (has('debug') && isServer) {
+                packageUrl = packageUrl.replace('?', '');
+            }
+            packageUrl = packageUrl.replace('/main.js', '');
+            var isRequireJS = !require.cache;
+            if (isRequireJS) {
+                packageUrl = packageUrl.replace('/.js', '/');
+            }
+
+            var requirePath = packageUrl + '/' + script;
+            if (has('debug') && !isServer) {
+                requirePath += requirePath.indexOf('?') == -1 ? '?' : '&';
+                requirePath += 'time' + new Date().getTime();
+            }
+
+            if (isServer) {
+                requirePath = requirePath.replace('?', '');
+            }
+
+            try {
+                require([requirePath], function (driverModule) {
+                    dfd.resolve(driverModule);
+                });
+            } catch (e) {
+                console.error('error loading driver module from  ' + packageUrl + '---' + script, e);
+                logError(e, 'error loading driver module');
+                dfd.reject(e.message);
+            }
+            return dfd;
+        },
+        loadDriverModule: function (driver) {
+            var baseDriverPrefix = this.driverScopes['system_drivers'],
+                baseDriverRequire = baseDriverPrefix + 'DriverBase';
+
+            var urlBase = require.toUrl(this.driverScopes['system_drivers']);
+            var self = this;
+            var ctx = self.ctx,
+                dfd = new Deferred(),
+                _require = require;
+
+            _require([baseDriverRequire], function (baseDriver) {
+
+                var driverPrefix = self.driverScopes[driver.scope],
+                    isRequireJS = !require.cache;
+
+                if (isRequireJS) {
+                    require({
+                        config: {
+                            urlArgs: null
+                        }
+                    });
+                } else {
+                    require({
+                        cacheBust: null
+                    });
+                }
+
+                var packageUrl = require.toUrl(driverPrefix);
                 if (isRequireJS) {
                     packageUrl = packageUrl.replace('/.js', '/');
                 }
-
-                var requirePath = packageUrl + '/' + script;
-                if (has('debug') && !isServer) {
-                    requirePath += requirePath.indexOf('?') == -1 ? '?' : '&';
-                    requirePath += 'time' + new Date().getTime();
-                }
-
-                if (isServer) {
-                    requirePath = requirePath.replace('?', '');
-                }
-
+                var driverMeta = driver['user'];
+                var script = utils.getCIInputValueByName(driverMeta, types.DRIVER_PROPERTY.CF_DRIVER_CLASS);
+                script = script.replace('./', '');
+                script = script.replace('.js', '');
+                script = driver.scope + '/' + script;
+                script = script.replace('', '').trim();
                 try {
-                    require([requirePath], function (driverModule) {
-                        dfd.resolve(driverModule);
+                    _require.undef(script);
+                    _require([script], function (driverProtoInstance) {
+                        driverProtoInstance.declaredClass = script;
+                        var driverProto = dcl([baseDriver, EventedMixin.dcl, ReloadMixin.dcl, driverProtoInstance], {});
+                        driverProto.getFields = driverProtoInstance.getFields;
+
+                        function onReloaded(newModule, oldModule) {
+                            driverProtoInstance.getFields = newModule.getFields;
+                            newModule.onReloaded = onReloaded;
+                            oldModule.onReloaded = onReloaded;
+                        }
+                        driverProtoInstance.onReloaded = onReloaded;
+                        dfd.resolve(driverProtoInstance);
                     });
+                } catch (e) {}
+
+            });
+            return dfd;
+        },
+        getBlock: function (url) {
+            var parts = utils.parse_url(url);
+            parts = utils.urlArgs(parts.host); //go on with query string
+            var _driver = this.getItemById(parts.driver.value),
+                block = null;
+
+            var wasUnloaded = false;
+            if (_driver && !_driver.blockScope) {
+                wasUnloaded = true;
+                this.createDriverBlockScope(_driver);
+            }
+
+            if (_driver && _driver.blockScope) {
+                block = _driver.blockScope.getBlockById(parts.block.value);
+            }
+            if(wasUnloaded){
+                _driver.blockScope.destroy();
+                delete _driver.blockScope;
+            }
+            return block;
+        },
+        getDriverByUrl: function (url) {
+            var parts = utils.parse_url(url);
+            parts = utils.urlArgs(parts.host); //go on with query string
+            return this.getItemById(parts.driver.value);
+        },
+        /////////////////////////////////////////////////////////////////////////////////////
+        //
+        //  Device messaging
+        //
+        /////////////////////////////////////////////////////////////////////////////////////
+        /**
+         * Secondary entry for incoming device messages. This is a regular callback
+         * for the system event xcf.types.EVENTS.ON_DEVICE_MESSAGE emitted by the
+         * DeviceManager. It comes with the device info, a driver instance and the
+         * unfiltered device message.
+         *
+         * This function is primarily in charge to :
+         * 1. split the message by a delimiter (driver settings)
+         * 2. pass the device messages to the actual driver
+         * 3. pass the device message to blox
+         * 4.
+         *
+         * @param evt
+         */
+        /////////////////////////////////////////////////////////////////////////////////////
+        //
+        //  CI related
+        //
+        /////////////////////////////////////////////////////////////////////////////////////
+        _driverQueryCache: null,
+        _getDriverById: function (id, store) {
+            if (!store || !store.getSync) {
+                return;
+            }
+            var items = store.query();
+            if (!_.isArray(items)) {
+                items = [items];
+            }
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                if (item.isDir) {
+                    continue;
                 }
-                catch (e) {
-                    console.error('error loading driver module from  ' + packageUrl + '---' + script, e);
-                    logError(e, 'error loading driver module');
-                    dfd.reject(e.message);
+                var meta = item['user'];
+                var _id = utils.getInputCIByName(meta, types.DRIVER_PROPERTY.CF_DRIVER_ID);
+                if (!_id) {
+                    continue;
                 }
-                return dfd;
-            },
-            loadDriverModule: function (driver) {
-                var baseDriverPrefix = this.driverScopes['system_drivers'],
-                    baseDriverRequire = baseDriverPrefix + 'DriverBase';
+                if (_id.value == id) {
+                    return store.getSync(item.path);
+                }
+            }
+            return null;
+        },
+        getDriverById: function (id, store) {
+            if (store) {
+                return this._getDriverById(id, store);
+            }
+            var options = [];
+            var result = null;
+            var self = this;
+            var driver = null;
+            if (!has('xcf-ui') && !has('host-node')) {
+                !this._driverQueryCache && (this._driverQueryCache = {});
+                if (this._driverQueryCache[id]) {
+                    return this._driverQueryCache[id];
+                }
+            }
 
-                var urlBase = require.toUrl(this.driverScopes['system_drivers']);
-                var self = this;
-                var ctx = self.ctx,
-                    dfd = new Deferred(),
-                    _require = require;
+            function search(_store) {
+                return self._getDriverById(id, _store);
+            }
 
-                _require([baseDriverRequire], function (baseDriver) {
+            for (var scope in this.stores) {
+                var store = this.stores[scope];
+                result = search(store);
+                if (result) {
+                    driver = result;
+                    break;
+                }
+            }
+            if (!has('xcf-ui') && driver && !has('host-node')) {
+                this._driverQueryCache[id] = driver;
+            }
 
-                    var driverPrefix = self.driverScopes[driver.scope],
-                        isRequireJS = !require.cache;
+            return driver;
+        },
+        getDriverByPath: function (path) {
 
-                    if (isRequireJS) {
-                        require({
-                            config: {
-                                urlArgs: null
-                            }
-                        });
-                    } else {
-                        require({
-                            cacheBust: null
-                        });
-                    }
+            var options = [];
+            var result = null;
 
-                    var packageUrl = require.toUrl(driverPrefix);
-                    if (isRequireJS) {
-                        packageUrl = packageUrl.replace('/.js', '/');
-                    }
-                    var driverMeta = driver['user'];
-                    var script = utils.getCIInputValueByName(driverMeta, types.DRIVER_PROPERTY.CF_DRIVER_CLASS);
-                    script = script.replace('./', '');
-                    script = script.replace('.js', '');
-                    script = driver.scope + '/' + script;
-                    script = script.replace('', '').trim();
-                    try {
-                        _require.undef(script);
-                        _require([script], function (driverProtoInstance) {
-                            driverProtoInstance.declaredClass = script;
-                            var driverProto = dcl([baseDriver, EventedMixin.dcl, ReloadMixin.dcl, driverProtoInstance], {});
-                            driverProto.getFields = driverProtoInstance.getFields;
-                            function onReloaded(newModule, oldModule) {
-                                driverProtoInstance.getFields = newModule.getFields;
-                                newModule.onReloaded = onReloaded;
-                                oldModule.onReloaded = onReloaded;
-                            }
-                            driverProtoInstance.onReloaded = onReloaded;
-                            dfd.resolve(driverProtoInstance);
-                        });
-                    } catch (e) {
-                    }
-
+            function search(store) {
+                var items = utils.queryStore(store, {
+                    isDir: false
                 });
-                return dfd;
-            },
-            getBlock: function (url) {
-                var parts = utils.parse_url(url);
-                parts = utils.urlArgs(parts.host);//go on with query string
-                var _driver = this.getItemById(parts.driver.value),
-                    block = null;
-
-                if (_driver && _driver.blockScope) {
-                    block = _driver.blockScope.getBlockById(parts.block.value);
-                }
-                return block;
-            },
-            getDriverByUrl: function (url) {
-                var parts = utils.parse_url(url);
-                parts = utils.urlArgs(parts.host);//go on with query string
-                return this.getItemById(parts.driver.value);
-            },
-            /////////////////////////////////////////////////////////////////////////////////////
-            //
-            //  Device messaging
-            //
-            /////////////////////////////////////////////////////////////////////////////////////
-            /**
-             * Secondary entry for incoming device messages. This is a regular callback
-             * for the system event xcf.types.EVENTS.ON_DEVICE_MESSAGE emitted by the
-             * DeviceManager. It comes with the device info, a driver instance and the
-             * unfiltered device message.
-             *
-             * This function is primarily in charge to :
-             * 1. split the message by a delimiter (driver settings)
-             * 2. pass the device messages to the actual driver
-             * 3. pass the device message to blox
-             * 4.
-             *
-             * @param evt
-             */
-            /////////////////////////////////////////////////////////////////////////////////////
-            //
-            //  CI related
-            //
-            /////////////////////////////////////////////////////////////////////////////////////
-            _driverQueryCache: null,
-            _getDriverById: function (id, store) {
-                if (!store || !store.getSync) {
-                    return;
-                }
-                var items = store.query();
                 if (!_.isArray(items)) {
                     items = [items];
                 }
                 for (var i = 0; i < items.length; i++) {
-                    var item = items[i];
-                    if (item.isDir) {
-                        continue;
-                    }
-                    var meta = item['user'];
-                    var _id = utils.getInputCIByName(meta, types.DRIVER_PROPERTY.CF_DRIVER_ID);
-                    if (!_id) {
-                        continue;
-                    }
-                    if (_id.value == id) {
-                        return store.getSync(item.path);
+                    var driver = items[i];
+                    if (driver.path == path) {
+                        return driver;
                     }
                 }
                 return null;
-            },
-            getDriverById: function (id, store) {
-                if (store) {
-                    return this._getDriverById(id, store);
-                }
-                var options = [];
-                var result = null;
-                var self = this;
-                var driver = null;
-                if (!has('xcf-ui') && !has('host-node')) {
-                    !this._driverQueryCache && (this._driverQueryCache = {});
-                    if (this._driverQueryCache[id]) {
-                        return this._driverQueryCache[id];
-                    }
-                }
+            }
 
-                function search(_store) {
-                    return self._getDriverById(id, _store);
-                }
-
-                for (var scope in this.stores) {
-                    var store = this.stores[scope];
-                    result = search(store);
-                    if (result) {
-                        driver = result;
-                        break;
-                    }
-                }
-                if (!has('xcf-ui') && driver && !has('host-node')) {
-                    this._driverQueryCache[id] = driver;
-                }
-
-                return driver;
-            },
-            getDriverByPath: function (path) {
-
-                var options = [];
-                var result = null;
-
-                function search(store) {
-                    var items = utils.queryStore(store, {
-                        isDir: false
-                    });
-                    if (!_.isArray(items)) {
-                        items = [items];
-                    }
-                    for (var i = 0; i < items.length; i++) {
-                        var driver = items[i];
-                        if (driver.path == path) {
-                            return driver;
-                        }
-                    }
-                    return null;
-                }
-
-                for (var scope in this.stores) {
-                    var store = this.stores[scope];
-                    result = search(store);
-                    if (result) {
-                        return result;
-                    }
-                }
-                return null;
-            },
-
-            getItemById: function (itemId) {
-                return this.getDriverById(itemId);
-            },
-            /////////////////////////////////////////////////////////////////////////////////////
-            //
-            //  Data related
-            //
-            /////////////////////////////////////////////////////////////////////////////////////
-            /**
-             *  Callback when a blox scope has been created. This is being used
-             *  to deserialize the driver's CI meta settings into a blox scope : variables, commands
-             * @param scope
-             */
-            onNewDriverScopeCreated: function (scope) { },
-            onScopeCreated: function (evt) { },
-            onDeviceDisconnected: function (evt) { },
-            onDriverCreated: function (store) {
-                has('xcf-ui') && types.registerEnumeration('Driver', this.getDriversAsEnumeration(store));
-            },
-            onDriverRemoved: function (store, item) {
-                has('xcf-ui') && types.registerEnumeration('Driver', this.getDriversAsEnumeration(store));
-            },
-            onStoreReady: function (store) {
-                has('xcf-ui') && types.registerEnumeration('Driver', this.getDriversAsEnumeration(store));
-            },
-            /***
-             * Init the store with the driver data
-             * @param data
-             * @param scope {string}
-             * @param track {boolean}
-             * @returns {module:xide/data/TreeMemory}
-             */
-            createStore: function (data, scope, track) {
-                //@TODO: weird bug
-                if (data && !data.items && data['0']) {
-                    data = {
-                        items: data['0'].items
-                    };
-                }
-
-                var storeClass = declare('driverStore', [TreeMemory, Trackable, ObservableStore], {});
-                var store = new storeClass({
-                    data: [],
-                    Model: Driver,
-                    idProperty: 'path',
-                    scope: scope,
-                    id: utils.createUUID(),
-                    mayHaveChildren: function (parent) {
-                        return parent.isDir;
-                    },
-                    observedProperties: [
-                        "name",
-                        "enabled"
-                    ]
-                });
-
-                if (data && data.items) {
-                    store.setData(data.items);
-                    _.each(data.items, function (item) {
-                        item._store = store;
-                    });
-                }
-                if (scope && track !== false) {
-                    this.setStore(scope, store);
-                }
-                return store;
-            },
-            /***
-             * Inits the store with the driver data
-             * @param data
-             * @param scope {string}
-             * @param track {boolean}
-             * @returns {module:xide/data/TreeMemory}
-             */
-            initStore: function (data, scope, track) {
-                var store = this.createStore(data, scope, track);
-                return store;
-            },
-            getStore: function (scope) {
-                scope = scope || 'system_drivers';
+            for (var scope in this.stores) {
                 var store = this.stores[scope];
-                if (store) {
-                    return store;
+                result = search(store);
+                if (result) {
+                    return result;
                 }
-                return this.ls(scope);
-            },
-            /***
-             * ls is enumerating all drivers in a given scope
-             * @param scope{string}
-             * @returns {Deferred}
-             */
-            ls: function (scope, track) {
-                var dfd = new Deferred();
-                function data(data) {
-                    try {
-                        var store = this.createStore(data, scope, track);
-                        //track!==false && this.setStore(scope,store);
-                        this.onStoreReady(store);
-                        track !== false && this.publish(types.EVENTS.ON_STORE_CREATED, {
-                            data: data,
-                            owner: this,
-                            store: store,
-                            type: this.itemType
-                        });
-                        dfd.resolve(store);
-                    } catch (e) {
-                        logError(e, 'error ls drivers');
-                    }
-                }
-                if (this.prefetch && this.prefetch[scope]) {
-                    data.apply(this, [this.prefetch[scope]]);
-                    delete this.prefetch[scope];
-                    return dfd;
-                }
-                if (has('php')) {
-                    this.runDeferred(null, 'ls', [scope]).then(data.bind(this));
-                } else {
-                    if (!isServer) {
-                        var def = this._getText(require.toUrl(scope).replace('main.js', '') + scope + '.json', {
-                            sync: false,
-                            handleAs: 'json'
-                        }).then(data.bind(this));
-                    } else {
-                        dfd.resolve({ items: [] });
-                    }
-                }
-                return dfd;
-            },
-            /***
-             * Common manager function, called by the context of the application
-             */
-            init: function () {
-                var thiz = this;
-                var EVENTS = types.EVENTS;
+            }
+            return null;
+        },
 
-                this.subscribe([
-                    EVENTS.ON_SCOPE_CREATED,
-                    EVENTS.ON_STORE_CREATED
-                ]);
-
-                //replay block exceptions to log messages
-                this.subscribe(EVENTS.ON_BLOCK_EXPRESSION_FAILED, function (evt) {
-                    thiz.publish(EVENTS.ON_SERVER_LOG_MESSAGE, {
-                        data: {
-                            type: 'Expression',
-                            device: evt.deviceInfo
-                        },
-                        level: 'error',
-                        message: 'Expression Failed: ' + evt.item.title + ' : ' + evt.item.value
-                    });
-                });
-
-                this.driverScopes = {
-                    "system_drivers": "system_drivers/",
-                    "user_drivers": "user_drivers/"
+        getItemById: function (itemId) {
+            return this.getDriverById(itemId);
+        },
+        /////////////////////////////////////////////////////////////////////////////////////
+        //
+        //  Data related
+        //
+        /////////////////////////////////////////////////////////////////////////////////////
+        /**
+         *  Callback when a blox scope has been created. This is being used
+         *  to deserialize the driver's CI meta settings into a blox scope : variables, commands
+         * @param scope
+         */
+        onNewDriverScopeCreated: function (scope) {},
+        onScopeCreated: function (evt) {},
+        onDeviceDisconnected: function (evt) {},
+        onDriverCreated: function (store) {
+            has('xcf-ui') && types.registerEnumeration('Driver', this.getDriversAsEnumeration(store));
+        },
+        onDriverRemoved: function (store, item) {
+            has('xcf-ui') && types.registerEnumeration('Driver', this.getDriversAsEnumeration(store));
+        },
+        onStoreReady: function (store) {
+            has('xcf-ui') && types.registerEnumeration('Driver', this.getDriversAsEnumeration(store));
+        },
+        /***
+         * Init the store with the driver data
+         * @param data
+         * @param scope {string}
+         * @param track {boolean}
+         * @returns {module:xide/data/TreeMemory}
+         */
+        createStore: function (data, scope, track) {
+            //@TODO: weird bug
+            if (data && !data.items && data['0']) {
+                data = {
+                    items: data['0'].items
                 };
             }
-        });
+
+            var storeClass = declare('driverStore', [TreeMemory, Trackable, ObservableStore], {});
+            var store = new storeClass({
+                data: [],
+                Model: Driver,
+                idProperty: 'path',
+                scope: scope,
+                id: utils.createUUID(),
+                mayHaveChildren: function (parent) {
+                    return parent.isDir;
+                },
+                observedProperties: [
+                    "name",
+                    "enabled"
+                ]
+            });
+
+            if (data && data.items) {
+                store.setData(data.items);
+                _.each(data.items, function (item) {
+                    item._store = store;
+                });
+            }
+            if (scope && track !== false) {
+                this.setStore(scope, store);
+            }
+            return store;
+        },
+        /***
+         * Inits the store with the driver data
+         * @param data
+         * @param scope {string}
+         * @param track {boolean}
+         * @returns {module:xide/data/TreeMemory}
+         */
+        initStore: function (data, scope, track) {
+            var store = this.createStore(data, scope, track);
+            return store;
+        },
+        getStore: function (scope) {
+            scope = scope || 'system_drivers';
+            var store = this.stores[scope];
+            if (store) {
+                return store;
+            }
+            return this.ls(scope);
+        },
+        /***
+         * ls is enumerating all drivers in a given scope
+         * @param scope{string}
+         * @returns {Deferred}
+         */
+        ls: function (scope, track) {
+            var dfd = new Deferred();
+
+            function data(data) {
+                try {
+                    var store = this.createStore(data, scope, track);
+                    //track!==false && this.setStore(scope,store);
+                    this.onStoreReady(store);
+                    track !== false && this.publish(types.EVENTS.ON_STORE_CREATED, {
+                        data: data,
+                        owner: this,
+                        store: store,
+                        type: this.itemType
+                    });
+                    dfd.resolve(store);
+                } catch (e) {
+                    logError(e, 'error ls drivers');
+                }
+            }
+            if (this.prefetch && this.prefetch[scope]) {
+                data.apply(this, [this.prefetch[scope]]);
+                delete this.prefetch[scope];
+                return dfd;
+            }
+            if (has('php')) {
+                this.runDeferred(null, 'ls', [scope]).then(data.bind(this));
+            } else {
+                if (!isServer) {
+                    var def = this._getText(require.toUrl(scope).replace('main.js', '') + scope + '.json', {
+                        sync: false,
+                        handleAs: 'json'
+                    }).then(data.bind(this));
+                } else {
+                    dfd.resolve({
+                        items: []
+                    });
+                }
+            }
+            return dfd;
+        },
+        /***
+         * Common manager function, called by the context of the application
+         */
+        init: function () {
+            var thiz = this;
+            var EVENTS = types.EVENTS;
+
+            this.subscribe([
+                EVENTS.ON_SCOPE_CREATED,
+                EVENTS.ON_STORE_CREATED
+            ]);
+
+            //replay block exceptions to log messages
+            this.subscribe(EVENTS.ON_BLOCK_EXPRESSION_FAILED, function (evt) {
+                thiz.publish(EVENTS.ON_SERVER_LOG_MESSAGE, {
+                    data: {
+                        type: 'Expression',
+                        device: evt.deviceInfo
+                    },
+                    level: 'error',
+                    message: 'Expression Failed: ' + evt.item.title + ' : ' + evt.item.value
+                });
+            });
+
+            this.driverScopes = {
+                "system_drivers": "system_drivers/",
+                "user_drivers": "user_drivers/"
+            };
+        }
     });
-;
+});;
 /** @module xide/mixins/ReloadMixin **/
 define('xide/mixins/ReloadMixin',[
     "xdojo/declare",
@@ -49538,7 +49549,7 @@ define('xblox/model/Scope',[
                     _device = _instance.device
                 }
             }
-            return device;
+            return device || _device;
         },
         /**
          *
@@ -54706,22 +54717,14 @@ define('xblox/model/Block',[
 
     if (!has('host-browser')) {
         bases.push(dcl(null, {
-            getStatusIcon: function () {
-            },
-            getStatusClass: function () {
-            },
-            setStatusClass: function () {
-            },
-            onActivity: function () {
-            },
-            onRun: function () {
-            },
-            onFailed: function () {
-            },
-            onSuccess: function () {
-            },
-            getIconClass: function () {
-            }
+            getStatusIcon: function () {},
+            getStatusClass: function () {},
+            setStatusClass: function () {},
+            onActivity: function () {},
+            onRun: function () {},
+            onFailed: function () {},
+            onSuccess: function () {},
+            getIconClass: function () {}
         }));
     }
     if (Block_UI) {
@@ -54740,38 +54743,38 @@ define('xblox/model/Block',[
          * @memberOf module:xide/types
          */
         BLOCK_FLAGS: {
-            NONE: 0x00000000,	// Reserved for future use
-            ACTIVE: 0x00000001,	// This behavior is active
-            SCRIPT: 0x00000002,	// This behavior is a script
-            RESERVED1: 0x00000004,	// Reserved for internal use
-            USEFUNCTION: 0x00000008,	// Block uses a function and not a graph
-            RESERVED2: 0x00000010,	// Reserved for internal use
-            SINGLE: 0x00000020,	// Only this block will excecuted, child blocks not.
-            WAITSFORMESSAGE: 0x00000040,	// Block is waiting for a message to activate one of its outputs
-            VARIABLEINPUTS: 0x00000080,	// Block may have its inputs changed by editing them
-            VARIABLEOUTPUTS: 0x00000100,	// Block may have its outputs changed by editing them
-            VARIABLEPARAMETERINPUTS: 0x00000200,	// Block may have its number of input parameters changed by editing them
-            VARIABLEPARAMETEROUTPUTS: 0x00000400,	// Block may have its number of output parameters changed by editing them
-            TOPMOST: 0x00004000,	// No other Block includes this one
-            BUILDINGBLOCK: 0x00008000,	// This Block is a building block (eg: not a transformer of parameter operation)
-            MESSAGESENDER: 0x00010000,	// Block may send messages during its execution
-            MESSAGERECEIVER: 0x00020000,	// Block may check messages during its execution
-            TARGETABLE: 0x00040000,	// Block may be owned by a different object that the one to which its execution will apply
-            CUSTOMEDITDIALOG: 0x00080000,	// This Block have a custom Dialog Box for parameters edition .
-            RESERVED0: 0x00100000,	// Reserved for internal use.
-            EXECUTEDLASTFRAME: 0x00200000,	// This behavior has been executed during last process. (Available only in profile mode )
-            DEACTIVATENEXTFRAME: 0x00400000,	// Block will be deactivated next frame
-            RESETNEXTFRAME: 0x00800000,	// Block will be reseted next frame
+            NONE: 0x00000000, // Reserved for future use
+            ACTIVE: 0x00000001, // This behavior is active
+            SCRIPT: 0x00000002, // This behavior is a script
+            RESERVED1: 0x00000004, // Reserved for internal use
+            USEFUNCTION: 0x00000008, // Block uses a function and not a graph
+            RESERVED2: 0x00000010, // Reserved for internal use
+            SINGLE: 0x00000020, // Only this block will excecuted, child blocks not.
+            WAITSFORMESSAGE: 0x00000040, // Block is waiting for a message to activate one of its outputs
+            VARIABLEINPUTS: 0x00000080, // Block may have its inputs changed by editing them
+            VARIABLEOUTPUTS: 0x00000100, // Block may have its outputs changed by editing them
+            VARIABLEPARAMETERINPUTS: 0x00000200, // Block may have its number of input parameters changed by editing them
+            VARIABLEPARAMETEROUTPUTS: 0x00000400, // Block may have its number of output parameters changed by editing them
+            TOPMOST: 0x00004000, // No other Block includes this one
+            BUILDINGBLOCK: 0x00008000, // This Block is a building block (eg: not a transformer of parameter operation)
+            MESSAGESENDER: 0x00010000, // Block may send messages during its execution
+            MESSAGERECEIVER: 0x00020000, // Block may check messages during its execution
+            TARGETABLE: 0x00040000, // Block may be owned by a different object that the one to which its execution will apply
+            CUSTOMEDITDIALOG: 0x00080000, // This Block have a custom Dialog Box for parameters edition .
+            RESERVED0: 0x00100000, // Reserved for internal use.
+            EXECUTEDLASTFRAME: 0x00200000, // This behavior has been executed during last process. (Available only in profile mode )
+            DEACTIVATENEXTFRAME: 0x00400000, // Block will be deactivated next frame
+            RESETNEXTFRAME: 0x00800000, // Block will be reseted next frame
 
-            INTERNALLYCREATEDINPUTS: 0x01000000,	// Block execution may create/delete inputs
-            INTERNALLYCREATEDOUTPUTS: 0x02000000,	// Block execution may create/delete outputs
-            INTERNALLYCREATEDINPUTPARAMS: 0x04000000,	// Block execution may create/delete input parameters or change their type
-            INTERNALLYCREATEDOUTPUTPARAMS: 0x08000000,	// Block execution may create/delete output parameters or change their type
-            INTERNALLYCREATEDLOCALPARAMS: 0x40000000,	// Block execution may create/delete local parameters or change their type
+            INTERNALLYCREATEDINPUTS: 0x01000000, // Block execution may create/delete inputs
+            INTERNALLYCREATEDOUTPUTS: 0x02000000, // Block execution may create/delete outputs
+            INTERNALLYCREATEDINPUTPARAMS: 0x04000000, // Block execution may create/delete input parameters or change their type
+            INTERNALLYCREATEDOUTPUTPARAMS: 0x08000000, // Block execution may create/delete output parameters or change their type
+            INTERNALLYCREATEDLOCALPARAMS: 0x40000000, // Block execution may create/delete local parameters or change their type
 
-            ACTIVATENEXTFRAME: 0x10000000,	// Block will be activated next frame
-            LOCKED: 0x20000000,	// Block is locked for utilisation in xblox
-            LAUNCHEDONCE: 0x80000000	// Block has not yet been launched...
+            ACTIVATENEXTFRAME: 0x10000000, // Block will be activated next frame
+            LOCKED: 0x20000000, // Block is locked for utilisation in xblox
+            LAUNCHEDONCE: 0x80000000 // Block has not yet been launched...
         },
 
         /**
@@ -54782,29 +54785,29 @@ define('xblox/model/Block',[
          * @memberOf module:xide/types
          */
         BLOCK_CALLBACKMASK: {
-            PRESAVE: 0x00000001,	// Emits PRESAVE messages
-            DELETE: 0x00000002,	// Emits DELETE messages
-            ATTACH: 0x00000004,	// Emits ATTACH messages
-            DETACH: 0x00000008,	// Emits DETACH messages
-            PAUSE: 0x00000010,	// Emits PAUSE messages
-            RESUME: 0x00000020,	// Emits RESUME messages
-            CREATE: 0x00000040,	// Emits CREATE messages
-            RESET: 0x00001000,	// Emits RESET messages
-            POSTSAVE: 0x00000100,	// Emits POSTSAVE messages
-            LOAD: 0x00000200,	// Emits LOAD messages
-            EDITED: 0x00000400,	// Emits EDITED messages
-            SETTINGSEDITED: 0x00000800,	// Emits SETTINGSEDITED messages
-            READSTATE: 0x00001000,	// Emits READSTATE messages
-            NEWSCENE: 0x00002000,	// Emits NEWSCENE messages
-            ACTIVATESCRIPT: 0x00004000,	// Emits ACTIVATESCRIPT messages
-            DEACTIVATESCRIPT: 0x00008000,	// Emits DEACTIVATESCRIPT messages
-            RESETINBREAKPOINT: 0x00010000,	// Emits RESETINBREAKPOINT messages
-            RENAME: 0x00020000,	// Emits RENAME messages
-            BASE: 0x0000000E,	// Base flags :attach /detach /delete
-            SAVELOAD: 0x00000301,	// Base flags for load and save
-            PPR: 0x00000130,	// Base flags for play/pause/reset
-            EDITIONS: 0x00000C00,	// Base flags for editions of settings or parameters
-            ALL: 0xFFFFFFFF	// All flags
+            PRESAVE: 0x00000001, // Emits PRESAVE messages
+            DELETE: 0x00000002, // Emits DELETE messages
+            ATTACH: 0x00000004, // Emits ATTACH messages
+            DETACH: 0x00000008, // Emits DETACH messages
+            PAUSE: 0x00000010, // Emits PAUSE messages
+            RESUME: 0x00000020, // Emits RESUME messages
+            CREATE: 0x00000040, // Emits CREATE messages
+            RESET: 0x00001000, // Emits RESET messages
+            POSTSAVE: 0x00000100, // Emits POSTSAVE messages
+            LOAD: 0x00000200, // Emits LOAD messages
+            EDITED: 0x00000400, // Emits EDITED messages
+            SETTINGSEDITED: 0x00000800, // Emits SETTINGSEDITED messages
+            READSTATE: 0x00001000, // Emits READSTATE messages
+            NEWSCENE: 0x00002000, // Emits NEWSCENE messages
+            ACTIVATESCRIPT: 0x00004000, // Emits ACTIVATESCRIPT messages
+            DEACTIVATESCRIPT: 0x00008000, // Emits DEACTIVATESCRIPT messages
+            RESETINBREAKPOINT: 0x00010000, // Emits RESETINBREAKPOINT messages
+            RENAME: 0x00020000, // Emits RENAME messages
+            BASE: 0x0000000E, // Base flags :attach /detach /delete
+            SAVELOAD: 0x00000301, // Base flags for load and save
+            PPR: 0x00000130, // Base flags for play/pause/reset
+            EDITIONS: 0x00000C00, // Base flags for editions of settings or parameters
+            ALL: 0xFFFFFFFF // All flags
         }
 
     });
@@ -54959,8 +54962,7 @@ define('xblox/model/Block',[
             }
             return res;
         },
-        postCreate: function () {
-        },
+        postCreate: function () {},
         /**
          *
          * @param clz
@@ -55004,13 +55006,12 @@ define('xblox/model/Block',[
             }
             return null;
         },
-        pause: function () {
-        },
+        pause: function () {},
         mergeNewModule: function (source) {
             for (var i in source) {
                 var o = source[i];
                 if (o && _.isFunction(o)) {
-                    this[i] = o;//swap
+                    this[i] = o; //swap
                 }
             }
         },
@@ -55030,8 +55031,7 @@ define('xblox/model/Block',[
                 return false;
             }
             var parent = item.getParent();
-            if (parent) {
-            } else {
+            if (parent) {} else {
                 var _next = item.next(null, 1) || item.next(null, -1);
                 if (_next) {
                     item.group = null;
@@ -55150,6 +55150,7 @@ define('xblox/model/Block',[
         },
         next: function (items, dir) {
             items = items || this._store.storage.fullData;
+
             function _next(item, items, dir, step, _dstIndex) {
                 var start = item.indexOf(items, item);
                 var upperItem = items[start + (dir * step)];
@@ -55397,7 +55398,7 @@ define('xblox/model/Block',[
             if (settings.override && settings.override.args) {
                 _inArgs = settings.override.args;
             }
-            if (_inArgs) {//direct json
+            if (_inArgs) { //direct json
                 result = utils.getJson(_inArgs, null, false);
             }
             //try comma separated list
@@ -55414,13 +55415,13 @@ define('xblox/model/Block',[
                             if (splitted[i] === 'true' || splitted[i] === 'false') {
                                 result.push(utils.toBoolean(splitted[i]));
                             } else {
-                                result.push(splitted[i]);//whatever
+                                result.push(splitted[i]); //whatever
                             }
                         }
                     }
                     return result;
                 } else {
-                    result = [this._getArg(_inArgs)];//single argument
+                    result = [this._getArg(_inArgs)]; //single argument
                 }
             }
 
@@ -55510,7 +55511,7 @@ define('xblox/model/Block',[
                 if (this.scope) {
                     block = this.scope.registerBlock(block, publish);
                 }
-                if(has('debug')) {
+                if (has('debug')) {
                     if (block.id === this.id) {
                         console.error('adding new block to our self');
                         debugger;
@@ -55582,7 +55583,9 @@ define('xblox/model/Block',[
          * @return  list of commands to send
          */
         _solve: function (scope, settings) {
-            settings = settings || {highlight: false};
+            settings = settings || {
+                highlight: false
+            };
             var ret = [];
             for (var n = 0; n < this.items.length; n++) {
                 var block = this.items[n];
@@ -55597,7 +55600,9 @@ define('xblox/model/Block',[
          * @return  list of commands to send
          */
         solve: function (scope, settings) {
-            settings = settings || {highlight: false};
+            settings = settings || {
+                highlight: false
+            };
             var ret = [];
             for (var n = 0; n < this.items.length; n++) {
                 var block = this.items[n];
@@ -55618,7 +55623,8 @@ define('xblox/model/Block',[
             settings = this._lastRunSettings || settings;
             this._currentIndex = 0;
             this._return = [];
-            var ret = [], items = this[this._getContainer()];
+            var ret = [],
+                items = this[this._getContainer()];
 
             if (items.length) {
                 var res = this.runFrom(items, 0, settings);
@@ -55632,7 +55638,7 @@ define('xblox/model/Block',[
         runFrom: function (blocks, index, settings) {
             var thiz = this;
             blocks = blocks || this.items;
-            if(!this._return){
+            if (!this._return) {
                 this._return = [];
             }
             var onFinishBlock = function (block, results) {
@@ -55665,14 +55671,11 @@ define('xblox/model/Block',[
             return this._return;
         },
         serializeField: function (name) {
-            return this.ignoreSerialize.indexOf(name) == -1;//is not in our array
+            return this.ignoreSerialize.indexOf(name) == -1; //is not in our array
         },
-        onLoad: function () {
-        },
-        activate: function () {
-        },
-        deactivate: function () {
-        },
+        onLoad: function () {},
+        activate: function () {},
+        deactivate: function () {},
         _get: function (what) {
             if (this.override) {
                 return (what in this.override ? this.override[what] : this[what]);
@@ -55688,6 +55691,7 @@ define('xblox/model/Block',[
             this.stop(true);
             this.reset();
             this._destroyed = true;
+            delete this.virtual;
         },
         reset: function () {
             this._lastSettings = {};
@@ -55709,12 +55713,9 @@ define('xblox/model/Block',[
     //that's really weird: using dynamic base classes nor Block.extend doesnt work.
     //however, move dojo complete out of blox
     if (!Block.prototype.onSuccess) {
-        Block.prototype.onSuccess = function () {
-        };
-        Block.prototype.onRun = function () {
-        };
-        Block.prototype.onFailed = function () {
-        };
+        Block.prototype.onSuccess = function () {};
+        Block.prototype.onRun = function () {};
+        Block.prototype.onFailed = function () {};
     }
     dcl.chainAfter(Block, 'stop');
     dcl.chainAfter(Block, 'destroy');
@@ -67139,7 +67140,7 @@ define('xide/manager/Context_UI',[
     'xaction/ActionProvider',
     'xide/lodash',
     'xide/manager/Router'
-], function (dcl, Deferred, has, types, utils, EventedMixin, _require, PluginManager,WindowManager, NotificationManager, SettingsManager, Registry, ActionProvider, _,Router) {
+], function (dcl, Deferred, has, types, utils, EventedMixin, _require, PluginManager, WindowManager, NotificationManager, SettingsManager, Registry, ActionProvider, _, Router) {
 
 
     !has('host-browser') && has.add('xlog', function () {
@@ -67162,27 +67163,29 @@ define('xide/manager/Context_UI',[
         settingsManager: null,
         trackingManager: null,
         mainView: null,
-        registerRoute:function(config){
-            if(!this.routes){
+        registerRoute: function (config) {
+            if (!this.routes) {
                 this.routes = [];
             }
             this.routes.push(config);
         },
-        ready:function(){
+        ready: function () {
             this.getRouter();
         },
-        routes:null,
+        routes: null,
         /**
          * @type {module:xide/manager/Router}
          */
-        router:null,
+        router: null,
         /**
          *
          * @returns {module:xide/manager/Router}
          */
-        getRouter:function(){
-            if(!this.router || !this.router.match){
-                this.router = new Router({routes:this.routes});
+        getRouter: function () {
+            if (!this.router || !this.router.match) {
+                this.router = new Router({
+                    routes: this.routes
+                });
             }
             return this.router;
         },
@@ -67225,6 +67228,119 @@ define('xide/manager/Context_UI',[
                 actionDfd = action.handler.apply(who, [action]);
             }
             return actionDfd;
+        },
+        getOpenFiles: function () {
+            var settingsManager = this.getSettingsManager();
+
+            var settingsStore = settingsManager.getStore() || {
+                getSync: function () {}
+            };
+
+            var props = settingsStore.getSync('openFiles') || {
+                value: {
+                    files: []
+                }
+            };
+            var fileManager = this.getFileManager();
+            const out = [];
+            _.each(props.value.files, (item) => {
+                var store = fileManager.getStore(item.mount);
+                store.getItem('.',true).then(()=>{
+                    console.log('g',store);
+                })
+                /*
+                store.getItem(item.path, true).then((item)=>{
+                    console.log('loaded',item);
+                })
+                console.log('get store:  ', store);*/
+                /*
+                item.getPath = function () {
+                    return item.path;
+                }
+                */
+            });
+            return props.value.files;
+        },
+        trackEditor: function (item, editor) {
+            var settingsManager = this.getSettingsManager();
+
+            var settingsStore = settingsManager.getStore() || {
+                getSync: function () {}
+            };
+
+            var props = settingsStore.getSync('openFiles') || {
+                value: {
+                    files: []
+                }
+            };
+
+            var value = props.value;
+            if (_.find(value.files, {
+                    path: item.path,
+                    mount: item.mount
+                })) {
+                return;
+            }
+            value.files.push({
+                path: item.path,
+                mount: item.mount
+            })
+
+            settingsManager.write2(null, '.', {
+                id: 'openFiles'
+            }, {
+                value: value
+            }, true, null).then(function () {
+
+            });
+        },
+        untrackEditor: function (item, editor) {
+            var settingsManager = this.getSettingsManager();
+            var settingsStore = settingsManager.getStore() || {
+                getSync: function () {}
+            };
+
+            var props = settingsStore.getSync('openFiles') || {
+                value: {
+                    files: []
+                }
+            };
+            var value = props.value;
+            var data = _.find(value.files, {
+                path: item.path,
+                mount: item.mount
+            });
+            value.files.remove(data);
+            settingsManager.write2(null, '.', {
+                id: 'openFiles'
+            }, {
+                value: value
+            }, true, null).then(function () {
+
+            });
+        },
+        openItem: function (item, isBack, select) {
+            if (!item) {
+                return;
+            }
+
+            var editors = Registry.getEditors(item);
+            var defaultEditor = _.find(editors, function (editor) {
+                return editor.isDefault === true;
+            });
+            if (defaultEditor) {
+                return defaultEditor.onEdit(item, this);
+            }
+            return this.getWindowManager().openItem(item, null, {
+                register: true
+            });
+        },
+        onComponentsReady: function () {
+            return;
+            const filesToOpen = this.getOpenFiles();
+            _.each(filesToOpen, (item) => {
+                // this.openItem(item);
+            }, this);
         },
         /***********************************************************************/
         /*
@@ -67293,6 +67409,15 @@ define('xide/manager/Context_UI',[
 
             root.set('loading', true);
             var editor = utils.addWidget(ctrArgs.editorClass, ctrArgsFinal, thiz, root, true, null, null, null, editorOverrides);
+
+            console.log('create editor!', editor);
+
+            this.trackEditor(item, editor);
+
+            editor._on('destroy', function () {
+                thiz.untrackEditor(item);
+            });
+
 
             //- tell everybody
             thiz.publish(types.EVENTS.ON_CREATE_EDITOR_END, {
@@ -73073,7 +73198,6 @@ define('xblox/_State',[
          * Delite created callback
          */
         createdCallback: function () {
-            //console.error('createdCallback', this);
             debugCreated && console.info('createdCallback', this);
             if (!this._targetReference) {
                 this._setupTargetReference();
