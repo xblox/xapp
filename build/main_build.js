@@ -38423,18 +38423,8 @@ define('xide/factory/Clients',[
             console.error('create client with : failed, no such service :  ' + serviceName );
             return;
         }
-
-        //service=service[0];
-
-        /*
-        if(!service.info && service.status==types.SERVICE_STATUS.OFFLINE){
-            console.error('create client with store : failed! Service has no info for '  + serviceName);
-            return;
-        }
-        */
         if(service.status!==types.SERVICE_STATUS.ONLINE){
             debug && console.error('create client with store : failed! Service ' +  serviceName + ' is not online ');
-            //return;
         }
 
         let host = 'http://' + service.host;
@@ -64098,9 +64088,9 @@ define('xfile/manager/FileManager',[
     'xfile/factory/Store',
     "xide/lodash",
     'xdojo/has!electron?xfile/manager/Electron'
-], function (dcl,dojo,ServerActionBase, types, fTypes, utils, SHA1, RPCService, Deferred,has,FileManagerActions,require,StoreFactory,_,Electron) {
+], function (dcl, dojo, ServerActionBase, types, fTypes, utils, SHA1, RPCService, Deferred, has, FileManagerActions, require, StoreFactory, _, Electron) {
     var bases = [ServerActionBase, FileManagerActions];
-    if(has('electronx') && Electron){
+    if (has('electronx') && Electron) {
         bases.push(Electron);
     }
     var debug = false;
@@ -64111,27 +64101,27 @@ define('xfile/manager/FileManager',[
      * @augments {module:xide/mixins/EventedMixin}
      */
     return dcl(bases, {
-        declaredClass:"xfile.manager.FileManager",
+        declaredClass: "xfile.manager.FileManager",
         /**
          * Returns a new name 
          * @param item
          * @param others
          * @returns {*}
          */
-        getNewName:function(item,others){
-            var name = item.name.replace('.meta.json','');
+        getNewName: function (item, others) {
+            var name = item.name.replace('.meta.json', '');
             var found = false;
             var i = 1;
             var newName = null;
-            while (!found){
+            while (!found) {
                 newName = name + '-' + i + '.meta.json';
-                var colliding = _.find(others,{
-                    name:newName
+                var colliding = _.find(others, {
+                    name: newName
                 });
 
-                if(!colliding){
+                if (!colliding) {
                     found = true;
-                }else{
+                } else {
                     i++;
                 }
             }
@@ -64149,23 +64139,23 @@ define('xfile/manager/FileManager',[
         serviceUrl: "index.php",
         serviceClass: 'XCOM_Directory_Service',
         settingsStore: null,
-        stores:[],
-        getStore:function(mount,cache){
-            var store =  _.find(this.stores,{
-                mount:mount
+        stores: [],
+        getStore: function (mount, cache) {
+            var store = _.find(this.stores, {
+                mount: mount
             });
-            if(store){
+            if (store && cache !== false) {
                 return store;
             }
-            return StoreFactory.createFileStore(mount,null,this.config,null,this.ctx);
+            return StoreFactory.createFileStore(mount, null, this.config, null, this.ctx);
         },
-        addStore:function(store){
+        addStore: function (store) {
             this.stores.push(store);
-            store._on('destroy',this.removeStore.bind(this));
+            store._on('destroy', this.removeStore.bind(this));
         },
-        removeStore:function(store){
+        removeStore: function (store) {
             var index = this.stores.indexOf(store);
-            if(index) {
+            if (index) {
                 this.stores.remove(store);
             }
         },
@@ -64178,8 +64168,8 @@ define('xfile/manager/FileManager',[
             var selection = [];
             selection.push(src.path);
 
-            if(has('nserver')){
-                window.open('/files/'+src.mount+'/'+src.path +'?userDirectory='+ encodeURIComponent( this.ctx.getUserDirectory()));
+            if (has('nserver')) {
+                window.open('/files/' + src.mount + '/' + src.path + '?userDirectory=' + encodeURIComponent(this.ctx.getUserDirectory()));
                 return;
             }
 
@@ -64210,11 +64200,11 @@ define('xfile/manager/FileManager',[
                 "attachment": "1",
                 "send": "1"
             });
-            delete  aParams['theme'];
-            delete  aParams['debug'];
-            delete  aParams['width'];
-            delete  aParams['attachment'];
-            delete  aParams['send'];
+            delete aParams['theme'];
+            delete aParams['debug'];
+            delete aParams['width'];
+            delete aParams['attachment'];
+            delete aParams['send'];
             var pStr = dojo.toJson(JSON.stringify(aParams));
             var signature = SHA1._hmac(pStr, this.config.RPC_PARAMS.rpcSignatureToken, 1);
             downloadUrl += '&' + this.config.RPC_PARAMS.rpcUserField + '=' + this.config.RPC_PARAMS.rpcUserValue;
@@ -64227,8 +64217,8 @@ define('xfile/manager/FileManager',[
         //
         //////////////////////////////////////////////////////////////////////////////////////////////////////
         getImageUrl: function (src, preventCache, extraParams) {
-            if(has('nserver')){
-                return ('/files/'+src.mount+'/'+src.path + '?userDirectory='+ encodeURIComponent( this.ctx.getUserDirectory()));
+            if (has('nserver')) {
+                return ('/files/' + src.mount + '/' + src.path + '?userDirectory=' + encodeURIComponent(this.ctx.getUserDirectory()));
             }
             preventCache = location.href.indexOf('noImageCache') != -1 || preventCache === true || src.dirty === true;
             var downloadUrl = decodeURIComponent(this.serviceUrl);
@@ -64258,9 +64248,9 @@ define('xfile/manager/FileManager',[
                 "raw": "html"
             });
             utils.mixin(aParams, extraParams);
-            delete  aParams['theme'];
-            delete  aParams['debug'];
-            delete  aParams['width'];
+            delete aParams['theme'];
+            delete aParams['debug'];
+            delete aParams['width'];
             var pStr = dojo.toJson(aParams);
             var signature = SHA1._hmac(pStr, this.config.RPC_PARAMS.rpcSignatureToken, 1);
             downloadUrl += '&' + this.config.RPC_PARAMS.rpcUserField + '=' + this.config.RPC_PARAMS.rpcUserValue;
@@ -64287,7 +64277,9 @@ define('xfile/manager/FileManager',[
                 item.dfd.reject(item);
             }
             thiz.filesToUpload.remove(item);
-            thiz.publish(eventKeys.ON_UPLOAD_FAILED, {item: item}, thiz);
+            thiz.publish(eventKeys.ON_UPLOAD_FAILED, {
+                item: item
+            }, thiz);
         },
         onFileUploaded: function (item) {
             var thiz = this,
@@ -64303,11 +64295,13 @@ define('xfile/manager/FileManager',[
                     item.dfd.resolve(item);
                 }
                 thiz.filesToUpload.remove(item);
-                thiz.publish(eventKeys.ON_UPLOAD_FINISH, {item: item});
+                thiz.publish(eventKeys.ON_UPLOAD_FINISH, {
+                    item: item
+                });
             }, 500);
         },
         getUploadUrl: function () {
-            if(has('nserver')){
+            if (has('nserver')) {
                 return this.serviceUrl.replace('/smd', '/upload/?');
             }
             var url = '' + decodeURIComponent(this.serviceUrl);
@@ -64423,7 +64417,7 @@ define('xfile/manager/FileManager',[
             var auto_rename = false;
             item.status = 'loading';
             var xhr = this.initXHRUpload(item, (auto_rename ? "auto_rename=true" : ""), item['dstDir'], item['mount']);
-            this.publish(types.EVENTS.ON_UPLOAD_BEGIN,{
+            this.publish(types.EVENTS.ON_UPLOAD_BEGIN, {
                 item: item,
                 name: item.name
             }, this);
@@ -64509,24 +64503,24 @@ define('xfile/manager/FileManager',[
             try {
                 return this.callMethod(types.OPERATION.FIND, [mount, conf], readyCB, true);
             } catch (e) {
-                logError(e,'find');
+                logError(e, 'find');
             }
         },
         getContent: function (mount, path, readyCB, emit) {
-            if(this.getContentE){
-                var res = this.getContentE.apply(this,arguments);
-                if(res){
+            if (this.getContentE) {
+                var res = this.getContentE.apply(this, arguments);
+                if (res) {
                     return res;
                 }
             }
-            if(has('php')) {
+            if (has('php')) {
                 var _path = utils.buildPath(mount, path, false);
                 return this.callMethod(types.OPERATION.GET_CONTENT, [_path, false, false], readyCB, false);
-            }else{
-                return this._getText(require.toUrl(mount).replace('main.js','') + '/' + path,{
+            } else {
+                return this._getText(require.toUrl(mount).replace('main.js', '') + '/' + path, {
                     sync: false,
                     handleAs: 'text'
-                }).then(function(res){
+                }).then(function (res) {
                     try {
                         if (readyCB) {
                             readyCB(res);
@@ -64546,9 +64540,9 @@ define('xfile/manager/FileManager',[
             this.publish(types.EVENTS.ON_STATUS_MESSAGE, {
                 text: "Did save file : " + mount + '://' + path
             });
-            if(this.setContentE){
-                var res = this.setContentE.apply(this,arguments);
-                if(res){
+            if (this.setContentE) {
+                var res = this.setContentE.apply(this, arguments);
+                if (res) {
                     return res;
                 }
             }
@@ -64567,7 +64561,7 @@ define('xfile/manager/FileManager',[
             }
         },
         onErrors: function (res) {},
-        init:function(){
+        init: function () {
             this.stores = [];
             this.filesToUpload = [];
         },
@@ -64693,15 +64687,15 @@ define('xfile/manager/FileManager',[
                 });
                 return dfd;
             } catch (e) {
-                console.error('crash calling method' + e,arguments);
+                console.error('crash calling method' + e, arguments);
                 thiz.onError(e);
-                logError(e,'error ');
+                logError(e, 'error ');
             }
         },
         __initService: function () {
             this.filesToUpload = [];
             if (!this.serviceObject) {
-                if(this.serviceUrl) {
+                if (this.serviceUrl) {
                     this.serviceObject = new RPCService(decodeURIComponent(this.serviceUrl));
                     this.serviceObject.config = this.config;
                 }
@@ -67179,7 +67173,8 @@ define('xide/manager/Context_UI',[
     'xide/editor/Registry',
     'xaction/ActionProvider',
     'xide/lodash',
-    'xide/manager/Router'
+    'xide/manager/Router',
+    'dojo/promise/all'
 ], function (
     dcl,
     Deferred,
@@ -67195,9 +67190,21 @@ define('xide/manager/Context_UI',[
     Registry,
     ActionProvider,
     _,
-    Router
+    Router,
+    all
 ) {
     !has('host-browser') && has.add('xlog', () => true, true);
+    var test = false;
+    var debugEditors = false;
+    if (sctx && test) {
+        var m = sctx.getFileManager();
+        var store = m.getStore('workspace_user', false);
+        var file = './A-MediaPlayer.dhtml';
+        var parts = file.split('/');
+        store.getItem(file, true).then((root) => {
+            console.log('loaded root : ', root);
+        });
+    }
 
     const isServer = has('host-node');
     const isBrowser = has('host-browser');
@@ -67281,7 +67288,10 @@ define('xide/manager/Context_UI',[
             }
             return actionDfd;
         },
-        getOpenFiles: function () {
+        getOpenFilesP: function () {
+
+            const p = new Deferred();
+
             const settingsManager = this.getSettingsManager();
 
             const settingsStore = settingsManager.getStore() || {
@@ -67295,22 +67305,32 @@ define('xide/manager/Context_UI',[
             };
             const fileManager = this.getFileManager();
             const out = [];
-            _.each(props.value.files, (item) => {
-                const store = fileManager.getStore(item.mount);
-                store.getItem('.', true).then(() => {
-                    console.log('g', store);
-                })
-                /*
-                store.getItem(item.path, true).then((item)=>{
-                    console.log('loaded',item);
-                })
-                console.log('get store:  ', store);*/
-                /*
-                item.getPath = function () {
-                    return item.path;
-                }
-                */
+            const defs = [];
+            props.value.files.forEach((item) => {
+                const store = fileManager.getStore(item.mount, false);
+                defs.push(store.getItem(item.path, true).then((item) => {
+                    out.push(item);
+                }));
             });
+
+            all(defs).then(() => {
+                p.resolve(out);
+            });
+
+            return p;
+        },
+
+        getOpenFiles: function () {
+            const settingsManager = this.getSettingsManager();
+            const settingsStore = settingsManager.getStore() || {
+                getSync: function () {}
+            };
+            const props = settingsStore.getSync('openFiles') || {
+                value: {
+                    files: []
+                }
+            };
+            const fileManager = this.getFileManager();
             return props.value.files;
         },
         trackEditor: function (item, editor) {
@@ -67382,11 +67402,12 @@ define('xide/manager/Context_UI',[
             });
         },
         onComponentsReady: function () {
-            return;
-            const filesToOpen = this.getOpenFiles();
-            _.each(filesToOpen, (item) => {
-                // this.openItem(item);
-            }, this);
+            // todo : store is leaked!
+            this.getOpenFilesP().then((items) => {
+                items.forEach((item) => {
+                    this.openItem(item);
+                })
+            });
         },
         /***********************************************************************/
         /*
@@ -67458,7 +67479,7 @@ define('xide/manager/Context_UI',[
             root.set('loading', true);
             const editor = utils.addWidget(ctrArgs.editorClass, ctrArgsFinal, thiz, root, true, null, null, null, editorOverrides);
 
-            console.log('create editor!', editor);
+            debugEditors && console.log('create editor!', editor);
 
             this.trackEditor(item, editor);
 
@@ -72277,33 +72298,33 @@ define('xide/factory/Events',[
     "dojo/on",
     'dojo/has',
     'xide/lodash'
-], function (factory, connect, lang, on,has) {
+], function (factory, connect, lang, on, has) {
     const //print publish messages in console
-    _debug = false;
+        _debug = false;
 
     const //put publish in try/catch block
-    _tryEvents = false;
+        _tryEvents = false;
 
     const //noop
-    _foo=null;
+        _foo = null;
 
     const _nativeEvents = {
         "click": _foo,
-        "dblclick":_foo,
-        "mousedown":_foo,
-        "mouseup":_foo,
-        "mouseover":_foo,
-        "mousemove":_foo,
-        "mouseout":_foo,
-        "keypress":_foo,
-        "keydown":_foo,
-        "keyup":_foo,
-        "focus":_foo,
-        "blur":_foo,
-        "change":_foo
+        "dblclick": _foo,
+        "mousedown": _foo,
+        "mouseup": _foo,
+        "mouseover": _foo,
+        "mousemove": _foo,
+        "mouseout": _foo,
+        "keypress": _foo,
+        "keydown": _foo,
+        "keyup": _foo,
+        "focus": _foo,
+        "blur": _foo,
+        "change": _foo
     };
 
-    let _debugGroup=false;
+    let _debugGroup = false;
 
 
     /**
@@ -72312,10 +72333,10 @@ define('xide/factory/Events',[
      * @returns {*}
      * @private
      */
-    function _isElement(o){
+    const _isElement = (o) => {
         return (
             typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
-            o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName==="string"
+            o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName === "string"
         );
     }
     /**
@@ -72327,13 +72348,15 @@ define('xide/factory/Events',[
     function applyEventOnce(eventHandler, waitForMirror) {
         let timer;
         const mirror = this;
-        return function() {
+        return function () {
             const _arguments = arguments;
             if (timer)
                 clearTimeout(timer);
-            timer = setTimeout(function() {
+            timer = setTimeout(function () {
                 if (waitForMirror && mirror.isPending())
-                    return setTimeout(function() { applyEventOnce(eventHandler, true) }, 0);
+                    return setTimeout(function () {
+                        applyEventOnce(eventHandler, true)
+                    }, 0);
                 eventHandler.apply(eventHandler, _arguments);
             }, 0);
         };
@@ -72384,21 +72407,23 @@ define('xide/factory/Events',[
      * @extends module:xide/factory
      * @memberOf xide/factory
      */
-    factory.publish = function (keys, data, callee,filter) {
-        const msgStruct   = data ? _.isString(data) ? {message: data} : data : {};//lookup cache
-        let eventKeys   = keys;
-        const _publish    = connect.publish;
-        let result      = [];
+    factory.publish = function (keys, data, callee, filter) {
+        const msgStruct = data ? _.isString(data) ? {
+            message: data
+        } : data : {}; //lookup cache
+        let eventKeys = keys;
+        const _publish = connect.publish;
+        let result = [];
 
         //normalize to array
         if (!_.isArray(keys)) {
             eventKeys = [keys];
         }
-        for (let i = 0, l=eventKeys.length; i < l; i++) {
+        for (let i = 0, l = eventKeys.length; i < l; i++) {
 
             const eventKey = eventKeys[i];
 
-            if(filter && !filter(eventKey)){
+            if (filter && !filter(eventKey)) {
                 continue;
             }
 
@@ -72408,13 +72433,13 @@ define('xide/factory/Events',[
                 console.log('publish ' + eventKey + ' from : ' + (callee ? callee.id : ''), msgStruct);
             }
 
-            if(_tryEvents) {
+            if (_tryEvents) {
                 try {
                     result = _publish(eventKey, msgStruct);
                 } catch (e) {
-                    logError(e,'error whilst publishing event ' + eventKey);
+                    logError(e, 'error whilst publishing event ' + eventKey);
                 }
-            }else{
+            } else {
                 result = _publish(eventKey, msgStruct);
             }
         }
@@ -72432,20 +72457,20 @@ define('xide/factory/Events',[
      * @memberOf xide/factory
      * @returns {Object[]|null} Returns an array of regular Dojo-subscribe/on handles
      */
-    factory.subscribe = function (keys, cb, owner,filter) {
-        if(has('debug')){
-            if(!keys){
+    factory.subscribe = function (keys, cb, owner, filter) {
+        if (has('debug')) {
+            if (!keys) {
                 _debug && console.error('subscribe failed, event key is empty!');
                 return null;
             }
         }
 
         //some vars
-        let eventKeys  = keys;                        //resulting subscribe handles
+        let eventKeys = keys; //resulting subscribe handles
         //_isDom = _isElement(owner),       //dom element?
 
         const //cache
-        _subscribe = connect.subscribe;
+            _subscribe = connect.subscribe;
 
         const events = [];
 
@@ -72454,43 +72479,43 @@ define('xide/factory/Events',[
             eventKeys = [keys];
         }
 
-        for (let i = 0, l=eventKeys.length; i < l; i++) {
-            if(!eventKeys[i] || filter && !filter(eventKey)){
+        for (let i = 0, l = eventKeys.length; i < l; i++) {
+            if (!eventKeys[i] || filter && !filter(eventKey)) {
                 continue;
             }
 
             const _item =
-                    //the raw item
-                    eventKeys[i];
+                //the raw item
+                eventKeys[i];
 
             const //is string?
-            _isString = _.isString(_item);
+                _isString = _.isString(_item);
 
             var //if string: use it, otherwise assume struct
-            eventKey =  _isString ? _item : _item.key;
+                eventKey = _isString ? _item : _item.key;
 
             const //pick handler from arguments or struct
-            _handler = _isString ? cb : _item.handler;
+                _handler = _isString ? cb : _item.handler;
 
             const //is native event?
-            _isNative = eventKey in _nativeEvents;
+                _isNative = eventKey in _nativeEvents;
 
             let //the final handle
-            _handle;
+                _handle;
 
 
             //owner specified, hitch the callback into owner's scope
             if (owner != null) {
                 //try cb first, then owner.onEVENT_KEY, that enables similar effect as in Dojo2/Evented
-                const _cb = _handler !=null ? _handler : owner[eventKey];
-                if(_isNative){
+                const _cb = _handler != null ? _handler : owner[eventKey];
+                if (_isNative) {
                     _handle = on(owner, eventKey, lang.hitch(owner, _cb));
-                }else{
+                } else {
                     _handle = _subscribe(eventKey, lang.hitch(owner, _cb));
                 }
                 _handle.handler = lang.hitch(owner, _cb);
             } else {
-                _handle =  connect.subscribe(eventKey, _handler);
+                _handle = connect.subscribe(eventKey, _handler);
                 _handle.handler = _handler;
             }
             //track the actual event type
