@@ -43731,6 +43731,7 @@ define('dojo/_base/Deferred',[
 						}
 						listener.deferred[unchanged && isError ? "reject" : "resolve"](unchanged ? result : newResult);
 					}catch(e){
+						console.error('error',e);
 						listener.deferred.reject(e);
 					}
 				}else{
@@ -64495,6 +64496,27 @@ define('xfile/manager/FileManager',[
                 logError(e, 'find');
             }
         },
+        getContentSync: function (mount, path, readyCB, emit) {
+            /*
+            var self = this;
+
+            function resolveAfter2Seconds(x) {
+                return new Promise(resolve => {
+                    self.getContent(mount, path, function (content) {
+                        resolve(content);
+                    })
+                });
+            }
+
+            async function f1() {
+                var x = await resolveAfter2Seconds(10);
+                console.log('got ', x); // 10
+                return x;
+            }
+            const content = f1();
+            return content;
+            */
+        },
         getContent: function (mount, path, readyCB, emit) {
             if (this.getContentE) {
                 var res = this.getContentE.apply(this, arguments);
@@ -65238,6 +65260,7 @@ define('xfile/data/Store',[
                         if (isFinish) {
                             deferred.resolve(thiz._getItem(path));
                         } else {
+                            
                             for (var i = 0; i < partsToLoad.length; i++) {
                                 if (!partsToLoad[i].loaded) {
                                     var _item = thiz.getSync(partsToLoad[i].path);
@@ -65269,6 +65292,14 @@ define('xfile/data/Store',[
                                     break;
                                 }
                             }
+
+
+                            var isFinish = !_.find(partsToLoad, {
+                                loaded: false
+                            });
+                            if (isFinish) {
+                                deferred.resolve(thiz._getItem(path));
+                            }
                         }
                     };
 
@@ -65287,6 +65318,7 @@ define('xfile/data/Store',[
                             loaded: false
                         });
                     }
+
                     //fire
                     _loadNext();
                     return deferred;
@@ -65387,6 +65419,9 @@ define('xfile/data/Store',[
                 item.getPath = function () {
                     return this.path;
                 };
+                if (!this.getSync(item.path)) {
+                    this.putSync(item);
+                }
             },
             /////////////////////////////////////////////////////////////////////////////
             //
@@ -65471,8 +65506,9 @@ define('xfile/data/Store',[
                             });
                         });
                     } else {
-                        this._loadPath(item.path, true).then(function (items) {
-                            deferred.resolve(item);
+                        this._loadPath(item.path, true).then((items)=> {
+                            var _item = this.getSync(item.path);
+                            deferred.resolve(_item);
                         }, function (err) {
                             console.error('error occured whilst loading items');
                             deferred.reject(err);
@@ -65741,13 +65777,14 @@ define('xfile/model/File',[
     "dcl/dcl",
     "xide/data/Model",
     "xide/utils",
-    "xide/types"
-], function (dcl, Model, utils, types) {
+    "xide/types",
+    "xide/lodash"
+], function (dcl, Model, utils, types, _) {
     /**
      * @class module:xfile/model/File
      */
     return dcl(Model, {
-        declaredClass:'xfile.model.File',
+        declaredClass: 'xfile.model.File',
         getFolder: function () {
             var path = this.getPath();
             if (this.directory) {
@@ -65763,12 +65800,16 @@ define('xfile/model/File',[
             var store = this.getStore() || this._S;
             return store.getParent(this);
         },
+        getChild: function (path) {
+            return _.find(this.getChildren(), {
+                path: path
+            });
+        },
         getStore: function () {
             return this._store || this._S;
         }
     });
-});
-;
+});;
 define('dstore/Cache',[
 	'dojo/_base/array',
 	'dojo/when',
