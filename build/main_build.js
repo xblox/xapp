@@ -52596,7 +52596,7 @@ define('xcf/manager/DeviceManager_DeviceServer',[
     'xide/utils/HexUtils',
     'xdojo/has!host-node?nxapp/utils/_console'
 ], function (dcl, MD5, types, utils, factory, has, Deferred, ReloadMixin, EventedMixin, require, _, Variable, HexUtils, _console) {
-    let console = typeof window !== 'undefined' ? window.console : typeof global !== 'undefined' ? global.console : _console;
+    var console = typeof window !== 'undefined' ? window.console : typeof global !== 'undefined' ? global.console : _console;
     if (_console) {
         console = _console;
     }
