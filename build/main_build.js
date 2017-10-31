@@ -67058,6 +67058,7 @@ define('xide/manager/Context',[
 
             if (path.includes('resources') ||
                 path.includes('meta') ||
+                path.includes('lib/custom') ||
                 !path.includes('.js')) {
                 return;
             }
