@@ -65551,6 +65551,7 @@ define('xfile/data/Store',[
                 }, this);
             },
             getSync: function (id) {
+                id = id || '';
                 var data = this.storage.fullData;
                 return data[this.storage.index[id]] || data[this.storage.index[id.replace('./', '')]];
             },
@@ -67321,7 +67322,7 @@ define('xide/manager/Context_UI',[
         },
         getOpenFilesP: function () {
 
-            const p = new Deferred();
+            const head = new Deferred();
 
             const settingsManager = this.getSettingsManager();
 
@@ -67345,10 +67346,10 @@ define('xide/manager/Context_UI',[
             });
 
             all(defs).then(() => {
-                p.resolve(out);
+                head.resolve(out);
             });
 
-            return p;
+            return head;
         },
 
         getOpenFiles: function () {
@@ -67434,10 +67435,13 @@ define('xide/manager/Context_UI',[
         },
         onComponentsReady: function () {
             // todo : store is leaked!
-            this.getOpenFilesP().then((items) => {
-                items.forEach((item) => {
-                    this.openItem(item);
-                })
+            this.getSettingsManager().initStore().then(() => {
+                this.getOpenFilesP().then((items) => {
+                    console.log('onComponentsReady# open files', items);
+                    items.forEach((item) => {
+                        this.openItem(item);
+                    });
+                });
             });
         },
         /***********************************************************************/
@@ -71437,18 +71441,18 @@ define('xide/manager/SettingsManager',[
     "xide/manager/ManagerBase",
     "xide/data/Memory",
     "dojo/Deferred"
-], function (dcl,ServerActionBase, utils, ManagerBase,Memory,Deferred) {
+], function (dcl, ServerActionBase, utils, ManagerBase, Memory, Deferred) {
     const Module = dcl([ManagerBase, ServerActionBase], {
-        declaredClass:"xide.manager.SettingsManager",
+        declaredClass: "xide.manager.SettingsManager",
         serviceClass: 'XApp_Store',
         settingsStore: null,
         settingsDataAll: null,
         section: 'settings',
-        store:null,
+        store: null,
         has: function (section, path, query, data, readyCB) {},
-        getSetting:function(id){
+        getSetting: function (id) {
             const _val = this.getStore().query({
-                id:id
+                id: id
             });
             return _val && _val[0] ? _val[0].value : null;
         },
@@ -71493,9 +71497,13 @@ define('xide/manager/SettingsManager',[
         },
         write: function (section, path, query, data, decode, readyCB) {
             try {
-                const itemLocal = utils.queryStoreEx(this.settingsStore, {id: data.id}, true, true);
+                const itemLocal = utils.queryStoreEx(this.settingsStore, {
+                    id: data.id
+                }, true, true);
                 if (itemLocal) {
-                    return this.update(section, path, {id: data.id}, data.data, decode, readyCB);
+                    return this.update(section, path, {
+                        id: data.id
+                    }, data.data, decode, readyCB);
                 } else {
                     return this.callMethodEx(this.serviceClass, 'set', [section || this.section, path, query, data, decode], readyCB, false);
                 }
@@ -71508,7 +71516,7 @@ define('xide/manager/SettingsManager',[
                 //var itemLocal = utils.queryStoreEx(this.settingsStore, {id: data.id}, true, true);
                 const itemLocal = utils.queryStoreEx(this.settingsStore, query, true, true);
                 if (itemLocal) {
-                    utils.mixin(itemLocal,data);
+                    utils.mixin(itemLocal, data);
                     return this.update(section, path, query, data, decode, readyCB);
                 } else {
                     return this.callMethodEx(this.serviceClass, 'set', [section || this.section, path, query, data, decode], readyCB, false);
@@ -71519,16 +71527,20 @@ define('xide/manager/SettingsManager',[
         },
         initStore: function () {
             const dfd = new Deferred();
-            const self = this;
-            this.serviceObject.__init.then(function() {
-                self.read(self.section, '.', null, self.onSettingsReceived.bind(self));
-                dfd.resolve();
+            if (this.settingsStore) {
+                console.log('have store already');
+                dfd.resolve(this.settingsStore);
+                return dfd;
+            }
+            this.serviceObject.__init.then(() => {
+                this.read(this.section, '.', null, this.onSettingsReceived.bind(this)).then(() => {
+                    dfd.resolve(this.settingsStore);
+                });
             });
             return dfd;
         },
-        init:function(){
+        init: function () {
             const dfd = new Deferred();
-            const self = this;
             dfd.resolve();
             return dfd;
         }
@@ -81972,8 +81984,9 @@ define('xide/types/Types',[
     'xide/types',
     'dojo/_base/json',
     'dojo/_base/kernel',
-    'xide/utils'
-], function (lang, types, json, dojo,utils) {
+    'xide/utils',
+    'xide/utils/ObjectUtils'
+], function (lang, types, json, dojo, utils) {
     /**
      * @TODO:
      * - apply xide/registry for types
@@ -82067,15 +82080,15 @@ define('xide/types/Types',[
         return null;
     };
 
-    types.registerCICallbacks = function (type,callbacks) {
+    types.registerCICallbacks = function (type, callbacks) {
         if (!types['CICallbacks'][type]) {
             types['CICallbacks'][type] = {}
         }
-        utils.mixin(types['CICallbacks'][type],callbacks);
+        utils.mixin(types['CICallbacks'][type], callbacks);
         return null;
     };
     types.getCICallbacks = function (type) {
-        if (types['CICallbacks'][type]){
+        if (types['CICallbacks'][type]) {
             return types['CICallbacks'][type];
         }
         return null;
@@ -82088,7 +82101,7 @@ define('xide/types/Types',[
         ACTIONS: 'ACTIONS',
         CONTEXT_MENU: 'CONTEXT_MENU'
     };
-    
+
     types.VIEW_FEATURE = {
         KEYBOARD_NAVIGATION: 'KEYBOARD_NAVIGATION',
         KEYBOARD_SELECT: 'KEYBOARD_SELECT',
@@ -82096,7 +82109,7 @@ define('xide/types/Types',[
         ACTIONS: 'ACTIONS',
         CONTEXT_MENU: 'CONTEXT_MENU'
     };
-    
+
     types.KEYBOARD_PROFILE = {
         DEFAULT: {
             prevent_default: true,
@@ -82529,27 +82542,27 @@ define('xide/types/Types',[
          * Bean type 'file' is handled by the xfile package
          * @constant
          */
-        FILE: 'BTFILE',         //file object
+        FILE: 'BTFILE', //file object
         /**
          * Bean type 'widget' is handled by the xide/ve and davinci package
          * @constant
          */
-        WIDGET: 'WIDGET',       //ui designer
+        WIDGET: 'WIDGET', //ui designer
         /**
          * Bean type 'block' is handled by the xblox package
          * @constant
          */
-        BLOCK: 'BLOCK',         //xblox
+        BLOCK: 'BLOCK', //xblox
         /**
          * Bean type 'text' is used for text editors
          * @constant
          */
-        TEXT: 'TEXT',           //xace
+        TEXT: 'TEXT', //xace
         /**
          * Bean type 'xexpression' is used for user expressions
          * @constant
          */
-        EXPRESSION: 'EXPRESSION'       //xexpression
+        EXPRESSION: 'EXPRESSION' //xexpression
     };
 
     /**
@@ -82625,9 +82638,9 @@ define('xide/types/Types',[
         /**
          * generic
          */
-        ERROR: 'onError',//xhr
-        STATUS: 'onStatus',//xhr
-        ON_CREATED_MANAGER: 'onCreatedManager',//context
+        ERROR: 'onError', //xhr
+        STATUS: 'onStatus', //xhr
+        ON_CREATED_MANAGER: 'onCreatedManager', //context
 
         /**
          * item events, to be renoved
@@ -82663,8 +82676,8 @@ define('xide/types/Types',[
         ON_MODULE_UPDATED: 'onModuleUpdated',
 
 
-        ON_DID_OPEN_ITEM: 'onDidOpenItem',//remove
-        ON_DID_RENDER_COLLECTION: 'onDidRenderCollection',//move
+        ON_DID_OPEN_ITEM: 'onDidOpenItem', //remove
+        ON_DID_RENDER_COLLECTION: 'onDidRenderCollection', //move
 
         ON_PLUGIN_LOADED: 'onPluginLoaded',
         ON_PLUGIN_READY: 'onPluginReady',
@@ -82673,11 +82686,11 @@ define('xide/types/Types',[
         /**
          * editors
          */
-        ON_CREATE_EDITOR_BEGIN: 'onCreateEditorBegin',//move to xedit
-        ON_CREATE_EDITOR_END: 'onCreateEditorEnd',//move to xedit
-        REGISTER_EDITOR: 'registerEditor',//move to xedit
-        ON_EXPRESSION_EDITOR_ADD_FUNCTIONS: 'onExpressionEditorAddFunctions',//move to xedit
-        ON_ACE_READY: 'onACEReady',//remove
+        ON_CREATE_EDITOR_BEGIN: 'onCreateEditorBegin', //move to xedit
+        ON_CREATE_EDITOR_END: 'onCreateEditorEnd', //move to xedit
+        REGISTER_EDITOR: 'registerEditor', //move to xedit
+        ON_EXPRESSION_EDITOR_ADD_FUNCTIONS: 'onExpressionEditorAddFunctions', //move to xedit
+        ON_ACE_READY: 'onACEReady', //remove
 
         /**
          * Files
@@ -82741,13 +82754,13 @@ define('xide/types/Types',[
         ON_REMOVE_CONTAINER: 'onRemoveContainer',
         ON_CONTAINER_REPLACED: 'onContainerReplaced',
         ON_CONTAINER_SPLIT: 'onContainerSplit',
-        ON_RENDER_WELCOME_GRID_GROUP:'onRenderWelcomeGridGroup',
+        ON_RENDER_WELCOME_GRID_GROUP: 'onRenderWelcomeGridGroup',
 
-        ON_DND_SOURCE_OVER:'/dnd/source/over',
-        ON_DND_START:'/dnd/start',
-        ON_DND_DROP_BEFORE:'/dnd/drop/before',
-        ON_DND_DROP:'/dnd/drop',
-        ON_DND_CANCEL:'/dnd/cancel'
+        ON_DND_SOURCE_OVER: '/dnd/source/over',
+        ON_DND_START: '/dnd/start',
+        ON_DND_DROP_BEFORE: '/dnd/drop/before',
+        ON_DND_DROP: '/dnd/drop',
+        ON_DND_CANCEL: '/dnd/cancel'
     };
     /**
      * To be moved
@@ -82756,7 +82769,7 @@ define('xide/types/Types',[
     types.DIALOG_SIZE = {
         SIZE_NORMAL: 'size-normal',
         SIZE_SMALL: 'size-small',
-        SIZE_WIDE: 'size-wide',    // size-wide is equal to modal-lg
+        SIZE_WIDE: 'size-wide', // size-wide is equal to modal-lg
         SIZE_LARGE: 'size-large'
     };
 
@@ -82813,7 +82826,8 @@ define('xide/types/Types',[
                                 "message": js,
                                 "data": null
                             }
-                        }, "id": 0
+                        },
+                        "id": 0
                     };
                 }
                 throw new Error(js);
